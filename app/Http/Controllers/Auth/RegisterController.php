@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\ConfirmationEmail;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class RegisterController extends Controller
@@ -15,7 +18,7 @@ class RegisterController extends Controller
 
         try{
             $validation = $request->validate([
-                'full_name' => 'string|max:255',
+                'full_name' => 'required|string|max:255',
                 'email' => 'required|string|email|unique:users,email|max:255',
                 'phone_number' => 'required|string|unique:users,phone_number|max:255',
                 'password' => 'required|string|min:8|confirmed',
@@ -25,14 +28,21 @@ class RegisterController extends Controller
             return response()->json(['errors' => $e->errors()], 422);
         }
 
+        $verification_code = str_pad(rand(0, 999999), 6, 0, STR_PAD_LEFT);
+
         $user = User::create([
             'email' => $validation['email'],
             'phone_number' => $validation['phone_number'],
             'full_name' => $validation['full_name'],
             'password' => Hash::make($validation['password']),
+            'verification_code' => $verification_code,
+            'verification_code_expires_at' => Carbon::now()->addMinutes(10),
         ]);
 
-        if($user) return response()->json(['Message' => 'User created successfully'], 201);
+        if($user) {
+            Mail::to($validation['email'])->send(new ConfirmationEmail($user, $verification_code));
+            return response()->json(['Message' => 'User created successfully'], 201);
+        }
         else return response()->json(['Error' => 'Failed to create user'], 500);
     }
 }

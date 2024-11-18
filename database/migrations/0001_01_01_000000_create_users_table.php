@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('next_of_kin_full_name')->nullable();
             $table->string('next_of_kin_phone_number')->nullable();
             $table->string('next_of_kin_gender')->nullable();
+            $table->string('verification_code', 6);
+            $table->timestamp('verification_code_expires_at');
             $table->rememberToken();
             $table->timestamps();
         });

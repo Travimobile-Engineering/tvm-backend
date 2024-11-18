@@ -23,7 +23,9 @@ class AuthenticateController extends Controller
             return response()->json(['Error' => 'Could not create token'], 500);
         }
 
-        return response()->json(compact('token'));
+        $user = JWTAuth::user();
+
+        return response()->json(compact('token', 'user'));
     }
 
     //logout method to invalidate the token
