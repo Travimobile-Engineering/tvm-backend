@@ -27,9 +27,15 @@ class ProfileController extends Controller
 
         if(JWTAuth::user()->id == $id){
 
-            $updates = collect($request->all())
+            $updates = collect($request->all());
             
-            ->filter(function($value, $key){
+            if($updates->has('full_name')){
+                $names = explode(' ', $updates['full_name'], 2);
+                $updates['first_name'] = $names[0];
+                $updates['last_name'] = $names[1] ?? '';
+            }
+            
+            $updates = $updates->filter(function($value, $key){
                 return !empty($value) && $key != 'email' && Schema::hasColumn('users', $key);
             });
 
@@ -45,6 +51,7 @@ class ProfileController extends Controller
 
                 $updates['password'] = Hash::make($updates['password']);
             }
+
             
             $user = User::where('id', $id)
                 ->update($updates->toArray());

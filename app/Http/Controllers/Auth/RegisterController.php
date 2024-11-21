@@ -28,15 +28,29 @@ class RegisterController extends Controller
             return response()->json(['errors' => $e->errors()], 422);
         }
 
-        $verification_code = str_pad(rand(0, 999999), 6, 0, STR_PAD_LEFT);
+        $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
+        do{ 
+            $uuid = (String) time();
+            $randomNumber = '';
+            $remainingDigits = 16 - strlen($uuid);
+            for($i=0; $i< $remainingDigits; $i++){
+                $randomNumber .= mt_rand(0, 9);
+            }
+            $uuid = $randomNumber . $uuid;
+        }
+        while(User::where('uuid', $uuid)->exists());
+
+        $names = explode(' ', $validation['full_name'], 2);
 
         $user = User::create([
             'email' => $validation['email'],
             'phone_number' => $validation['phone_number'],
-            'full_name' => $validation['full_name'],
+            'first_name' => $names[0],
+            'last_name' => $names[1] ?? "",
             'password' => Hash::make($validation['password']),
             'verification_code' => $verification_code,
             'verification_code_expires_at' => Carbon::now()->addMinutes(10),
+            'uuid' => $uuid,
         ]);
 
         if($user) {
