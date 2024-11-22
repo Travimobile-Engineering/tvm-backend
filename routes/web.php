@@ -11,13 +11,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
 
 Route::get('/', function () {
-    return view('welcome');
+    // return view('welcome');
+    return 'welcome to tvm console! nothing spoil 😇👍';
 });
 
 
 Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
 ->group(function(){
-    
+
     Route::prefix('auth')
     ->group(function(){
         Route::post('/signup', [RegisterController::class, 'signup']);
@@ -27,10 +28,10 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
         Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
         Route::post('/verify', [VerifyController::class, 'index']);
     });
-    
+
     Route::middleware(JWTAuthenticator::class)
     ->group(function(){
-        
+
         Route::prefix('profile')
         ->group(function (){
             Route::get('/', [ProfileController::class, 'index']);
