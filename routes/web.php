@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SendTestMailController;
+use App\Http\Middleware\AllowCORS;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
@@ -17,6 +18,7 @@ Route::get('/', function () {
 
 
 Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+->withoutMiddleware(AllowCORS::class)
 ->group(function(){
 
     Route::prefix('auth')
