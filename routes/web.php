@@ -18,7 +18,7 @@ Route::get('/', function () {
 
 
 Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
-->withoutMiddleware(AllowCORS::class)
+->withMiddleware(AllowCORS::class)
 ->group(function(){
 
     Route::prefix('auth')
