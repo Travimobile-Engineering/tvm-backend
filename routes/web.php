@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\auth\ForgotPasswordEmailController;
-use App\Http\Controllers\auth\RegisterController;
-use App\Http\Controllers\auth\ResetPasswordController;
+use App\Http\Controllers\Auth\ForgotPasswordEmailController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SendTestMailController;
