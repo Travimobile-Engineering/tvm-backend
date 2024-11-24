@@ -15,15 +15,19 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    // 'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['*'],
 
-    'allowed_methods' => ['*'],
+    // 'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET, POST, PUT, OPTIONS'],
+    // 'allowed_origins' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => ['http://localhost:5173', 'https://v6.travimobile.com'],
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    // 'allowed_headers' => ['*'],
+    'allowed_headers' => ['Origin, Content-Type, X-Auth-Token , Cookie'],
 
     'exposed_headers' => [],
 
