@@ -29,7 +29,7 @@ class RegisterController extends Controller
         }
 
         $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
-        do{ 
+        do{
             $uuid = (String) time();
             $randomNumber = '';
             $remainingDigits = 16 - strlen($uuid);

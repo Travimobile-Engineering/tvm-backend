@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -37,6 +37,6 @@ class VerifyController extends Controller
             else return response()->json(['error' => 'Verification code has expired']);
         }
         else return response()->json(['error' => 'Invalid email or verification code']);
-        
+
     }
 }
