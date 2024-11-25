@@ -15,7 +15,7 @@ class VerifyController extends Controller
         try{
             $validation = $request->validate([
                 'email' => 'required|exists:users,email',
-                'verification_code' => 'required|numeric|digits:6'
+                'verification_code' => 'required|numeric|digits:5'
             ]);
         }
         catch(ValidationException $e){
