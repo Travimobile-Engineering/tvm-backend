@@ -15,11 +15,11 @@ class AllowCORS
      */
     public function handle(Request $request, Closure $next): Response
     {
-        return $next($request)
-        ->headers('Access-Control-Allow-Origin', '*')
-        ->headers('Access-Control-Allow-Methods', '*')
-        ->headers('Access-Control-Allow-Credentials', true)
-        ->headers('Access-Control-Allow-Headers', 'X-Requested-With,Content-Type,X-Token-Auth,Origin,Authorization')
-        ->headers('Accept', 'application/json');
+        return $next($request);
+        // ->headers('Access-Control-Allow-Origin', '*')
+        // ->headers('Access-Control-Allow-Methods', '*')
+        // ->headers('Access-Control-Allow-Credentials', true)
+        // ->headers('Access-Control-Allow-Headers', 'X-Requested-With,Content-Type,X-Token-Auth,Origin,Authorization')
+        // ->headers('Accept', 'application/json');
     }
 }
