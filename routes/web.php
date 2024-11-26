@@ -6,7 +6,6 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SendTestMailController;
-use App\Http\Middleware\AllowCORS;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
