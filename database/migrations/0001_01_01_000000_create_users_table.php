@@ -16,14 +16,15 @@ return new class extends Migration
             $table->string('uuid')->unique();
             $table->string('first_name');
             $table->string('last_name')->nullable();
-            $table->string('phone_number')->unique();
+            $table->string('phone_number', 14)->unique();
             $table->string('email')->unique();
             $table->unsignedTinyInteger('email_verified')->default(0);
             $table->unsignedTinyInteger('sms_verified')->default(0);
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('category_id')->default('{1}');
+            $table->string('user_category')->default('[1]')->comment('1:user, 2:agent, 3:individualDriver, 4:corporateDriver, 5:hotelOwner, 6:government, 7:admin, 8:superAdmin');
             $table->string('password');
             $table->string('address')->nullable();
+            $table->string('nin', 30)->nullable();
             $table->string('gender')->nullable();
             $table->string('next_of_kin_full_name')->nullable();
             $table->string('next_of_kin_phone_number')->nullable();

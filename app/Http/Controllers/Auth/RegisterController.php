@@ -19,13 +19,15 @@ class RegisterController extends Controller
         try{
             $validation = $request->validate([
                 'full_name' => 'required|string|max:255',
-                'email' => 'required|string|email|unique:users,email|max:255',
-                'phone_number' => 'required|string|unique:users,phone_number|max:255',
+                'email' => 'string|email|unique:users,email|max:255',
+                'phone_number' => 'required|unique:users,phone_number|numeric',
                 'password' => 'required|string|min:8|confirmed',
+                'address' => 'string|max:255',
+                'nin' => 'string'
             ]);
 
         }catch(ValidationException $e){
-            return response()->json(['errors' => $e->errors()], 422);
+            return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
         }
 
         $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
@@ -40,17 +42,39 @@ class RegisterController extends Controller
         }
         while(User::where('uuid', $uuid)->exists());
 
+        // Get the first name and last name
         $names = explode(' ', $validation['full_name'], 2);
 
+        $category = [1];
+        if(isset($request->user_category) && $request->user_category == 2){
+            $category[] = 2;
+
+            try{
+                $request->validate([
+                    'address' => 'required',
+                    'email' => 'required',
+                    'phone_number' => 'required',
+                    'nin' => 'required',
+                ]);
+    
+            }catch(ValidationException $e){
+                return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
+            }
+        } 
+        
         $user = User::create([
             'email' => $validation['email'],
             'phone_number' => $validation['phone_number'],
             'first_name' => $names[0],
             'last_name' => $names[1] ?? "",
             'password' => Hash::make($validation['password']),
+            'user_category' => json_encode($category),
             'verification_code' => $verification_code,
             'verification_code_expires_at' => Carbon::now()->addMinutes(10),
             'uuid' => $uuid,
+            'address' => $validation['address'] ?? "",
+            'nin' => $validation['nin'] ?? "",
+
         ]);
 
         if($user) {
