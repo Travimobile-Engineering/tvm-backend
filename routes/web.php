@@ -25,9 +25,10 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
         Route::post('/signup', [RegisterController::class, 'signup']);
         Route::post('/login', [AuthenticateController::class, 'login']);
         Route::post('/forgot-password-email', [ForgotPasswordEmailController::class, 'send_password_reset_link']);
-        Route::get('/reset-password', [])->name('password.reset');
+        Route::get('/reset-password', fn()=> "Oops! Please bear with us. We are currently working on this page")->name('password.reset');
         Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
         Route::post('/verify', [VerifyController::class, 'index']);
+        Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
     });
 
     Route::middleware(JWTAuthenticator::class)

@@ -21,7 +21,7 @@ class JWTAuthenticator
             JWTAuth::parseToken()->authenticate();
         }
         catch(JWTException $e){
-            return response()->json(['error' => 'The token is invalid or expired']);
+            return response()->json(['error' => 'The token is invalid or expired'], 400);
         }
 
         return $next($request);

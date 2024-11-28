@@ -98,7 +98,7 @@ table, td { color: #000000; } #u_body a { color: #0000ee; text-decoration: under
     <tr>
       <td style="overflow-wrap:break-word;word-break:break-word;padding:10px;font-family:arial,helvetica,sans-serif;" align="left">
         
-  <div style="font-size: 15px; line-height: 140%; text-align: left; word-wrap: break-word;">
+  <div style="font-size: 14px; line-height: 140%; text-align: left; word-wrap: break-word;">
     <p style="line-height: 140%;">Dear {{$user->first_name.' '.$user->last_name}},</p>
 <p style="line-height: 140%;"> </p>
 <p style="line-height: 140%;">Thank you for signing up with Travi Mobile, your preferred booking platform. To ensure the security of your account, please use the one time password below to complete your sign up process .</p>
@@ -154,7 +154,7 @@ table, td { color: #000000; } #u_body a { color: #0000ee; text-decoration: under
       <td style="overflow-wrap:break-word;word-break:break-word;padding:10px;font-family:arial,helvetica,sans-serif;" align="left">
         
   <div>
-    <div style="background:#f4f4f4;color:#4c4c4c;padding:15px;font-size:14px;">
+    <div style="background:#f4f4f4;color:#4c4c4c;padding:15px;font-size:13px;">
   <strong>Please be aware that this code is valid for the next 10 minutes. Enter it promptly to complete your sign up process.</strong>
 </div>
 
@@ -170,7 +170,7 @@ table, td { color: #000000; } #u_body a { color: #0000ee; text-decoration: under
     <tr>
       <td style="overflow-wrap:break-word;word-break:break-word;padding:10px;font-family:arial,helvetica,sans-serif;" align="left">
         
-  <div style="font-size: 15px; line-height: 140%; text-align: left; word-wrap: break-word;">
+  <div style="font-size: 13px; line-height: 140%; text-align: left; word-wrap: break-word;">
     <p style="line-height: 140%;">Thank you for choosing Travi Mobile.</p>
 <p style="line-height: 140%;">We’re here to make your journeys smooth and hassle-free.</p>
 <p style="line-height: 140%;">Safe travels.</p>

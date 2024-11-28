@@ -29,8 +29,6 @@ class RegisterController extends Controller
         }catch(ValidationException $e){
             return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
         }
-
-        $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
         do{
             $uuid = (String) time();
             $randomNumber = '';
@@ -61,26 +59,58 @@ class RegisterController extends Controller
                 return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
             }
         } 
+
+        $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
         
         $user = User::create([
-            'email' => $validation['email'],
+            'email' => $validation['email'] ?? "",
             'phone_number' => $validation['phone_number'],
             'first_name' => $names[0],
             'last_name' => $names[1] ?? "",
             'password' => Hash::make($validation['password']),
             'user_category' => json_encode($category),
-            'verification_code' => $verification_code,
-            'verification_code_expires_at' => Carbon::now()->addMinutes(10),
             'uuid' => $uuid,
             'address' => $validation['address'] ?? "",
             'nin' => $validation['nin'] ?? "",
-
+            'verification_code' => $verification_code,
+            'verification_code_expires_at' => Carbon::now()->addMinutes(10)
         ]);
 
         if($user) {
-            Mail::to($validation['email'])->send(new ConfirmationEmail($user, $verification_code));
-            return response()->json(['Message' => 'User created successfully'], 201);
+            $this->send_verification_code($request, false, $verification_code);
+            return response()->json(['Message' => 'User created successfully'], 200);
         }
         else return response()->json(['Error' => 'Failed to create user'], 500);
+    }
+
+    public function send_verification_code(Request $request, bool $returnResponse = true, int $verification_code = null){
+
+        $email = $request->email;
+
+        
+        if(!empty($email)){
+            
+            $user = User::where('email', $email)->first();
+            if($user){
+
+                if(empty($verification_code)){
+
+                    $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
+                    $user->verification_code = $verification_code;
+                    $user->verification_code_expires_at = Carbon::now()->addMinutes(10);
+                    $user->save();
+                }
+
+
+                Mail::to($email)->send(new ConfirmationEmail($user, $verification_code));
+                
+                if($returnResponse)
+                return response()->json(['Message' => 'Verification code sent to your email address'], 200);
+            }
+            else return response()->json(['error' => 'User not found'], 400);
+            
+
+        }
+        
     }
 }
