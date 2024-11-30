@@ -20,7 +20,7 @@ return new class extends Migration
         
         Schema::create('route_subregions', function(Blueprint $table){
             $table->id();
-            $table->foreignId('route_region_id')->constrained()->onDelete('cascade');
+            $table->foreignId('region_id')->constrained('route_regions')->onDelete('cascade');
             $table->string('name');
             $table->unsignedTinyInteger('status')->default(1);
             $table->timestamps();
@@ -32,6 +32,7 @@ return new class extends Migration
             $table->foreignId('from_subregion_id')->constrained('route_subregions');
             $table->foreignId('to_region_id')->constrained('route_regions');
             $table->foreignId('to_subregion_id')->constrained('route_subregions');
+            $table->unsignedTinyInteger('status')->default(1);
             $table->timestamps();
         });
     }
@@ -42,7 +43,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('covered_routes');
-        Schema::dropIfExists('routes_regions');
-        Schema::dropIfExists('routes_subregions');
+        Schema::dropIfExists('route_regions');
+        Schema::dropIfExists('route_subregions');
     }
 };
