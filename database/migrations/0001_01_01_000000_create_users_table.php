@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('last_name')->nullable();
             $table->string('phone_number', 14)->unique();
             $table->string('email')->nullable();
+            $table->decimal('wallet', 28, 2)->default(0.00);
             $table->unsignedTinyInteger('email_verified')->default(0);
             $table->unsignedTinyInteger('sms_verified')->default(0);
             $table->timestamp('email_verified_at')->nullable();

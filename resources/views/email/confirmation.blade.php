@@ -183,7 +183,7 @@ table, td { color: #000000; } #u_body a { color: #0000ee; text-decoration: under
 
 <table style="font-family:arial,helvetica,sans-serif;" role="presentation" cellpadding="0" cellspacing="0" width="100%" border="0">
   <tbody>
-    <tr style="background:#000000;">
+    <tr style="background:#08d786;">
       <td style="overflow-wrap:break-word;word-break:break-word;padding:10px;font-family:arial,helvetica,sans-serif;" align="left">
         
 <div align="center" style="direction: ltr;">
