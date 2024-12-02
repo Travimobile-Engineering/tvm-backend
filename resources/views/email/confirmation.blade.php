@@ -99,7 +99,7 @@ table, td { color: #000000; } #u_body a { color: #0000ee; text-decoration: under
       <td style="overflow-wrap:break-word;word-break:break-word;padding:10px;font-family:arial,helvetica,sans-serif;" align="left">
         
   <div style="font-size: 14px; line-height: 140%; text-align: left; word-wrap: break-word;">
-    <p style="line-height: 140%;">Dear {{$user->first_name.' '.$user->last_name}},</p>
+    <p style="line-height: 140%;">Dear {{$name}},</p>
 <p style="line-height: 140%;"> </p>
 <p style="line-height: 140%;">Thank you for signing up with Travi Mobile, your preferred booking platform. To ensure the security of your account, please use the one time password below to complete your sign up process .</p>
   </div>

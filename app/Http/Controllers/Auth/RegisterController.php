@@ -83,7 +83,12 @@ class RegisterController extends Controller
         else return response()->json(['Error' => 'Failed to create user'], 500);
     }
 
-    public function send_verification_code(Request $request, bool $returnResponse = true, int $verification_code = null){
+    public function send_verification_code(
+        Request $request,
+        bool $returnResponse = true,
+        int $verification_code = null
+    )
+    {
 
         $email = $request->email;
 
@@ -101,8 +106,9 @@ class RegisterController extends Controller
                     $user->save();
                 }
 
+                $name = $user->first_name.' '.$user->last_name;
 
-                Mail::to($email)->send(new ConfirmationEmail($user, $verification_code));
+                Mail::to($email)->send(new ConfirmationEmail($name, $verification_code));
                 
                 if($returnResponse)
                 return response()->json(['Message' => 'Verification code sent to your email address'], 200);

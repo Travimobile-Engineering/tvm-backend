@@ -9,6 +9,8 @@ use App\Http\Controllers\SendTestMailController;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
+use App\Http\Controllers\TransitCompanyController;
+use App\Http\Controllers\VehicleController;
 
 Route::get('/', function () {
     // return view('welcome');
@@ -41,6 +43,23 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
         });
 
         Route::get('/auth/logout', [AuthenticateController::class, 'logout']);
+    });
+
+    Route::prefix('company')
+    ->group(function(){
+        Route::get('/{transitCompany}', [TransitCompanyController::class, 'show']);
+        Route::post('/create', [TransitCompanyController::class, 'store']);
+        Route::post('/edit/{transitCompany}', [TransitCompanyController::class, 'update']);
+    });
+
+    Route::prefix('vehicle')
+    ->group(function(){
+        Route::get('/get-types', [VehicleController::class, 'getVehicleTypes']);
+        Route::get('/get-brands', [VehicleController::class, 'getVehicleBrands']);
+        Route::get('/{vehicle}', [VehicleController::class, 'show']);
+        Route::post('/create', [VehicleController::class, 'store']);
+        Route::post('/edit/{vehicle}', [VehicleController::class, 'update']);
+
     });
 
 });

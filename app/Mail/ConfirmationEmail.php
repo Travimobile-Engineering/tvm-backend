@@ -13,15 +13,15 @@ class ConfirmationEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $user;
+    public $name;
     public $verification_code;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($user, $verification_code)
+    public function __construct($name, $verification_code)
     {
-        $this->user = $user;
+        $this->name = $name;
         $this->verification_code = $verification_code;
     }
 
@@ -58,6 +58,6 @@ class ConfirmationEmail extends Mailable
     public function build(){
         return $this->subject('Your Verification Code')
         ->view('email.confirmation')
-        ->with(['user' => $this->user, 'verification_code' =>$this->verification_code]);
+        ->with(['name' => $this->name, 'verification_code' =>$this->verification_code]);
     }
 }
