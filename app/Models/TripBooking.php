@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Trip extends Model
+class TripBooking extends Model
 {
     protected $guarded = [];
 
     public function getRouteKeyName(){
-        return 'trip_id';
+        return 'ticket_id';
     }
 }

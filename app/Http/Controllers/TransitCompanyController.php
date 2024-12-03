@@ -32,7 +32,7 @@ class TransitCompanyController extends Controller
             ]);
 
         }catch(ValidationException $e){
-            return response()->json(['error' => collect($e->errors())->flatten()->first()]);
+            return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
 
         $v_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
@@ -54,7 +54,7 @@ class TransitCompanyController extends Controller
 
         if($company){
             Mail::to($request->email)->send(new ConfirmationEmail($request->name, $v_code));
-            return response()->json(['message' => 'Account created successfully']);
+            return response()->json(['message' => 'Account created successfully'], 200);
         }
     }
 
@@ -63,7 +63,12 @@ class TransitCompanyController extends Controller
      */
     public function show(TransitCompany $transitCompany)
     {
-        return response()->json(['company' => $transitCompany]);
+        if($transitCompany){
+
+            return response()->json(['company' => $transitCompany], 200);
+        }
+
+        else return response()->json(['error' => 'not found'], 400);
     }
 
     /**
@@ -79,7 +84,7 @@ class TransitCompanyController extends Controller
             ]);
 
         }catch(ValidationException $e){
-            return response()->json(['error' => collect($e->errors())->flatten()->first()]);
+            return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
 
         $company = $transitCompany->update([
@@ -96,7 +101,7 @@ class TransitCompanyController extends Controller
         ]);
 
         if($company){
-            return response()->json(['message' => 'Account updated successfully']);
+            return response()->json(['message' => 'Account updated successfully'], 200);
         }
     }
 

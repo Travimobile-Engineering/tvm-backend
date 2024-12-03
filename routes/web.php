@@ -10,6 +10,8 @@ use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\TransitCompanyController;
+use App\Http\Controllers\TripBookingController;
+use App\Http\Controllers\TripController;
 use App\Http\Controllers\VehicleController;
 
 Route::get('/', function () {
@@ -60,6 +62,20 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
         Route::post('/create', [VehicleController::class, 'store']);
         Route::post('/edit/{vehicle}', [VehicleController::class, 'update']);
 
+    });
+
+    Route::prefix('trip')
+    ->group(function(){
+        Route::post('/create', [TripController::class, 'store']);
+        Route::post('/edit/{trip}', [TripController::class, 'update']);
+        Route::get('/{trip}', [TripController::class, 'show']);
+    });
+
+    Route::prefix('trip-booking')
+    ->group(function(){
+        Route::post('/create', [TripBookingController::class, 'store']);
+        Route::post('/edit/{tripBooking}', [TripBookingController::class, 'update']);
+        Route::get('/{tripBooking}', [TripBookingController::class, 'show']);
     });
 
 });
