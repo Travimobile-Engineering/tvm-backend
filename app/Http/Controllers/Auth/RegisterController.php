@@ -19,11 +19,11 @@ class RegisterController extends Controller
         try{
             $validation = $request->validate([
                 'full_name' => 'required|string|max:255',
-                'email' => 'string|email|unique:users,email|max:255',
+                'email' => 'nullable|string|email|unique:users,email|max:255',
                 'phone_number' => 'required|unique:users,phone_number|numeric',
                 'password' => 'required|string|min:8|confirmed',
-                'address' => 'string|max:255',
-                'nin' => 'string'
+                'address' => 'nullable|string|max:255',
+                'nin' => 'nullable|string'
             ]);
 
         }catch(ValidationException $e){
