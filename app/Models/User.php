@@ -41,6 +41,8 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password',
         'remember_token',
+        'verification_code',
+        'verification_code_expires_at'
     ];
 
     // The JWT Identifier method required by the JWT package

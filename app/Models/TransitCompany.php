@@ -12,5 +12,12 @@ class TransitCompany extends Model
         'updated_at',
     ];
 
+    protected $hidden = [
+        'ver_code',
+        'ver_code_expires_at',
+        'ev',
+        'sv'
+    ];
+
     
 }

@@ -14,7 +14,7 @@ return new class extends Migration
         
         Schema::create('vehicle_brands', function(Blueprint $table){
             $table->id();
-            $table->string('brand_name')->unique();
+            $table->string('name')->unique();
             $table->timestamps();
         });
         
@@ -29,8 +29,8 @@ return new class extends Migration
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('vehicle_brand_id')->constrained('vehicle_brands');
-            $table->foreignId('vehicle_type_id')->constrained('vehicle_types');
+            $table->foreignId('brand_id')->constrained('vehicle_brands');
+            $table->foreignId('type_id')->constrained('vehicle_types');
             $table->string('plate_no');
             $table->string('engine_no');
             $table->string('chassis_no');

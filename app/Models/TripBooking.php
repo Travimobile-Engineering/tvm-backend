@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class TripBooking extends Model
 {
     protected $guarded = [];
+    protected $hidden = ['id'];
 
     public function getRouteKeyName(){
-        return 'ticket_id';
+        return 'booking_id';
     }
 }

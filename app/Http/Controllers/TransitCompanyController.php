@@ -54,7 +54,7 @@ class TransitCompanyController extends Controller
 
         if($company){
             Mail::to($request->email)->send(new ConfirmationEmail($request->name, $v_code));
-            return response()->json(['message' => 'Account created successfully'], 200);
+            return response()->json(['message' => 'Account created successfully', 'data' => $company], 200);
         }
     }
 
@@ -65,7 +65,7 @@ class TransitCompanyController extends Controller
     {
         if($transitCompany){
 
-            return response()->json(['company' => $transitCompany], 200);
+            return response()->json(['data' => $transitCompany], 200);
         }
 
         else return response()->json(['error' => 'not found'], 400);
@@ -78,8 +78,7 @@ class TransitCompanyController extends Controller
     {
         try{
             $validation = $request->validate([
-                'email' => 'required|unique:transit_companies|email',
-                'phone' => 'required|unique:transit_companies|max_digits:14',
+                'phone' => 'required|max_digits:14',
                 'url' => 'nullable|url',
             ]);
 
@@ -92,7 +91,6 @@ class TransitCompanyController extends Controller
             'short_name' => $request->short_name,
             'reg_no' => $request->reg_no,
             'url' => $request->url,
-            'email' => $request->email,
             'state' => $request->state,
             'lga' => $request->lga,
             'phone' => $request->phone,
@@ -101,7 +99,7 @@ class TransitCompanyController extends Controller
         ]);
 
         if($company){
-            return response()->json(['message' => 'Account updated successfully'], 200);
+            return response()->json(['message' => 'Account updated successfully', 'data' => $transitCompany], 200);
         }
     }
 
