@@ -46,7 +46,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropifExists('booked_tickets');
+        Schema::dropifExists('trip_bookings');
         Schema::dropifExists('trips');
     }
 };
