@@ -140,4 +140,15 @@ class TripController extends Controller
     {
         //
     }
+
+    public function search(Request $request){
+        
+    }
+
+    public function getAllTrips(Request $request){
+        $trips = [];
+        if($request->date) $trips = Trip::where('departure_at', '>=', $request->date.' '.$request->time ?? '')->get();
+        else $trips = Trip::all();
+        return response()->json(['data '=> $trips], 200);
+    }
 }

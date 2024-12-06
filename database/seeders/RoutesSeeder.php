@@ -15,10 +15,16 @@ class RoutesSeeder extends Seeder
     {
 
         DB::table('route_regions')->insert([
-            ['id' => 1, 'name' => 'PHC'],
-            ['id' => 2, 'name' => 'Lagos'],
-            ['id' => 3, 'name' => 'Warri'],
-            ['id' => 4, 'name' => 'Uyo'],
+            ['name' => 'PHC'],
+            ['name' => 'Lagos'],
+            ['name' => 'Abuja'],
+            ['name' => 'Kaduna'],
+            ['name' => 'Enugu'],
+            ['name' => 'Kanu'],
+            ['name' => 'Ogun'],
+            ['name' => 'Rivers'],
+            ['name' => 'Delta'],
+            ['name' => 'Ekiti']
         ]);
         
         DB::table('route_subregions')->insert([
@@ -26,18 +32,26 @@ class RoutesSeeder extends Seeder
             ['region_id' => 1, 'name' => 'Rumuokoro'],
             ['region_id' => 1, 'name' => 'Rumuola'],
             ['region_id' => 1, 'name' => 'Abali Park'],
+            ['region_id' => 1, 'name' => 'Choba'],
+            
             ['region_id' => 2, 'name' => 'Lekki'],
-            ['region_id' => 2, 'name' => 'Mainland'],
+            ['region_id' => 2, 'name' => 'Maryland'],
             ['region_id' => 2, 'name' => 'Ikeja'],
             ['region_id' => 2, 'name' => 'Ikorodu'],
-            ['region_id' => 3, 'name' => 'Area 1'],
-            ['region_id' => 3, 'name' => 'Area 2'],
-            ['region_id' => 3, 'name' => 'Area 3'],
-            ['region_id' => 3, 'name' => 'Area 4'],
-            ['region_id' => 4, 'name' => 'Itam Park'],
-            ['region_id' => 4, 'name' => 'Ibom Plaza'],
-            ['region_id' => 4, 'name' => 'Aka'],
-            ['region_id' => 4, 'name' => 'Perm Site'],
+            ['region_id' => 2, 'name' => 'Apapa'],
+
+            ['region_id' => 3, 'name' => 'Garki'],
+            ['region_id' => 3, 'name' => 'Wuse'],
+            ['region_id' => 3, 'name' => 'Asokoro'],
+            ['region_id' => 3, 'name' => 'Maitama'],
+            ['region_id' => 3, 'name' => 'Nyanya'],
+
+            ['region_id' => 8, 'name' => 'Emuoha'],
+            ['region_id' => 8, 'name' => 'Eleme'],
+            ['region_id' => 8, 'name' => 'Andoni'],
+            ['region_id' => 8, 'name' => 'Bonny'],
+            ['region_id' => 8, 'name' => 'Ahoada East'],
+            ['region_id' => 8, 'name' => 'Ahoada West'],
         ]);
 
 
@@ -55,10 +69,10 @@ class RoutesSeeder extends Seeder
             ['from_region_id' => 3, 'from_subregion_id' => 2, 'to_region_id' => 1, 'to_subregion_id' => 2],
             ['from_region_id' => 3, 'from_subregion_id' => 3, 'to_region_id' => 1, 'to_subregion_id' => 3],
             ['from_region_id' => 3, 'from_subregion_id' => 4, 'to_region_id' => 1, 'to_subregion_id' => 4],
-            ['from_region_id' => 4, 'from_subregion_id' => 1, 'to_region_id' => 4, 'to_subregion_id' => 1],
-            ['from_region_id' => 4, 'from_subregion_id' => 2, 'to_region_id' => 4, 'to_subregion_id' => 2],
-            ['from_region_id' => 4, 'from_subregion_id' => 3, 'to_region_id' => 4, 'to_subregion_id' => 3],
-            ['from_region_id' => 4, 'from_subregion_id' => 4, 'to_region_id' => 4, 'to_subregion_id' => 4],
+            ['from_region_id' => 8, 'from_subregion_id' => 1, 'to_region_id' => 4, 'to_subregion_id' => 1],
+            ['from_region_id' => 8, 'from_subregion_id' => 2, 'to_region_id' => 4, 'to_subregion_id' => 2],
+            ['from_region_id' => 8, 'from_subregion_id' => 3, 'to_region_id' => 4, 'to_subregion_id' => 3],
+            ['from_region_id' => 8, 'from_subregion_id' => 4, 'to_region_id' => 4, 'to_subregion_id' => 4],
 
         ]);
     }

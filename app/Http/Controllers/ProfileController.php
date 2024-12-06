@@ -43,7 +43,7 @@ class ProfileController extends Controller
 
                 try{
                     $request->validate([
-                        'password' => 'min:8|confirmed',
+                        'password' => 'min:8',
                     ]);
                 }catch(ValidationException $e){
                     return response()->json(['error' => $e->errors()]);

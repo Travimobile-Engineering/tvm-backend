@@ -1,0 +1,29 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class VehicleSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        DB::table('vehicles')->insert([
+            ['name' => 'Toyota Sienna', 'brand_id' => '1', 'type_id' => '2', 'plate_no' => 'Eky-445-PHC', 'engine_no' => '9783787893787834', 'chassis_no' => '0989347878839783', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]'],
+            ['name' => 'Honda Odyssey', 'brand_id' => '3', 'type_id' => '2', 'plate_no' => 'ABC-784-XYZ', 'engine_no' => '88347889378893345', 'chassis_no' => '8989347878389878348989', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]'],
+            ['name' => 'Ford Transit', 'brand_id' => '2', 'type_id' => '3', 'plate_no' => 'ABC-784-XYZ', 'engine_no' => '88347889378893345', 'chassis_no' => '8989347878389878348989', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]'],
+            ['name' => 'Chevrolet Express', 'brand_id' => '4', 'type_id' => '3', 'plate_no' => 'ABC-784-XYZ', 'engine_no' => '88347889378893345', 'chassis_no' => '8989347878389878348989', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]'],
+            ['name' => 'Nissan NV350 Urvan', 'brand_id' => '9', 'type_id' => '3', 'plate_no' => 'ABC-784-XYZ', 'engine_no' => '88347889378893345', 'chassis_no' => '8989347878389878348989', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]'],
+            ['name' => 'Mercedes-Benz Sprinter', 'brand_id' => '6', 'type_id' => '3', 'plate_no' => 'ABC-784-XYZ', 'engine_no' => '88347889378893345', 'chassis_no' => '8989347878389878348989', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]'],
+            ['name' => 'Toyota Coaster', 'brand_id' => '1', 'type_id' => '1', 'plate_no' => 'ABC-784-XYZ', 'engine_no' => '88347889378893345', 'chassis_no' => '8989347878389878348989', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]'],
+            ['name' => 'Hyundai County', 'brand_id' => '8', 'type_id' => '4', 'plate_no' => 'ABC-784-XYZ', 'engine_no' => '88347889378893345', 'chassis_no' => '8989347878389878348989', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]'],
+            ['name' => 'Volkswagen Transporter', 'brand_id' => '7', 'type_id' => '3', 'plate_no' => 'ABC-784-XYZ', 'engine_no' => '88347889378893345', 'chassis_no' => '8989347878389878348989', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]'],
+            ['name' => 'Mercedes-Benz Citaro', 'brand_id' => '6', 'type_id' => '5', 'plate_no' => 'ABC-784-XYZ', 'engine_no' => '88347889378893345', 'chassis_no' => '8989347878389878348989', 'color' => '#000000', 'seats' => '[a2,a3,b1,b2,b3,b4,c1,c2,c3,c4,d1,d2,d3,d4]']
+        ]);
+    }
+}
