@@ -29,14 +29,11 @@ class RouteController extends Controller
 
     public function getRegions(){
         $regions = collect();
-        $subregions = DB::table('route_subregions')->get(['name', 'id']);
+        $subregions = DB::table('route_subregions')->get(['id', 'region_id', 'name',]);
         foreach($subregions as $subregion){
-            $region = DB::table('route_regions')->where('id', $subregion->id)->get('name')->first();
-            // $regions->add(['id' => $subregion->id, 'name' => $region->id.' - '.$subregion->name]);
-            $regions->add(['id' => $subregion->id, 'name' => $subregion->name]);
-            // $regions->add(['subregions' => $subregions, 'regions' => $region]);
+            $region = DB::table('route_regions')->where('id', $subregion->region_id)->get('name')->first();
+            $regions->add(['id' => $subregion->id, 'name' => $region->name.' - '.$subregion->name]);
         }
-        // dd($regions);
         return response()->json(['data' => $regions], 200);
     }
 }

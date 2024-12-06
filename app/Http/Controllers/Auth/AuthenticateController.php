@@ -12,14 +12,13 @@ class AuthenticateController extends Controller
     //login method to authenticate user and issue JWT
     public function login(Request $request){
 
-        $emailOrPhone = $request->email ?? $request->phone_number;
+        $emailOrPhone = filter_var($request->email, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
         $credentials = $request->only('email', 'password');
-        // $credentials = [$emailOrPhone, $request->password];
 
         //Attempt to verify the credentials and create a token for the user
         try{
-            if(! $token = JWTAuth::attempt($credentials)){
-                return response()->json([ 'Error' => 'Incorrect login credentials'], 401);
+            if(! $token = JWTAuth::attempt([$emailOrPhone => $request->email, 'password' => $request->password])){
+                return response()->json([ 'Error' => 'Incorrect login credentials'], 400);
             }
         }catch(JWTException $e){
             return response()->json(['Error' => 'Could not create token'], 500);
