@@ -14,7 +14,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            StatesSeeder::class,
             RoutesSeeder::class,
+            VehicleBrandsSeeder::class,
+            VehicleTypeSeeder::class,
+            VehicleSeeder::class,
+            TransitCompanySeeder::class,
+            TripsSeeder::class,
         ]);
         // User::factory(10)->create();
 

@@ -50,23 +50,24 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
 
     Route::prefix('transit-company')
     ->group(function(){
-        Route::get('/{transitCompany}', [TransitCompanyController::class, 'show']);
         Route::post('/create', [TransitCompanyController::class, 'store']);
         Route::post('/edit/{transitCompany}', [TransitCompanyController::class, 'update']);
+        Route::get('/{transitCompany}', [TransitCompanyController::class, 'show']);
     });
 
     Route::prefix('route')
     ->group(function(){
         Route::get('/get-covered-routes', [RouteController::class, 'getCoveredRoutes']);
+        Route::get('/get-regions', [RouteController::class, 'getRegions']);
     });
 
     Route::prefix('vehicle')
     ->group(function(){
         Route::get('/get-types', [VehicleController::class, 'getVehicleTypes']);
         Route::get('/get-brands', [VehicleController::class, 'getVehicleBrands']);
-        Route::get('/{vehicle}', [VehicleController::class, 'show']);
         Route::post('/create', [VehicleController::class, 'store']);
         Route::post('/edit/{vehicle}', [VehicleController::class, 'update']);
+        Route::get('/{vehicle}', [VehicleController::class, 'show']);
 
     });
 
@@ -74,6 +75,8 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
     ->group(function(){
         Route::post('/create', [TripController::class, 'store']);
         Route::post('/edit/{trip}', [TripController::class, 'update']);
+        Route::get('/get-all-trips', [TripController::class, 'getAllTrips']);
+        Route::get('/search', [TripController::class, 'search']);
         Route::get('/{trip}', [TripController::class, 'show']);
     });
 
