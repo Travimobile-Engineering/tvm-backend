@@ -32,7 +32,7 @@ class RouteController extends Controller
         $subregions = DB::table('route_subregions')->get(['name', 'id']);
         foreach($subregions as $subregion){
             $region = DB::table('route_regions')->where('id', $subregion->id)->get('name')->first();
-            $regions->add(['id' => $subregion->id, 'name' => $region->name.' - '.$subregion->name]);
+            $regions->add(['id' => $subregion->id, 'name' => $subregion->name]);
         }
         return response()->json(['data' => $regions], 200);
     }
