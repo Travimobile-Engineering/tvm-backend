@@ -9,6 +9,7 @@ use App\Http\Controllers\SendTestMailController;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
+use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TransitCompanyController;
 use App\Http\Controllers\TripBookingController;
 use App\Http\Controllers\TripController;
@@ -47,11 +48,16 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
         Route::get('/auth/logout', [AuthenticateController::class, 'logout']);
     });
 
-    Route::prefix('company')
+    Route::prefix('transit-company')
     ->group(function(){
         Route::get('/{transitCompany}', [TransitCompanyController::class, 'show']);
         Route::post('/create', [TransitCompanyController::class, 'store']);
         Route::post('/edit/{transitCompany}', [TransitCompanyController::class, 'update']);
+    });
+
+    Route::prefix('route')
+    ->group(function(){
+        Route::get('/get-covered-routes', [RouteController::class, 'getCoveredRoutes']);
     });
 
     Route::prefix('vehicle')

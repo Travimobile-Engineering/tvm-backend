@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trip;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 
@@ -39,25 +41,36 @@ class TripController extends Controller
             return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
 
-        do{
-            $trip_id = Str::random(14);
-        }
-        while(Trip::where('trip_id', $trip_id)->exists());
+        try{
 
-        $trip = Trip::create([
-            'trip_id' => $trip_id,
-            'vehicle_id' => $request->vehicle_id,
-            'transit_company_id' => $request->transit_company_id,
-            'route_id' => $request->route_id,
-            'price' => $request->price,
-            'departure_at' => $request->departure_at,
-            'estimated_arrival_at' => $request->estimated_arrival_at,
-            'means' => $request->means ?? 1
-        ]);
-
-        if($trip){
-            return response()->json(['message' => 'Trip created successfully',  'data' => $trip], 200);
+            do $trip_id = Str::random(14);
+            while(Trip::where('trip_id', $trip_id)->exists());
+    
+            $trip = Trip::create([
+                'trip_id' => $trip_id,
+                'vehicle_id' => $request->vehicle_id,
+                'transit_company_id' => $request->transit_company_id,
+                'route_id' => $request->route_id,
+                'price' => $request->price,
+                'departure_at' => $request->departure_at,
+                'estimated_arrival_at' => $request->estimated_arrival_at,
+                'means' => $request->means ?? 1
+            ]);
+    
+            if($trip){
+                return response()->json(['message' => 'Trip created successfully',  'data' => $trip], 200);
+            }
         }
+        catch(QueryException $e){
+            if($e->getCode() === '23000'){
+                return response()->json(['error' => 'Integrity constraint violation: Cannot add or update a child row: a foreign key constraint fails'], 400);
+            }
+            else{
+                Log::error($e->getMessage());
+                return response()->json(['error' => 'An error occured. Contact support'], 400);
+            }
+        }
+
     }
 
     /**
@@ -65,7 +78,7 @@ class TripController extends Controller
      */
     public function show(Trip $trip)
     {
-        if($trip) return response()->json(['trip' => $trip], 200);
+        if($trip) return response()->json(['data' => $trip], 200);
         else return response()->json(['error' => 'not found'], 400);
     }
 
@@ -92,18 +105,30 @@ class TripController extends Controller
                 return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
             }
     
-            $trip = $trip->update([
-                'vehicle_id' => $request->vehicle_id,
-                'transit_company_id' => $request->transit_company_id,
-                'route_id' => $request->route_id,
-                'price' => $request->price,
-                'departure_at' => $request->departure_at,
-                'estimated_arrival_at' => $request->estimated_arrival_at,
-                'means' => $request->means ?? 1
-            ]);
-    
-            if($trip){
-                return response()->json(['message' => 'Trip updated successfully', 'data' => $trip], 200);
+            try{
+
+                $status = $trip->update([
+                    'vehicle_id' => $request->vehicle_id,
+                    'transit_company_id' => $request->transit_company_id,
+                    'route_id' => $request->route_id,
+                    'price' => $request->price,
+                    'departure_at' => $request->departure_at,
+                    'estimated_arrival_at' => $request->estimated_arrival_at,
+                    'means' => $request->means ?? 1
+                ]);
+        
+                if($status){
+                    return response()->json(['message' => 'Trip updated successfully', 'data' => $trip], 200);
+                }
+            }
+            catch(QueryException $e){
+                if($e->getCode() === '23000'){
+                    return response()->json(['error' => 'Integrity constraint violation: Cannot add or update a child row: a foreign key constraint fails'], 400);
+                }
+                else{
+                    Log::error($e->getMessage());
+                    return response()->json(['error' => 'An error occured. Contact support'], 400);
+                }
             }
         }
     }

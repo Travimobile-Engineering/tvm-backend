@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Vehicle\Vehicle;
 use App\Models\vehicle\VehicleBrand;
 use App\Models\vehicle\VehicleType;
+use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class VehicleController extends Controller
@@ -36,23 +39,36 @@ class VehicleController extends Controller
             ]);
         }
         catch(ValidationException $e){
-            return response()->json(['error' => collect($e->errors())->flatten()->first()]);
+            return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
 
-        $vehicle = Vehicle::create([
-            'name' => $request->name,
-            'vehicle_brand_id' => $request->brand_id,
-            'vehicle_type_id' => $request->type_id,
-            'plate_no' => $request->plate_no,
-            'engine_no' => $request->engine_no,
-            'chassis_no' => $request->chassis_no,
-            'color' => $request->color,
-            'seats' => $request->seats,
-        ]);
+        try{
 
-        if($vehicle){
-            return response()->json(['message' => 'Vehicle created successfully']);
+            $vehicle = Vehicle::create([
+                'name' => $request->name,
+                'brand_id' => $request->brand_id,
+                'type_id' => $request->type_id,
+                'plate_no' => $request->plate_no,
+                'engine_no' => $request->engine_no,
+                'chassis_no' => $request->chassis_no,
+                'color' => $request->color,
+                'seats' => $request->seats,
+            ]);
+    
+            if($vehicle){
+                return response()->json(['message' => 'Vehicle created successfully', 'data' => $vehicle], 200);
+            }
         }
+        catch(QueryException $e){
+            if($e->getCode() === '23000'){
+                return response()->json(['error' => 'Cannot add or update a child row: a foreign key constraint fails'], 400);
+            }
+            else{
+                Log::error($e->getMessage());
+                return response()->json(['error' => 'An error occured, please contact support'], 400);
+            }
+        }
+
     }
 
     /**
@@ -61,8 +77,8 @@ class VehicleController extends Controller
     public function show(Vehicle $vehicle)
     {
         return response()->json([
-            'vehicle' => $vehicle
-        ]);
+            'data' => $vehicle
+        ], 200);
     }
 
     /**
@@ -83,22 +99,34 @@ class VehicleController extends Controller
             ]);
         }
         catch(ValidationException $e){
-            return response()->json(['error' => collect($e->errors())->flatten()->first()]);
+            return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
 
-        $record = $vehicle->update([
-            'name' => $request->name,
-            'vehicle_brand_id' => $request->brand_id,
-            'vehicle_type_id' => $request->type_id,
-            'plate_no' => $request->plate_no,
-            'engine_no' => $request->engine_no,
-            'chassis_no' => $request->chassis_no,
-            'color' => $request->color,
-            'seats' => $request->seats,
-        ]);
-
-        if($record){
-            return response()->json(['message' => 'Vehicle updated successfully']);
+        try{
+            
+            $status = $vehicle->update([
+                'name' => $request->name,
+                'brand_id' => $request->brand_id,
+                'type_id' => $request->type_id,
+                'plate_no' => $request->plate_no,
+                'engine_no' => $request->engine_no,
+                'chassis_no' => $request->chassis_no,
+                'color' => $request->color,
+                'seats' => $request->seats,
+            ]);
+    
+            if($status){
+                return response()->json(['message' => 'Vehicle updated successfully', 'data' => $vehicle], 200);
+            }
+        }
+        catch(QueryException $e){
+            if($e->getCode() === '23000'){
+                return response()->json(['error' => 'Cannot add or update a child row: a foreign key constraint fails'], 400);
+            }
+            else{
+                Log::error($e->getMessage());
+                return response()->json(['error' => 'An error occured, please contact support'], 400);
+            }
         }
     }
 
@@ -111,12 +139,12 @@ class VehicleController extends Controller
     }
 
     public function getVehicleTypes(){
-        $types = VehicleType::pluck('name', 'id');
-        return response()->json(['types' => $types]);
+        $types = VehicleType::select('name', 'id' )->get();
+        return response()->json(['data' => $types], 200);
     }
 
     public function getVehicleBrands(){
-        $brands = VehicleBrand::pluck('brand_name', 'id');
-        return response()->json(['brands' => $brands]);
+        $brands = VehicleBrand::select('name', 'id')->get();
+        return response()->json(['data' => $brands], 200);
     }
 }

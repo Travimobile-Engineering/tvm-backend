@@ -27,14 +27,15 @@ return new class extends Migration
         
         Schema::create('trip_bookings', function(Blueprint $table){
             $table->id();
-            $table->string('ticket_id')->unique();
+            $table->string('booking_id')->unique();
             $table->string('trip_id');
             $table->foreignId('user_id')->constrained();
             $table->string('selected_seat', 10)->nullable();
             $table->unsignedTinyInteger('trip_type')->default(1)->comment('1:one way, 2:round trip');
             $table->string('travelling_with')->nullable()->comment('An array of users that this user is travelling with');
-            $table->unsignedTinyInteger('paid')->default(0);
+            $table->float('amount_paid')->default(0);
             $table->string('payment_method')->nullable();
+            $table->unsignedTinyInteger('payment_status')->comment('0:pending, 1:confirmed, 2:cancelled');
             $table->unsignedTinyInteger('status')->default(1)->comment('0:cancelled, 1:active, 2:complete');
             $table->timestamps();
         });
