@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('trip_id')->unique();
             $table->foreignId('vehicle_id')->constrained('vehicles');
             $table->foreignId('transit_company_id')->constrained('transit_companies');
-            $table->foreignId('from_subregion')->constrained('route_subregions')->onDelete('cascade');
-            $table->foreignId('to_subregion')->constrained('route_subregions')->onDelete('cascade');
+            $table->foreignId('from_subregion')->constrained('route_subregions', 'id')->onDelete('cascade');
+            $table->foreignId('to_subregion')->constrained('route_subregions', 'id')->onDelete('cascade');
             $table->double('price');
             $table->dateTime('departure_at');
             $table->dateTime('estimated_arrival_at');
