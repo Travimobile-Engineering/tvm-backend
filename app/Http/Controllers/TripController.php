@@ -171,6 +171,6 @@ class TripController extends Controller
         ->select('trips.*', 'from_subregion.name as departure', 'to_subregion.name as destination');
         $trips = $trips->get();
 
-        return response()->json(['data '=> $trips], 200);
+        return response()->json(['data' => $trips], 200);
     }
 }
