@@ -57,22 +57,22 @@ class RoutesSeeder extends Seeder
 
         DB::table('covered_routes')->insert([
 
-            ['from_region_id' => 1, 'from_subregion_id' => 1, 'to_region_id' => 2, 'to_subregion_id' => 1],
-            ['from_region_id' => 1, 'from_subregion_id' => 2, 'to_region_id' => 2, 'to_subregion_id' => 2],
-            ['from_region_id' => 1, 'from_subregion_id' => 3, 'to_region_id' => 2, 'to_subregion_id' => 3],
-            ['from_region_id' => 1, 'from_subregion_id' => 4, 'to_region_id' => 2, 'to_subregion_id' => 4],
-            ['from_region_id' => 2, 'from_subregion_id' => 1, 'to_region_id' => 3, 'to_subregion_id' => 1],
-            ['from_region_id' => 2, 'from_subregion_id' => 2, 'to_region_id' => 3, 'to_subregion_id' => 2],
-            ['from_region_id' => 2, 'from_subregion_id' => 3, 'to_region_id' => 3, 'to_subregion_id' => 3],
-            ['from_region_id' => 2, 'from_subregion_id' => 4, 'to_region_id' => 3, 'to_subregion_id' => 4],
-            ['from_region_id' => 3, 'from_subregion_id' => 1, 'to_region_id' => 1, 'to_subregion_id' => 1],
-            ['from_region_id' => 3, 'from_subregion_id' => 2, 'to_region_id' => 1, 'to_subregion_id' => 2],
-            ['from_region_id' => 3, 'from_subregion_id' => 3, 'to_region_id' => 1, 'to_subregion_id' => 3],
-            ['from_region_id' => 3, 'from_subregion_id' => 4, 'to_region_id' => 1, 'to_subregion_id' => 4],
-            ['from_region_id' => 8, 'from_subregion_id' => 1, 'to_region_id' => 4, 'to_subregion_id' => 1],
-            ['from_region_id' => 8, 'from_subregion_id' => 2, 'to_region_id' => 4, 'to_subregion_id' => 2],
-            ['from_region_id' => 8, 'from_subregion_id' => 3, 'to_region_id' => 4, 'to_subregion_id' => 3],
-            ['from_region_id' => 8, 'from_subregion_id' => 4, 'to_region_id' => 4, 'to_subregion_id' => 4],
+            ['from_region_id' => 1, 'from_subregion_id' => 1, 'to_region_id' => 2, 'to_subregion_id' => 4],
+            ['from_region_id' => 1, 'from_subregion_id' => 2, 'to_region_id' => 2, 'to_subregion_id' => 3],
+            ['from_region_id' => 1, 'from_subregion_id' => 3, 'to_region_id' => 2, 'to_subregion_id' => 2],
+            ['from_region_id' => 1, 'from_subregion_id' => 4, 'to_region_id' => 2, 'to_subregion_id' => 1],
+            ['from_region_id' => 2, 'from_subregion_id' => 1, 'to_region_id' => 3, 'to_subregion_id' => 4],
+            ['from_region_id' => 2, 'from_subregion_id' => 2, 'to_region_id' => 3, 'to_subregion_id' => 3],
+            ['from_region_id' => 2, 'from_subregion_id' => 3, 'to_region_id' => 3, 'to_subregion_id' => 2],
+            ['from_region_id' => 2, 'from_subregion_id' => 4, 'to_region_id' => 3, 'to_subregion_id' => 1],
+            ['from_region_id' => 3, 'from_subregion_id' => 1, 'to_region_id' => 1, 'to_subregion_id' => 4],
+            ['from_region_id' => 3, 'from_subregion_id' => 2, 'to_region_id' => 1, 'to_subregion_id' => 3],
+            ['from_region_id' => 3, 'from_subregion_id' => 3, 'to_region_id' => 1, 'to_subregion_id' => 2],
+            ['from_region_id' => 3, 'from_subregion_id' => 4, 'to_region_id' => 1, 'to_subregion_id' => 1],
+            ['from_region_id' => 8, 'from_subregion_id' => 1, 'to_region_id' => 4, 'to_subregion_id' => 4],
+            ['from_region_id' => 8, 'from_subregion_id' => 2, 'to_region_id' => 4, 'to_subregion_id' => 3],
+            ['from_region_id' => 8, 'from_subregion_id' => 3, 'to_region_id' => 4, 'to_subregion_id' => 2],
+            ['from_region_id' => 8, 'from_subregion_id' => 4, 'to_region_id' => 4, 'to_subregion_id' => 1],
 
         ]);
     }

@@ -75,8 +75,7 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
     ->group(function(){
         Route::post('/create', [TripController::class, 'store']);
         Route::post('/edit/{trip}', [TripController::class, 'update']);
-        Route::get('/get-trips', [TripController::class, 'getAllTrips']);
-        Route::get('/search', [TripController::class, 'search']);
+        Route::get('/get-trips', [TripController::class, 'getTrips']);
         Route::get('/{trip}', [TripController::class, 'show']);
     });
 
