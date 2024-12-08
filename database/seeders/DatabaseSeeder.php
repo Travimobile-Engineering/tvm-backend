@@ -16,10 +16,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             StatesSeeder::class,
             RoutesSeeder::class,
+            TransitCompanySeeder::class,
             VehicleBrandsSeeder::class,
             VehicleTypeSeeder::class,
             VehicleSeeder::class,
-            TransitCompanySeeder::class,
             TripsSeeder::class,
         ]);
         // User::factory(10)->create();
