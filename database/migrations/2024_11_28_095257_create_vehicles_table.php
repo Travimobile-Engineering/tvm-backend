@@ -29,6 +29,7 @@ return new class extends Migration
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->foreignId('company_id')->constrained('transit_companies');
             $table->foreignId('brand_id')->constrained('vehicle_brands');
             $table->foreignId('type_id')->constrained('vehicle_types');
             $table->string('plate_no');
