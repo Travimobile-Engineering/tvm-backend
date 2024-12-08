@@ -172,5 +172,6 @@ class TripController extends Controller
         $trips = $trips->get();
 
         return response()->json(['data' => $trips], 200);
+        
     }
 }
