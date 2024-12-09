@@ -48,7 +48,7 @@ class PaystackPaymentController extends Controller
         
         //execute post
         $result = curl_exec($ch);
-        return response(['data' => $result]);
+        return response(['data' => json_decode($result)]);
 
     }
 }
