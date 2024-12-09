@@ -14,7 +14,7 @@ class TripsSeeder extends Seeder
     public function run(): void
     {
         DB::table('trips')->insert([
-            ['trip_id' => 'fcdCO6nVd43FIWX', 'vehicle_id' => '2', 'transit_company_id' => '1', 'from_subregion' => '1', 'to_subregion' => '3', 'price' => '13000', 'departure_at' => '2024-12-1 11:00:00', 'estimated_arrival_at' => '2024-12-1 13:00:00'],
+            ['trip_id' => 'fcdCO6nVd43FIWX', 'vehicle_id' => '2', 'transit_company_id' => '1', 'from_subregion' => '1', 'to_subregion' => '8', 'price' => '13000', 'departure_at' => '2024-12-1 11:00:00', 'estimated_arrival_at' => '2024-12-1 13:00:00'],
             ['trip_id' => 'vcrgCO6nVlk3FIWX', 'vehicle_id' => '5', 'transit_company_id' => '3', 'from_subregion' => '5', 'to_subregion' => '7', 'price' => '26000', 'departure_at' => '2024-12-3 13:00:00', 'estimated_arrival_at' => '2024-12-3 16:00:00'],
             ['trip_id' => 'jyCO6nVasc3FIWX', 'vehicle_id' => '6', 'transit_company_id' => '2', 'from_subregion' => '10', 'to_subregion' => '4', 'price' => '28000', 'departure_at' => '2024-12-16 15:00:00', 'estimated_arrival_at' => '2024-12-16 20:00:00'],
             ['trip_id' => 'y6tCO6nVJd3FIWX', 'vehicle_id' => '3', 'transit_company_id' => '4', 'from_subregion' => '2', 'to_subregion' => '8', 'price' => '40000', 'departure_at' => '2024-12-30 12:00:00', 'estimated_arrival_at' => '2024-12-30 17:00:00'],
