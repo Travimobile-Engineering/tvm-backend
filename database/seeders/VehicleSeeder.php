@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class VehicleSeeder extends Seeder
 {
-    /**
+    /***
      * Run the database seeds.
      */
     public function run(): void
