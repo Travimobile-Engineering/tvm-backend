@@ -21,8 +21,8 @@ return new class extends Migration
         Schema::create('vehicle_types', function(Blueprint $table){
             $table->id();
             $table->string('name')->comment('eg Hiace Bus, Coaster Bus, Sienna')->unique();
-            $table->tinyInteger(column: 'seat_layout_rows');
-            $table->tinyInteger(column: 'seat_layout_columns');
+            // $table->tinyInteger(column: 'seat_layout_rows');
+            // $table->tinyInteger(column: 'seat_layout_columns');
             $table->timestamps();
         });
 
@@ -36,6 +36,7 @@ return new class extends Migration
             $table->string('engine_no');
             $table->string('chassis_no');
             $table->string('color');
+            $table->string('model');
             $table->string('seats')->comment('An array of selectable seats');
             $table->unsignedTinyInteger('status')->default(1)->comment('1:available, 0:unavailable');
             $table->timestamps();
