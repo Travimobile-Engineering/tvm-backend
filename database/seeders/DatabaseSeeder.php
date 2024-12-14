@@ -14,12 +14,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            UserSeeder::class,
             StatesSeeder::class,
             RoutesSeeder::class,
+            TransitCompanySeeder::class,
             VehicleBrandsSeeder::class,
             VehicleTypeSeeder::class,
             VehicleSeeder::class,
-            TransitCompanySeeder::class,
             TripsSeeder::class,
         ]);
         // User::factory(10)->create();

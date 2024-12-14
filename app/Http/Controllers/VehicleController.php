@@ -29,6 +29,7 @@ class VehicleController extends Controller
         try{
             $request->validate([
                 'name' => 'required|string',
+                'company_id' => 'required|int',
                 'brand_id' => 'required|integer',
                 'type_id' => 'required|integer',
                 'plate_no' => 'required|string',
@@ -46,6 +47,7 @@ class VehicleController extends Controller
 
             $vehicle = Vehicle::create([
                 'name' => $request->name,
+                'company_id' => $request->company_id,
                 'brand_id' => $request->brand_id,
                 'type_id' => $request->type_id,
                 'plate_no' => $request->plate_no,
@@ -89,6 +91,7 @@ class VehicleController extends Controller
         try{
             $request->validate([
                 'name' => 'required|string',
+                'company_id' => 'required|int',
                 'brand_id' => 'required|integer',
                 'type_id' => 'required|integer',
                 'plate_no' => 'required|string',
@@ -106,6 +109,7 @@ class VehicleController extends Controller
             
             $status = $vehicle->update([
                 'name' => $request->name,
+                'company_id' => $request->company_id,
                 'brand_id' => $request->brand_id,
                 'type_id' => $request->type_id,
                 'plate_no' => $request->plate_no,

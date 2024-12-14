@@ -9,6 +9,7 @@ use App\Http\Controllers\SendTestMailController;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
+use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TransitCompanyController;
 use App\Http\Controllers\TripBookingController;
@@ -84,6 +85,11 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
         Route::post('/create', [TripBookingController::class, 'store']);
         Route::post('/edit/{tripBooking}', [TripBookingController::class, 'update']);
         Route::get('/{tripBooking}', [TripBookingController::class, 'show']);
+    });
+
+    Route::prefix('payment')
+    ->group(function(){
+        Route::post('/initialize-paystack-transaction', [PaystackPaymentController::class, 'intializeTransaction']);
     });
 
 });
