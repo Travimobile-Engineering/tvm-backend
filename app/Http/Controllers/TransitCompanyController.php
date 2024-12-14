@@ -26,7 +26,7 @@ class TransitCompanyController extends Controller
     {
         try{
             $validation = $request->validate([
-                'user_id' => 'required|integer',
+                'user_id' => 'nullable|integer',
                 'email' => 'required|unique:transit_companies|email',
                 'phone' => 'required|unique:transit_companies|max_digits:14',
                 'url' => 'nullable|url',

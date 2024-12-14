@@ -22,6 +22,11 @@ class DatabaseSeeder extends Seeder
             VehicleTypeSeeder::class,
             VehicleSeeder::class,
             TripsSeeder::class,
+            FontAwesomeIconsSeeder::class,
+            RoleSeeder::class,
+            PermissionSeeder::class,
+            PermissionRoleSeeder::class,
+            HaveQuestionSeeder::class,
         ]);
         // User::factory(10)->create();
 
