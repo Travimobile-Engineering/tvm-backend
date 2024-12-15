@@ -48,7 +48,7 @@ class TripBookingController extends Controller
             $trip = Trip::where('trip_id', $request->trip_id)
             ->where('status', 1);
     
-            if(!$trip->exists()) return response()->json(['error' => 'Invalid trip ID'], 400);
+            if(!$trip->exists()) return response()->json(['error' => 'Invalid trip ID or trip is no longer available'], 400);
 
             //get the vehicle for this trip
             $trip = $trip->select('vehicle_id')->first();
@@ -91,6 +91,10 @@ class TripBookingController extends Controller
             ]);
     
             if($booking){
+                if(count($bookings->get()) >= $total_seats){
+                    $trip = Trip::where('trip_id', $request->trip_id)
+                    ->update(['status' => 0]);
+                }
                 return response()->json(['message' => 'Booking created successfully', 'data' => $booking], 200);
             }
         }
