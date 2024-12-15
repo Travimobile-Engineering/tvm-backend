@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trip;
+use App\Models\TripBooking;
+use App\Models\Vehicle\Vehicle;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -89,7 +91,21 @@ class TripController extends Controller
      */
     public function show(Trip $trip)
     {
-        if($trip) return response()->json(['data' => $trip], 200);
+        if($trip){
+            
+            $seats = Vehicle::where('id', $trip['vehicle_id'])->pluck('seats')->first();
+            $trip['seats'] = json_decode($seats);
+            // $trip['available_seats'];
+
+            $bookings = TripBooking::where('trip_id', $trip->trip_id);
+            $trip['selected_seats'] = $bookings->pluck('selected_seat')->toArray();
+            $trip['available_seats'] = array_values(array_filter($trip['seats'], function($seat) use ($trip){
+                return !in_array($seat, $trip['selected_seats']);
+            }));
+            // return response()->json($trip['available_seats']);
+            // return response()->json($bookings);
+            return response()->json(['data' => $trip], 200);
+        } 
         else return response()->json(['error' => 'not found'], 400);
     }
 
