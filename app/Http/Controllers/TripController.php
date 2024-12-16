@@ -97,7 +97,7 @@ class TripController extends Controller
             $trip['seats'] = json_decode($seats);
             // $trip['available_seats'];
 
-            $bookings = TripBooking::where('trip_id', $trip->trip_id);
+            $bookings = TripBooking::where('trip_id', $trip->trip_id)->where('status', 1);
             $trip['selected_seats'] = $bookings->pluck('selected_seat')->toArray();
             $trip['available_seats'] = array_values(array_filter($trip['seats'], function($seat) use ($trip){
                 return !in_array($seat, $trip['selected_seats']);
