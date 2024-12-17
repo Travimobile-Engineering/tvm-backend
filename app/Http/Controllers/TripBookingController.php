@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Trip;
 use App\Models\TripBooking;
+use App\Models\User;
 use App\Models\Vehicle\Vehicle;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
@@ -33,9 +34,11 @@ class TripBookingController extends Controller
                 $request->validate([
                     'trip_id' => 'required|string',
                     'user_id' => 'required|int',
+                    'third_party_booking' => 'nullable|int',
                     'selected_seat' => 'nullable|string',
                     'trip_type' => 'required|int',
                     'travelling_with' => 'nullable|string',
+                    'third_party_passenger_details' => 'nullable|string',
                     'amount_paid' => 'nullable|int',
                     'payment_method' => 'nullable',
                     'payment_status' => 'nullable|integer'
@@ -82,9 +85,11 @@ class TripBookingController extends Controller
                 'booking_id' => $booking_id,
                 'trip_id' => $request->trip_id,
                 'user_id' => $request->user_id,
+                'third_party_booking' => $request->third_party_booking ?? 0,
                 'selected_seat' => ucfirst($request->selected_seat),
                 'trip_type' => $request->trip_type,
-                'travelling_with' => $request->travelling_with ?? '',
+                'travelling_with' => $request->travelling_with ?? null,
+                'third_party_passenger_details' => $request->third_party_passenger_details ?? null,
                 'amount_paid' => $request->amount_paid ?? 0,
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => $request->payment_status ?? 0,
@@ -128,9 +133,11 @@ class TripBookingController extends Controller
                 $request->validate([
                     'trip_id' => 'required|string',
                     'user_id' => 'required|int',
+                    'third_party_booking' => 'nullable|int',
                     'selected_seat' => 'nullable|string',
                     'trip_type' => 'required|int',
                     'travelling_with' => 'nullable|string',
+                    'third_party_passenger_details' => 'nullable|string',
                     'amount_paid' => 'nullable|int',
                     'payment_method' => 'nullable',
                     'payment_status' => 'required|integer',
@@ -178,6 +185,19 @@ class TripBookingController extends Controller
 
         $booking->update(['status' => 0]);
         return response()->json(['message' => 'Booking cancelled successfully']);
+    }
+
+    public function getUserTripBookingHistory(Request $request){
+        $user_id = $request->user;
+        $is_email = filter_var($request->user, FILTER_VALIDATE_EMAIL) ? true : false; 
+
+        if($is_email){
+            $user = User::where('email', $request->user)->select('id')->get()->first();
+            $user_id = $user->id;
+        }
+        
+        $history = TripBooking::where('user_id', $user_id)->get();
+        return response()->json(['data' => $history]);
     }
 
     /**
