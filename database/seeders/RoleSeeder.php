@@ -18,5 +18,10 @@ class RoleSeeder extends Seeder
             ["id" => 2, "name" => "Manager",],
             ["id" => 3, "name" => "Staff",]
         ]);
+
+        DB::table('role_user')->insert([
+            'role_id' => 1,
+            'user_id' => 1
+        ]);
     }
 }
