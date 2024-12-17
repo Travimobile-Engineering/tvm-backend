@@ -22,8 +22,9 @@ return new class extends Migration
             $table->unsignedTinyInteger('email_verified')->default(0);
             $table->unsignedTinyInteger('sms_verified')->default(0);
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('category_id')->default('{1}');
+            $table->string('category_id')->default('[1]');
             $table->string('password');
+            $table->double('wallet')->default(0.00);
             $table->string('address')->nullable();
             $table->string('gender')->nullable();
             $table->string('next_of_kin_full_name')->nullable();

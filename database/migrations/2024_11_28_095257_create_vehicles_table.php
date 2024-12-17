@@ -37,6 +37,7 @@ return new class extends Migration
             $table->string('chassis_no');
             $table->string('color');
             $table->string('model');
+            $table->unsignedTinyInteger('air_conditioned')->default(0);
             $table->string('seats')->comment('An array of selectable seats');
             $table->unsignedTinyInteger('status')->default(1)->comment('1:available, 0:unavailable');
             $table->timestamps();
