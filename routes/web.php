@@ -97,6 +97,7 @@ Route::withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken:
         Route::prefix('wallet')
         ->group(function(){
             Route::get('/get-balance', [WalletController::class, 'getBalance']);
+            Route::post('/fund-wallet', [WalletController::class, 'fundWallet']);
         });
     });
 
