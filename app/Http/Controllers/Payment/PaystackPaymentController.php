@@ -12,8 +12,7 @@ class PaystackPaymentController extends Controller
     protected $paystack_secret_key;
 
     public function __construct(){
-        // $this->paystack_secret_key = env('PAYSTACK_SECRET_KEY');
-        $this->paystack_secret_key = 'sk_test_5f66ae04f0233009da14af3422e0fdf781a7a90d';
+        $this->paystack_secret_key = config('app.paystack_secret_key');
     }
 
     public function intializeTransaction(Request $request){

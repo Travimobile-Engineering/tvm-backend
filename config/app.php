@@ -123,6 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'PAYSTACK_SECRET_KEY' => env('PAYSTACK_SECRET_KEY'),
+    'paystack_secret_key' => env('PAYSTACK_SECRET_KEY', 'sk_test_5f66ae04f0233009da14af3422e0fdf781a7a90d'),
 
 ];
