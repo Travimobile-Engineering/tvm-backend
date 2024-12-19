@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TransitCompany;
 use App\Models\Vehicle\Vehicle;
 use App\Models\vehicle\VehicleBrand;
 use App\Models\vehicle\VehicleType;
@@ -13,6 +14,12 @@ use Illuminate\Validation\ValidationException;
 
 class VehicleController extends Controller
 {
+
+    protected $user;
+
+    public function __construct(){
+        $this->user->JWTAuth::user();
+    }
     /**
      * Display a listing of the resource.
      */
@@ -42,6 +49,12 @@ class VehicleController extends Controller
         catch(ValidationException $e){
             return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
+
+        $tCompany = TransitCompany::where('id', $request->company_id);
+        if(!$tCompany->exists()) return response()->json(['error' => 'Invalid company ID'], 400);
+
+        $owner = $tCompany->get('user_id')->first();
+        if($owner->user_id != $this->user->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
 
         try{
 
@@ -104,6 +117,15 @@ class VehicleController extends Controller
         catch(ValidationException $e){
             return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
+
+        $tCompany = TransitCompany::where('id', $request->company_id);
+        if(!$tCompany->exists()) return response()->json(['error' => 'Invalid company ID'], 400);
+
+        
+        $owner = $tCompany->get(['user_id', 'id'])->first();
+        if($owner->user_id != $this->user->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
+        
+        if($vehicle->company_id != $owner->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
 
         try{
             

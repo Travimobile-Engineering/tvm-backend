@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TransitCompany;
 use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\Vehicle\Vehicle;
@@ -12,9 +13,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TripController extends Controller
 {
+    protected $user;
+
+    public function __construct(){
+        $this->user = JWTAuth::user();
+    }
     /**
      * Display a listing of the resource.
      */
@@ -44,6 +51,19 @@ class TripController extends Controller
         }catch(ValidationException $e){
             return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
+
+        $tCompany = TransitCompany::where('id', $request->transit_company_id);
+        if(!$tCompany->exists()) return response()->json(['error' => 'Invalid company ID'], 400);
+
+        
+        $owner = $tCompany->get(['user_id', 'id'])->first();
+        if($owner->user_id != $this->user->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
+        
+        $vehicle = Vehicle::where('id', $request->vehicle_id);
+        if(!$vehicle->exists()) return response()->json(['error' => 'Invalid vehicle ID'], 400);
+        
+        $vehicle = $vehicle->get()->first();
+        if($vehicle->company_id != $owner->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
 
         try{
 
@@ -114,6 +134,8 @@ class TripController extends Controller
     public function update(Request $request, Trip $trip)
     {
         if($trip){
+            
+            
             try{
 
                 $request->validate([
@@ -130,7 +152,20 @@ class TripController extends Controller
             }catch(ValidationException $e){
                 return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
             }
-    
+            
+            $tCompany = TransitCompany::where('id', $request->transit_company_id);
+            if(!$tCompany->exists()) return response()->json(['error' => 'Invalid company ID'], 400);
+
+            
+            $owner = $tCompany->get(['user_id', 'id'])->first();
+            if($owner->user_id != $this->user->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
+            
+            $vehicle = Vehicle::where('id', $request->vehicle_id);
+            if(!$vehicle->exists()) return response()->json(['error' => 'Invalid vehicle ID'], 400);
+            
+            $vehicle = $vehicle->get()->first();
+            if($vehicle->company_id != $owner->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
+            
             try{
 
                 $subregions = DB::table('covered_routes')

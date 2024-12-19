@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -41,6 +42,13 @@ class WalletController extends Controller
         if($response['status'] == 'success'){
             $user = User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet + $request->amount]);
             if($user){
+                Transaction::create([
+                    'user_id' => $this->user->id,
+                    'title' => 'Wallet top up',
+                    'amount' => $request->amount,
+                    'type' => 'CR',
+                    'txn_reference' => $request->reference
+                ]);
                 return response()->json(['message' => 'Wallet funded successfully', 'data' => User::find($this->user->id)], 200);
             }
         }
@@ -69,8 +77,42 @@ class WalletController extends Controller
         $receiver = User::where('email', $request->email)->first();
         $status = $receiver->update(['wallet' => $receiver->wallet + $request->amount]);
 
-        if($status) return response()->json(['message' => 'Funds tranfered successfully'], 200);
+        if($status) 
+        {
+            Transaction::create([
+                'user_id' => $this->user->id,
+                'title' => 'Funds transfer',
+                'amount' => $request->amount,
+                'type' => 'DR',
+                'receiver_id' => $receiver->id
+            ]);
+
+            return response()->json(['message' => 'Funds tranfered successfully'], 200);
+        }
         return response()->json(['error' => 'Please try again. Something went wrong'], 400);
         
+    }
+
+    public function getTransactions(){
+        $transactions = Transaction::where('user_id', $this->user->id)->get();
+        return response()->json(['data' => $transactions]);
+    }
+
+    public function setTransactionPin(Request $request){
+        try{
+            $request->validate([
+                'pin' => 'required|digits:4',
+            ]);
+        }catch(ValidationException $e){
+            return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
+        }
+
+        $user = User::where('id', $this->user->id)->update(['txn_pin' => $request->pin]);
+        if($user) return response()->json(['message' => 'Transaction pin updated successfully'], 200);
+    }
+
+    public function getTransactionPin(){
+        $pin = User::where('id', $this->user->id)->pluck('txn_pin')->first();
+        return response()->json(['data' => $pin], 200);
     }
 }
