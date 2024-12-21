@@ -63,13 +63,15 @@ class WalletController extends Controller
         {
             $request->validate([
                 'email' => 'required|email',
-                'amount' => 'required|int'
+                'amount' => 'required|int',
+                'pin' => 'required|int'
             ]);
         }
         catch(ValidationException $e){
             return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
 
+        if($this->user->txn_pin != $request->pin) return response()->json(['error' => 'Incorrect transaction pin'], 400);
         if($this->user->wallet < $request->amount) return response()->json(['error' => 'Your balance is insufficient to complete this transaction. Please fund your wallet first'], 400);
         if(!User::where('email', $request->email)->exists() || $request->email == $this->user->email) return response()->json(['error' => 'Invalid receiver email address'], 400);
 

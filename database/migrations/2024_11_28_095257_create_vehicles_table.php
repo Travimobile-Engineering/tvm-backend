@@ -18,13 +18,13 @@ return new class extends Migration
             $table->timestamps();
         });
         
-        Schema::create('vehicle_types', function(Blueprint $table){
-            $table->id();
-            $table->string('name')->comment('eg Hiace Bus, Coaster Bus, Sienna')->unique();
-            // $table->tinyInteger(column: 'seat_layout_rows');
-            // $table->tinyInteger(column: 'seat_layout_columns');
-            $table->timestamps();
-        });
+        // Schema::create('vehicle_types', function(Blueprint $table){
+        //     $table->id();
+        //     $table->string('name')->comment('eg Hiace Bus, Coaster Bus, Sienna')->unique();
+        //     // $table->tinyInteger(column: 'seat_layout_rows');
+        //     // $table->tinyInteger(column: 'seat_layout_columns');
+        //     $table->timestamps();
+        // });
 
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();

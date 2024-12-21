@@ -96,7 +96,6 @@ Route::middleware(JWTAuthenticator::class)
         Route::post('/transfer', [WalletController::class, 'transfer']);
         Route::get('/transactions', [WalletController::class, 'getTransactions']);
         Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
-        Route::get('/get-transaction-pin', [WalletController::class, 'getTransactionPin']);
     });
 });
 
