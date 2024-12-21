@@ -31,7 +31,7 @@ return new class extends Migration
             $table->string('name');
             $table->foreignId('company_id')->constrained('transit_companies');
             $table->foreignId('brand_id')->constrained('vehicle_brands');
-            $table->foreignId('type_id')->constrained('vehicle_types');
+            // $table->foreignId('type_id')->constrained('vehicle_types');
             $table->string('plate_no');
             $table->string('engine_no');
             $table->string('chassis_no');
