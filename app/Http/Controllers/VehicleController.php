@@ -11,6 +11,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class VehicleController extends Controller
 {
@@ -18,7 +19,7 @@ class VehicleController extends Controller
     protected $user;
 
     public function __construct(){
-        $this->user->JWTAuth::user();
+        $this->user = JWTAuth::user();
     }
     /**
      * Display a listing of the resource.
