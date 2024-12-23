@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TransitCompanyController;
+use App\Http\Controllers\TransportController;
 use App\Http\Controllers\TripBookingController;
 use App\Http\Controllers\TripController;
 use App\Http\Controllers\VehicleController;
@@ -43,7 +44,7 @@ Route::middleware(JWTAuthenticator::class)
     });
 
     Route::get('/auth/logout', [AuthenticateController::class, 'logout']);
-    
+
     Route::prefix('transit-company')
     ->group(function(){
         Route::post('/create', [TransitCompanyController::class, 'store']);
@@ -98,6 +99,12 @@ Route::middleware(JWTAuthenticator::class)
         Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
         Route::get('/get-transaction-pin', [WalletController::class, 'getTransactionPin']);
     });
+
+    Route::prefix('transport')
+        ->controller(TransportController::class)
+        ->group(function () {
+            Route::post('/one-time', 'createOneTime');
+        });
 });
 
 Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);
