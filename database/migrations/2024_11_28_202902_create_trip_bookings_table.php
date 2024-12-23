@@ -35,7 +35,7 @@ return new class extends Migration
             $table->string('selected_seat')->nullable();
             $table->unsignedTinyInteger('trip_type')->default(1)->comment('1:one way, 2:round trip');
             $table->string('travelling_with')->nullable()->comment('An array of users that this user is travelling with');
-            $table->Text('third_party_passenger_details')->nullable();
+            $table->text('third_party_passenger_details')->nullable();
             $table->float('amount_paid')->default(0);
             $table->string('payment_method')->nullable();
             $table->unsignedTinyInteger('payment_status')->comment('0:pending, 1:confirmed, 2:cancelled');
