@@ -107,7 +107,3 @@ Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);
 Route::fallback(function(){
     return response()->json(['error', 'page not found'], 404);
 });
-
-
-
-
