@@ -13,11 +13,16 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ProfileController extends Controller
 {
+
+    protected $user;
+
+    public function __construct(){
+        $this->user = JWTAuth::user();
+    }
     //method to get the authenticated user
     public function index(){
         
-        $user = JWTAuth::user();
-        return response()->json($user);
+        return response()->json($this->user);
     }
 
     //Method to update user data
@@ -25,7 +30,7 @@ class ProfileController extends Controller
 
         $id = $request->route('id');
 
-        if(JWTAuth::user()->id == $id){
+        if($this->user->id == $id){
 
             $updates = collect($request->all());
             

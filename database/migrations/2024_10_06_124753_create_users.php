@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('category_id')->default('[1]');
             $table->string('password');
             $table->double('wallet')->default(0.00);
+            $table->string('txn_pin', 6)->default('0000');
             $table->string('address')->nullable();
             $table->string('gender')->nullable();
             $table->string('next_of_kin_full_name')->nullable();

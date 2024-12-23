@@ -12,9 +12,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TripBookingController extends Controller
 {
+    protected $user;
+
+    public function __construct(){
+        $this->user = JWTAuth::user();
+    }
     /**
      * Display a listing of the resource.
      */
@@ -33,9 +39,8 @@ class TripBookingController extends Controller
             try{
                 $request->validate([
                     'trip_id' => 'required|string',
-                    'user_id' => 'required|int',
                     'third_party_booking' => 'nullable|int',
-                    'selected_seat' => 'nullable|string',
+                    'selected_seat' => 'required|string',
                     'trip_type' => 'required|int',
                     'travelling_with' => 'nullable|string',
                     'third_party_passenger_details' => 'nullable|string',
@@ -84,7 +89,7 @@ class TripBookingController extends Controller
             $booking = TripBooking::create([
                 'booking_id' => $booking_id,
                 'trip_id' => $request->trip_id,
-                'user_id' => $request->user_id,
+                'user_id' => $this->user->id,
                 'third_party_booking' => $request->third_party_booking ?? 0,
                 'selected_seat' => ucfirst($request->selected_seat),
                 'trip_type' => $request->trip_type,
@@ -119,6 +124,7 @@ class TripBookingController extends Controller
      */
     public function show(TripBooking $tripBooking)
     {
+        if($tripBooking->user_id != $this->user->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
         return response()->json(['data' => $tripBooking], 200);
     }
 
@@ -132,9 +138,8 @@ class TripBookingController extends Controller
             try{
                 $request->validate([
                     'trip_id' => 'required|string',
-                    'user_id' => 'required|int',
                     'third_party_booking' => 'nullable|int',
-                    'selected_seat' => 'nullable|string',
+                    'selected_seat' => 'required|string',
                     'trip_type' => 'required|int',
                     'travelling_with' => 'nullable|string',
                     'third_party_passenger_details' => 'nullable|string',
@@ -146,6 +151,8 @@ class TripBookingController extends Controller
             catch(ValidationException $e){
                 return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
             }
+
+            if($this->user->id != $tripBooking->user_id) return response()->json(['error' => 'You do not have the permission to complete this request'], 400);
     
             $trip = Trip::where('trip_id', $request->trip_id)
             ->where('status', 1)->exists();
@@ -154,7 +161,6 @@ class TripBookingController extends Controller
     
             $booking = $tripBooking->update([
                 'trip_id' => $request->trip_id,
-                'user_id' => $request->user_id,
                 'selected_seat' => ucfirst($request->selected_seat),
                 'trip_type' => $request->trip_type,
                 'travelling_with' => $request->travelling_with ?? '',
@@ -179,9 +185,14 @@ class TripBookingController extends Controller
     }
 
     public function cancelTripBooking(Request $request){
+        
+        
         $bookingId = $request->booking_id;
         $booking = TripBooking::where('booking_id', $bookingId);
         if(!$booking->exists()) return response()->json(['error' => 'Invalid booking ID'], 400);
+        
+        $booking = $booking->first();
+        if($this->user->id != $booking->user_id) return response()->json(['error' => 'You do not have the permission to complete this request'], 400);
 
         $booking->update(['status' => 0]);
         return response()->json(['message' => 'Booking cancelled successfully']);
@@ -195,6 +206,8 @@ class TripBookingController extends Controller
             $user = User::where('email', $request->user)->select('id')->get()->first();
             $user_id = $user->id;
         }
+
+        if($this->user->id != $user_id) return response()->json(['error' => 'You do not have the permission to complete this request'], 400);
         
         $history = TripBooking::where('user_id', $user_id)->get();
         return response()->json(['data' => $history]);

@@ -8,6 +8,13 @@ use Illuminate\Validation\ValidationException;
 
 class PaystackPaymentController extends Controller
 {
+
+    protected $paystack_secret_key;
+
+    public function __construct(){
+        $this->paystack_secret_key = config('app.paystack_secret_key');
+    }
+
     public function intializeTransaction(Request $request){
         
         try{
@@ -22,7 +29,6 @@ class PaystackPaymentController extends Controller
         }
 
         $url = "https://api.paystack.co/transaction/initialize";
-        $paystack_secret_key = 'sk_test_5f66ae04f0233009da14af3422e0fdf781a7a90d';
 
         $fields = [
             'email' => $request->email,
@@ -39,7 +45,7 @@ class PaystackPaymentController extends Controller
         curl_setopt($ch,CURLOPT_POST, true);
         curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            "Authorization: Bearer ".$paystack_secret_key,
+            "Authorization: Bearer ".$this->paystack_secret_key,
             "Cache-Control: no-cache",
         ));
         
@@ -50,5 +56,34 @@ class PaystackPaymentController extends Controller
         $result = curl_exec($ch);
         return response(['data' => json_decode($result)]);
 
+    }
+
+    public function verifyTransaction(string $transactionReference, $amount){
+        
+        $ch = curl_init();
+        $url = 'https://api.paystack.co/transaction/verify/'.$transactionReference;
+
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer ".$this->paystack_secret_key,
+            "Cache-Control: no-cache",
+        ]);
+
+        $response = json_decode(curl_exec($ch));
+        if(isset($response->data)){
+            
+            if($response->data->status == 'success')
+            {
+                if($response->data->amount == $amount)
+                return ['status' => $response->data->status];
+
+                else return ['status' => 'failed', 'message' => 'Incorrect amount'];
+            }
+
+            return ['status' => $response->data->status, 'message' => $response->data->gateway_response];
+        }
+        return ['status' => $response->status, 'message' => $response->message];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -21,6 +22,7 @@ class AuthenticateController extends Controller
                 return response()->json([ 'Error' => 'Incorrect login credentials'], 400);
             }
         }catch(JWTException $e){
+            Log::error($e->getMessage());
             return response()->json(['Error' => 'Could not create token'], 500);
         }
 

@@ -8,9 +8,16 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TransitCompanyController extends Controller
 {
+
+    protected $user;
+
+    public function __construct(){
+        $this->user = JWTAuth::user();
+    }
     /**
      * Display a listing of the resource.
      */
@@ -26,7 +33,6 @@ class TransitCompanyController extends Controller
     {
         try{
             $validation = $request->validate([
-                'user_id' => 'nullable|integer',
                 'email' => 'required|unique:transit_companies|email',
                 'phone' => 'required|unique:transit_companies|max_digits:14',
                 'url' => 'nullable|url',
@@ -40,7 +46,7 @@ class TransitCompanyController extends Controller
         
         $company = TransitCompany::create([
             'name' => $request->name,
-            'user_id' => $request->user_id,
+            'user_id' => $this->user->id,
             'short_name' => $request->short_name,
             'reg_no' => $request->reg_no,
             'url' => $request->url,
@@ -80,7 +86,6 @@ class TransitCompanyController extends Controller
     {
         try{
             $validation = $request->validate([
-                'user_id' => 'required|integer',
                 'phone' => 'required|max_digits:14',
                 'url' => 'nullable|url',
             ]);
@@ -89,8 +94,9 @@ class TransitCompanyController extends Controller
             return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
 
+        if($transitCompany->user_id != $this->user->id) return response()->json(['error' => 'Invalid user detected'], 400);
+
         $company = $transitCompany->update([
-            'user_id' => $request->user_id,
             'name' => $request->name,
             'short_name' => $request->short_name,
             'reg_no' => $request->reg_no,

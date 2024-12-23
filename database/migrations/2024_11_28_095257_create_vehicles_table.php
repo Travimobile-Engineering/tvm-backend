@@ -18,20 +18,20 @@ return new class extends Migration
             $table->timestamps();
         });
         
-        Schema::create('vehicle_types', function(Blueprint $table){
-            $table->id();
-            $table->string('name')->comment('eg Hiace Bus, Coaster Bus, Sienna')->unique();
-            // $table->tinyInteger(column: 'seat_layout_rows');
-            // $table->tinyInteger(column: 'seat_layout_columns');
-            $table->timestamps();
-        });
+        // Schema::create('vehicle_types', function(Blueprint $table){
+        //     $table->id();
+        //     $table->string('name')->comment('eg Hiace Bus, Coaster Bus, Sienna')->unique();
+        //     // $table->tinyInteger(column: 'seat_layout_rows');
+        //     // $table->tinyInteger(column: 'seat_layout_columns');
+        //     $table->timestamps();
+        // });
 
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->foreignId('company_id')->constrained('transit_companies');
             $table->foreignId('brand_id')->constrained('vehicle_brands');
-            $table->foreignId('type_id')->constrained('vehicle_types');
+            // $table->foreignId('type_id')->constrained('vehicle_types');
             $table->string('plate_no');
             $table->string('engine_no');
             $table->string('chassis_no');
