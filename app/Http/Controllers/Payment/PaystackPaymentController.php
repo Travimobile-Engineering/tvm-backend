@@ -32,7 +32,7 @@ class PaystackPaymentController extends Controller
 
         $fields = [
             'email' => $request->email,
-            'amount' => $request->amount,
+            'amount' => $request->amount * 100,
         ];
 
         $fields_string = http_build_query($fields);
@@ -59,6 +59,8 @@ class PaystackPaymentController extends Controller
     }
 
     public function verifyTransaction(string $transactionReference, $amount){
+
+        $amount = $amount*100;
         
         $ch = curl_init();
         $url = 'https://api.paystack.co/transaction/verify/'.$transactionReference;

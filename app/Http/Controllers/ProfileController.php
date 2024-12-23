@@ -17,7 +17,7 @@ class ProfileController extends Controller
     protected $user;
 
     public function __construct(){
-        $this->user->JWTAuth::user();
+        $this->user = JWTAuth::user();
     }
     //method to get the authenticated user
     public function index(){

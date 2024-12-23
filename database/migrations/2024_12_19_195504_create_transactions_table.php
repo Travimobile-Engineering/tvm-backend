@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignId('sender_id')->nullable()->constrained('users', 'id');
             $table->foreignId('receiver_id')->nullable()->constrained('users', 'id');
             $table->string('txn_reference')->nullable();
+            $table->unsignedTinyInteger('status')->default(1);
             $table->timestamps();
         });
     }

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TransitCompanyController extends Controller
 {
@@ -15,7 +16,7 @@ class TransitCompanyController extends Controller
     protected $user;
 
     public function __construct(){
-        $this->user->JWTAuth::user();
+        $this->user = JWTAuth::user();
     }
     /**
      * Display a listing of the resource.

@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             RoutesSeeder::class,
             TransitCompanySeeder::class,
             VehicleBrandsSeeder::class,
-            VehicleTypeSeeder::class,
+            // VehicleTypeSeeder::class,
             VehicleSeeder::class,
             TripsSeeder::class,
             FontAwesomeIconsSeeder::class,
