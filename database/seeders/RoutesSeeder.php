@@ -15,14 +15,13 @@ class RoutesSeeder extends Seeder
     {
 
         DB::table('route_regions')->insert([
-            ['name' => 'PHC'],
+            ['name' => 'Rivers'],
             ['name' => 'Lagos'],
             ['name' => 'Abuja'],
             ['name' => 'Kaduna'],
             ['name' => 'Enugu'],
             ['name' => 'Kanu'],
             ['name' => 'Ogun'],
-            ['name' => 'Rivers'],
             ['name' => 'Delta'],
             ['name' => 'Ekiti']
         ]);
@@ -33,6 +32,12 @@ class RoutesSeeder extends Seeder
             ['region_id' => 1, 'name' => 'Rumuola'],
             ['region_id' => 1, 'name' => 'Abali Park'],
             ['region_id' => 1, 'name' => 'Choba'],
+            ['region_id' => 1, 'name' => 'Emuoha'],
+            ['region_id' => 1, 'name' => 'Eleme'],
+            ['region_id' => 1, 'name' => 'Andoni'],
+            ['region_id' => 1, 'name' => 'Bonny'],
+            ['region_id' => 1, 'name' => 'Ahoada East'],
+            ['region_id' => 1, 'name' => 'Ahoada West'],
             
             ['region_id' => 2, 'name' => 'Lekki'],
             ['region_id' => 2, 'name' => 'Maryland'],
@@ -46,12 +51,6 @@ class RoutesSeeder extends Seeder
             ['region_id' => 3, 'name' => 'Maitama'],
             ['region_id' => 3, 'name' => 'Nyanya'],
 
-            ['region_id' => 8, 'name' => 'Emuoha'],
-            ['region_id' => 8, 'name' => 'Eleme'],
-            ['region_id' => 8, 'name' => 'Andoni'],
-            ['region_id' => 8, 'name' => 'Bonny'],
-            ['region_id' => 8, 'name' => 'Ahoada East'],
-            ['region_id' => 8, 'name' => 'Ahoada West'],
         ]);
 
 
@@ -69,10 +68,10 @@ class RoutesSeeder extends Seeder
             ['from_region_id' => 3, 'from_subregion_id' => 2, 'to_region_id' => 1, 'to_subregion_id' => 3],
             ['from_region_id' => 3, 'from_subregion_id' => 3, 'to_region_id' => 1, 'to_subregion_id' => 2],
             ['from_region_id' => 3, 'from_subregion_id' => 4, 'to_region_id' => 1, 'to_subregion_id' => 1],
-            ['from_region_id' => 8, 'from_subregion_id' => 1, 'to_region_id' => 4, 'to_subregion_id' => 4],
-            ['from_region_id' => 8, 'from_subregion_id' => 2, 'to_region_id' => 4, 'to_subregion_id' => 3],
-            ['from_region_id' => 8, 'from_subregion_id' => 3, 'to_region_id' => 4, 'to_subregion_id' => 2],
-            ['from_region_id' => 8, 'from_subregion_id' => 4, 'to_region_id' => 4, 'to_subregion_id' => 1],
+            ['from_region_id' => 1, 'from_subregion_id' => 1, 'to_region_id' => 2, 'to_subregion_id' => 4],
+            ['from_region_id' => 1, 'from_subregion_id' => 2, 'to_region_id' => 3, 'to_subregion_id' => 3],
+            ['from_region_id' => 1, 'from_subregion_id' => 3, 'to_region_id' => 3, 'to_subregion_id' => 2],
+            ['from_region_id' => 1, 'from_subregion_id' => 4, 'to_region_id' => 1, 'to_subregion_id' => 1],
 
         ]);
     }

@@ -13,20 +13,21 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('uuid')->unique();
+            $table->string('uuid')->nullable();
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
-            $table->string('phone_number')->unique();
-            $table->string('email')->unique();
+            $table->string('phone_number')->nullable();
+            $table->string('email')->nullable();
             $table->unsignedTinyInteger('email_verified')->default(0);
             $table->unsignedTinyInteger('sms_verified')->default(0);
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('category_id')->default('[1]');
-            $table->string('password');
+            $table->string('user_category')->default('[1]');
+            $table->string('password')->nullable();
             $table->double('wallet')->default(0.00);
             $table->string('txn_pin', 6)->default('0000');
             $table->string('address')->nullable();
             $table->string('gender')->nullable();
+            $table->string('nin')->nullable();
             $table->string('next_of_kin_full_name')->nullable();
             $table->string('next_of_kin_phone_number')->nullable();
             $table->string('next_of_kin_gender')->nullable();
