@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class TransportOneTimeRequest extends FormRequest
+class TransportRecurringRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,9 +25,10 @@ class TransportOneTimeRequest extends FormRequest
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'departure' => ['required', 'string'],
             'destination' => ['required', 'string'],
-            'departure_date' => ['required', 'date'],
-            'departure_time' => ['required', 'string'],
-            'repeat_trip' => ['required', 'string'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date'],
+            'trip_days' => ['required', 'array'],
+            'reoccur_duration' => ['required', 'string'],
             'bus_type' => ['required', 'string'],
             'ticket_price' => ['required', 'string'],
             'bus_stops' => ['required', 'array']

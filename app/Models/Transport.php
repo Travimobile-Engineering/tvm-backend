@@ -16,20 +16,30 @@ class Transport extends Model
         'departure_date',
         'departure_time',
         'repeat_trip',
+        'reoccur_duration',
         'start_date',
+        'end_date',
         'trip_days',
         'bus_type',
         'ticket_price',
         'bus_stops',
         'type',
+        'reason',
+        'date_cancelled',
         'status',
     ];
 
     protected function casts(): array
     {
         return [
-            'trip_days' => 'json',
-            'bus_stops' => 'json',
+            'trip_days' => 'array',
+            'bus_stops' => 'array',
+            'date_cancelled' => 'datetime',
         ];
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

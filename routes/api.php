@@ -102,7 +102,26 @@ Route::middleware(JWTAuthenticator::class)
     Route::prefix('transport')
         ->controller(TransportController::class)
         ->group(function () {
+            // One Time
             Route::post('/one-time', 'createOneTime');
+            Route::get('/one-time/{id}', 'getOneTime');
+            Route::get('/user/one-time/{user_id}', 'getUserOneTimes');
+            Route::put('/one-time/{id}', 'editOneTime');
+
+            // Recurring
+            Route::post('/recurring', 'createRecurring');
+            Route::get('/recurring/{id}', 'getRecurring');
+            Route::get('/user/recurring/{user_id}', 'getUserRecurrings');
+            Route::put('/recurring/{id}', 'editRecurring');
+
+            // Trips
+            Route::get('/upcoming/{user_id}', 'getUpcomingTrips');
+            Route::get('/completed/{user_id}', 'getCompletedTrips');
+            Route::get('/cancelled/{user_id}', 'getCancelledTrips');
+
+            // Trip update
+            Route::put('/cancel/{id}', 'cancelTrip');
+            Route::put('/complete/{id}', 'completeTrip');
         });
 });
 

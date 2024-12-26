@@ -5,5 +5,7 @@ namespace App\Enum;
 enum TransportStatus: string
 {
     const ACTIVE = "active";
-    const INACTIVE = "inactive";
+    const COMPLETED = "completed";
+    const INPROGRESS = "in-progress";
+    const CANCELLED = "cancelled";
 }
