@@ -6,7 +6,6 @@ use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\User;
 use App\Models\Vehicle\Vehicle;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -52,10 +51,10 @@ class TripBookingController extends Controller
             catch(ValidationException $e){
                 return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
             }
-    
+
             $trip = Trip::where('trip_id', $request->trip_id)
             ->where('status', 1);
-    
+
             if(!$trip->exists()) return response()->json(['error' => 'Invalid trip ID or trip is no longer available'], 400);
 
             //get the vehicle for this trip
@@ -70,7 +69,7 @@ class TripBookingController extends Controller
             //get the total bookings for this trip
             $bookings = TripBooking::where('trip_id', $request->trip_id)->where('status', 1);
             if(count($bookings->get()) >= $total_seats) return response()->json(['error' => 'Number of passengers for this trip already complete'], 400);
-            
+
             //get the already selected seats in the vehicle for this trip
             $selected_seats = $bookings->pluck('selected_seat')->toArray();
 
@@ -82,10 +81,10 @@ class TripBookingController extends Controller
             });
 
             $trip['available_seats'] = $available_seats;
-            
+
             do $booking_id = Str::random(14);
             while(TripBooking::where('booking_id', $booking_id)->exists());
-    
+
             $booking = TripBooking::create([
                 'booking_id' => $booking_id,
                 'trip_id' => $request->trip_id,
@@ -99,7 +98,7 @@ class TripBookingController extends Controller
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => $request->payment_status ?? 0,
             ]);
-    
+
             if($booking){
                 if(count($bookings->get()) >= $total_seats){
                     $trip = Trip::where('trip_id', $request->trip_id)
@@ -153,12 +152,12 @@ class TripBookingController extends Controller
             }
 
             if($this->user->id != $tripBooking->user_id) return response()->json(['error' => 'You do not have the permission to complete this request'], 400);
-    
+
             $trip = Trip::where('trip_id', $request->trip_id)
             ->where('status', 1)->exists();
-    
+
             if(!$trip) return response()->json(['error' => 'Invalid booking ID'], 400);
-    
+
             $booking = $tripBooking->update([
                 'trip_id' => $request->trip_id,
                 'selected_seat' => ucfirst($request->selected_seat),
@@ -168,7 +167,7 @@ class TripBookingController extends Controller
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => $request->payment_status
             ]);
-    
+
             if($booking){
                 return response()->json(['message' => 'Booking updated successfully', 'data' => $tripBooking], 200);
             }
@@ -185,12 +184,12 @@ class TripBookingController extends Controller
     }
 
     public function cancelTripBooking(Request $request){
-        
-        
+
+
         $bookingId = $request->booking_id;
         $booking = TripBooking::where('booking_id', $bookingId);
         if(!$booking->exists()) return response()->json(['error' => 'Invalid booking ID'], 400);
-        
+
         $booking = $booking->first();
         if($this->user->id != $booking->user_id) return response()->json(['error' => 'You do not have the permission to complete this request'], 400);
 
@@ -200,7 +199,7 @@ class TripBookingController extends Controller
 
     public function getUserTripBookingHistory(Request $request){
         $user_id = $request->user;
-        $is_email = filter_var($request->user, FILTER_VALIDATE_EMAIL) ? true : false; 
+        $is_email = filter_var($request->user, FILTER_VALIDATE_EMAIL) ? true : false;
 
         if($is_email){
             $user = User::where('email', $request->user)->select('id')->get()->first();
@@ -208,7 +207,7 @@ class TripBookingController extends Controller
         }
 
         if($this->user->id != $user_id) return response()->json(['error' => 'You do not have the permission to complete this request'], 400);
-        
+
         $history = TripBooking::where('user_id', $user_id)->get();
         return response()->json(['data' => $history]);
     }

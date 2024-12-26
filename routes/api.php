@@ -29,7 +29,7 @@ Route::prefix('auth')
     Route::post('/forgot-password-email', [ForgotPasswordEmailController::class, 'send_password_reset_link']);
     Route::get('/reset-password', fn()=> "Oops! Please bear with us. We are currently working on this page")->name('password.reset');
     Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
-    Route::post('/verify', [VerifyController::class, 'index']);
+    Route::post('/verify', [RegisterController::class, 'verify_account']);
     Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
 });
 
@@ -43,7 +43,7 @@ Route::middleware(JWTAuthenticator::class)
     });
 
     Route::get('/auth/logout', [AuthenticateController::class, 'logout']);
-    
+
     Route::prefix('transit-company')
     ->group(function(){
         Route::post('/create', [TransitCompanyController::class, 'store']);
@@ -67,13 +67,49 @@ Route::middleware(JWTAuthenticator::class)
 
     });
 
+    // Route::prefix('trip')
+    // ->group(function(){
+    //     Route::post('/create', [TripController::class, 'store']);
+    //     Route::post('/edit/{trip}', [TripController::class, 'update']);
+    //     Route::get('/get-trips', [TripController::class, 'getTrips']);
+    //     Route::get('/{trip}', [TripController::class, 'show']);
+    // });
+
     Route::prefix('trip')
-    ->group(function(){
-        Route::post('/create', [TripController::class, 'store']);
-        Route::post('/edit/{trip}', [TripController::class, 'update']);
-        Route::get('/get-trips', [TripController::class, 'getTrips']);
-        Route::get('/{trip}', [TripController::class, 'show']);
-    });
+        ->controller(TripController::class)
+        ->group(function () {
+            Route::prefix('/driver')
+                ->group(function () {
+                    // One Time
+                    Route::post('/one-time', 'createOneTime');
+                    Route::get('/one-time/{id}', 'getOneTime');
+                    Route::get('/user/one-time/{user_id}', 'getUserOneTimes');
+                    Route::put('/one-time/{id}', 'editOneTime');
+
+                    // Recurring
+                    Route::post('/recurring', 'createRecurring');
+                    Route::get('/recurring/{id}', 'getRecurring');
+                    Route::get('/user/recurring/{user_id}', 'getUserRecurrings');
+                    Route::put('/recurring/{id}', 'editRecurring');
+
+                    // Trips
+                    Route::get('/upcoming/{user_id}', 'getUpcomingTrips');
+                    Route::get('/completed/{user_id}', 'getCompletedTrips');
+                    Route::get('/cancelled/{user_id}', 'getCancelledTrips');
+                    Route::get('/{user_id}', 'getAllTrips');
+                    Route::get('/passenger-info/{trip_id}/{user_id}', 'getManifestInfo');
+                    Route::post('/start-trip', 'startTrip');
+
+                    // Trip update
+                    Route::put('/cancel/{id}', 'cancelTrip');
+                    Route::put('/complete/{id}', 'completeTrip');
+                });
+
+            Route::prefix('/passenger')
+                ->group(function () {
+                    Route::get('/get-trips', 'getAll');
+                });
+        });
 
     Route::prefix('trip-booking')
     ->group(function(){
