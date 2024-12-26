@@ -2,7 +2,7 @@
 
 namespace App\Enum;
 
-enum TransportType: string
+enum TripType: string
 {
     const ONETIME = "one-time";
     const RECURRING = "recurring";

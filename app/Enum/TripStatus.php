@@ -2,7 +2,7 @@
 
 namespace App\Enum;
 
-enum TransportStatus: string
+enum TripStatus: string
 {
     const ACTIVE = "active";
     const COMPLETED = "completed";

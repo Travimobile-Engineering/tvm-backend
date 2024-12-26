@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class OneTimeTripResource extends JsonResource
+class TripResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -28,7 +28,11 @@ class OneTimeTripResource extends JsonResource
             'destination' => $this->destination,
             'departure_date' => $this->departure_date,
             'departure_time' => $this->departure_time,
+            'start_date' => $this->start_date,
+            'end_date' => $this->end_date,
             'repeat_trip' => $this->repeat_trip,
+            'trip_days' => $this->trip_days,
+            'reoccur_duration' => $this->reoccur_duration,
             'bus_type' => $this->bus_type,
             'price' => $this->price,
             'bus_stops' => $this->bus_stops,

@@ -25,7 +25,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('status')->default(1);
             $table->timestamps();
         });
-        
+
         Schema::create('trip_bookings', function(Blueprint $table){
             $table->id();
             $table->string('booking_id')->unique();

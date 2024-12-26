@@ -6,7 +6,6 @@ use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\User;
 use App\Models\Vehicle\Vehicle;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
