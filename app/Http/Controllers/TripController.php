@@ -81,8 +81,8 @@ class TripController extends Controller
                 'trip_id' => $trip_id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
-                'from_subregion' => $subregions->from_subregion_id,
-                'to_subregion' => $subregions->to_subregion_id,
+                'departure' => $subregions->from_subregion_id,
+                'destination' => $subregions->to_subregion_id,
                 'route_id' => $request->route_id,
                 'price' => $request->price,
                 'departure_at' => $request->departure_at,
@@ -178,8 +178,8 @@ class TripController extends Controller
                 $status = $trip->update([
                     'vehicle_id' => $request->vehicle_id,
                     'transit_company_id' => $request->transit_company_id,
-                    'from_subregion' => $subregions->from_subregion_id,
-                    'to_subregion' => $subregions->to_subregion_id,
+                    'departure' => $subregions->from_subregion_id,
+                    'destination' => $subregions->to_subregion_id,
                     'price' => $request->price,
                     'departure_at' => $request->departure_at,
                     'estimated_arrival_at' => $request->estimated_arrival_at,
@@ -216,9 +216,9 @@ class TripController extends Controller
         if(!empty($request->departure)) $trips = $trips->where('from_subregion', $request->departure);
         if(!empty($request->destination)) $trips = $trips->where('to_subregion', $request->destination);
 
-        $trips = $trips->join('route_subregions as from_subregion', 'trips.from_subregion', '=', 'from_subregion.id')
-        ->join('route_subregions as to_subregion', 'trips.to_subregion', '=', 'to_subregion.id')
-        ->select('trips.*', 'from_subregion.name as departure', 'to_subregion.name as destination');
+        $trips = $trips->join('route_subregions as from_subregion', 'trips.departure', '=', 'from_subregion.id')
+        ->join('route_subregions as to_subregion', 'trips.destination', '=', 'to_subregion.id')
+        ->select('trips.*', 'from_subregion.name as departure_town', 'to_subregion.name as destination_town');
         $trips = $trips->get();
 
         return response()->json(['data' => $trips], 200);
