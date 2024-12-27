@@ -7,6 +7,7 @@ use App\Enum\TripType;
 use App\Http\Resources\OneTimeTripResource;
 use App\Http\Resources\RecurringTripResource;
 use App\Http\Resources\TripResource;
+use App\Models\Manifest;
 use App\Models\TransitCompany;
 use App\Models\Trip;
 use App\Models\Vehicle\Vehicle;
@@ -76,7 +77,7 @@ class TripService
 
     public function getOneTime($id)
     {
-        $transport = Trip::with(['user', 'tripBookings'])
+        $transport = Trip::with(['user', 'tripBookings.user'])
             ->where('type', TripType::ONETIME)
             ->find($id);
 
@@ -91,7 +92,7 @@ class TripService
 
     public function getUserOneTimes($userId)
     {
-        $trips = Trip::with(['user', 'tripBookings'])
+        $trips = Trip::with(['user', 'tripBookings.user'])
             ->where('user_id', $userId)
             ->where('type', TripType::ONETIME)
             ->get();
@@ -184,7 +185,7 @@ class TripService
 
     public function getRecurring($id)
     {
-        $transport = Trip::with(['user', 'tripBookings'])
+        $transport = Trip::with(['user', 'tripBookings.user'])
             ->where('type', TripType::RECURRING)
             ->find($id);
 
@@ -199,7 +200,7 @@ class TripService
 
     public function getUserRecurrings($userId)
     {
-        $trips = Trip::with(['user', 'tripBookings'])
+        $trips = Trip::with(['user', 'tripBookings.user'])
             ->where('user_id', $userId)
             ->where('type', TripType::RECURRING)
             ->get();
@@ -269,7 +270,7 @@ class TripService
     {
         $date = request()->query('date');
 
-        $query = Trip::with(['user', 'tripBookings'])
+        $query = Trip::with(['user', 'tripBookings.user'])
             ->where('user_id', $userId)
             ->where('status', TripStatus::INPROGRESS);
 
@@ -287,7 +288,7 @@ class TripService
 
     public function getCompletedTrips($userId)
     {
-        $trips = Trip::with(['user', 'tripBookings'])
+        $trips = Trip::with(['user', 'tripBookings.user'])
             ->where('user_id', $userId)
             ->where('status', TripStatus::COMPLETED)
             ->get();
@@ -299,7 +300,7 @@ class TripService
 
     public function getCancelledTrips($userId)
     {
-        $trips = Trip::with(['user', 'tripBookings'])
+        $trips = Trip::with(['user', 'tripBookings.user'])
             ->where('user_id', $userId)
             ->where('status', TripStatus::CANCELLED)
             ->get();
@@ -314,7 +315,7 @@ class TripService
         $type = request()->query('type');
         $date = request()->query('date');
 
-        $query = Trip::with(['user', 'tripBookings'])
+        $query = Trip::with(['user', 'tripBookings.user'])
             ->where('user_id', $userId)
             ->where('status', TripStatus::ACTIVE);
 
@@ -344,7 +345,7 @@ class TripService
         $type = request()->query('type');
         $date = request()->query('date');
 
-        $query = Trip::with(['user', 'tripBookings'])
+        $query = Trip::with(['user', 'tripBookings.user'])
             ->where('status', TripStatus::ACTIVE);
 
         if ($type) {
@@ -402,15 +403,36 @@ class TripService
 
     public function startTrip($request)
     {
-        $transport = Trip::find($request->trip_id);
+        $trip = Trip::with(['tripBookings.user', 'manifests'])->find($request->trip_id);
 
-        if (! $transport) {
+        if (! $trip) {
             return $this->error(null, "Data not found!", 404);
         }
 
-        $transport->update([
-            'status' => TripStatus::INPROGRESS,
-        ]);
+        DB::transaction(function () use ($trip) {
+
+            if (! empty($trip->tripBookings)) {
+                foreach ($trip->tripBookings as $booking) {
+                    $book = new Manifest([
+                        'trip_id' => $trip->id,
+                        'booking_id' => $booking->booking_id,
+                        'first_name' => $booking->user->first_name,
+                        'last_name' => $booking->user->last_name,
+                        'email' => $booking->user->email,
+                        'phone_number' => $booking->user->phone_number,
+                        'next_of_kin' => $booking->next_of_kin_fullname,
+                        'next_of_kin_phone' => $booking->next_of_kin_phone_number,
+                        'seat' => $booking->selected_seat,
+                    ]);
+
+                    $trip->manifests()->save($book);
+                }
+            }
+
+            $trip->update([
+                'status' => TripStatus::INPROGRESS,
+            ]);
+        });
 
         return $this->success(null, "Trip Started Successfully", 200);
     }

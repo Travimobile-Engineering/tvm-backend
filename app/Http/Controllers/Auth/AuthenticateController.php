@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -11,7 +12,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class AuthenticateController extends Controller
 {
     //login method to authenticate user and issue JWT
-    public function login(Request $request){
+    public function login(LoginRequest $request){
 
         $emailOrPhone = filter_var($request->email, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
         $credentials = $request->only('email', 'password');

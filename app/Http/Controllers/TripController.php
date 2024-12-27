@@ -105,7 +105,7 @@ class TripController extends Controller
         $request->validate([
             'trip_id' => ['required', 'integer', 'exists:trips,id'],
         ]);
-        
+
         return $this->service->startTrip($request);
     }
 
