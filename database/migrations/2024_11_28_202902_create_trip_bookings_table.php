@@ -21,7 +21,7 @@ return new class extends Migration
             $table->double('price');
             $table->dateTime('departure_at');
             $table->dateTime('estimated_arrival_at');
-            $table->unsignedTinyInteger('means')->default(1)->comment('1:road, 2:rail, 3:sea, 4:air');
+            $table->enum('means', ['road', 'rail', 'sea', 'air'])->default('road');
             $table->unsignedTinyInteger('status')->default(1);
             $table->timestamps();
         });

@@ -3,16 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trip;
-use App\Models\TripBooking;
 use App\Models\User;
-use App\Models\Vehicle\Vehicle;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\QueryException;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
+use App\Models\Transaction;
+use App\Models\TripBooking;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Models\Vehicle\Vehicle;
+use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Http\Controllers\Payment\PaystackPaymentController;
 
 class TripBookingController extends Controller
 {
@@ -46,11 +50,48 @@ class TripBookingController extends Controller
                     'third_party_passenger_details' => 'nullable|string',
                     'amount_paid' => 'nullable|int',
                     'payment_method' => 'nullable',
-                    'payment_status' => 'nullable|integer'
+                    'payment_status' => 'nullable|integer',
+                    'txn_reference' => 'nullable|string'
                 ]);
             }
             catch(ValidationException $e){
                 return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
+            }
+
+            $payment_methods = ['wallet', 'paystack', 'transfer'];
+
+            if(isset($request->amount) && $request->amount > 0){
+                
+                $amount = $request->amount;
+                
+                if(!isset($request->payment_method)) return response()->json(['error' => 'Payment method is required'], 400);
+                if(!in_array($request->payment_method, $payment_methods)) return response()->json(['error' => 'Invalid payment method'], 400);
+                
+                if($request->payment_method == $payment_methods[0]){
+                    if($amount > $this->user->wallet) return response()->json(['error' => 'You balance is insufficient to complete your request'], 400);
+                    User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet - $amount]);
+                }
+
+                if($request->payment_method == $payment_methods[1]){
+                    if(!isset($request->txn_reference)) return response()->json(['error' => 'Transaction reference is required'], 400);
+                    $txn_ref = $request->txn_reference;
+
+                    $ppc = new PaystackPaymentController();
+
+                    $response = $ppc->verifyTransaction($txn_ref, $amount);
+
+                    if($response['status'] == 'success'){
+                        // Transaction::create([
+                        //     'user_id' => $this->user->id,
+                        //     'title' => 'Bus ticket purchase',
+                        //     'amount' => $amount,
+                        //     'type' => 'DR',
+                        //     'txn_reference' => $txn_ref
+                        // ]);
+                    }
+                    else return response()->json($response, 400);
+
+                }
             }
     
             $trip = Trip::where('trip_id', $request->trip_id)
@@ -59,9 +100,18 @@ class TripBookingController extends Controller
             if(!$trip->exists()) return response()->json(['error' => 'Invalid trip ID or trip is no longer available'], 400);
 
             //get the vehicle for this trip
-            $trip = $trip->select('vehicle_id')->first();
+            $trip = $trip->select('vehicle_id', 'departure', 'destination')->first();
             $seats = Vehicle::where('id', $trip->vehicle_id)->pluck('seats')->first();
             $seats = json_decode($seats);
+            
+            $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','region_id')->get()->first();
+            $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->select('name')->get()->first();
+            $departure = $departure_state->name.' > '.$departure_town->name;
+
+            $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->select('name','region_id')->get()->first();
+            $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->select('name')->get()->first();
+            $destination = $destination_state->name.' > '.$destination_town->name;
+
             $trip['seats'] = $seats;
 
             //total number of seats in this vehicle
@@ -99,12 +149,16 @@ class TripBookingController extends Controller
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => $request->payment_status ?? 0,
             ]);
+
     
             if($booking){
                 if(count($bookings->get()) >= $total_seats){
                     $trip = Trip::where('trip_id', $request->trip_id)
                     ->update(['status' => 0]);
                 }
+                $booking['departure'] = $departure;
+                $booking['destination'] = $destination;
+                $booking['user_detail'] = Auth::user();
                 return response()->json(['message' => 'Booking created successfully', 'data' => $booking], 200);
             }
         }

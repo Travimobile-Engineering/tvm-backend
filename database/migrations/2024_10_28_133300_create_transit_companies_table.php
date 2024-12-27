@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('phone', 14);
             $table->string('address');
             $table->string('about_details')->nullable();
+            $table->foreignId('union')->nullable()->constrained('transit_company_unions')->onDelete('cascade');
             $table->unsignedTinyInteger('ev')->default(0);
             $table->unsignedTinyInteger('sv')->default(0);
             $table->string('ver_code');

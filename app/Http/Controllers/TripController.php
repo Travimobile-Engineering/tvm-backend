@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TransitCompany;
 use App\Models\Trip;
 use App\Models\TripBooking;
-use App\Models\Vehicle\Vehicle;
-use Illuminate\Database\QueryException;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Models\TransitCompany;
+use Illuminate\Support\Carbon;
+use App\Models\Vehicle\Vehicle;
+use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
 
 class TripController extends Controller
 {
@@ -114,14 +114,32 @@ class TripController extends Controller
         if($trip){
             
             $seats = Vehicle::where('id', $trip['vehicle_id'])->pluck('seats')->first();
-            $trip['seats'] = json_decode($seats);
+            $seats = json_decode($seats);
             // $trip['available_seats'];
 
             $bookings = TripBooking::where('trip_id', $trip->trip_id)->where('status', 1);
             $trip['selected_seats'] = $bookings->pluck('selected_seat')->toArray();
-            $trip['available_seats'] = array_values(array_filter($trip['seats'], function($seat) use ($trip){
+            $trip['available_seats'] = array_values(array_filter($seats, function($seat) use ($trip){
                 return !in_array($seat, $trip['selected_seats']);
             }));
+
+            $trip['transit_company'] = TransitCompany::where('id', $trip->transit_company_id)->get(['name', 'reg_no'])->first();
+            $trip['vehicle'] = Vehicle::where('id', $trip->vehicle_id)->get(['name', 'ac', 'plate_no'])->first();
+            $trip['vehicle']['seats'] = $seats;
+
+            $seat_columns = [];
+            $seat_rows = 0;
+
+            foreach($seats as $seat){
+                $seat_parts = str_split($seat);
+                $seat_alph = $seat_parts[0];
+                $seat_num = $seat_parts[1];
+                if(!in_array($seat_alph, $seat_columns)) $seat_columns[] = $seat_alph;
+                if($seat_num > $seat_rows) $seat_rows = $seat_num;
+            }
+
+            $trip['vehicle']['seat_rows'] = $seat_rows;
+            $trip['vehicle']['seat_columns'] = count($seat_columns);
             
             return response()->json(['data' => $trip], 200);
         } 
@@ -213,12 +231,13 @@ class TripController extends Controller
     public function getTrips(Request $request){
         $trips = Trip::where('trips.status', 1);
         if(!empty($request->date) || !empty($request->time)) $trips = $trips->where('departure_at', '>=', $request->date ?? date('Y-m-d', strtotime('now')).' '.$request->time ?? '00:00:00');
-        if(!empty($request->departure)) $trips = $trips->where('from_subregion', $request->departure);
-        if(!empty($request->destination)) $trips = $trips->where('to_subregion', $request->destination);
+        if(!empty($request->departure)) $trips = $trips->where('departure', $request->departure);
+        if(!empty($request->destination)) $trips = $trips->where('destination', $request->destination);
 
         $trips = $trips->join('route_subregions as from_subregion', 'trips.departure', '=', 'from_subregion.id')
         ->join('route_subregions as to_subregion', 'trips.destination', '=', 'to_subregion.id')
-        ->select('trips.*', 'from_subregion.name as departure_town', 'to_subregion.name as destination_town');
+        ->join('vehicles', 'trips.vehicle_id', '=', 'vehicles.id')
+        ->select('trips.*', 'vehicles.name as vehicle_name', 'vehicles.ac as vehicle_has_ac', 'vehicles.plate_no as vehicle_plate_no', 'vehicles.color as vehicle_color', 'from_subregion.name as departure_town', 'to_subregion.name as destination_town');
         $trips = $trips->get();
 
         return response()->json(['data' => $trips], 200);

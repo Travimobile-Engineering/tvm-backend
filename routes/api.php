@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentController;
 use App\Http\Controllers\Auth\ForgotPasswordEmailController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -47,6 +48,7 @@ Route::middleware(JWTAuthenticator::class)
     Route::prefix('transit-company')
     ->group(function(){
         Route::post('/create', [TransitCompanyController::class, 'store']);
+        Route::get('/get-unions', [TransitCompanyController::class, 'getUnions']);
         Route::post('/edit/{transitCompany}', [TransitCompanyController::class, 'update']);
         Route::get('/{transitCompany}', [TransitCompanyController::class, 'show']);
     });
@@ -97,6 +99,11 @@ Route::middleware(JWTAuthenticator::class)
         Route::get('/transactions', [WalletController::class, 'getTransactions']);
         Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
     });
+});
+
+Route::prefix('agent')->controller(AgentController::class)
+->group(function(){
+    Route::get('/{agent_id}', 'show');
 });
 
 Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

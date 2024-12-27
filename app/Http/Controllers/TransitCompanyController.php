@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\ConfirmationEmail;
-use App\Models\TransitCompany;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use App\Models\TransitCompany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Mail;
+use App\Mail\ConfirmationEmail;
+use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 class TransitCompanyController extends Controller
 {
@@ -111,6 +112,10 @@ class TransitCompanyController extends Controller
         if($company){
             return response()->json(['message' => 'Account updated successfully', 'data' => $transitCompany], 200);
         }
+    }
+
+    public function getUnions(){
+        return response()->json(['data' => DB::table('transit_company_unions')->pluck('name')]);
     }
 
     /**

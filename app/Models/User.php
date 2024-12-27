@@ -42,7 +42,14 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'remember_token',
         'verification_code',
-        'verification_code_expires_at'
+        'verification_code_expires_at',
+        'email_verified',
+        'sms_verified',
+        'email_verified_at',
+        'txn_pin',
+        'is_admin',
+        'created_at',
+        'updated_at'
     ];
 
     // The JWT Identifier method required by the JWT package
