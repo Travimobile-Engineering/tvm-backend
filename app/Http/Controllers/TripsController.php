@@ -67,7 +67,7 @@ class TripsController extends Controller
 
         try{
 
-            do $trip_id = Str::random(14);
+            do $trip_id = 'TVM-' . Str::random(11);
             while(Trip::where('trip_id', $trip_id)->exists());
 
             $subregions = DB::table('covered_routes')

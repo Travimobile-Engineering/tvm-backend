@@ -34,7 +34,7 @@ class WalletController extends Controller
         catch(ValidationException $e){
             return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
-        
+
         $ppc = new PaystackPaymentController();
 
         $response = $ppc->verifyTransaction($request->reference, $request->amount);
@@ -54,14 +54,17 @@ class WalletController extends Controller
         }
 
         else return response()->json($response, 400);
-        
+
     }
 
     public function transfer(Request $request){
 
+<<<<<<< HEAD
         if(!in_array(2, json_decode($this->user->user_category)))
         return response()->json(['error'=>'You can only make transfers to agents']);
         
+=======
+>>>>>>> 9593f77dc9fe05334ee014bbc36f800894ee4a60
         try
         {
             $request->validate([
@@ -82,7 +85,7 @@ class WalletController extends Controller
         $receiver = User::where('agent_id', $request->agent_id)->first();
         $status = $receiver->update(['wallet' => $receiver->wallet + $request->amount]);
 
-        if($status) 
+        if($status)
         {
             Transaction::create([
                 'user_id' => $this->user->id,
@@ -95,7 +98,7 @@ class WalletController extends Controller
             return response()->json(['message' => 'Funds tranfered successfully'], 200);
         }
         return response()->json(['error' => 'Please try again. Something went wrong'], 400);
-        
+
     }
 
     public function getTransactions(){
