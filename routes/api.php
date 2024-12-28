@@ -37,10 +37,12 @@ Route::middleware(JWTAuthenticator::class)
 ->group(function(){
 
     Route::prefix('profile')
-    ->group(function (){
-        Route::get('/', [ProfileController::class, 'index']);
-        Route::post('/edit/{id}', [ProfileController::class, 'edit']);
-    });
+        ->controller(ProfileController::class)
+        ->group(function (){
+            Route::get('/', 'index');
+            Route::post('/edit/{id}', 'edit');
+            Route::get('/driver', 'getDriverProfile');
+        });
 
     Route::get('/auth/logout', [AuthenticateController::class, 'logout']);
 
