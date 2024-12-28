@@ -17,6 +17,11 @@ trait UserRelationships
     {
         return $this->hasMany(TripBooking::class, 'user_id');
     }
+
+    public function transitCompany()
+    {
+        return $this->belongsTo(TransitCompany::class, 'user_id');
+    }
 }
 
 

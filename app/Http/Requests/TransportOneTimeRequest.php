@@ -29,9 +29,6 @@ class TransportOneTimeRequest extends FormRequest
             'departure_time' => ['required', 'string'],
             'repeat_trip' => ['required', 'string'],
             'bus_type' => ['required', 'string'],
-            'vehicle_id' => ['required', 'int'],
-            'transit_company_id' => ['required', 'int'],
-            'route_id' => ['required', 'int'],
             'price' => ['required'],
             'bus_stops' => ['required', 'array']
         ];
