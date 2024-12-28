@@ -34,7 +34,7 @@ class WalletController extends Controller
         catch(ValidationException $e){
             return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
-        
+
         $ppc = new PaystackPaymentController();
 
         $response = $ppc->verifyTransaction($request->reference, $request->amount);
@@ -54,11 +54,11 @@ class WalletController extends Controller
         }
 
         else return response()->json($response, 400);
-        
+
     }
 
     public function transfer(Request $request){
-        
+
         try
         {
             $request->validate([
@@ -79,7 +79,7 @@ class WalletController extends Controller
         $receiver = User::where('email', $request->email)->first();
         $status = $receiver->update(['wallet' => $receiver->wallet + $request->amount]);
 
-        if($status) 
+        if($status)
         {
             Transaction::create([
                 'user_id' => $this->user->id,
@@ -92,7 +92,7 @@ class WalletController extends Controller
             return response()->json(['message' => 'Funds tranfered successfully'], 200);
         }
         return response()->json(['error' => 'Please try again. Something went wrong'], 400);
-        
+
     }
 
     public function getTransactions(){
