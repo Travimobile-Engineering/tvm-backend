@@ -18,6 +18,7 @@ use App\Http\Controllers\TripController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\WalletController;
 
+
 Route::get('/', function () {
     // return view('welcome');
     return 'welcome to tvm console! nothing spoil 😇👍';
@@ -44,13 +45,14 @@ Route::middleware(JWTAuthenticator::class)
     });
 
     Route::get('/auth/logout', [AuthenticateController::class, 'logout']);
-    
+
     Route::prefix('transit-company')
+    ->controller(TransitCompanyController::class)
     ->group(function(){
-        Route::post('/create', [TransitCompanyController::class, 'store']);
-        Route::get('/get-unions', [TransitCompanyController::class, 'getUnions']);
-        Route::post('/edit/{transitCompany}', [TransitCompanyController::class, 'update']);
-        Route::get('/{transitCompany}', [TransitCompanyController::class, 'show']);
+        Route::post('/create', 'store');
+        Route::get('/get-unions', 'getUnions');
+        Route::post('/edit/{transitCompany}', 'update');
+        Route::get('/{transitCompany}', 'show');
     });
 
     Route::prefix('route')
@@ -70,12 +72,47 @@ Route::middleware(JWTAuthenticator::class)
     });
 
     Route::prefix('trip')
-    ->group(function(){
-        Route::post('/create', [TripController::class, 'store']);
-        Route::post('/edit/{trip}', [TripController::class, 'update']);
-        Route::get('/get-trips', [TripController::class, 'getTrips']);
-        Route::get('/{trip}', [TripController::class, 'show']);
-    });
+        ->controller(TripController::class)
+        ->group(function () {
+            
+            Route::post('/create', 'store');
+            Route::post('/edit/{trip}', 'update');
+            Route::get('/get-trips', 'getTrips');
+            Route::get('/{trip}', 'getTrip');
+
+            Route::prefix('/driver')
+                ->group(function () {
+
+                    // One Time
+                    Route::post('/one-time', 'createOneTime');
+                    Route::get('/one-time/{id}', 'getOneTime');
+                    Route::get('/user/one-time/{user_id}', 'getUserOneTimes');
+                    Route::put('/one-time/{id}', 'editOneTime');
+
+                    // Recurring
+                    Route::post('/recurring', 'createRecurring');
+                    Route::get('/recurring/{id}', 'getRecurring');
+                    Route::get('/user/recurring/{user_id}', 'getUserRecurrings');
+                    Route::put('/recurring/{id}', 'editRecurring');
+
+                    // Trips
+                    Route::get('/upcoming/{user_id}', 'getUpcomingTrips');
+                    Route::get('/completed/{user_id}', 'getCompletedTrips');
+                    Route::get('/cancelled/{user_id}', 'getCancelledTrips');
+                    Route::get('/{user_id}', 'getAllTrips');
+                    Route::get('/passenger-info/{trip_id}/{user_id}', 'getManifestInfo');
+                    Route::post('/start-trip', 'startTrip');
+
+                    // Trip update
+                    Route::put('/cancel/{id}', 'cancelTrip');
+                    Route::put('/complete/{id}', 'completeTrip');
+                });
+
+            Route::prefix('/passenger')
+                ->group(function () {
+                    Route::get('/get-trips', 'getAll');
+                });
+        });
 
     Route::prefix('trip-booking')
     ->group(function(){

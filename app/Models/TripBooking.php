@@ -12,4 +12,8 @@ class TripBooking extends Model
     public function getRouteKeyName(){
         return 'booking_id';
     }
+
+    public function user(){
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('trips', function (Blueprint $table) {
             $table->id();
-            $table->string('trip_id')->unique();
+            $table->string('uuid')->unique();
             $table->foreignId('vehicle_id')->constrained('vehicles');
             $table->foreignId('transit_company_id')->constrained('transit_companies');
             $table->foreignId('departure')->constrained('route_subregions', 'id')->onDelete('cascade');
@@ -25,11 +25,11 @@ return new class extends Migration
             $table->unsignedTinyInteger('status')->default(1);
             $table->timestamps();
         });
-        
+
         Schema::create('trip_bookings', function(Blueprint $table){
             $table->id();
             $table->string('booking_id')->unique();
-            $table->string('trip_id');
+            $table->string('trip_id')->constrained('trips', 'uuid');
             $table->foreignId('user_id')->constrained();
             $table->unsignedTinyInteger('third_party_booking')->default(0);
             $table->string('selected_seat')->nullable();
