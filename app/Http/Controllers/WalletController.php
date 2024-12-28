@@ -59,12 +59,9 @@ class WalletController extends Controller
 
     public function transfer(Request $request){
 
-<<<<<<< HEAD
         if(!in_array(2, json_decode($this->user->user_category)))
         return response()->json(['error'=>'You can only make transfers to agents']);
         
-=======
->>>>>>> 9593f77dc9fe05334ee014bbc36f800894ee4a60
         try
         {
             $request->validate([
