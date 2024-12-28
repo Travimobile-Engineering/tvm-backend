@@ -30,10 +30,10 @@ class DriverProfileResource extends JsonResource
             'next_of_kin_gender' => $this->next_of_kin_gender,
             'avatar_url' => $this->avatar_url,
             'transit_company' => (object)[
-                'id' => $this->transitCompany->id,
-                'name' => $this->transitCompany->name,
-                'email' => $this->transitCompany->email,
-                'address' => $this->transitCompany->address,
+                'id' => $this->transitCompany?->id,
+                'name' => $this->transitCompany?->name,
+                'email' => $this->transitCompany?->email,
+                'address' => $this->transitCompany?->address,
             ]
         ];
     }
