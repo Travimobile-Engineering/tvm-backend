@@ -18,6 +18,7 @@ use Illuminate\Validation\ValidationException;
 use App\Http\Requests\TransportOneTimeRequest;
 use App\Http\Requests\TransportRecurringRequest;
 use App\Services\Trip\TripService;
+use App\Services\ValidationRules;
 
 class TripController extends Controller
 {
@@ -32,6 +33,11 @@ class TripController extends Controller
     public function createOneTime(TransportOneTimeRequest $request)
     {
         return $this->service->createOneTime($request);
+    }
+
+    public function store(TransportOneTimeRequest $request)
+    {
+        $this->createOneTime($request);
     }
 
     public function getOneTime($id)
