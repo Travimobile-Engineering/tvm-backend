@@ -42,6 +42,7 @@ class OneTimeTripResource extends JsonResource
                 return [
                     'id' => $passenger?->user?->id,
                     'first_name' => $passenger?->user?->first_name,
+                    'last_name' => $passenger?->user?->last_name,
                     'booking_id' => $passenger?->booking_id,
                     'seat' => (int)$passenger?->selected_seat,
                 ];

@@ -30,6 +30,14 @@ class Trip extends Model
         'means',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($trip) {
+            $trip->uuid = getRandomNumber();
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -49,8 +57,13 @@ class Trip extends Model
         return $this->hasMany(TripBooking::class, 'trip_id');
     }
 
+    public function manifests()
+    {
+        return $this->hasMany(Manifest::class, 'trip_id');
+    }
+
     protected $hidden = ['id', 'departure', 'destination'];
     public function getRouteKeyName(){
-        return 'trip_id';
+        return 'uuid';
     }
 }

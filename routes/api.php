@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentController;
 use App\Http\Controllers\Auth\ForgotPasswordEmailController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\TripBookingController;
 use App\Http\Controllers\TripController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\WalletController;
+
 
 Route::get('/', function () {
     // return view('welcome');
@@ -37,18 +39,22 @@ Route::middleware(JWTAuthenticator::class)
 ->group(function(){
 
     Route::prefix('profile')
-    ->group(function (){
-        Route::get('/', [ProfileController::class, 'index']);
-        Route::post('/edit/{id}', [ProfileController::class, 'edit']);
-    });
+        ->controller(ProfileController::class)
+        ->group(function (){
+            Route::get('/', 'index');
+            Route::post('/edit/{id}', 'edit');
+            Route::get('/driver', 'getDriverProfile');
+        });
 
     Route::get('/auth/logout', [AuthenticateController::class, 'logout']);
 
     Route::prefix('transit-company')
+    ->controller(TransitCompanyController::class)
     ->group(function(){
-        Route::post('/create', [TransitCompanyController::class, 'store']);
-        Route::post('/edit/{transitCompany}', [TransitCompanyController::class, 'update']);
-        Route::get('/{transitCompany}', [TransitCompanyController::class, 'show']);
+        Route::post('/create', 'store');
+        Route::get('/get-unions', 'getUnions');
+        Route::post('/edit/{transitCompany}', 'update');
+        Route::get('/{transitCompany}', 'show');
     });
 
     Route::prefix('route')
@@ -67,19 +73,18 @@ Route::middleware(JWTAuthenticator::class)
 
     });
 
-    // Route::prefix('trip')
-    // ->group(function(){
-    //     Route::post('/create', [TripController::class, 'store']);
-    //     Route::post('/edit/{trip}', [TripController::class, 'update']);
-    //     Route::get('/get-trips', [TripController::class, 'getTrips']);
-    //     Route::get('/{trip}', [TripController::class, 'show']);
-    // });
-
     Route::prefix('trip')
         ->controller(TripController::class)
         ->group(function () {
+            
+            Route::post('/create', 'store');
+            Route::post('/edit/{trip}', 'update');
+            Route::get('/get-trips', 'getTrips');
+            Route::get('/{trip}', 'getTrip');
+
             Route::prefix('/driver')
                 ->group(function () {
+
                     // One Time
                     Route::post('/one-time', 'createOneTime');
                     Route::get('/one-time/{id}', 'getOneTime');
@@ -133,6 +138,11 @@ Route::middleware(JWTAuthenticator::class)
         Route::get('/transactions', [WalletController::class, 'getTransactions']);
         Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
     });
+});
+
+Route::prefix('agent')->controller(AgentController::class)
+->group(function(){
+    Route::get('/{agent_id}', 'show');
 });
 
 Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

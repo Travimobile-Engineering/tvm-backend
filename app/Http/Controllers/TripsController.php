@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
-class TripController extends Controller
+class TripsController extends Controller
 {
     protected $user;
 
@@ -67,7 +67,7 @@ class TripController extends Controller
 
         try{
 
-            do $trip_id = Str::random(14);
+            do $trip_id = 'TVM-' . Str::random(11);
             while(Trip::where('trip_id', $trip_id)->exists());
 
             $subregions = DB::table('covered_routes')
@@ -78,7 +78,7 @@ class TripController extends Controller
             if(!$subregions) return response()->json(['error' => 'invalid route id'], 400);
 
             $trip = Trip::create([
-                'trip_id' => $trip_id,
+                'uuid' => $trip_id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
                 'departure' => $subregions->from_subregion_id,

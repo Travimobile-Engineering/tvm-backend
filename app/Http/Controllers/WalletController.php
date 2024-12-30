@@ -34,7 +34,7 @@ class WalletController extends Controller
         catch(ValidationException $e){
             return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
         }
-        
+
         $ppc = new PaystackPaymentController();
 
         $response = $ppc->verifyTransaction($request->reference, $request->amount);
@@ -54,17 +54,20 @@ class WalletController extends Controller
         }
 
         else return response()->json($response, 400);
-        
+
     }
 
     public function transfer(Request $request){
+
+        if(!in_array(2, json_decode($this->user->user_category)))
+        return response()->json(['error'=>'You can only make transfers to agents']);
         
         try
         {
             $request->validate([
-                'email' => 'required|email',
                 'amount' => 'required|int',
-                'pin' => 'required|int'
+                'pin' => 'required|int',
+                'agent_id' => 'required|string',
             ]);
         }
         catch(ValidationException $e){
@@ -73,13 +76,13 @@ class WalletController extends Controller
 
         if($this->user->txn_pin != $request->pin) return response()->json(['error' => 'Incorrect transaction pin'], 400);
         if($this->user->wallet < $request->amount) return response()->json(['error' => 'Your balance is insufficient to complete this transaction. Please fund your wallet first'], 400);
-        if(!User::where('email', $request->email)->exists() || $request->email == $this->user->email) return response()->json(['error' => 'Invalid receiver email address'], 400);
+        if(!User::where('agent_id', $request->agent_id)->exists() || $request->agent_id == $this->user->agent_id) return response()->json(['error' => 'Invalid agent ID'], 400);
 
         $this->user->update(['wallet' => $this->user->wallet - $request->amount]);
-        $receiver = User::where('email', $request->email)->first();
+        $receiver = User::where('agent_id', $request->agent_id)->first();
         $status = $receiver->update(['wallet' => $receiver->wallet + $request->amount]);
 
-        if($status) 
+        if($status)
         {
             Transaction::create([
                 'user_id' => $this->user->id,
@@ -92,7 +95,7 @@ class WalletController extends Controller
             return response()->json(['message' => 'Funds tranfered successfully'], 200);
         }
         return response()->json(['error' => 'Please try again. Something went wrong'], 400);
-        
+
     }
 
     public function getTransactions(){

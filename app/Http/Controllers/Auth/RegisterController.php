@@ -24,14 +24,15 @@ class RegisterController extends Controller
                 'password' => 'required|string|min:8',
                 'address' => 'nullable|string|max:255',
                 'nin' => 'nullable|string',
-                'verification_code' => 'nullable|numeric'
+                'verification_code' => 'nullable|numeric',
+                'user_category' => 'nullable|int',
             ]);
 
         }catch(ValidationException $e){
             return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
         }
         
-        do $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
+        do $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_RIGHT);
         while(strlen($verification_code) < 5);
 
         $user = User::where('phone_number', $request->phone_number)->first();
@@ -87,12 +88,12 @@ class RegisterController extends Controller
                 'first_name' => $names[0],
                 'last_name' => $names[1] ?? "",
                 'password' => Hash::make($validation['password']),
-                'user_category' => json_encode($category),
+                'user_category' => json_encode(value: $category),
                 'uuid' => $uuid,
                 'address' => $validation['address'] ?? "",
                 'nin' => $validation['nin'] ?? "",
             ]);
-            
+
             if($user) return response()->json(['message' => 'Account verified successfully'], 200);
             else return response()->json(['error' => 'Ooops! An error occured. Please try again'], 400);
         }

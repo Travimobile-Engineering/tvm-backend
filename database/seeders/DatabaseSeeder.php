@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             StatesSeeder::class,
             RoutesSeeder::class,
+            UnionSeeder::class,
             TransitCompanySeeder::class,
             VehicleBrandsSeeder::class,
             // VehicleTypeSeeder::class,

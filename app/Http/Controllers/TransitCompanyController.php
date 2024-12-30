@@ -2,21 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\ConfirmationEmail;
-use App\Models\TransitCompany;
+use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use App\Models\TransitCompany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Mail;
+use App\Mail\ConfirmationEmail;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Mail;
+use App\Services\TransitCompanyService;
+use Illuminate\Validation\ValidationException;
+use App\Http\Requests\TransitCompany\StoreRequest;
+use App\Http\Requests\TransitCompany\UpdateRequest;
 
 class TransitCompanyController extends Controller
 {
 
-    protected $user;
+    use HttpResponse;
+    protected $service;
 
-    public function __construct(){
-        $this->user = JWTAuth::user();
+    public function __construct(TransitCompanyService $service){
+        $this->service = $service;
     }
     /**
      * Display a listing of the resource.
@@ -29,41 +36,10 @@ class TransitCompanyController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreRequest $request): JsonResponse
     {
-        try{
-            $validation = $request->validate([
-                'email' => 'required|unique:transit_companies|email',
-                'phone' => 'required|unique:transit_companies|max_digits:14',
-                'url' => 'nullable|url',
-            ]);
-
-        }catch(ValidationException $e){
-            return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
-        }
-
-        $v_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
-        
-        $company = TransitCompany::create([
-            'name' => $request->name,
-            'user_id' => $this->user->id,
-            'short_name' => $request->short_name,
-            'reg_no' => $request->reg_no,
-            'url' => $request->url,
-            'email' => $request->email,
-            'state' => $request->state,
-            'lga' => $request->lga,
-            'phone' => $request->phone,
-            'address' => $request->address,
-            'about_details' => $request->about_details,
-            'ver_code' => $v_code,
-            'ver_code_expires_at' => Carbon::now()->addMinutes(10)
-        ]);
-
-        if($company){
-            Mail::to($request->email)->send(new ConfirmationEmail($request->name, $v_code));
-            return response()->json(['message' => 'Account created successfully', 'data' => $company], 200);
-        }
+        $response = $this->service->store($request);
+        return $this->success($response['data'], $response['message'], 200);
     }
 
     /**
@@ -71,46 +47,21 @@ class TransitCompanyController extends Controller
      */
     public function show(TransitCompany $transitCompany)
     {
-        if($transitCompany){
-
-            return response()->json(['data' => $transitCompany], 200);
-        }
-
-        else return response()->json(['error' => 'not found'], 400);
+        $response = $this->service->show($transitCompany);
+        return $this->response($response);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, TransitCompany $transitCompany)
+    public function update(UpdateRequest $request, TransitCompany $transitCompany)
     {
-        try{
-            $validation = $request->validate([
-                'phone' => 'required|max_digits:14',
-                'url' => 'nullable|url',
-            ]);
+        $response = $this->service->update($request, $transitCompany);
+        return $this->response($response);
+    }
 
-        }catch(ValidationException $e){
-            return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
-        }
-
-        if($transitCompany->user_id != $this->user->id) return response()->json(['error' => 'Invalid user detected'], 400);
-
-        $company = $transitCompany->update([
-            'name' => $request->name,
-            'short_name' => $request->short_name,
-            'reg_no' => $request->reg_no,
-            'url' => $request->url,
-            'state' => $request->state,
-            'lga' => $request->lga,
-            'phone' => $request->phone,
-            'address' => $request->address,
-            'about_details' => $request->about_details
-        ]);
-
-        if($company){
-            return response()->json(['message' => 'Account updated successfully', 'data' => $transitCompany], 200);
-        }
+    public function getUnions(){
+        return $this->response($this->service->getUnions());
     }
 
     /**

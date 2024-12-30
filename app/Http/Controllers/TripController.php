@@ -2,13 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Trip;
+use App\Models\TripBooking;
+use App\Trait\HttpResponse;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Models\TransitCompany;
+use Illuminate\Support\Carbon;
+use App\Models\Vehicle\Vehicle;
+use Illuminate\Support\Facades\DB;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
 use App\Http\Requests\TransportOneTimeRequest;
 use App\Http\Requests\TransportRecurringRequest;
 use App\Services\Trip\TripService;
-use Illuminate\Http\Request;
 
 class TripController extends Controller
 {
+    use HttpResponse;
     protected $service;
 
     public function __construct(TripService $service)
@@ -26,6 +39,11 @@ class TripController extends Controller
         return $this->service->getOneTime($id);
     }
 
+    public function getTrip(Trip $trip){
+        
+        return $this->response($this->service->getTrip($trip));
+    }
+
     public function getUserOneTimes($userId)
     {
         return $this->service->getUserOneTimes($userId);
@@ -34,6 +52,10 @@ class TripController extends Controller
     public function editOneTime(Request $request, $id)
     {
         return $this->service->editOneTime($request, $id);
+    }
+
+    public function getTrips(Request $request){
+        return $this->response($this->service->getTrips($request));
     }
 
     public function createRecurring(TransportRecurringRequest $request)
@@ -105,7 +127,7 @@ class TripController extends Controller
         $request->validate([
             'trip_id' => ['required', 'integer', 'exists:trips,id'],
         ]);
-        
+
         return $this->service->startTrip($request);
     }
 

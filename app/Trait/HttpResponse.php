@@ -19,4 +19,12 @@ trait HttpResponse
 			'data' => $data
 		], $code);
 	}
+
+	protected function response($array = []){
+		return response()->json([
+			'status' => isset($array['code']) ? ($array['code'] >= 400 ? false : true) : true,
+			'message' => isset($array['message']) ? $array['message'] : null,
+			'data' => isset($array['data']) ? $array['data'] : null,
+		], isset($array['code']) ? $array['code'] : 200);
+	}
 }

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('trips', function (Blueprint $table) {
-            $table->renameColumn('trip_id', 'uuid');
+            // $table->renameColumn('trip_id', 'uuid');
             $table->bigInteger('user_id')->after('id');
             $table->string('departure_date')->nullable();
             $table->string('departure_time')->nullable();
