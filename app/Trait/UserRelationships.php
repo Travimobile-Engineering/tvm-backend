@@ -2,9 +2,10 @@
 
 namespace App\Trait;
 
-use App\Models\Transport;
 use App\Models\Trip;
+use App\Models\Transport;
 use App\Models\TripBooking;
+use App\Models\TransitCompany;
 
 trait UserRelationships
 {
