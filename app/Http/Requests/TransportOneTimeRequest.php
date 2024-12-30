@@ -22,7 +22,7 @@ class TransportOneTimeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'integer', 'exists:users,id'],
+            // 'user_id' => ['required', 'integer', 'exists:users,id'],
             'departure' => ['required', 'string'],
             'destination' => ['required', 'string'],
             'departure_date' => ['required', 'date'],

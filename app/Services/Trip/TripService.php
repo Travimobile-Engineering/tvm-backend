@@ -55,7 +55,7 @@ class TripService
         try {
 
             $trip = Trip::create([
-                'user_id' => $request->user_id,
+                'user_id' => Auth::user()->id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
                 'departure' => $subregions->from_subregion_id,

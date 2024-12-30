@@ -76,7 +76,7 @@ class TripBookingService
                 }
             }
     
-            $trip = Trip::where('trip_id', $request->trip_id)
+            $trip = Trip::where('uuid', $request->trip_id)
             ->where('status', 1);
 
             if(!$trip->exists()) return['message' => 'Invalid trip ID or trip is no longer available', 'code' => 400];
@@ -134,7 +134,7 @@ class TripBookingService
             
             if($booking){
                 if(count($bookings->get()) >= $total_seats){
-                    $trip = Trip::where('trip_id', $request->trip_id)
+                    $trip = Trip::where('uuid', $request->trip_id)
                     ->update(['status' => 0]);
                 }
                 $booking['departure'] = $departure;
@@ -172,7 +172,7 @@ class TripBookingService
 
             if($this->user->id != $tripBooking->user_id) return['message' => 'You do not have the permission to complete this request', 'code' => 400];
 
-            $trip = Trip::where('trip_id', $request->trip_id)
+            $trip = Trip::where('uuid', $request->trip_id)
             ->where('status', 1)->exists();
 
             if(!$trip) return['message' => 'Invalid booking ID', 'code' => 400];
