@@ -94,19 +94,19 @@ class TripService
             $trip['vehicle'] = Vehicle::where('id', $trip->vehicle_id)->get(['name', 'ac', 'plate_no'])->first();
             $trip['vehicle']['seats'] = $seats;
 
-            $seat_columns = [];
-            $seat_rows = 0;
+            $seat_columns = 0;
+            $seat_rows = [];
 
             foreach($seats as $seat){
                 $seat_parts = str_split($seat);
                 $seat_alph = $seat_parts[0];
                 $seat_num = $seat_parts[1];
-                if(!in_array($seat_alph, $seat_columns)) $seat_columns[] = $seat_alph;
-                if($seat_num > $seat_rows) $seat_rows = $seat_num;
+                if(!in_array($seat_alph, $seat_rows)) $seat_rows[] = $seat_alph;
+                if($seat_num > $seat_columns) $seat_columns = $seat_num;
             }
 
-            $trip['vehicle']['seat_rows'] = $seat_rows;
-            $trip['vehicle']['seat_columns'] = count($seat_columns);
+            $trip['vehicle']['seat_rows'] = count($seat_rows);
+            $trip['vehicle']['seat_columns'] = $seat_columns;
             
             return ['data' => $trip];
         
