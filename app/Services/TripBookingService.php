@@ -17,6 +17,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Models\TransitCompany;
 
 class TripBookingService
 {
@@ -82,9 +83,9 @@ class TripBookingService
             if(!$trip->exists()) return['message' => 'Invalid trip ID or trip is no longer available', 'code' => 400];
 
             //get the vehicle for this trip
-            $trip = $trip->select('vehicle_id', 'departure', 'destination')->first();
-            $seats = Vehicle::where('id', $trip->vehicle_id)->pluck('seats')->first();
-            $seats = json_decode($seats);
+            $trip = $trip->select('transit_company_id', 'vehicle_id', 'departure', 'destination', 'departure_at', 'estimated_arrival_at')->first();
+            $vehicle = Vehicle::where('id', $trip->vehicle_id)->select()->first();
+            $seats = json_decode($vehicle->seats);
             
             $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','region_id')->get()->first();
             $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->select('name')->get()->first();
@@ -93,6 +94,8 @@ class TripBookingService
             $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->select('name','region_id')->get()->first();
             $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->select('name')->get()->first();
             $destination = $destination_state->name.' > '.$destination_town->name;
+
+            $transit_company = TransitCompany::where('id', $trip->transit_company_id)->first();
 
             $trip['seats'] = $seats;
 
@@ -139,6 +142,16 @@ class TripBookingService
                 }
                 $booking['departure'] = $departure;
                 $booking['destination'] = $destination;
+                $booking['departure_at'] = $trip['departure_at'];
+                $booking['estimated_arrival_at'] = $trip['estimated_arrival_at'];
+                $booking['vehicle_detail'] = [
+                    'name' => $vehicle->name,
+                    'plate_no' => $vehicle->plate_no, 
+                ];
+                $booking['company_detail'] = [
+                    'name' => $transit_company->name, 
+                    'logo_url' => $transit_company->logo_url ?? null,
+                ];
                 $booking['user_detail'] = Auth::user();
                 return['message' => 'Booking created successfully', 'data' => $booking];
             }
@@ -160,6 +173,20 @@ class TripBookingService
     public function show($tripBooking)
     {
         if($tripBooking->user_id != $this->user->id) return['message' => 'You do not have permission to complete this request', 'code' => 400];
+        $trip = Trip::firstWhere('uuid', $tripBooking->trip_id);
+
+        $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->first();
+        $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->first();
+        $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->first();
+        $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->first();
+
+        $trip->departure = $departure_state->name.' > '.$departure_town->name;
+        $trip->destination = $destination_state->name.' > '.$destination_town->name;
+        
+        $tripBooking['trip_detail'] = $trip;
+        $tripBooking['transit_company_detail'] = TransitCompany::firstWhere('id', $trip->transit_company_id);
+        $tripBooking['user_detail'] = Auth::user();
+        $tripBooking['vehicle_detail'] = Vehicle::firstWhere('id', $trip->vehicle_id);
         return['data' => $tripBooking];
     }
 
@@ -226,8 +253,26 @@ class TripBookingService
 
         if($this->user->id != $user_id) return['message' => 'You do not have the permission to complete this request', 'code' => 400];
 
-        $history = TripBooking::where('user_id', $user_id)->get();
-        return['data' => $history];
+        $history = TripBooking::with('trip')->where('user_id', $user_id)->get();
+        $hty = [];
+        foreach($history as $key => $item){
+            foreach($item->toArray() as $k => $value){
+                if($k != 'trip') $hty[$key][$k] = $value;
+                else{
+                    $departure_town = DB::table('route_subregions')->where('id', $history[$key][$k]['departure'])->first();
+                    $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->first();
+                    $destination_town = DB::table('route_subregions')->where('id', $history[$key][$k]['destination'])->first();
+                    $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->first();
+
+                    $hty[$key][$k]['departure'] = $departure_state->name.' > '.$departure_town->name;
+                    $hty[$key][$k]['destination'] = $destination_state->name.' > '.$destination_town->name;
+                    $hty[$key][$k]['departure_at'] = $history[$key][$k]['departure_at'];
+                    $hty[$key][$k]['estimated_arrival_at'] = $history[$key][$k]['estimated_arrival_at'];
+                }
+                
+            }
+        }
+        return['data' => $hty];
     }
 
     /**
