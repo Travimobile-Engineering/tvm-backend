@@ -4,10 +4,8 @@ namespace App\Trait;
 
 use App\Models\BusStop;
 use App\Models\Document;
-use App\Models\Driver;
 use App\Models\DriverVehicle;
 use App\Models\TransitCompany;
-use App\Models\Transport;
 use App\Models\Trip;
 use App\Models\TripBooking;
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SendTestMailController;
+use App\Http\Middleware\CheckExpectsJson;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
@@ -137,6 +138,7 @@ Route::middleware(JWTAuthenticator::class)
     Route::prefix('payment')
     ->group(function(){
         Route::post('/initialize-paystack-transaction', [PaystackPaymentController::class, 'intializeTransaction']);
+
     });
 
     Route::prefix('wallet')
@@ -158,3 +160,4 @@ Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);
 Route::fallback(function(){
     return response()->json(['error' => 'page not found'], 404);
 });
+
