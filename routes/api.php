@@ -10,6 +10,7 @@ use App\Http\Controllers\SendTestMailController;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TransitCompanyController;
@@ -76,7 +77,6 @@ Route::middleware(JWTAuthenticator::class)
     Route::prefix('trip')
         ->controller(TripController::class)
         ->group(function () {
-            
             Route::post('/create', 'store');
             Route::post('/edit/{trip}', 'update');
             Route::get('/get-trips', 'getTrips');
@@ -114,6 +114,15 @@ Route::middleware(JWTAuthenticator::class)
                 ->group(function () {
                     Route::get('/get-trips', 'getAll');
                 });
+        });
+
+    Route::prefix('driver')
+        ->controller(DriverController::class)
+        ->group(function () {
+            Route::post('/onboarding', 'addDriverInfo');
+            Route::post('/bus-stop', 'addBusStop');
+            Route::get('/bus-stop/{user_id}', 'getAllBusStops');
+            Route::get('{user_id}/stops/{state_id}', 'getStop');
         });
 
     Route::prefix('trip-booking')

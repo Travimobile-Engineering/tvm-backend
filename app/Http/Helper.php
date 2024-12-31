@@ -9,4 +9,18 @@ if (!function_exists('getRandomNumber')) {
     }
 }
 
+if (!function_exists('uploadFile')) {
+    function uploadFile($request, $key, $folder)
+    {
+        if ($request->hasFile($key)) {
+            $image = $request->file($key)->storeOnCloudinary($folder);
+            return [
+                'url' => $image->getSecurePath(),
+                'public_id' => $image->getPublicId(),
+            ];
+        }
+        return ['url' => null, 'public_id' => null];
+    }
+}
+
 
