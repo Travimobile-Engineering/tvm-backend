@@ -30,7 +30,6 @@ class TransportOneTimeRequest extends FormRequest
             'repeat_trip' => ['required', 'string'],
             'bus_type' => ['required', 'string'],
             'price' => ['required'],
-            'bus_stops' => ['required', 'array']
         ];
     }
 }
