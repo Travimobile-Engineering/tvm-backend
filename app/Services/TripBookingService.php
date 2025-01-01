@@ -1,0 +1,285 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Trip;
+use App\Models\User;
+use App\Models\Transaction;
+use App\Models\TripBooking;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Models\Vehicle\Vehicle;
+use Illuminate\Support\Facades\DB;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Models\TransitCompany;
+
+class TripBookingService
+{
+    protected $user;
+
+    public function __construct(){
+        $this->user = JWTAuth::user();
+    }
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store($request)
+    {
+        try{
+
+            $payment_methods = ['wallet', 'paystack', 'transfer'];
+
+            if(isset($request->amount) && $request->amount > 0){
+                
+                $amount = $request->amount;
+                
+                if(!isset($request->payment_method)) return['message' => 'Payment method is required', 'code' => 400];
+                if(!in_array($request->payment_method, $payment_methods)) return['message' => 'Invalid payment method', 'code' => 400];
+                
+                if($request->payment_method == $payment_methods[0]){
+                    if($amount > $this->user->wallet) return['message' => 'You balance is insufficient to complete your request', 'code' => 400];
+                    User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet - $amount]);
+                }
+
+                if($request->payment_method == $payment_methods[1]){
+                    if(!isset($request->txn_reference)) return['message' => 'Transaction reference is required', 'code' => 400];
+                    $txn_ref = $request->txn_reference;
+
+                    $ppc = new PaystackPaymentController();
+
+                    $response = $ppc->verifyTransaction($txn_ref, $amount);
+
+                    if($response['status'] == 'success'){
+                        // Transaction::create([
+                        //     'user_id' => $this->user->id,
+                        //     'title' => 'Bus ticket purchase',
+                        //     'amount' => $amount,
+                        //     'type' => 'DR',
+                        //     'txn_reference' => $txn_ref
+                        // ]);
+                    }
+                    else return['message' => $response, 'code' => 400];
+
+                }
+            }
+    
+            $trip = Trip::where('uuid', $request->trip_id)
+            ->where('status', 1);
+
+            if(!$trip->exists()) return['message' => 'Invalid trip ID or trip is no longer available', 'code' => 400];
+
+            //get the vehicle for this trip
+            $trip = $trip->select('transit_company_id', 'vehicle_id', 'departure', 'destination', 'departure_at', 'estimated_arrival_at')->first();
+            $vehicle = Vehicle::where('id', $trip->vehicle_id)->select()->first();
+            $seats = json_decode($vehicle->seats);
+            
+            $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','region_id')->get()->first();
+            $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->select('name')->get()->first();
+            $departure = $departure_state->name.' > '.$departure_town->name;
+
+            $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->select('name','region_id')->get()->first();
+            $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->select('name')->get()->first();
+            $destination = $destination_state->name.' > '.$destination_town->name;
+
+            $transit_company = TransitCompany::where('id', $trip->transit_company_id)->first();
+
+            $trip['seats'] = $seats;
+
+            //total number of seats in this vehicle
+            $total_seats = count($trip['seats']);
+
+            //get the total bookings for this trip
+            $bookings = TripBooking::where('trip_id', $request->trip_id)->where('status', 1);
+            if(count($bookings->get()) >= $total_seats) return['message' => 'Number of passengers for this trip already complete', 'code' => 400];
+
+            //get the already selected seats in the vehicle for this trip
+            $selected_seats = $bookings->pluck('selected_seat')->toArray();
+
+            if(!in_array(ucfirst($request->selected_seat), $seats)) return['message' => 'Invalid seat selection', 'code' => 400];
+            if(in_array(ucfirst($request->selected_seat), $selected_seats)) return['message' => 'Selected seat already taken', 'code' => 400];
+
+            $available_seats = array_filter($seats, function($seat) use ($selected_seats){
+                return !in_array($seat, $selected_seats);
+            });
+
+            $trip['available_seats'] = $available_seats;
+
+            do $booking_id = Str::random(14);
+            while(TripBooking::where('booking_id', $booking_id)->exists());
+
+            $booking = TripBooking::create([
+                'booking_id' => $booking_id,
+                'trip_id' => $request->trip_id,
+                'user_id' => $this->user->id,
+                'third_party_booking' => $request->third_party_booking ?? 0,
+                'selected_seat' => ucfirst($request->selected_seat),
+                'trip_type' => $request->trip_type,
+                'travelling_with' => $request->travelling_with ?? null,
+                'third_party_passenger_details' => $request->third_party_passenger_details ?? null,
+                'amount_paid' => $request->amount_paid ?? 0,
+                'payment_method' => $request->payment_method ?? '',
+                'payment_status' => $request->payment_status ?? 0,
+            ]);
+            
+            if($booking){
+                if(count($bookings->get()) >= $total_seats){
+                    $trip = Trip::where('uuid', $request->trip_id)
+                    ->update(['status' => 0]);
+                }
+                $booking['departure'] = $departure;
+                $booking['destination'] = $destination;
+                $booking['departure_at'] = $trip['departure_at'];
+                $booking['estimated_arrival_at'] = $trip['estimated_arrival_at'];
+                $booking['vehicle_detail'] = [
+                    'name' => $vehicle->name,
+                    'plate_no' => $vehicle->plate_no, 
+                ];
+                $booking['company_detail'] = [
+                    'name' => $transit_company->name, 
+                    'logo_url' => $transit_company->logo_url ?? null,
+                ];
+                $booking['user_detail'] = Auth::user();
+                return['message' => 'Booking created successfully', 'data' => $booking];
+            }
+        }
+        catch(QueryException $e){
+            if($e->getCode() === '23000'){
+                return['message' => 'Integrity constraint violation: Cannot add or update a child row: a foreign key constraint fails', 'code' => 400];
+            }
+            else{
+                Log::error($e->getMessage());
+                return['message' => 'An error occured. Contact support', 'code' => 400];
+            }
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show($tripBooking)
+    {
+        if($tripBooking->user_id != $this->user->id) return['message' => 'You do not have permission to complete this request', 'code' => 400];
+        $trip = Trip::firstWhere('uuid', $tripBooking->trip_id);
+
+        $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->first();
+        $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->first();
+        $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->first();
+        $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->first();
+
+        $trip->departure = $departure_state->name.' > '.$departure_town->name;
+        $trip->destination = $destination_state->name.' > '.$destination_town->name;
+        
+        $tripBooking['trip_detail'] = $trip;
+        $tripBooking['transit_company_detail'] = TransitCompany::firstWhere('id', $trip->transit_company_id);
+        $tripBooking['user_detail'] = Auth::user();
+        $tripBooking['vehicle_detail'] = Vehicle::firstWhere('id', $trip->vehicle_id);
+        return['data' => $tripBooking];
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update($request, $tripBooking)
+    {
+        try{
+
+            if($this->user->id != $tripBooking->user_id) return['message' => 'You do not have the permission to complete this request', 'code' => 400];
+
+            $trip = Trip::where('uuid', $request->trip_id)
+            ->where('status', 1)->exists();
+
+            if(!$trip) return['message' => 'Invalid booking ID', 'code' => 400];
+
+            $booking = $tripBooking->update([
+                'trip_id' => $request->trip_id,
+                'selected_seat' => ucfirst($request->selected_seat),
+                'trip_type' => $request->trip_type,
+                'travelling_with' => $request->travelling_with ?? '',
+                'amount_paid' => $request->amount_paid ?? 0,
+                'payment_method' => $request->payment_method ?? '',
+                'payment_status' => $request->payment_status
+            ]);
+
+            if($booking){
+                return['message' => 'Booking updated successfully', 'data' => $tripBooking];
+            }
+        }
+        catch(QueryException $e){
+            if($e->getCode() === '23000'){
+                return['message' => 'Integrity constraint violation: Cannot add or update a child row: a foreign key constraint fails', 'code' => 400];
+            }
+            else{
+                return['message' => $e->getMessage(), 'code' => 400];
+            }
+        }
+    }
+
+    public function cancelTripBooking($request){
+
+
+        $bookingId = $request->booking_id;
+        $booking = TripBooking::where('booking_id', $bookingId);
+        if(!$booking->exists()) return['message' => 'Invalid booking ID', 'code' => 400];
+
+        $booking = $booking->first();
+        if($this->user->id != $booking->user_id) return['message' => 'You do not have the permission to complete this request', 'code' => 400];
+
+        $booking->update(['status' => 0]);
+        return['message' => 'Booking cancelled successfully'];
+    }
+
+    public function getUserTripBookingHistory($request){
+        $user_id = $request->user;
+        $is_email = filter_var($request->user, FILTER_VALIDATE_EMAIL) ? true : false;
+
+        if($is_email){
+            $user = User::where('email', $request->user)->select('id')->get()->first();
+            $user_id = $user->id;
+        }
+
+        if($this->user->id != $user_id) return['message' => 'You do not have the permission to complete this request', 'code' => 400];
+
+        $history = TripBooking::with('trip')->where('user_id', $user_id)->get();
+        $hty = [];
+        foreach($history as $key => $item){
+            foreach($item->toArray() as $k => $value){
+                if($k != 'trip') $hty[$key][$k] = $value;
+                else{
+                    $departure_town = DB::table('route_subregions')->where('id', $history[$key][$k]['departure'])->first();
+                    $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->first();
+                    $destination_town = DB::table('route_subregions')->where('id', $history[$key][$k]['destination'])->first();
+                    $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->first();
+
+                    $hty[$key][$k]['departure'] = $departure_state->name.' > '.$departure_town->name;
+                    $hty[$key][$k]['destination'] = $destination_state->name.' > '.$destination_town->name;
+                    $hty[$key][$k]['departure_at'] = $history[$key][$k]['departure_at'];
+                    $hty[$key][$k]['estimated_arrival_at'] = $history[$key][$k]['estimated_arrival_at'];
+                }
+                
+            }
+        }
+        return['data' => $hty];
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(TripBooking $tripBooking)
+    {
+        //
+    }
+}

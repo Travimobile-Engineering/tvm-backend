@@ -20,12 +20,12 @@ return new class extends Migration
             $table->string('url')->nullable();
             $table->string('email');
             $table->string('country_code', 5)->default('NG');
-            $table->string('state');
-            $table->string('lga');
+            $table->string('state')->nullable();
+            $table->string('lga')->nullable();
             $table->string('phone', 14);
-            $table->string('address');
+            $table->string('address')->nullable();
             $table->string('about_details')->nullable();
-            $table->foreignId('union')->nullable()->constrained('transit_company_unions')->onDelete('cascade');
+            $table->foreignId('union_id')->nullable()->constrained('transit_company_unions')->onDelete('cascade');
             $table->unsignedTinyInteger('ev')->default(0);
             $table->unsignedTinyInteger('sv')->default(0);
             $table->string('ver_code');

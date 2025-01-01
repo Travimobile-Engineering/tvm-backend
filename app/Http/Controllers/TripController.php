@@ -10,14 +10,16 @@ use Illuminate\Http\Request;
 use App\Models\TransitCompany;
 use Illuminate\Support\Carbon;
 use App\Models\Vehicle\Vehicle;
+use App\Services\ValidationRules;
+use App\Services\Trip\TripService;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\QueryException;
-use Illuminate\Validation\ValidationException;
 use App\Http\Requests\TransportOneTimeRequest;
+use Illuminate\Validation\ValidationException;
 use App\Http\Requests\TransportRecurringRequest;
-use App\Services\Trip\TripService;
 
 class TripController extends Controller
 {
@@ -32,6 +34,11 @@ class TripController extends Controller
     public function createOneTime(TransportOneTimeRequest $request)
     {
         return $this->service->createOneTime($request);
+    }
+
+    public function store(TransportOneTimeRequest $request)
+    {
+        return $this->createOneTime($request);
     }
 
     public function getOneTime($id)
