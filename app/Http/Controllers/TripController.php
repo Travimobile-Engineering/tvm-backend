@@ -62,7 +62,7 @@ class TripController extends Controller
     }
 
     public function getTrips(Request $request){
-        return $this->response($this->service->getTrips($request));
+        return $this->service->getTrips($request);
     }
 
     public function createRecurring(TransportRecurringRequest $request)
