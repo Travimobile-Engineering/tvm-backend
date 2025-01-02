@@ -46,6 +46,7 @@ class User extends Authenticatable implements JWTSubject
         'transit_company_union_id',
         'profile_photo',
         'public_id',
+        'driver_verified',
     ];
 
     protected $guarded = [
@@ -94,6 +95,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'driver_verified' => 'boolean',
         ];
     }
 }
