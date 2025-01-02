@@ -62,7 +62,7 @@ class Trip extends Model
         return $this->hasMany(Manifest::class, 'trip_id');
     }
 
-    protected $hidden = ['id', 'departure', 'destination'];
+    protected $hidden = ['id'];
     public function getRouteKeyName(){
         return 'uuid';
     }
