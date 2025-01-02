@@ -188,6 +188,7 @@ class TripBookingService
         $tripBooking['user_detail'] = Auth::user();
         $tripBooking['vehicle_detail'] = Vehicle::firstWhere('id', $trip->vehicle_id);
         return['data' => $tripBooking];
+        
     }
 
     /**
