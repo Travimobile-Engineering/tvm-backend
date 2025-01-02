@@ -31,7 +31,6 @@ class TransportRecurringRequest extends FormRequest
             'reoccur_duration' => ['required', 'string'],
             'bus_type' => ['required', 'string'],
             'ticket_price' => ['required', 'string'],
-            'bus_stops' => ['required', 'array']
         ];
     }
 }
