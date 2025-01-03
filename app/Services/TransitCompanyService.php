@@ -33,7 +33,7 @@ class TransitCompanyService
     {
 
         $v_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
-        
+
         $company = TransitCompany::create([
             'name' => $request->name,
             'user_id' => $this->user->id,
@@ -97,7 +97,7 @@ class TransitCompanyService
         $data = DB::table('transit_company_unions')
             ->select('id', 'name')
             ->get();
-            
+
         return $this->success($data, "Transit company unions");
     }
 
