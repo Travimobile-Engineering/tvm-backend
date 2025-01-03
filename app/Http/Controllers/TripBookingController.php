@@ -61,12 +61,10 @@ class TripBookingController extends Controller
             $payment_methods = ['wallet', 'paystack', 'transfer'];
 
             if(isset($request->amount) && $request->amount > 0){
-                
                 $amount = $request->amount;
-                
                 if(!isset($request->payment_method)) return response()->json(['error' => 'Payment method is required'], 400);
                 if(!in_array($request->payment_method, $payment_methods)) return response()->json(['error' => 'Invalid payment method'], 400);
-                
+
                 if($request->payment_method == $payment_methods[0]){
                     if($amount > $this->user->wallet) return response()->json(['error' => 'You balance is insufficient to complete your request'], 400);
                     User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet - $amount]);
@@ -93,7 +91,7 @@ class TripBookingController extends Controller
 
                 }
             }
-    
+
             $trip = Trip::where('trip_id', $request->trip_id)
             ->where('status', 1);
 
@@ -103,7 +101,7 @@ class TripBookingController extends Controller
             $trip = $trip->select('vehicle_id', 'departure', 'destination')->first();
             $seats = Vehicle::where('id', $trip->vehicle_id)->pluck('seats')->first();
             $seats = json_decode($seats);
-            
+
             $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','region_id')->get()->first();
             $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->select('name')->get()->first();
             $departure = $departure_state->name.' > '.$departure_town->name;
@@ -149,7 +147,7 @@ class TripBookingController extends Controller
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => $request->payment_status ?? 0,
             ]);
-            
+
             if($booking){
                 if(count($bookings->get()) >= $total_seats){
                     $trip = Trip::where('trip_id', $request->trip_id)
