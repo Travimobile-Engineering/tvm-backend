@@ -20,12 +20,34 @@ class User extends Authenticatable implements JWTSubject
      *
      * @var array<int, string>
      */
-    // protected $fillable = [
-    //     'full_name',
-    //     'phone_number',
-    //     'email',
-    //     'password',
-    // ];
+    protected $fillable = [
+        'uuid',
+        'first_name',
+        'last_name',
+        'sms_verified',
+        'user_category',
+        'wallet',
+        'txn_pin',
+        'address',
+        'gender',
+        'is_admin',
+        'nin',
+        'next_of_kin_full_name',
+        'next_of_kin_phone_number',
+        'next_of_kin_gender',
+        'verification_code',
+        'verification_code_expires_at',
+        'custom_fields',
+        'avatar_url',
+        'uuid',
+        'phone_number',
+        'email',
+        'password',
+        'transit_company_union_id',
+        'profile_photo',
+        'public_id',
+        'driver_verified',
+    ];
 
     protected $guarded = [
         'remember_token',
@@ -73,6 +95,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'driver_verified' => 'boolean',
         ];
     }
 }

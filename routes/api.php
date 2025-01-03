@@ -7,9 +7,11 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SendTestMailController;
+use App\Http\Middleware\CheckExpectsJson;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TransitCompanyController;
@@ -76,7 +78,6 @@ Route::middleware(JWTAuthenticator::class)
     Route::prefix('trip')
         ->controller(TripController::class)
         ->group(function () {
-            
             Route::post('/create', 'store');
             Route::post('/edit/{trip}', 'update');
             Route::get('/get-trips', 'getTrips');
@@ -87,15 +88,15 @@ Route::middleware(JWTAuthenticator::class)
 
                     // One Time
                     Route::post('/one-time', 'createOneTime');
-                    Route::get('/one-time/{id}', 'getOneTime');
+                    Route::get('/get-one-time/{id}', 'getOneTime');
                     Route::get('/user/one-time/{user_id}', 'getUserOneTimes');
-                    Route::put('/one-time/{id}', 'editOneTime');
+                    Route::put('/edit-one-time/{id}', 'editOneTime');
 
                     // Recurring
                     Route::post('/recurring', 'createRecurring');
-                    Route::get('/recurring/{id}', 'getRecurring');
+                    Route::get('/recurring/get-one/{id}', 'getRecurring');
                     Route::get('/user/recurring/{user_id}', 'getUserRecurrings');
-                    Route::put('/recurring/{id}', 'editRecurring');
+                    Route::put('/recurring/edit/{id}', 'editRecurring');
 
                     // Trips
                     Route::get('/upcoming/{user_id}', 'getUpcomingTrips');
@@ -116,6 +117,20 @@ Route::middleware(JWTAuthenticator::class)
                 });
         });
 
+    Route::prefix('driver')
+        ->controller(DriverController::class)
+        ->group(function () {
+            Route::post('/onboarding', 'addDriverInfo');
+            Route::post('/bus-stop', 'addBusStop');
+            Route::get('/bus-stop/{user_id}', 'getAllBusStops');
+            Route::get('{user_id}/stops/{state_id}', 'getStop');
+
+            // Documents
+            Route::post('/edit-document', 'updateDriverDocuments');
+            Route::delete('/remove-document/{id}', 'removeDocument');
+            Route::put('/edit-union', 'updateUnion');
+        });
+
     Route::prefix('trip-booking')
     ->group(function(){
         Route::post('/create', [TripBookingController::class, 'store']);
@@ -128,6 +143,7 @@ Route::middleware(JWTAuthenticator::class)
     Route::prefix('payment')
     ->group(function(){
         Route::post('/initialize-paystack-transaction', [PaystackPaymentController::class, 'intializeTransaction']);
+
     });
 
     Route::prefix('wallet')
@@ -149,3 +165,4 @@ Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);
 Route::fallback(function(){
     return response()->json(['error' => 'page not found'], 404);
 });
+

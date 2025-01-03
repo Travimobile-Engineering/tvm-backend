@@ -47,25 +47,30 @@ class TripService
             return $this->error(null, "You do not have permission to complete this request");
         }
 
-        $subregions = DB::table('covered_routes')
-            ->where('id', $request->route_id)
+        $departure = DB::table('covered_routes')
+            ->where('id', $request->departure_id)
+            ->select('from_subregion_id', 'to_subregion_id')
+            ->first();
+
+        $destination = DB::table('covered_routes')
+            ->where('id', $request->destination_id)
             ->select('from_subregion_id', 'to_subregion_id')
             ->first();
 
         try {
 
             $trip = Trip::create([
-                'user_id' => $request->user_id,
+                'user_id' => Auth::user()->id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
-                'departure' => $subregions->from_subregion_id,
-                'destination' => $subregions->to_subregion_id,
+                'departure' => $departure->from_subregion_id,
+                'destination' => $destination->to_subregion_id,
                 'departure_date' => $request->departure_date,
                 'departure_time' => $request->departure_time,
                 'repeat_trip' => $request->repeat_trip,
                 'bus_type' => $request->bus_type,
                 'price' => $request->price,
-                'bus_stops' => $request->bus_stops,
+                'bus_stops' => $request->bus_stops ?? [],
                 'means' => $request->means ?? 1,
                 'type' => TripType::ONETIME,
                 'status' => TripStatus::ACTIVE,
@@ -78,53 +83,88 @@ class TripService
     }
 
     public function getTrip(Trip $trip){
-            if(!$trip) return ['message'=>'not found', 'code' => 400];
-            
-            $seats = Vehicle::where('id', $trip['vehicle_id'])->pluck('seats')->first();
-            $seats = json_decode($seats);
-            // $trip['available_seats'];
 
-            $bookings = TripBooking::where('trip_id', $trip->trip_id)->where('status', 1);
-            $trip['selected_seats'] = $bookings->pluck('selected_seat')->toArray();
-            $trip['available_seats'] = array_values(array_filter($seats, function($seat) use ($trip){
-                return !in_array($seat, $trip['selected_seats']);
-            }));
+        if(!$trip) {
+            return $this->error(null, "not found", 404);
+        }
 
-            $trip['transit_company'] = TransitCompany::where('id', $trip->transit_company_id)->get(['name', 'reg_no'])->first();
-            $trip['vehicle'] = Vehicle::where('id', $trip->vehicle_id)->get(['name', 'ac', 'plate_no'])->first();
-            $trip['vehicle']['seats'] = $seats;
+        $seats = Vehicle::where('id', $trip['vehicle_id'])->pluck('seats')->first();
+        $seats = json_decode($seats);
+        // $trip['available_seats'];
 
-            $seat_columns = [];
-            $seat_rows = 0;
+        $bookings = TripBooking::where('trip_id', $trip->trip_id)->where('status', 1);
+        $trip['selected_seats'] = $bookings->pluck('selected_seat')->toArray();
+        $trip['available_seats'] = array_values(array_filter($seats, function($seat) use ($trip){
+            return !in_array($seat, $trip['selected_seats']);
+        }));
 
-            foreach($seats as $seat){
-                $seat_parts = str_split($seat);
-                $seat_alph = $seat_parts[0];
-                $seat_num = $seat_parts[1];
-                if(!in_array($seat_alph, $seat_columns)) $seat_columns[] = $seat_alph;
-                if($seat_num > $seat_rows) $seat_rows = $seat_num;
+        $trip['transit_company'] = TransitCompany::where('id', $trip->transit_company_id)
+            ->select('name', 'reg_no')
+            ->first();
+
+        $trip['vehicle'] = Vehicle::where('id', $trip->vehicle_id)
+            ->select('name', 'ac', 'plate_no')
+            ->first();
+
+        $trip['vehicle']['seats'] = $seats;
+
+        $seat_columns = [];
+        $seat_rows = 0;
+
+        foreach($seats as $seat){
+            $seat_parts = str_split($seat);
+            $seat_alph = $seat_parts[0];
+            $seat_num = $seat_parts[1];
+
+            if(!in_array($seat_alph, $seat_columns)) {
+                $seat_columns[] = $seat_alph;
             }
 
-            $trip['vehicle']['seat_rows'] = $seat_rows;
-            $trip['vehicle']['seat_columns'] = count($seat_columns);
-            
-            return ['data' => $trip];
-        
+            if($seat_num > $seat_rows) {
+                $seat_rows = $seat_num;
+            }
+        }
+
+        $trip['vehicle']['seat_rows'] = $seat_rows;
+        $trip['vehicle']['seat_columns'] = count($seat_columns);
+
+        return $this->success($trip, "Trips");
+
     }
 
-    public function getTrips($request){
-        
+    public function getTrips($request)
+    {
         $trips = Trip::where('trips.status', 1);
-        if(!empty($request->date) || !empty($request->time)) $trips = $trips->where('departure_at', '>=', $request->date ?? date('Y-m-d', strtotime('now')).' '.$request->time ?? '00:00:00');
-        if(!empty($request->departure)) $trips = $trips->where('departure', $request->departure);
-        if(!empty($request->destination)) $trips = $trips->where('destination', $request->destination);
 
-        $trips = $trips->join('route_subregions as from_subregion', 'trips.departure', '=', 'from_subregion.id')
-        ->join('route_subregions as to_subregion', 'trips.destination', '=', 'to_subregion.id')
-        ->join('vehicles', 'trips.vehicle_id', '=', 'vehicles.id')
-        ->select('trips.*', 'vehicles.name as vehicle_name', 'vehicles.ac as vehicle_has_ac', 'vehicles.plate_no as vehicle_plate_no', 'vehicles.color as vehicle_color', 'from_subregion.name as departure_town', 'to_subregion.name as destination_town');
-        
-        return ['data' => $trips->get()];
+        if (!empty($request->date) || !empty($request->time)) {
+            $date = $request->date ?? date('Y-m-d');
+            $time = $request->time ?? '00:00:00';
+            $departureAt = "$date $time";
+            $trips->where('departure_at', '>=', $departureAt);
+        }
+
+        if (!empty($request->departure)) {
+            $trips->where('departure', $request->departure);
+        }
+
+        if (!empty($request->destination)) {
+            $trips->where('destination', $request->destination);
+        }
+
+        $trips->join('route_subregions as from_subregion', 'trips.departure', '=', 'from_subregion.id')
+            ->join('route_subregions as to_subregion', 'trips.destination', '=', 'to_subregion.id')
+            ->join('vehicles', 'trips.vehicle_id', '=', 'vehicles.id')
+            ->select(
+                'trips.*',
+                'vehicles.name as vehicle_name',
+                'vehicles.ac as vehicle_has_ac',
+                'vehicles.plate_no as vehicle_plate_no',
+                'vehicles.color as vehicle_color',
+                'from_subregion.name as departure_town',
+                'to_subregion.name as destination_town'
+            );
+
+        return $this->success($trips->get(), "Trips");
     }
 
     public function getOneTime($id)
@@ -204,8 +244,13 @@ class TripService
             return $this->error(null, "You do not have permission to complete this request");
         }
 
-        $subregions = DB::table('covered_routes')
-            ->where('id', $request->route_id)
+        $departure = DB::table('covered_routes')
+        ->where('id', $request->departure_id)
+        ->select('from_subregion_id', 'to_subregion_id')
+        ->first();
+
+        $destination = DB::table('covered_routes')
+            ->where('id', $request->destination_id)
             ->select('from_subregion_id', 'to_subregion_id')
             ->first();
 
@@ -215,15 +260,15 @@ class TripService
                 'user_id' => $request->user_id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
-                'departure' => $subregions->from_subregion_id,
-                'destination' => $subregions->to_subregion_id,
+                'departure' => $departure->from_subregion_id,
+                'destination' => $destination->to_subregion_id,
                 'start_date' => $request->start_date,
                 'end_date' => $request->end_date,
                 'trip_days' => $request->trip_days,
                 'reoccur_duration' => $request->reoccur_duration,
                 'bus_type' => $request->bus_type,
                 'price' => $request->price,
-                'bus_stops' => $request->bus_stops,
+                'bus_stops' => $request->bus_stops ?? [],
                 'means' => $request->means ?? 1,
                 'type' => TripType::RECURRING,
                 'status' => TripStatus::ACTIVE,
