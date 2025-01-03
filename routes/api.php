@@ -72,7 +72,6 @@ Route::middleware(JWTAuthenticator::class)
         Route::post('/create', [VehicleController::class, 'store']);
         Route::post('/edit/{vehicle}', [VehicleController::class, 'update']);
         Route::get('/{vehicle}', [VehicleController::class, 'show']);
-
     });
 
     Route::prefix('trip')
@@ -82,6 +81,9 @@ Route::middleware(JWTAuthenticator::class)
             Route::post('/edit/{trip}', 'update');
             Route::get('/get-trips', 'getTrips');
             Route::get('/{trip}', 'getTrip');
+
+            // Get Bus Stops
+            Route::get('/bus-stops/{destination_id}', 'getBusStops');
 
             Route::prefix('/driver')
                 ->group(function () {
