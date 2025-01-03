@@ -34,4 +34,28 @@ class DriverController extends Controller
     {
         return $this->service->getStop($userId, $stateId);
     }
+
+    public function removeDocument($id)
+    {
+        return $this->service->removeDocument($id);
+    }
+
+    public function updateDriverDocuments(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        return $this->service->updateDriverDocuments($request);
+    }
+
+    public function updateUnion(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'transit_company_union_id' => 'required|exists:transit_company_unions,id',
+        ]);
+
+        return $this->service->updateUnion($request);
+    }
 }
