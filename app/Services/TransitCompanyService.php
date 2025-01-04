@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Models\TransitCompany;
 use Illuminate\Support\Carbon;
 use App\Mail\ConfirmationEmail;
+use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Mail;
 
 class TransitCompanyService
 {
+    use HttpResponse;
+
     protected $user;
     public function __construct(){
         $this->user = JWTAuth::user();
@@ -30,7 +33,7 @@ class TransitCompanyService
     {
 
         $v_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
-        
+
         $company = TransitCompany::create([
             'name' => $request->name,
             'user_id' => $this->user->id,
@@ -89,8 +92,13 @@ class TransitCompanyService
         }
     }
 
-    public function getUnions(){
-        return ['data' => DB::table('transit_company_unions')->pluck('name')];
+    public function getUnions()
+    {
+        $data = DB::table('transit_company_unions')
+            ->select('id', 'name')
+            ->get();
+
+        return $this->success($data, "Transit company unions");
     }
 
     /**

@@ -60,7 +60,7 @@ class TripBookingController extends Controller
     public function update(TripBookingUpdateRequest $request, TripBooking $tripBooking)
     {
         return $this->response($this->service->update($request, $tripBooking));
-        
+
     }
 
     public function cancelTripBooking(Request $request){

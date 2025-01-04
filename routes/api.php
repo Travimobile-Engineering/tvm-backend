@@ -72,7 +72,6 @@ Route::middleware(JWTAuthenticator::class)
         Route::post('/create', [VehicleController::class, 'store']);
         Route::post('/edit/{vehicle}', [VehicleController::class, 'update']);
         Route::get('/{vehicle}', [VehicleController::class, 'show']);
-
     });
 
     Route::prefix('trip')
@@ -83,20 +82,23 @@ Route::middleware(JWTAuthenticator::class)
             Route::get('/get-trips', 'getTrips');
             Route::get('/{trip}', 'getTrip');
 
+            // Get Bus Stops
+            Route::get('/bus-stops/{destination_id}', 'getBusStops');
+
             Route::prefix('/driver')
                 ->group(function () {
 
                     // One Time
                     Route::post('/one-time', 'createOneTime');
-                    Route::get('/one-time/{id}', 'getOneTime');
+                    Route::get('/get-one-time/{id}', 'getOneTime');
                     Route::get('/user/one-time/{user_id}', 'getUserOneTimes');
-                    Route::put('/one-time/{id}', 'editOneTime');
+                    Route::put('/edit-one-time/{id}', 'editOneTime');
 
                     // Recurring
                     Route::post('/recurring', 'createRecurring');
-                    Route::get('/recurring/{id}', 'getRecurring');
+                    Route::get('/recurring/get-one/{id}', 'getRecurring');
                     Route::get('/user/recurring/{user_id}', 'getUserRecurrings');
-                    Route::put('/recurring/{id}', 'editRecurring');
+                    Route::put('/recurring/edit/{id}', 'editRecurring');
 
                     // Trips
                     Route::get('/upcoming/{user_id}', 'getUpcomingTrips');
@@ -124,6 +126,11 @@ Route::middleware(JWTAuthenticator::class)
             Route::post('/bus-stop', 'addBusStop');
             Route::get('/bus-stop/{user_id}', 'getAllBusStops');
             Route::get('{user_id}/stops/{state_id}', 'getStop');
+
+            // Documents
+            Route::post('/edit-document', 'updateDriverDocuments');
+            Route::delete('/remove-document/{id}', 'removeDocument');
+            Route::put('/edit-union', 'updateUnion');
         });
 
     Route::prefix('trip-booking')

@@ -14,7 +14,7 @@ use App\Http\Resources\TripResource;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\OneTimeTripResource;
 use App\Http\Resources\RecurringTripResource;
-
+use App\Models\BusStop;
 use App\Models\Manifest;
 
 class TripService
@@ -532,6 +532,17 @@ class TripService
         });
 
         return $this->success(null, "Trip Started Successfully", 200);
+    }
+
+    public function getBusStops($destinationId)
+    {
+        $stops = BusStop::where('state_id', $destinationId)->get();
+
+        $data = [
+            'stops' => ["Orile","Coker","Aguda"],
+        ];
+
+        return $this->success($data, "Bus stops");
     }
 }
 
