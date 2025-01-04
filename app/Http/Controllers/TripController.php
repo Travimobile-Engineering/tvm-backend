@@ -48,7 +48,7 @@ class TripController extends Controller
 
     public function getTrip(Trip $trip){
 
-        return $this->response($this->service->getTrip($trip));
+        return $this->service->getTrip($trip);
     }
 
     public function getUserOneTimes($userId)
@@ -141,6 +141,10 @@ class TripController extends Controller
     public function getBusStops($destinationId)
     {
         return $this->service->getBusStops($destinationId);
+    }
+
+    public function getPopularTrips(){
+        return $this->service->getPopularTrips();
     }
 
 }

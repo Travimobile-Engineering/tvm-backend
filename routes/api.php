@@ -78,6 +78,7 @@ Route::middleware(JWTAuthenticator::class)
         ->controller(TripController::class)
         ->group(function () {
             Route::post('/create', 'store');
+            Route::get('/popular', 'getPopularTrips');
             Route::post('/edit/{trip}', 'update');
             Route::get('/get-trips', 'getTrips');
             Route::get('/{trip}', 'getTrip');
