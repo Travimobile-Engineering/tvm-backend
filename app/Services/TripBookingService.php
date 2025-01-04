@@ -87,12 +87,12 @@ class TripBookingService
             $vehicle = Vehicle::where('id', $trip->vehicle_id)->select()->first();
             $seats = json_decode($vehicle->seats);
             
-            $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','region_id')->get()->first();
-            $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->select('name')->get()->first();
+            $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','state_id')->get()->first();
+            $departure_state = DB::table('states')->where('id', $departure_town->state_id)->select('name')->get()->first();
             $departure = $departure_state->name.' > '.$departure_town->name;
 
-            $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->select('name','region_id')->get()->first();
-            $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->select('name')->get()->first();
+            $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->select('name','state_id')->get()->first();
+            $destination_state = DB::table('states')->where('id', $destination_town->state_id)->select('name')->get()->first();
             $destination = $destination_state->name.' > '.$destination_town->name;
 
             $transit_company = TransitCompany::where('id', $trip->transit_company_id)->first();
@@ -176,9 +176,9 @@ class TripBookingService
         $trip = Trip::firstWhere('uuid', $tripBooking->trip_id);
 
         $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->first();
-        $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->first();
+        $departure_state = DB::table('states')->where('id', $departure_town->state_id)->first();
         $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->first();
-        $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->first();
+        $destination_state = DB::table('states')->where('id', $destination_town->state_id)->first();
 
         $trip->departure = $departure_state->name.' > '.$departure_town->name;
         $trip->destination = $destination_state->name.' > '.$destination_town->name;
@@ -261,9 +261,9 @@ class TripBookingService
                 if($k != 'trip') $hty[$key][$k] = $value;
                 else{
                     $departure_town = DB::table('route_subregions')->where('id', $history[$key][$k]['departure'])->first();
-                    $departure_state = DB::table('route_regions')->where('id', $departure_town->region_id)->first();
+                    $departure_state = DB::table('states')->where('id', $departure_town->state_id)->first();
                     $destination_town = DB::table('route_subregions')->where('id', $history[$key][$k]['destination'])->first();
-                    $destination_state = DB::table('route_regions')->where('id', $destination_town->region_id)->first();
+                    $destination_state = DB::table('states')->where('id', $destination_town->state_id)->first();
 
                     $hty[$key][$k]['departure'] = $departure_state->name.' > '.$departure_town->name;
                     $hty[$key][$k]['destination'] = $destination_state->name.' > '.$destination_town->name;

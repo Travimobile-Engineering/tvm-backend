@@ -544,5 +544,10 @@ class TripService
 
         return $this->success($data, "Bus stops");
     }
+
+    public function getPopularTrips(){
+        $trips = Trip::where('trips.status', 1)->limit(5)->inRandomOrder();
+        return $this->success($trips->get(), "Trips");
+    }
 }
 

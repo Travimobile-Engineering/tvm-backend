@@ -16,9 +16,9 @@ class RouteController extends Controller
         foreach($coveredRoutes as $key => $value){
             
             $route = array([
-                'from_region' => DB::table('route_regions')->where('id', $value->from_region_id)->pluck('name')->first(),
+                'from_region' => DB::table('states')->where('id', $value->from_region_id)->pluck('name')->first(),
                 'from_subregion' => DB::table('route_subregions')->where('id', $value->from_subregion_id)->pluck('name')->first(),
-                'to_region' => DB::table('route_regions')->where('id', $value->to_region_id)->pluck('name')->first(),
+                'to_region' => DB::table('states')->where('id', $value->to_region_id)->pluck('name')->first(),
                 'to_subregion' => DB::table('route_subregions')->where('id', $value->to_subregion_id)->pluck('name')->first(),
             ]);
 
@@ -29,9 +29,9 @@ class RouteController extends Controller
 
     public function getRegions(){
         $regions = collect();
-        $subregions = DB::table('route_subregions')->get(['id', 'region_id', 'name',]);
+        $subregions = DB::table('route_subregions')->get(['id', 'state_id', 'name',]);
         foreach($subregions as $subregion){
-            $region = DB::table('route_regions')->where('id', $subregion->region_id)->get('name')->first();
+            $region = DB::table('states')->where('id', $subregion->state_id)->get('name')->first();
             $regions->add(['id' => $subregion->id, 'name' => $region->name.' > '.$subregion->name]);
         }
         return response()->json(['data' => $regions], 200);
