@@ -12,6 +12,7 @@ use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\OtherController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TransitCompanyController;
@@ -25,6 +26,8 @@ Route::get('/', function () {
     // return view('welcome');
     return 'welcome to tvm console! nothing spoil 😇👍';
 });
+
+Route::get('/states', [OtherController::class, 'getStates']);
 
 Route::prefix('auth')
 ->group(function(){
@@ -84,7 +87,7 @@ Route::middleware(JWTAuthenticator::class)
             Route::get('/{trip}', 'getTrip');
 
             // Get Bus Stops
-            Route::get('/bus-stops/{destination_id}', 'getBusStops');
+            Route::get('/bus-stops/{state_id}', 'getBusStops');
 
             Route::prefix('/driver')
                 ->group(function () {
