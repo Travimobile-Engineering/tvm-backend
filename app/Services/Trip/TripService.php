@@ -192,8 +192,8 @@ class TripService
         }
 
         $transport->update([
-            'departure' => $request->departure,
-            'destination' => $request->destination,
+            'departure' => $request->departure_id,
+            'destination' => $request->destination_id,
             'departure_date' => $request->departure_date,
             'departure_time' => $request->departure_time,
             'repeat_trip' => $request->repeat_trip,
@@ -291,8 +291,8 @@ class TripService
         }
 
         $transport->update([
-            'departure' => $request->departure,
-            'destination' => $request->destination,
+            'departure' => $request->departure_id,
+            'destination' => $request->destination_id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'trip_days' => $request->trip_days,
