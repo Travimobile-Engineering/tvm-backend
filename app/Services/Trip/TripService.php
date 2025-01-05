@@ -23,8 +23,6 @@ class TripService
 
     public function createOneTime($request)
     {
-        $user = Auth::user();
-
         // $tCompany = TransitCompany::with('user')
         //     ->where('id', $request->transit_company_id)
         //     ->first();
@@ -47,24 +45,14 @@ class TripService
         //     return $this->error(null, "You do not have permission to complete this request");
         // }
 
-        $departure = DB::table('covered_routes')
-            ->where('id', $request->departure_id)
-            ->select('from_subregion_id', 'to_subregion_id')
-            ->first();
-
-        $destination = DB::table('covered_routes')
-            ->where('id', $request->destination_id)
-            ->select('from_subregion_id', 'to_subregion_id')
-            ->first();
-
         try {
 
             $trip = Trip::create([
                 'user_id' => $request->user_id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
-                'departure' => $departure->from_subregion_id,
-                'destination' => $destination->to_subregion_id,
+                'departure' => $request->departure_id,
+                'destination' => $request->destination_id,
                 'departure_date' => $request->departure_date,
                 'departure_time' => $request->departure_time,
                 'repeat_trip' => $request->repeat_trip,
@@ -204,8 +192,8 @@ class TripService
         }
 
         $transport->update([
-            'departure' => $request->departure,
-            'destination' => $request->destination,
+            'departure' => $request->departure_id,
+            'destination' => $request->destination_id,
             'departure_date' => $request->departure_date,
             'departure_time' => $request->departure_time,
             'repeat_trip' => $request->repeat_trip,
@@ -241,24 +229,14 @@ class TripService
         //     return $this->error(null, "You do not have permission to complete this request");
         // }
 
-        $departure = DB::table('covered_routes')
-        ->where('id', $request->departure_id)
-        ->select('from_subregion_id', 'to_subregion_id')
-        ->first();
-
-        $destination = DB::table('covered_routes')
-            ->where('id', $request->destination_id)
-            ->select('from_subregion_id', 'to_subregion_id')
-            ->first();
-
         try {
 
             Trip::create([
                 'user_id' => $request->user_id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
-                'departure' => $departure->from_subregion_id,
-                'destination' => $destination->to_subregion_id,
+                'departure' => $request->departure_id,
+                'destination' => $request->destination_id,
                 'start_date' => $request->start_date,
                 'trip_days' => $request->trip_days,
                 'reoccur_duration' => $request->reoccur_duration,
@@ -313,8 +291,8 @@ class TripService
         }
 
         $transport->update([
-            'departure' => $request->departure,
-            'destination' => $request->destination,
+            'departure' => $request->departure_id,
+            'destination' => $request->destination_id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'trip_days' => $request->trip_days,
