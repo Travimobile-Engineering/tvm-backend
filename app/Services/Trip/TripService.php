@@ -534,13 +534,13 @@ class TripService
         return $this->success(null, "Trip Started Successfully", 200);
     }
 
-    public function getBusStops($destinationId)
+    public function getBusStops($stateId)
     {
-        $stops = BusStop::where('state_id', $destinationId)->get();
+        $stops = BusStop::where('state_id', $stateId)->get();
 
-        $data = [
-            'stops' => ["Orile","Coker","Aguda"],
-        ];
+        $data = $stops->map(function ($stop) {
+            return $stop->stops;
+        });
 
         return $this->success($data, "Bus stops");
     }
