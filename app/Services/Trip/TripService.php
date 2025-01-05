@@ -25,27 +25,27 @@ class TripService
     {
         $user = Auth::user();
 
-        $tCompany = TransitCompany::with('user')
-            ->where('id', $request->transit_company_id)
-            ->first();
+        // $tCompany = TransitCompany::with('user')
+        //     ->where('id', $request->transit_company_id)
+        //     ->first();
 
-        if(! $tCompany) {
-            return $this->error(null, "Invalid company ID", 400);
-        }
+        // if(! $tCompany) {
+        //     return $this->error(null, "Invalid company ID", 400);
+        // }
 
-        if($tCompany->user->id != $user->id) {
-            return $this->error(null, "You do not have permission to complete this request", 400);
-        }
+        // if($tCompany->user->id != $user->id) {
+        //     return $this->error(null, "You do not have permission to complete this request", 400);
+        // }
 
-        $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
+        // $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
 
-        if (! $vehicle) {
-            return $this->error(null, "Invalid vehicle ID");
-        }
+        // if (! $vehicle) {
+        //     return $this->error(null, "Invalid vehicle ID");
+        // }
 
-        if($vehicle->company_id != $tCompany->id) {
-            return $this->error(null, "You do not have permission to complete this request");
-        }
+        // if($vehicle->company_id != $tCompany->id) {
+        //     return $this->error(null, "You do not have permission to complete this request");
+        // }
 
         $departure = DB::table('covered_routes')
             ->where('id', $request->departure_id)
@@ -60,7 +60,7 @@ class TripService
         try {
 
             $trip = Trip::create([
-                'user_id' => Auth::user()->id,
+                'user_id' => $request->user_id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
                 'departure' => $departure->from_subregion_id,
@@ -219,30 +219,27 @@ class TripService
 
     public function createRecurring($request)
     {
+        // $tCompany = TransitCompany::with('user')
+        //     ->where('id', $request->transit_company_id)
+        //     ->first();
 
-        $user = Auth::user();
+        // if(! $tCompany) {
+        //     return $this->error(null, "Invalid company ID", 400);
+        // }
 
-        $tCompany = TransitCompany::with('user')
-            ->where('id', $request->transit_company_id)
-            ->first();
+        // if($tCompany->user->id != $user->id) {
+        //     return $this->error(null, "You do not have permission to complete this request", 400);
+        // }
 
-        if(! $tCompany) {
-            return $this->error(null, "Invalid company ID", 400);
-        }
+        // $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
 
-        if($tCompany->user->id != $user->id) {
-            return $this->error(null, "You do not have permission to complete this request", 400);
-        }
+        // if (! $vehicle) {
+        //     return $this->error(null, "Invalid vehicle ID");
+        // }
 
-        $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
-
-        if (! $vehicle) {
-            return $this->error(null, "Invalid vehicle ID");
-        }
-
-        if($vehicle->company_id != $tCompany->id) {
-            return $this->error(null, "You do not have permission to complete this request");
-        }
+        // if($vehicle->company_id != $tCompany->id) {
+        //     return $this->error(null, "You do not have permission to complete this request");
+        // }
 
         $departure = DB::table('covered_routes')
         ->where('id', $request->departure_id)
@@ -263,7 +260,6 @@ class TripService
                 'departure' => $departure->from_subregion_id,
                 'destination' => $destination->to_subregion_id,
                 'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
                 'trip_days' => $request->trip_days,
                 'reoccur_duration' => $request->reoccur_duration,
                 'bus_type' => $request->bus_type,
