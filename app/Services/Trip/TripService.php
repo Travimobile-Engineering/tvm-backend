@@ -23,28 +23,6 @@ class TripService
 
     public function createOneTime($request)
     {
-        // $tCompany = TransitCompany::with('user')
-        //     ->where('id', $request->transit_company_id)
-        //     ->first();
-
-        // if(! $tCompany) {
-        //     return $this->error(null, "Invalid company ID", 400);
-        // }
-
-        // if($tCompany->user->id != $user->id) {
-        //     return $this->error(null, "You do not have permission to complete this request", 400);
-        // }
-
-        // $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
-
-        // if (! $vehicle) {
-        //     return $this->error(null, "Invalid vehicle ID");
-        // }
-
-        // if($vehicle->company_id != $tCompany->id) {
-        //     return $this->error(null, "You do not have permission to complete this request");
-        // }
-
         try {
 
             $trip = Trip::create([
@@ -207,28 +185,6 @@ class TripService
 
     public function createRecurring($request)
     {
-        // $tCompany = TransitCompany::with('user')
-        //     ->where('id', $request->transit_company_id)
-        //     ->first();
-
-        // if(! $tCompany) {
-        //     return $this->error(null, "Invalid company ID", 400);
-        // }
-
-        // if($tCompany->user->id != $user->id) {
-        //     return $this->error(null, "You do not have permission to complete this request", 400);
-        // }
-
-        // $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
-
-        // if (! $vehicle) {
-        //     return $this->error(null, "Invalid vehicle ID");
-        // }
-
-        // if($vehicle->company_id != $tCompany->id) {
-        //     return $this->error(null, "You do not have permission to complete this request");
-        // }
-
         try {
 
             Trip::create([
