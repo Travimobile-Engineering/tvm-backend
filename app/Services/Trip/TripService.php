@@ -23,48 +23,36 @@ class TripService
 
     public function createOneTime($request)
     {
-        $user = Auth::user();
+        // $tCompany = TransitCompany::with('user')
+        //     ->where('id', $request->transit_company_id)
+        //     ->first();
 
-        $tCompany = TransitCompany::with('user')
-            ->where('id', $request->transit_company_id)
-            ->first();
+        // if(! $tCompany) {
+        //     return $this->error(null, "Invalid company ID", 400);
+        // }
 
-        if(! $tCompany) {
-            return $this->error(null, "Invalid company ID", 400);
-        }
+        // if($tCompany->user->id != $user->id) {
+        //     return $this->error(null, "You do not have permission to complete this request", 400);
+        // }
 
-        if($tCompany->user->id != $user->id) {
-            return $this->error(null, "You do not have permission to complete this request", 400);
-        }
+        // $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
 
-        $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
+        // if (! $vehicle) {
+        //     return $this->error(null, "Invalid vehicle ID");
+        // }
 
-        if (! $vehicle) {
-            return $this->error(null, "Invalid vehicle ID");
-        }
-
-        if($vehicle->company_id != $tCompany->id) {
-            return $this->error(null, "You do not have permission to complete this request");
-        }
-
-        $departure = DB::table('covered_routes')
-            ->where('id', $request->departure_id)
-            ->select('from_subregion_id', 'to_subregion_id')
-            ->first();
-
-        $destination = DB::table('covered_routes')
-            ->where('id', $request->destination_id)
-            ->select('from_subregion_id', 'to_subregion_id')
-            ->first();
+        // if($vehicle->company_id != $tCompany->id) {
+        //     return $this->error(null, "You do not have permission to complete this request");
+        // }
 
         try {
 
             $trip = Trip::create([
-                'user_id' => Auth::user()->id,
+                'user_id' => $request->user_id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
-                'departure' => $departure->from_subregion_id,
-                'destination' => $destination->to_subregion_id,
+                'departure' => $request->departure_id,
+                'destination' => $request->destination_id,
                 'departure_date' => $request->departure_date,
                 'departure_time' => $request->departure_time,
                 'repeat_trip' => $request->repeat_trip,
@@ -204,8 +192,8 @@ class TripService
         }
 
         $transport->update([
-            'departure' => $request->departure,
-            'destination' => $request->destination,
+            'departure' => $request->departure_id,
+            'destination' => $request->destination_id,
             'departure_date' => $request->departure_date,
             'departure_time' => $request->departure_time,
             'repeat_trip' => $request->repeat_trip,
@@ -219,40 +207,27 @@ class TripService
 
     public function createRecurring($request)
     {
+        // $tCompany = TransitCompany::with('user')
+        //     ->where('id', $request->transit_company_id)
+        //     ->first();
 
-        $user = Auth::user();
+        // if(! $tCompany) {
+        //     return $this->error(null, "Invalid company ID", 400);
+        // }
 
-        $tCompany = TransitCompany::with('user')
-            ->where('id', $request->transit_company_id)
-            ->first();
+        // if($tCompany->user->id != $user->id) {
+        //     return $this->error(null, "You do not have permission to complete this request", 400);
+        // }
 
-        if(! $tCompany) {
-            return $this->error(null, "Invalid company ID", 400);
-        }
+        // $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
 
-        if($tCompany->user->id != $user->id) {
-            return $this->error(null, "You do not have permission to complete this request", 400);
-        }
+        // if (! $vehicle) {
+        //     return $this->error(null, "Invalid vehicle ID");
+        // }
 
-        $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
-
-        if (! $vehicle) {
-            return $this->error(null, "Invalid vehicle ID");
-        }
-
-        if($vehicle->company_id != $tCompany->id) {
-            return $this->error(null, "You do not have permission to complete this request");
-        }
-
-        $departure = DB::table('covered_routes')
-        ->where('id', $request->departure_id)
-        ->select('from_subregion_id', 'to_subregion_id')
-        ->first();
-
-        $destination = DB::table('covered_routes')
-            ->where('id', $request->destination_id)
-            ->select('from_subregion_id', 'to_subregion_id')
-            ->first();
+        // if($vehicle->company_id != $tCompany->id) {
+        //     return $this->error(null, "You do not have permission to complete this request");
+        // }
 
         try {
 
@@ -260,10 +235,9 @@ class TripService
                 'user_id' => $request->user_id,
                 'vehicle_id' => $request->vehicle_id,
                 'transit_company_id' => $request->transit_company_id,
-                'departure' => $departure->from_subregion_id,
-                'destination' => $destination->to_subregion_id,
+                'departure' => $request->departure_id,
+                'destination' => $request->destination_id,
                 'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
                 'trip_days' => $request->trip_days,
                 'reoccur_duration' => $request->reoccur_duration,
                 'bus_type' => $request->bus_type,
@@ -317,8 +291,8 @@ class TripService
         }
 
         $transport->update([
-            'departure' => $request->departure,
-            'destination' => $request->destination,
+            'departure' => $request->departure_id,
+            'destination' => $request->destination_id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'trip_days' => $request->trip_days,
@@ -534,13 +508,13 @@ class TripService
         return $this->success(null, "Trip Started Successfully", 200);
     }
 
-    public function getBusStops($destinationId)
+    public function getBusStops($stateId)
     {
-        $stops = BusStop::where('state_id', $destinationId)->get();
+        $stops = BusStop::where('state_id', $stateId)->get();
 
-        $data = [
-            'stops' => ["Orile","Coker","Aguda"],
-        ];
+        $data = $stops->map(function ($stop) {
+            return $stop->stops;
+        });
 
         return $this->success($data, "Bus stops");
     }
