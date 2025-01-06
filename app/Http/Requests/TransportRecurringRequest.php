@@ -26,7 +26,6 @@ class TransportRecurringRequest extends FormRequest
             'departure_id' => ['required', 'integer'],
             'destination_id' => ['required', 'integer'],
             'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date'],
             'trip_days' => ['required', 'array'],
             'reoccur_duration' => ['required', 'string'],
             'bus_type' => ['required', 'string'],
