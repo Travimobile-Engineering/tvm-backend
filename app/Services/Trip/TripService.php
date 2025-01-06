@@ -31,7 +31,7 @@ class TripService
             $trip = Trip::create([
                 'user_id' => $user->id,
                 'vehicle_id' => $request->vehicle_id,
-                'transit_company_id' => $request->transit_company_id,
+                'transit_company_id' => $request->transit_company_id ?? 0,
                 'departure' => $request->departure_id,
                 'destination' => $request->destination_id,
                 'departure_date' => $request->departure_date,
