@@ -3,23 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Trait\HttpResponse;
-use Illuminate\Http\Request;
 use App\Models\TransitCompany;
-use Illuminate\Support\Carbon;
-use App\Mail\ConfirmationEmail;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Mail;
 use App\Services\TransitCompanyService;
-use Illuminate\Validation\ValidationException;
 use App\Http\Requests\TransitCompany\StoreRequest;
 use App\Http\Requests\TransitCompany\UpdateRequest;
 
 class TransitCompanyController extends Controller
 {
-
     use HttpResponse;
+    
     protected $service;
 
     public function __construct(TransitCompanyService $service){
@@ -61,7 +54,7 @@ class TransitCompanyController extends Controller
     }
 
     public function getUnions(){
-        return $this->response($this->service->getUnions());
+        return $this->service->getUnions();
     }
 
     /**

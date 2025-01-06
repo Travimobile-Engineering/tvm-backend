@@ -1,5 +1,6 @@
 <?php
 
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Str;
 
 if (!function_exists('getRandomNumber')) {
@@ -10,8 +11,12 @@ if (!function_exists('getRandomNumber')) {
 }
 
 if (!function_exists('uploadFile')) {
-    function uploadFile($request, $key, $folder)
+    function uploadFile($request, $key, $folder, $oldPublicId = null)
     {
+        if ($oldPublicId) {
+            Cloudinary::destroy($oldPublicId);
+        }
+
         if ($request->hasFile($key)) {
             $image = $request->file($key)->storeOnCloudinary($folder);
             return [

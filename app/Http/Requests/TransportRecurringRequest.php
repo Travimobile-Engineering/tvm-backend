@@ -23,8 +23,8 @@ class TransportRecurringRequest extends FormRequest
     {
         return [
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'departure' => ['required', 'string'],
-            'destination' => ['required', 'string'],
+            'departure_id' => ['required', 'integer'],
+            'destination_id' => ['required', 'integer'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date'],
             'trip_days' => ['required', 'array'],

@@ -31,6 +31,7 @@ class DriverProfileResource extends JsonResource
             'avatar_url' => $this->avatar_url,
             'profile_photo' => $this->profile_photo,
             'status' => ($this->email_verified || $this->sms_verified) ? 'verified' : 'pending',
+            'driver_verified' => $this->driver_verified,
             'transit_company' => (object)[
                 'id' => $this->transitCompany?->id,
                 'name' => $this->transitCompany?->name,

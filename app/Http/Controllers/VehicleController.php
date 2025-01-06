@@ -92,6 +92,7 @@ class VehicleController extends Controller
      */
     public function show(Vehicle $vehicle)
     {
+        $vehicle->seats = json_decode($vehicle->seats);
         return response()->json([
             'data' => $vehicle
         ], 200);
