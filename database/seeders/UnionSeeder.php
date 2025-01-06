@@ -15,6 +15,8 @@ class UnionSeeder extends Seeder
     {
         DB::table('transit_company_unions')->insert([
             ['name' => 'NURTW'],
+            ['name' => 'NARTO'],
+            ['name' => 'RTEAN'],
         ]);
     }
 }
