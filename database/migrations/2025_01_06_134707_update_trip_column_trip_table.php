@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('trips', function (Blueprint $table) {
-            $table->bigInteger('transit_company_id')->nullable()->change();
             $table->dateTime('departure_at')->nullable()->change();
             $table->dateTime('estimated_arrival_at')->nullable()->change();
         });
