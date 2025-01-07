@@ -23,8 +23,7 @@ use App\Http\Controllers\WalletController;
 
 
 Route::get('/', function () {
-    // return view('welcome');
-    return 'welcome to tvm console! nothing spoil 😇👍';
+    return response(null, 200);
 });
 
 Route::get('/states', [OtherController::class, 'getStates']);
