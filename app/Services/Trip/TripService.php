@@ -16,6 +16,7 @@ use App\Http\Resources\OneTimeTripResource;
 use App\Http\Resources\RecurringTripResource;
 use App\Models\BusStop;
 use App\Models\Manifest;
+use App\Models\User;
 
 class TripService
 {
@@ -23,39 +24,18 @@ class TripService
 
     public function createOneTime($request)
     {
-        // $tCompany = TransitCompany::with('user')
-        //     ->where('id', $request->transit_company_id)
-        //     ->first();
-
-        // if(! $tCompany) {
-        //     return $this->error(null, "Invalid company ID", 400);
-        // }
-
-        // if($tCompany->user->id != $user->id) {
-        //     return $this->error(null, "You do not have permission to complete this request", 400);
-        // }
-
-        // $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
-
-        // if (! $vehicle) {
-        //     return $this->error(null, "Invalid vehicle ID");
-        // }
-
-        // if($vehicle->company_id != $tCompany->id) {
-        //     return $this->error(null, "You do not have permission to complete this request");
-        // }
-
         try {
 
+            $user = User::findOrFail($request->user_id);
+
             $trip = Trip::create([
-                'user_id' => $request->user_id,
+                'user_id' => $user->id,
                 'vehicle_id' => $request->vehicle_id,
-                'transit_company_id' => $request->transit_company_id,
+                'transit_company_id' => $request->transit_company_id ?? 1,
                 'departure' => $request->departure_id,
                 'destination' => $request->destination_id,
                 'departure_date' => $request->departure_date,
                 'departure_time' => $request->departure_time,
-                'repeat_trip' => $request->repeat_trip,
                 'bus_type' => $request->bus_type,
                 'price' => $request->price,
                 'bus_stops' => $request->bus_stops ?? [],
@@ -158,17 +138,17 @@ class TripService
 
     public function getOneTime($id)
     {
-        $transport = Trip::with(['user', 'tripBookings.user'])
+        $trip = Trip::with(['user', 'tripBookings.user'])
             ->where('type', TripType::ONETIME)
             ->find($id);
 
-        if (!$transport) {
-            return $this->error("Transport not found", 404);
+        if (!$trip) {
+            return $this->error("Trip not found", 404);
         }
 
-        $data = new OneTimeTripResource($transport);
+        $data = new OneTimeTripResource($trip);
 
-        return $this->success($data, "Transport found", 200);
+        return $this->success($data, "Trip found", 200);
     }
 
     public function getUserOneTimes($userId)
@@ -180,24 +160,23 @@ class TripService
 
         $data = OneTimeTripResource::collection($trips);
 
-        return $this->success($data, "Transport found", 200);
+        return $this->success($data, "Trip found", 200);
     }
 
     public function editOneTime($request, $id)
     {
-        $transport = Trip::where('type', TripType::ONETIME)
+        $trip = Trip::where('type', TripType::ONETIME)
             ->find($id);
 
-        if (! $transport) {
+        if (! $trip) {
             return $this->error(null, "Data not found!", 404);
         }
 
-        $transport->update([
+        $trip->update([
             'departure' => $request->departure_id,
             'destination' => $request->destination_id,
             'departure_date' => $request->departure_date,
             'departure_time' => $request->departure_time,
-            'repeat_trip' => $request->repeat_trip,
             'bus_type' => $request->bus_type,
             'ticket_price' => $request->ticket_price,
             'bus_stops' => $request->bus_stops,
@@ -208,34 +187,14 @@ class TripService
 
     public function createRecurring($request)
     {
-        // $tCompany = TransitCompany::with('user')
-        //     ->where('id', $request->transit_company_id)
-        //     ->first();
-
-        // if(! $tCompany) {
-        //     return $this->error(null, "Invalid company ID", 400);
-        // }
-
-        // if($tCompany->user->id != $user->id) {
-        //     return $this->error(null, "You do not have permission to complete this request", 400);
-        // }
-
-        // $vehicle = Vehicle::where('id', $request->vehicle_id)->first();
-
-        // if (! $vehicle) {
-        //     return $this->error(null, "Invalid vehicle ID");
-        // }
-
-        // if($vehicle->company_id != $tCompany->id) {
-        //     return $this->error(null, "You do not have permission to complete this request");
-        // }
-
         try {
 
+            $user = User::findOrFail($request->user_id);
+
             Trip::create([
-                'user_id' => $request->user_id,
+                'user_id' => $user->id,
                 'vehicle_id' => $request->vehicle_id,
-                'transit_company_id' => $request->transit_company_id,
+                'transit_company_id' => $request->transit_company_id ?? 1,
                 'departure' => $request->departure_id,
                 'destination' => $request->destination_id,
                 'start_date' => $request->start_date,
@@ -257,17 +216,17 @@ class TripService
 
     public function getRecurring($id)
     {
-        $transport = Trip::with(['user', 'tripBookings.user'])
+        $trip = Trip::with(['user', 'tripBookings.user'])
             ->where('type', TripType::RECURRING)
             ->find($id);
 
-        if (!$transport) {
-            return $this->error("Transport not found", 404);
+        if (!$trip) {
+            return $this->error("Trip not found", 404);
         }
 
-        $data = new RecurringTripResource($transport);
+        $data = new RecurringTripResource($trip);
 
-        return $this->success($data, "Transport found", 200);
+        return $this->success($data, "Trip found", 200);
     }
 
     public function getUserRecurrings($userId)
@@ -279,19 +238,19 @@ class TripService
 
         $data = RecurringTripResource::collection($trips);
 
-        return $this->success($data, "Transport found", 200);
+        return $this->success($data, "Trip found", 200);
     }
 
     public function editRecurring($request, $id)
     {
-        $transport = Trip::where('type', TripType::RECURRING)
+        $trip = Trip::where('type', TripType::RECURRING)
             ->find($id);
 
-        if (! $transport) {
+        if (! $trip) {
             return $this->error(null, "Data not found!", 404);
         }
 
-        $transport->update([
+        $trip->update([
             'departure' => $request->departure_id,
             'destination' => $request->destination_id,
             'start_date' => $request->start_date,
@@ -308,13 +267,13 @@ class TripService
 
     public function cancelTrip($request, $id)
     {
-        $transport = Trip::find($id);
+        $trip = Trip::find($id);
 
-        if (! $transport) {
+        if (! $trip) {
             return $this->error(null, "Data not found!", 404);
         }
 
-        $transport->update([
+        $trip->update([
             'reason' => $request->reason,
             'date_cancelled' => now(),
             'status' => TripStatus::CANCELLED,
@@ -325,13 +284,13 @@ class TripService
 
     public function completeTrip($id)
     {
-        $transport = Trip::find($id);
+        $trip = Trip::find($id);
 
-        if (! $transport) {
+        if (! $trip) {
             return $this->error(null, "Data not found!", 404);
         }
 
-        $transport->update([
+        $trip->update([
             'status' => TripStatus::COMPLETED,
         ]);
 
@@ -441,15 +400,15 @@ class TripService
 
     public function getManifestInfo($tripId, $userId)
     {
-        $transport = Trip::with(['user', 'tripBookings.user'])
+        $trip = Trip::with(['user', 'tripBookings.user'])
             ->where('id', $tripId)
             ->first();
 
-        if (! $transport) {
-            return $this->error("Transport not found", 404);
+        if (! $trip) {
+            return $this->error("Trip not found", 404);
         }
 
-        $passenger = $transport->tripBookings
+        $passenger = $trip->tripBookings
             ->where('user_id', $userId)
             ->first();
 
@@ -465,8 +424,8 @@ class TripService
             'phone_number' => $passenger->user->phone_number,
             'next_of_kin' => $passenger->next_of_kin_fullname,
             'next_of_kin_phone' => $passenger->next_of_kin_phone_number,
-            'departure' => $transport->departure,
-            'destination' => $transport->destination,
+            'departure' => $trip->departure,
+            'destination' => $trip->destination,
             'seat' => (int)$passenger->selected_seat,
         ];
 

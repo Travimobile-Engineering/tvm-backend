@@ -15,7 +15,7 @@ class PaystackPaymentService
     }
 
     public function intializeTransaction($request){
-        
+
         $url = "https://api.paystack.co/transaction/initialize";
 
         $fields = [
@@ -27,7 +27,7 @@ class PaystackPaymentService
 
         //open connection
         $ch = curl_init();
-        
+
         //set the url, number of POST vars, POST data
         curl_setopt($ch,CURLOPT_URL, $url);
         curl_setopt($ch,CURLOPT_POST, true);
@@ -36,10 +36,10 @@ class PaystackPaymentService
             "Authorization: Bearer ".$this->paystack_secret_key,
             "Cache-Control: no-cache",
         ));
-        
+
         //So that curl_exec returns the contents of the cURL; rather than echoing it
-        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true); 
-        
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
+
         //execute post
         $result = curl_exec($ch);
         return json_decode($result);
@@ -49,7 +49,7 @@ class PaystackPaymentService
     public function verifyTransaction($transactionReference, $amount){
 
         $amount = $amount*100;
-        
+
         $ch = curl_init();
         $url = 'https://api.paystack.co/transaction/verify/'.$transactionReference;
 
@@ -63,7 +63,7 @@ class PaystackPaymentService
 
         $response = json_decode(curl_exec($ch));
         if(isset($response->data)){
-            
+
             if($response->data->status == 'success')
             {
                 if($response->data->amount == $amount)
