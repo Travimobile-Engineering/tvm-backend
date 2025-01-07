@@ -37,8 +37,8 @@ class Trip extends Model
             $trip->uuid = getRandomNumber();
         });
         static::retrieved(function($model){
-            $model->departure_name = getRouteStateAndTownNameFromTownId($model->departure);
-            $model->destination_name = getRouteStateAndTownNameFromTownId($model->destination);
+            $model->from = getRouteStateAndTownNameFromTownId($model->departure);
+            $model->to = getRouteStateAndTownNameFromTownId($model->destination);
         });
     }
 
