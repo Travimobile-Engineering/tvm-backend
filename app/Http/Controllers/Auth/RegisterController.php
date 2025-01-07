@@ -32,6 +32,25 @@ class RegisterController extends Controller
             return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
         }
         
+        $category = ["1"];
+        if(isset($request->user_category) && $request->user_category == 2){
+            
+            $agent_id = strtoupper(generateUniqueRandomString('users', 'agent_id', 12));
+            $category[] = "2";
+
+            try{
+                $request->validate([
+                    'address' => 'required',
+                    'email' => 'required',
+                    'phone_number' => 'required',
+                    'nin' => 'required',
+                ]);
+    
+            }catch(ValidationException $e){
+                return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
+            }
+        }
+
         do $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_RIGHT);
         while(strlen($verification_code) < 5);
 
@@ -67,28 +86,14 @@ class RegisterController extends Controller
             // Get the first name and last name
             $names = explode(' ', $validation['full_name'], 2);
     
-            $category = [1];
-            if(isset($request->user_category) && $request->user_category == 2){
-                $category[] = 2;
-    
-                try{
-                    $request->validate([
-                        'address' => 'required',
-                        'email' => 'required',
-                        'phone_number' => 'required',
-                        'nin' => 'required',
-                    ]);
         
-                }catch(ValidationException $e){
-                    return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
-                }
-            } 
             $user = User::where('email', $request->email)->update([
                 'phone_number' => $validation['phone_number'],
                 'first_name' => $names[0],
                 'last_name' => $names[1] ?? "",
                 'password' => Hash::make($validation['password']),
-                'user_category' => json_encode(value: $category),
+                'user_category' => json_encode($category),
+                'agent_id' => $agent_id ?? null,
                 'uuid' => $uuid,
                 'address' => $validation['address'] ?? "",
                 'nin' => $validation['nin'] ?? "",
