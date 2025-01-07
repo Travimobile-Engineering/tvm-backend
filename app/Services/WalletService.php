@@ -2,16 +2,19 @@
 
 namespace App\Services;
 
-use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Http\Requests\FundWalletRequest;
-use App\Http\Requests\WalletSetTransactionPinRequest;
-use App\Http\Requests\WalletTransferRequest;
-use App\Models\Transaction;
 use App\Models\User;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\ValidationException;
+use App\Mail\ConfirmationEmail;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\FundWalletRequest;
+use App\Http\Requests\WalletTransferRequest;
+use Illuminate\Validation\ValidationException;
+use App\Http\Requests\WalletSetTransactionPinRequest;
+use App\Http\Controllers\Payment\PaystackPaymentController;
 
 class WalletService
 {
@@ -84,9 +87,38 @@ class WalletService
         return ['data' => $transactions];
     }
 
-    public function setTransactionPin(WalletSetTransactionPinRequest $request){
+    public function setTransactionPin($request){
 
-        $user = User::where('id', $this->user->id)->update(['txn_pin' => $request->pin]);
+        if($this->user->txn_pin > 0){
+
+            if(!isset($request->verification_code)){
+            
+            //Pin has already been set. Send OTP
+            
+            $verification_code = generateVerificationCode();
+            $now = Carbon::now();
+            $verification_code_expires_at = $now->addMinutes(10);
+
+            User::where('id', Auth::id())
+            ->update([
+                'verification_code' => $verification_code,
+                'verification_code_expires_at' => $verification_code_expires_at
+            ]);
+
+            Mail::to($this->user->email)->send(new ConfirmationEmail($this->user->first_name." ".$this->user->last_name, $verification_code, 'email.change_transaction_pin_otp'));
+            return ['message' => 'Verification OTP has been sent to your email address'];
+            }
+
+            elseif(
+                $request->verification_code != $this->user->verification_code
+                || Carbon::now() > $this->user->verification_code_expires_at
+            ) return ['message' => 'Invalid or expired verification code'];
+        }
+
+        $user = User::where('id', $this->user->id)->update([
+            'txn_pin' => $request->pin,
+            'verification_code' => ''
+        ]);
         if($user) return ['message' => 'Transaction pin updated successfully'];
     }
 
