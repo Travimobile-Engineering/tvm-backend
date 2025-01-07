@@ -51,7 +51,7 @@ class TripService
     }
 
     public function getTrip(Trip $trip){
-
+        
         if(!$trip) {
             return $this->error(null, "not found", 404);
         }
@@ -95,6 +95,7 @@ class TripService
 
         $trip['vehicle']['seat_rows'] = $seat_rows;
         $trip['vehicle']['seat_columns'] = count($seat_columns);
+
 
         return $this->success($trip, "Trips");
 

@@ -36,6 +36,10 @@ class Trip extends Model
         static::creating(function ($trip) {
             $trip->uuid = getRandomNumber();
         });
+        static::retrieved(function($model){
+            $model->departure_name = getRouteStateAndTownNameFromTownId($model->departure);
+            $model->destination_name = getRouteStateAndTownNameFromTownId($model->destination);
+        });
     }
 
     protected function casts(): array

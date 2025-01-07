@@ -1,7 +1,8 @@
 <?php
 
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 if (!function_exists('getRandomNumber')) {
     function getRandomNumber()
@@ -25,6 +26,15 @@ if (!function_exists('uploadFile')) {
             ];
         }
         return ['url' => null, 'public_id' => null];
+    }
+}
+
+if(!function_exists('getRouteStateAndTownNameFromTownId')){
+    function getRouteStateAndTownNameFromTownId(int $id) :string{
+        $town = DB::table('route_subregions')->where('id', $id)->first();
+        $state = DB::table('states')->where('id', $town->state_id)->first();
+
+        return $state->name." > ".$town->name;
     }
 }
 
