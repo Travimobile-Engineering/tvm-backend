@@ -2,23 +2,28 @@
 
 namespace App\Services;
 
+use App\Enum\PaymentType;
+use App\Models\Bank;
 use App\Models\User;
 use App\Models\Transaction;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
+use App\Trait\HttpResponse;
+use Illuminate\Support\Str;
 use App\Mail\ConfirmationEmail;
+use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use App\Http\Requests\FundWalletRequest;
-use App\Http\Requests\WalletTransferRequest;
-use Illuminate\Validation\ValidationException;
+use App\Services\Paystack\PaystackService;
 use App\Http\Requests\WalletSetTransactionPinRequest;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Unicodeveloper\Paystack\Facades\Paystack;
 
 class WalletService
 {
-    protected $user; 
+    use HttpResponse;
+
+    protected $user;
 
     public function __construct(){
         $this->user = JWTAuth::user();
@@ -35,8 +40,11 @@ class WalletService
         $response = $ppc->verifyTransaction($request->reference, $request->amount);
 
         if($response['status'] == 'success'){
+
             $user = User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet + $request->amount]);
+
             if($user){
+
                 Transaction::create([
                     'user_id' => $this->user->id,
                     'title' => 'Wallet top up',
@@ -44,19 +52,19 @@ class WalletService
                     'type' => 'CR',
                     'txn_reference' => $request->reference
                 ]);
+
                 return ['message' => 'Wallet funded successfully', 'data' => User::find($this->user->id)];
             }
         }
 
         else return ['message' => $response, 'code' => 400];
-
     }
 
     public function transfer($request){
 
         if(!in_array(2, json_decode($this->user->user_category)))
         return ['message'=>'You can only make transfers to agents', 'code' => 400];
-        
+
 
         if($this->user->txn_pin != $request->pin) return ['message' => 'Incorrect transaction pin', 'code' => 400];
         if($this->user->wallet < $request->amount) return ['message' => 'Your balance is insufficient to complete this transaction. Please fund your wallet first', 'code' =>400];
@@ -92,9 +100,9 @@ class WalletService
         if($this->user->txn_pin > 0){
 
             if(!isset($request->verification_code)){
-            
+
             //Pin has already been set. Send OTP
-            
+
             $verification_code = generateVerificationCode();
             $now = Carbon::now();
             $verification_code_expires_at = $now->addMinutes(10);
@@ -125,5 +133,169 @@ class WalletService
     public function getTransactionPin(){
         $pin = User::where('id', $this->user->id)->pluck('txn_pin')->first();
         return ['data' => $pin];
+    }
+
+    public function driverWalletSetup($request)
+    {
+        $user = User::with(['driverBank', 'driverPin', 'userTransferReceipient'])
+            ->findOrFail($request->user_id);
+
+        $code = getCode();
+
+        try {
+
+            DB::beginTransaction();
+
+            if(! empty($user->driverBank)) {
+                return $this->error(null, "You have created a bank!", 400);
+            }
+
+            $user->driverBank()->create([
+                'bank_name' => $request->bank_name,
+                'account_number' => $request->account_number,
+                'account_name' => $request->account_name,
+            ]);
+
+            $bank = Bank::where([
+                'name' => $request->bank_name
+            ])->first();
+
+            if(! $bank) {
+                return $this->error(null, "Selected bank not found!", 404);
+            }
+
+            $fields = [
+                'type' => "nuban",
+                'name' => $request->account_name,
+                'account_number' => $request->account_number,
+                'bank_code' => $bank->code,
+                'currency' => $bank->currency
+            ];
+
+            PaystackService::createRecipient($user, $fields);
+
+            if(empty($user->driverPin)) {
+                $user->driverPin()->create([
+                    'pin' => bcrypt($request->pin),
+                    'ip_address' => $request->ip(),
+                    'device_info' => $request->header('User-Agent'),
+                    'attempts' => 0
+                ]);
+            }
+
+            $user->update([
+                'verification_code' => getCode(),
+                'verification_code_expires_at' => now()->addMinutes(10),
+            ]);
+
+            DB::commit();
+
+            sendMail($user->email, new ConfirmationEmail($user->first_name, $code));
+
+            return $this->success(null, "Created successfully", 201);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+
+            throw $th;
+        }
+    }
+
+    public function verifyPin($request)
+    {
+        $user = User::with('driverPin')->where('id', $request->user_id)
+            ->where('verification_code', $request->code)
+            ->where('verification_code_expires_at', '>', now())
+            ->first();
+
+
+        if (! $user) {
+            return $this->error(null, "Invalid code!", 400);
+        }
+
+        $user->update([
+            'verification_code' => 0,
+            'verification_code_expires_at' => null,
+        ]);
+
+        $user->driverPin()->update([
+            'status' => 'active'
+        ]);
+
+        return $this->success(null, "Setup successfully");
+    }
+
+    public function withdraw($request)
+    {
+        $user = User::with(['driverPin', 'userTransferReceipient', 'userWithdrawLogs'])
+            ->findOrFail($request->user_id);
+
+        if($user->wallet <= 0) {
+            return $this->error(null, "Insufficient wallet balance", 400);
+        }
+
+        if($request->amount > $user->wallet) {
+            return $this->error(null, "Insufficient wallet balance", 400);
+        }
+
+        if(empty($user?->driverPin?->pin)){
+            return $this->error(null,  "Set your transaction pin!", 400);
+        }
+
+        $fields = [
+            "source" => "balance",
+            "reason" => "Withdrawal",
+            "amount" => $request->amount . 00,
+            "reference" => Str::uuid(),
+            "recipient" => $user->userTransferReceipient?->recipient_code,
+        ];
+
+        return PaystackService::transfer($user, $fields);
+    }
+
+    public function recentTransaction($userId)
+    {
+        $user = authUser();
+
+        if($user->id != $userId) {
+            return $this->error(null, "Unauthorized action.", 401);
+        }
+
+        $transactions = Transaction::where([
+            'receiver_id' => $userId,
+            'title' => "Bus ticket purchase"
+        ])
+        ->select('id', 'user_id', 'title', 'amount', 'status', 'created_at')
+        ->get();
+
+        return $this->success($transactions, "Recent transactions");
+    }
+
+    public function walletTopUp($request)
+    {
+        User::findOrFail($request->input('user_id'));
+
+        $amount = $request->input('amount') * 100;
+
+        $callbackUrl = $request->input('redirect_url');
+        if (!filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
+            return response()->json(['error' => 'Invalid callback URL'], 400);
+        }
+
+        $paymentDetails = [
+            'email' => $request->input('email'),
+            'amount' => $amount,
+            'metadata' => json_encode([
+                'user_id' => $request->input('user_id'),
+                'payment_type' => PaymentType::FUND_WALLET,
+            ]),
+            'callback_url' => (string) trim($request->input('redirect_url')),
+        ];
+
+        $paystackInstance = Paystack::getAuthorizationUrl($paymentDetails);
+
+        return [
+            'status' => 'success',
+            'data' => $paystackInstance,
+        ];
     }
 }

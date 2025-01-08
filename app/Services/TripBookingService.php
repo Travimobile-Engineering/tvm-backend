@@ -44,13 +44,20 @@ class TripBookingService
 
             $payment_methods = ['wallet', 'paystack', 'transfer'];
 
+<<<<<<< HEAD
             if(isset($request->amount_paid) && $request->amount_paid > 0){
                 
                 $amount_paid = $request->amount_paid;
                 
+=======
+            if(isset($request->amount) && $request->amount > 0){
+
+                $amount = $request->amount;
+
+>>>>>>> 83f37c291813d58a0a52a6ee37fefcb4d30893a4
                 if(!isset($request->payment_method)) return['message' => 'Payment method is required', 'code' => 400];
                 if(!in_array($request->payment_method, $payment_methods)) return['message' => 'Invalid payment method', 'code' => 400];
-                
+
                 if($request->payment_method == $payment_methods[0]){
 
                     if(!isset($request->pin) || $request->pin != Auth::user()->txn_pin){
@@ -88,7 +95,7 @@ class TripBookingService
 
                 }
             }
-    
+
             $trip = Trip::where('uuid', $request->trip_id)
             ->where('status', 1);
 
@@ -98,7 +105,7 @@ class TripBookingService
             $trip = $trip->select('transit_company_id', 'vehicle_id', 'departure', 'destination', 'departure_at', 'estimated_arrival_at')->first();
             $vehicle = Vehicle::where('id', $trip->vehicle_id)->select()->first();
             $seats = json_decode($vehicle->seats);
-            
+
             $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','state_id')->get()->first();
             $departure_state = DB::table('states')->where('id', $departure_town->state_id)->select('name')->get()->first();
             $departure = $departure_state->name.' > '.$departure_town->name;
@@ -146,7 +153,7 @@ class TripBookingService
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => $request->payment_status ?? 0,
             ]);
-            
+
             if($booking){
                 Notification::create([
                     'title' => 'Booking Successful',
@@ -167,10 +174,15 @@ class TripBookingService
                 $booking->estimated_arrival_at = $trip->estimated_arrival_at;
                 $booking->vehicle_detail = [
                     'name' => $vehicle->name,
-                    'plate_no' => $vehicle->plate_no, 
+                    'plate_no' => $vehicle->plate_no,
                 ];
+<<<<<<< HEAD
                 $booking->company_detail = [
                     'name' => $transit_company->name, 
+=======
+                $booking['company_detail'] = [
+                    'name' => $transit_company->name,
+>>>>>>> 83f37c291813d58a0a52a6ee37fefcb4d30893a4
                     'logo_url' => $transit_company->logo_url ?? null,
                 ];
                 $booking->user_detail = Auth::user();
@@ -203,13 +215,13 @@ class TripBookingService
 
         $trip->departure = $departure_state->name.' > '.$departure_town->name;
         $trip->destination = $destination_state->name.' > '.$destination_town->name;
-        
+
         $tripBooking['trip_detail'] = $trip;
         $tripBooking['transit_company_detail'] = TransitCompany::firstWhere('id', $trip->transit_company_id);
         $tripBooking['user_detail'] = Auth::user();
         $tripBooking['vehicle_detail'] = Vehicle::firstWhere('id', $trip->vehicle_id);
         return['data' => $tripBooking];
-        
+
     }
 
     /**
@@ -291,7 +303,7 @@ class TripBookingService
                     $hty[$key][$k]['departure_at'] = $history[$key][$k]['departure_at'];
                     $hty[$key][$k]['estimated_arrival_at'] = $history[$key][$k]['estimated_arrival_at'];
                 }
-                
+
             }
         }
         return['data' => $hty];

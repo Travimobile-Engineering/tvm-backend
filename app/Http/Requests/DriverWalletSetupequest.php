@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class TransportRecurringRequest extends FormRequest
+class DriverWalletSetupequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,13 +23,10 @@ class TransportRecurringRequest extends FormRequest
     {
         return [
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'departure_id' => ['required', 'integer'],
-            'destination_id' => ['required', 'integer'],
-            'start_date' => ['required', 'date'],
-            'trip_days' => ['required', 'array'],
-            'reoccur_duration' => ['required'],
-            'bus_type' => ['required', 'string'],
-            'price' => ['required', 'string'],
+            'bank_name' => ['required', 'string'],
+            'account_number' => ['required', 'string'],
+            'account_name' => ['required', 'string'],
+            'pin' => ['required', 'numeric', 'digits:4', 'confirmed']
         ];
     }
 }

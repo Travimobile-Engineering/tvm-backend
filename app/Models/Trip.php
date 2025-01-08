@@ -28,7 +28,18 @@ class Trip extends Model
         'date_cancelled',
         'status',
         'means',
+        'trip_duration',
+        'trip_schedule',
+        'departure_park',
+        'destination_park',
     ];
+
+    protected $hidden = ['id'];
+
+    public function getRouteKeyName()
+    {
+        return 'id';
+    }
 
     protected static function boot()
     {
@@ -46,6 +57,7 @@ class Trip extends Model
     {
         return [
             'trip_days' => 'array',
+            'trip_schedule' => 'array',
             'bus_stops' => 'array',
             'date_cancelled' => 'datetime',
         ];
@@ -66,8 +78,13 @@ class Trip extends Model
         return $this->hasMany(Manifest::class, 'trip_id');
     }
 
-    protected $hidden = ['id'];
-    public function getRouteKeyName(){
-        return 'uuid';
+    public function departureRegion()
+    {
+        return $this->belongsTo(RouteSubregion::class, 'departure');
+    }
+
+    public function destinationRegion()
+    {
+        return $this->belongsTo(RouteSubregion::class, 'destination');
     }
 }
