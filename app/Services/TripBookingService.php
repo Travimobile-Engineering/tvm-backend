@@ -17,6 +17,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Models\Notification;
 use App\Models\TransitCompany;
 
 class TripBookingService
@@ -42,17 +43,27 @@ class TripBookingService
         try{
 
             $payment_methods = ['wallet', 'paystack', 'transfer'];
-
-            if(isset($request->amount) && $request->amount > 0){
+            if(isset($request->amount_paid) && $request->amount_paid > 0){
                 
-                $amount = $request->amount;
+                $amount_paid = $request->amount_paid;
                 
                 if(!isset($request->payment_method)) return['message' => 'Payment method is required', 'code' => 400];
                 if(!in_array($request->payment_method, $payment_methods)) return['message' => 'Invalid payment method', 'code' => 400];
-                
+
                 if($request->payment_method == $payment_methods[0]){
-                    if($amount > $this->user->wallet) return['message' => 'You balance is insufficient to complete your request', 'code' => 400];
-                    User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet - $amount]);
+
+                    if(!isset($request->pin) || $request->pin != Auth::user()->txn_pin){
+                        return ['message' => 'Invalid transaction pin', 'code' => 400];
+                    }
+
+                    if($amount_paid > $this->user->wallet) return['message' => 'You balance is insufficient to complete your request', 'code' => 400];
+                    User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet - $amount_paid]);
+                    
+                    Transaction::create([
+                        'title' => 'Bus ticket purchase',
+                        'amount' => $amount_paid,
+                        'type' => 'DR',
+                    ]);
                 }
 
                 if($request->payment_method == $payment_methods[1]){
@@ -61,7 +72,7 @@ class TripBookingService
 
                     $ppc = new PaystackPaymentController();
 
-                    $response = $ppc->verifyTransaction($txn_ref, $amount);
+                    $response = $ppc->verifyTransaction($txn_ref, $amount_paid);
 
                     if($response['status'] == 'success'){
                         // Transaction::create([
@@ -76,7 +87,7 @@ class TripBookingService
 
                 }
             }
-    
+
             $trip = Trip::where('uuid', $request->trip_id)
             ->where('status', 1);
 
@@ -86,7 +97,7 @@ class TripBookingService
             $trip = $trip->select('transit_company_id', 'vehicle_id', 'departure', 'destination', 'departure_at', 'estimated_arrival_at')->first();
             $vehicle = Vehicle::where('id', $trip->vehicle_id)->select()->first();
             $seats = json_decode($vehicle->seats);
-            
+
             $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','state_id')->get()->first();
             $departure_state = DB::table('states')->where('id', $departure_town->state_id)->select('name')->get()->first();
             $departure = $departure_state->name.' > '.$departure_town->name;
@@ -97,10 +108,10 @@ class TripBookingService
 
             $transit_company = TransitCompany::where('id', $trip->transit_company_id)->first();
 
-            $trip['seats'] = $seats;
+            $trip->seats = $seats;
 
             //total number of seats in this vehicle
-            $total_seats = count($trip['seats']);
+            $total_seats = count($trip->seats);
 
             //get the total bookings for this trip
             $bookings = TripBooking::where('trip_id', $request->trip_id)->where('status', 1);
@@ -116,7 +127,7 @@ class TripBookingService
                 return !in_array($seat, $selected_seats);
             });
 
-            $trip['available_seats'] = $available_seats;
+            $trip->available_seats = $available_seats;
 
             do $booking_id = strtoupper(Str::random(14));
             while(TripBooking::where('booking_id', $booking_id)->exists());
@@ -134,25 +145,35 @@ class TripBookingService
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => $request->payment_status ?? 0,
             ]);
-            
+
             if($booking){
+                Notification::create([
+                    'title' => 'Booking Successful',
+                    'description' => 'Your bus ticket to '.$destination.' on '.date("M jS Y h:iA",strtotime($trip->departure_at)).' has been successfully booked',
+                    'additional_data' => json_encode([
+                        'booking_id' => $booking_id,
+                        'note' => 'Please arrive atleast 30 minutes early to ensure a smooth boarding experience.',
+                        'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
+                    ])
+                ]);
                 if(count($bookings->get()) >= $total_seats){
                     $trip = Trip::where('uuid', $request->trip_id)
                     ->update(['status' => 0]);
                 }
-                $booking['departure'] = $departure;
-                $booking['destination'] = $destination;
-                $booking['departure_at'] = $trip['departure_at'];
-                $booking['estimated_arrival_at'] = $trip['estimated_arrival_at'];
-                $booking['vehicle_detail'] = [
+                $booking->departure = $departure;
+                $booking->destination = $destination;
+                $booking->departure_at = $trip->departure_at;
+                $booking->estimated_arrival_at = $trip->estimated_arrival_at;
+                $booking->vehicle_detail = [
                     'name' => $vehicle->name,
-                    'plate_no' => $vehicle->plate_no, 
+                    'plate_no' => $vehicle->plate_no,
                 ];
-                $booking['company_detail'] = [
+
+                $booking->company_detail = [
                     'name' => $transit_company->name, 
                     'logo_url' => $transit_company->logo_url ?? null,
                 ];
-                $booking['user_detail'] = Auth::user();
+                $booking->user_detail = Auth::user();
                 return['message' => 'Booking created successfully', 'data' => $booking];
             }
         }
@@ -182,13 +203,13 @@ class TripBookingService
 
         $trip->departure = $departure_state->name.' > '.$departure_town->name;
         $trip->destination = $destination_state->name.' > '.$destination_town->name;
-        
+
         $tripBooking['trip_detail'] = $trip;
         $tripBooking['transit_company_detail'] = TransitCompany::firstWhere('id', $trip->transit_company_id);
         $tripBooking['user_detail'] = Auth::user();
         $tripBooking['vehicle_detail'] = Vehicle::firstWhere('id', $trip->vehicle_id);
         return['data' => $tripBooking];
-        
+
     }
 
     /**
@@ -270,7 +291,7 @@ class TripBookingService
                     $hty[$key][$k]['departure_at'] = $history[$key][$k]['departure_at'];
                     $hty[$key][$k]['estimated_arrival_at'] = $history[$key][$k]['estimated_arrival_at'];
                 }
-                
+
             }
         }
         return['data' => $hty];

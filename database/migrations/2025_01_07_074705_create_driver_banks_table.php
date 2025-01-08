@@ -11,13 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('notifications', function (Blueprint $table) {
+        Schema::create('driver_banks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('title');
-            $table->string('description')->nullable();
-            $table->string('additional_data')->nullable();
-            $table->unsignedTinyInteger('read')->default(0);
+            $table->unsignedBigInteger('user_id');
+            $table->string('bank_name');
+            $table->string('account_number');
+            $table->string('account_name');
+
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -27,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('notifications');
+        Schema::dropIfExists('driver_banks');
     }
 };
