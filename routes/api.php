@@ -29,11 +29,6 @@ Route::get('/', function () {
     return 'welcome to tvm console! nothing spoil 😇👍';
 });
 
-<<<<<<< HEAD
-Route::get('/states', [OtherController::class, 'getStates']);
-=======
-Route::get('/email', fn() => view('email.change_transaction_pin_otp', ['name' => 'Emma', 'verification_code' => 78784]));
-
 Route::controller(OtherController::class)
     ->group(function () {
         Route::get('/states', 'getStates');
@@ -42,7 +37,6 @@ Route::controller(OtherController::class)
     });
 
 Route::post('/payment/webhook', [PaymentController::class, 'webhook']);
->>>>>>> 83f37c291813d58a0a52a6ee37fefcb4d30893a4
 
 Route::prefix('auth')
 ->group(function(){
