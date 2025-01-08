@@ -61,6 +61,10 @@ class ProfileController extends Controller
                 $updates['password'] = Hash::make($updates['password']);
             }
 
+            $uploadResult = uploadFile($request, 'profile_photo', 'profile_photos');
+            // dd($request);
+            $updates['profile_photo_url'] = $uploadResult['url'];
+
 
             $user = User::where('id', $id)
                 ->update($updates->toArray());

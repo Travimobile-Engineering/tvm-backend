@@ -12,6 +12,7 @@ use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OtherController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Controllers\RouteController;
@@ -25,8 +26,6 @@ use App\Http\Controllers\WalletController;
 Route::get('/', function () {
     return response(null, 200);
 });
-
-Route::get('/email', fn() => view('email.change_transaction_pin_otp', ['name' => 'Emma', 'verification_code' => 78784]));
 
 Route::get('/states', [OtherController::class, 'getStates']);
 
@@ -160,6 +159,12 @@ Route::middleware(JWTAuthenticator::class)
         Route::post('/transfer', [WalletController::class, 'transfer']);
         Route::get('/transactions', [WalletController::class, 'getTransactions']);
         Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
+    });
+
+    Route::prefix('notification')
+    ->controller(NotificationController::class)
+    ->group(function(){
+        Route::get('/', 'all');
     });
 });
 
