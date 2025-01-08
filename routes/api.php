@@ -24,10 +24,12 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\WalletController;
 
 
-Route::get('/', function () {
+Route::get('/', fn() => response(null, 200)) ;
+// {
     // return view('welcome');
-    return 'welcome to tvm console! nothing spoil 😇👍';
-});
+    // return 'welcome to tvm console! nothing spoil 😇👍';
+
+// });
 
 Route::controller(OtherController::class)
     ->group(function () {
