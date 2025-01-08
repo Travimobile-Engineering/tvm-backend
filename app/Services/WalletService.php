@@ -12,7 +12,6 @@ use App\Mail\ConfirmationEmail;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Services\Paystack\PaystackService;
-use App\Http\Requests\WalletSetTransactionPinRequest;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
