@@ -302,5 +302,6 @@ class TripBookingService
     public function destroy(TripBooking $tripBooking)
     {
         //
+        //
     }
 }

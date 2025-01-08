@@ -4,7 +4,6 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 if (!function_exists('authUser')) {
     function authUser() {
