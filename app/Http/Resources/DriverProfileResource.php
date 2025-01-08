@@ -60,6 +60,10 @@ class DriverProfileResource extends JsonResource
                     'status' => $document->status,
                 ];
             })->toArray() : [],
+            'wallet' => (object)[
+                'available_balance' => $this->wallet,
+                'pending_balance' => 0,
+            ],
         ];
     }
 }

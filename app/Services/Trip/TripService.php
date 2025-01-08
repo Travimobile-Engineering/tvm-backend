@@ -17,6 +17,7 @@ use App\Http\Resources\RecurringTripResource;
 use App\Models\BusStop;
 use App\Models\Manifest;
 use App\Models\User;
+use Carbon\Carbon;
 
 class TripService
 {
@@ -34,6 +35,7 @@ class TripService
                 'transit_company_id' => $request->transit_company_id ?? 1,
                 'departure' => $request->departure_id,
                 'destination' => $request->destination_id,
+                'trip_duration' => $request->trip_duration,
                 'departure_date' => $request->departure_date,
                 'departure_time' => $request->departure_time,
                 'bus_type' => $request->bus_type,
@@ -50,54 +52,13 @@ class TripService
         }
     }
 
-    public function getTrip(Trip $trip){
+    public function getTrip(Trip $trip)
+    {
+        $trip->load(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests']);
 
-        if(!$trip) {
-            return $this->error(null, "not found", 404);
-        }
+        $data = new TripResource($trip);
 
-        $seats = Vehicle::where('id', $trip['vehicle_id'])->pluck('seats')->first();
-        $seats = json_decode($seats);
-        // $trip['available_seats'];
-
-        $bookings = TripBooking::where('trip_id', $trip->trip_id)->where('status', 1);
-        $trip['selected_seats'] = $bookings->pluck('selected_seat')->toArray();
-        $trip['available_seats'] = array_values(array_filter($seats, function($seat) use ($trip){
-            return !in_array($seat, $trip['selected_seats']);
-        }));
-
-        $trip['transit_company'] = TransitCompany::where('id', $trip->transit_company_id)
-            ->select('name', 'reg_no')
-            ->first();
-
-        $trip['vehicle'] = Vehicle::where('id', $trip->vehicle_id)
-            ->select('name', 'ac', 'plate_no')
-            ->first();
-
-        $trip['vehicle']['seats'] = $seats;
-
-        $seat_columns = [];
-        $seat_rows = 0;
-
-        foreach($seats as $seat){
-            $seat_parts = str_split($seat);
-            $seat_alph = $seat_parts[0];
-            $seat_num = $seat_parts[1];
-
-            if(!in_array($seat_alph, $seat_columns)) {
-                $seat_columns[] = $seat_alph;
-            }
-
-            if($seat_num > $seat_rows) {
-                $seat_rows = $seat_num;
-            }
-        }
-
-        $trip['vehicle']['seat_rows'] = $seat_rows;
-        $trip['vehicle']['seat_columns'] = count($seat_columns);
-
-        return $this->success($trip, "Trips");
-
+        return $this->success($data, "Trip details");
     }
 
     public function getTrips($request)
@@ -137,7 +98,7 @@ class TripService
 
     public function getOneTime($id)
     {
-        $trip = Trip::with(['user', 'tripBookings.user'])
+        $trip = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('type', TripType::ONETIME)
             ->find($id);
 
@@ -152,7 +113,7 @@ class TripService
 
     public function getUserOneTimes($userId)
     {
-        $trips = Trip::with(['user', 'tripBookings.user'])
+        $trips = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('user_id', $userId)
             ->where('type', TripType::ONETIME)
             ->get();
@@ -190,24 +151,47 @@ class TripService
 
             $user = User::findOrFail($request->user_id);
 
-            Trip::create([
-                'user_id' => $user->id,
-                'vehicle_id' => $request->vehicle_id,
-                'transit_company_id' => $request->transit_company_id ?? 1,
-                'departure' => $request->departure_id,
-                'destination' => $request->destination_id,
-                'start_date' => $request->start_date,
-                'trip_days' => $request->trip_days,
-                'reoccur_duration' => $request->reoccur_duration,
-                'bus_type' => $request->bus_type,
-                'price' => $request->price,
-                'bus_stops' => $request->bus_stops ?? [],
-                'means' => $request->means ?? 1,
-                'type' => TripType::RECURRING,
-                'status' => TripStatus::ACTIVE,
-            ]);
+            $startDate = Carbon::parse($request->start_date);
+            $endDate = $startDate->copy()->addMonths($request->reoccur_duration);
+            $tripSchedule = $request->trip_days;
 
-            return $this->success(null, "Created successfully", 201);
+            foreach ($request->trip_days as $tripDay) {
+                $day = strtolower($tripDay['day']);
+                $time = $tripDay['time'];
+
+                $currentDate = $startDate->copy();
+
+                if (strtolower($currentDate->format('D')) !== $day) {
+                    $currentDate = $currentDate->next($day);
+                }
+
+                while ($currentDate <= $endDate) {
+                    $tripDateTime = $currentDate->copy()->setTimeFromTimeString($time);
+
+                    Trip::create([
+                        'user_id' => $user->id,
+                        'vehicle_id' => $request->vehicle_id,
+                        'transit_company_id' => $request->transit_company_id ?? 1,
+                        'departure' => $request->departure_id,
+                        'destination' => $request->destination_id,
+                        'trip_duration' => $request->trip_duration,
+                        'start_date' => $tripDateTime->format('Y-m-d'),
+                        'trip_days' => [$day],
+                        'trip_schedule' => $tripSchedule,
+                        'reoccur_duration' => $request->reoccur_duration,
+                        'bus_type' => $request->bus_type,
+                        'price' => $request->price,
+                        'bus_stops' => $request->bus_stops ?? [],
+                        'means' => $request->means ?? 1,
+                        'type' => TripType::RECURRING,
+                        'status' => TripStatus::ACTIVE,
+                    ]);
+
+                    $currentDate->addWeek();
+                }
+            }
+
+            return $this->success(null, "Recurring trips created successfully", 201);
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -215,7 +199,7 @@ class TripService
 
     public function getRecurring($id)
     {
-        $trip = Trip::with(['user', 'tripBookings.user'])
+        $trip = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('type', TripType::RECURRING)
             ->find($id);
 
@@ -230,7 +214,7 @@ class TripService
 
     public function getUserRecurrings($userId)
     {
-        $trips = Trip::with(['user', 'tripBookings.user'])
+        $trips = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('user_id', $userId)
             ->where('type', TripType::RECURRING)
             ->get();
@@ -300,7 +284,7 @@ class TripService
     {
         $date = request()->query('date');
 
-        $query = Trip::with(['user', 'tripBookings.user'])
+        $query = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('user_id', $userId)
             ->where('status', TripStatus::INPROGRESS);
 
@@ -318,7 +302,7 @@ class TripService
 
     public function getCompletedTrips($userId)
     {
-        $trips = Trip::with(['user', 'tripBookings.user'])
+        $trips = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('user_id', $userId)
             ->where('status', TripStatus::COMPLETED)
             ->get();
@@ -330,7 +314,7 @@ class TripService
 
     public function getCancelledTrips($userId)
     {
-        $trips = Trip::with(['user', 'tripBookings.user'])
+        $trips = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('user_id', $userId)
             ->where('status', TripStatus::CANCELLED)
             ->get();
@@ -345,7 +329,7 @@ class TripService
         $type = request()->query('type');
         $date = request()->query('date');
 
-        $query = Trip::with(['user', 'tripBookings.user'])
+        $query = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('user_id', $userId)
             ->where('status', TripStatus::ACTIVE);
 
@@ -361,7 +345,7 @@ class TripService
 
         if ($type === TripType::RECURRING) {
             $data = RecurringTripResource::collection($trips);
-        } elseif($type === TripType::ONETIME) {
+        } elseif ($type === TripType::ONETIME) {
             $data = OneTimeTripResource::collection($trips);
         } else {
             $data = TripResource::collection($trips);
@@ -375,7 +359,7 @@ class TripService
         $type = request()->query('type');
         $date = request()->query('date');
 
-        $query = Trip::with(['user', 'tripBookings.user'])
+        $query = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('status', TripStatus::ACTIVE);
 
         if ($type) {
@@ -399,7 +383,7 @@ class TripService
 
     public function getManifestInfo($tripId, $userId)
     {
-        $trip = Trip::with(['user', 'tripBookings.user'])
+        $trip = Trip::with(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests'])
             ->where('id', $tripId)
             ->first();
 
@@ -478,9 +462,9 @@ class TripService
         return $this->success($data, "Bus stops");
     }
 
-    public function getPopularTrips(){
+    public function getPopularTrips()
+    {
         $trips = Trip::where('trips.status', 1)->limit(5)->inRandomOrder();
         return $this->success($trips->get(), "Trips");
     }
 }
-

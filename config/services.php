@@ -35,4 +35,6 @@ return [
         ],
     ],
 
+    'paystack_base_url' => "https://api.paystack.co/bank",
+
 ];

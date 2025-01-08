@@ -2,25 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Transaction;
+use App\Http\Requests\DriverWalletSetupequest;
+use App\Http\Requests\DriverWithdrawRequest;
 use App\Trait\HttpResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use App\Services\WalletService;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\FundWalletRequest;
 use App\Http\Requests\WalletTransferRequest;
-use Illuminate\Validation\ValidationException;
-use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Requests\WalletSetTransactionPinRequest;
+use App\Http\Requests\WalletTopUpRequest;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class WalletController extends Controller
 {
 
     use HttpResponse;
 
-    protected $service; 
+    protected $service;
 
     public function __construct(WalletService $service){
         $this->service = $service;
@@ -49,5 +47,35 @@ class WalletController extends Controller
 
     public function getTransactionPin(){
         $this->response($this->service->getTransactionPin());
+    }
+
+    public function driverWalletSetup(DriverWalletSetupequest $request)
+    {
+        return $this->service->driverWalletSetup($request);
+    }
+
+    public function verifyPin(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'code' => ['required', 'string'],
+        ]);
+
+        return $this->service->verifyPin($request);
+    }
+
+    public function withdraw(DriverWithdrawRequest $request)
+    {
+        return $this->service->withdraw($request);
+    }
+
+    public function recentTransaction($userId)
+    {
+        return $this->service->recentTransaction($userId);
+    }
+
+    public function walletTopUp(WalletTopUpRequest $request)
+    {
+        return $this->service->walletTopUp($request);
     }
 }
