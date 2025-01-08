@@ -26,6 +26,8 @@ Route::get('/', function () {
     return response(null, 200);
 });
 
+Route::get('/email', fn() => view('email.change_transaction_pin_otp', ['name' => 'Emma', 'verification_code' => 78784]));
+
 Route::get('/states', [OtherController::class, 'getStates']);
 
 Route::prefix('auth')

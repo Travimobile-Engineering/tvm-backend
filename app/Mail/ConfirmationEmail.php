@@ -13,16 +13,18 @@ class ConfirmationEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $name;
-    public $verification_code;
+    protected $name;
+    protected $verification_code;
+    public $view;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($name, $verification_code)
+    public function __construct($name, $verification_code, $view = 'email.confirmation')
     {
         $this->name = $name;
         $this->verification_code = $verification_code;
+        $this->view = $view;
     }
 
     /**
@@ -31,7 +33,7 @@ class ConfirmationEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Verification Code',
+            subject: 'Your OTP Verification Code',
         );
     }
 
@@ -41,7 +43,7 @@ class ConfirmationEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'email.confirmation',
+            view: $this->view, with:['name' => $this->name, 'verification_code' =>$this->verification_code]
         );
     }
 
@@ -53,11 +55,5 @@ class ConfirmationEmail extends Mailable
     public function attachments(): array
     {
         return [];
-    }
-
-    public function build(){
-        return $this->subject('Your Verification Code')
-        ->view('email.confirmation')
-        ->with(['name' => $this->name, 'verification_code' =>$this->verification_code]);
     }
 }

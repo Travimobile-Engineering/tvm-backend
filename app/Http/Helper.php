@@ -48,4 +48,10 @@ if(!function_exists('generateUniqueRandomString')){
     }
 }
 
+if(!function_exists('generateVerificationCode')){
+    function generateVerificationCode($length = 5){
+        return str_pad(rand(10000, 99999), $length, 0);
+    }
+}
+
 
