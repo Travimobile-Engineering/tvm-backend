@@ -39,6 +39,7 @@ return new class extends Migration
             $table->float('amount_paid')->default(0);
             $table->string('payment_method')->nullable();
             $table->unsignedTinyInteger('payment_status')->comment('0:pending, 1:confirmed, 2:cancelled');
+            $table->unsignedTinyInteger('confirmed')->default(0);
             $table->unsignedTinyInteger('status')->default(1)->comment('0:cancelled, 1:active, 2:complete');
             $table->timestamps();
         });

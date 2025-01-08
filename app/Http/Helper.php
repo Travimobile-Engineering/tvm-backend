@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -39,6 +41,31 @@ if (!function_exists('uploadFile')) {
             ];
         }
         return ['url' => null, 'public_id' => null];
+    }
+}
+
+if(!function_exists('getRouteStateAndTownNameFromTownId')){
+    function getRouteStateAndTownNameFromTownId(int $id) :string{
+        $town = DB::table('route_subregions')->where('id', $id)->first();
+        $state = DB::table('states')->where('id', $town->state_id)->first();
+
+        return $state->name." > ".$town->name;
+    }
+}
+
+if(!function_exists('generateUniqueRandomString')){
+    function generateUniqueRandomString($table, $column, $length = 16){
+        do{
+            $str = Str::random($length);
+        }
+        while(DB::table($table)->where($column, $str)->exists());
+        return $str;
+    }
+}
+
+if(!function_exists('generateVerificationCode')){
+    function generateVerificationCode($length = 5){
+        return str_pad(rand(10000, 99999), $length, 0);
     }
 }
 

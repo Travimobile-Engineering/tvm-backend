@@ -38,15 +38,15 @@ class WalletController extends Controller
     }
 
     public function getTransactions(){
-        $this->response($this->service->getTransactions());
+        return $this->response($this->service->getTransactions());
     }
 
     public function setTransactionPin(WalletSetTransactionPinRequest $request){
-        $this->response($this->service->setTransactionPin($request));
+        return $this->response($this->service->setTransactionPin($request));
     }
 
     public function getTransactionPin(){
-        $this->response($this->service->getTransactionPin());
+        return $this->response($this->service->getTransactionPin());
     }
 
     public function driverWalletSetup(DriverWalletSetupequest $request)

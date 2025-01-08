@@ -70,7 +70,6 @@ class User extends Authenticatable implements JWTSubject
         'email_verified',
         'sms_verified',
         'email_verified_at',
-        'txn_pin',
         'is_admin',
         'created_at',
         'updated_at'

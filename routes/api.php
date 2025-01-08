@@ -28,6 +28,8 @@ Route::get('/', function () {
     return 'welcome to tvm console! nothing spoil 😇👍';
 });
 
+Route::get('/email', fn() => view('email.change_transaction_pin_otp', ['name' => 'Emma', 'verification_code' => 78784]));
+
 Route::controller(OtherController::class)
     ->group(function () {
         Route::get('/states', 'getStates');

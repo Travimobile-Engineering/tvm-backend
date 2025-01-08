@@ -118,7 +118,7 @@ class TripBookingService
 
             $trip['available_seats'] = $available_seats;
 
-            do $booking_id = Str::random(14);
+            do $booking_id = strtoupper(Str::random(14));
             while(TripBooking::where('booking_id', $booking_id)->exists());
 
             $booking = TripBooking::create([
