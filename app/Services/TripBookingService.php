@@ -52,6 +52,11 @@ class TripBookingService
                 if(!in_array($request->payment_method, $payment_methods)) return['message' => 'Invalid payment method', 'code' => 400];
                 
                 if($request->payment_method == $payment_methods[0]){
+
+                    if(!isset($request->pin) || $request->pin != Auth::user()->txn_pin){
+                        return ['message' => 'Invalid transaction pin', 'code' => 400];
+                    }
+
                     if($amount_paid > $this->user->wallet) return['message' => 'You balance is insufficient to complete your request', 'code' => 400];
                     User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet - $amount_paid]);
                     
