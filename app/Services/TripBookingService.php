@@ -168,8 +168,9 @@ class TripBookingService
                     'name' => $vehicle->name,
                     'plate_no' => $vehicle->plate_no,
                 ];
+
                 $booking->company_detail = [
-                    'name' => $transit_company->name,
+                    'name' => $transit_company->name, 
                     'logo_url' => $transit_company->logo_url ?? null,
                 ];
                 $booking->user_detail = Auth::user();
