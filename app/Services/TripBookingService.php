@@ -43,18 +43,10 @@ class TripBookingService
         try{
 
             $payment_methods = ['wallet', 'paystack', 'transfer'];
-
-<<<<<<< HEAD
             if(isset($request->amount_paid) && $request->amount_paid > 0){
                 
                 $amount_paid = $request->amount_paid;
                 
-=======
-            if(isset($request->amount) && $request->amount > 0){
-
-                $amount = $request->amount;
-
->>>>>>> 83f37c291813d58a0a52a6ee37fefcb4d30893a4
                 if(!isset($request->payment_method)) return['message' => 'Payment method is required', 'code' => 400];
                 if(!in_array($request->payment_method, $payment_methods)) return['message' => 'Invalid payment method', 'code' => 400];
 
@@ -176,13 +168,8 @@ class TripBookingService
                     'name' => $vehicle->name,
                     'plate_no' => $vehicle->plate_no,
                 ];
-<<<<<<< HEAD
                 $booking->company_detail = [
-                    'name' => $transit_company->name, 
-=======
-                $booking['company_detail'] = [
                     'name' => $transit_company->name,
->>>>>>> 83f37c291813d58a0a52a6ee37fefcb4d30893a4
                     'logo_url' => $transit_company->logo_url ?? null,
                 ];
                 $booking->user_detail = Auth::user();
