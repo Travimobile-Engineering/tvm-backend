@@ -34,7 +34,7 @@ class Trip extends Model
         'destination_park',
     ];
 
-    protected $hidden = ['id'];
+    protected $hidden = [];
 
     public function getRouteKeyName()
     {
