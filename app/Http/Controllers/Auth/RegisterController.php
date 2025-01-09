@@ -61,6 +61,8 @@ class RegisterController extends Controller
         if($user){
             if($user->email_verified == 1) return response()->json(['error' => 'Email address already exist'], status: 400);
             elseif(!isset($request->verification_code) || empty($request->verification_code)){
+                $user->verification_code = $verification_code;
+                $user->save();
                 $this->send_verification_code($request, false, $verification_code);
                 return response()->json(['Message' => 'User created successfully'], 200);
             }
