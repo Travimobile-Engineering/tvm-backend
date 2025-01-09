@@ -4,7 +4,6 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 if (!function_exists('authUser')) {
     function authUser() {
@@ -55,9 +54,7 @@ if(!function_exists('getRouteStateAndTownNameFromTownId')){
 
 if(!function_exists('generateUniqueRandomString')){
     function generateUniqueRandomString($table, $column, $length = 16){
-        do{
-            $str = Str::random($length);
-        }
+        do $str = Str::random($length);
         while(DB::table($table)->where($column, $str)->exists());
         return $str;
     }
