@@ -140,9 +140,7 @@ class RegisterController extends Controller
                     $user->save();
                 }
 
-                $name = $user->first_name.' '.$user->last_name;
-
-                Mail::to($email)->send(new ConfirmationEmail($name, $verification_code));
+                Mail::to($email)->send(new ConfirmationEmail($request->full_name, $verification_code));
                 
                 if($returnResponse)
                 return response()->json(['Message' => 'Verification code sent to your email address'], 200);
