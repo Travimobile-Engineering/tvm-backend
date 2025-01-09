@@ -38,7 +38,7 @@ class Trip extends Model
 
     public function getRouteKeyName()
     {
-        return 'id';
+        return 'uuid';
     }
 
     protected static function boot()
