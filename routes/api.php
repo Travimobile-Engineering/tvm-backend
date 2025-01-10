@@ -12,8 +12,10 @@ use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OtherController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TransitCompanyController;
 use App\Http\Controllers\TripBookingController;
@@ -22,13 +24,21 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\WalletController;
 
 
-Route::get('/', function () {
-    return response(null, 200);
-});
+Route::get('/', fn() => response(null, 200)) ;
+// {
+    // return view('welcome');
+    // return 'welcome to tvm console! nothing spoil 😇👍';
 
-Route::get('/email', fn() => view('email.change_transaction_pin_otp', ['name' => 'Emma', 'verification_code' => 78784]));
+// });
 
-Route::get('/states', [OtherController::class, 'getStates']);
+Route::controller(OtherController::class)
+    ->group(function () {
+        Route::get('/states', 'getStates');
+        Route::get('/bank', 'getBank');
+        Route::post('/account/lookup', 'accountLookUp');
+    });
+
+Route::post('/payment/webhook', [PaymentController::class, 'webhook']);
 
 Route::prefix('auth')
 ->group(function(){
@@ -136,6 +146,20 @@ Route::middleware(JWTAuthenticator::class)
             Route::post('/edit-document', 'updateDriverDocuments');
             Route::delete('/remove-document/{id}', 'removeDocument');
             Route::put('/edit-union', 'updateUnion');
+
+            Route::prefix('wallet')
+                ->controller(WalletController::class)
+                ->group(function () {
+                    Route::post('/setup', 'driverWalletSetup');
+                    Route::post('/verify-pin', 'verifyPin');
+                    Route::post('/withdraw', 'withdraw')
+                        ->middleware('transaction.pin');
+                    Route::post('/topup', 'walletTopUp')
+                        ->middleware('transaction.pin');
+
+                    // Transaction
+                    Route::get('/recent-transaction/{user_id}', 'recentTransaction');
+                });
         });
 
     Route::prefix('trip-booking')
@@ -150,7 +174,6 @@ Route::middleware(JWTAuthenticator::class)
     Route::prefix('payment')
     ->group(function(){
         Route::post('/initialize-paystack-transaction', [PaystackPaymentController::class, 'intializeTransaction']);
-
     });
 
     Route::prefix('wallet')
@@ -161,6 +184,12 @@ Route::middleware(JWTAuthenticator::class)
         Route::get('/transactions', [WalletController::class, 'getTransactions']);
         Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
     });
+
+    Route::prefix('notification')
+    ->controller(NotificationController::class)
+    ->group(function(){
+        Route::get('/', 'all');
+    });
 });
 
 Route::prefix('agent')->controller(AgentController::class)
@@ -170,6 +199,6 @@ Route::prefix('agent')->controller(AgentController::class)
 
 Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);
 Route::fallback(function(){
-    return response()->json(['error' => 'page not found'], 404);
+    return response('page not found', 400);
 });
 

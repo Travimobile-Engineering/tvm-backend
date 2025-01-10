@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
 
 class TripResource extends JsonResource
 {
@@ -19,26 +20,25 @@ class TripResource extends JsonResource
             'uuid' => $this->uuid,
             'user_id' => $this->user_id,
             'user' => (object)[
-                'first_name' => $this->user->first_name,
-                'last_name' => $this->user->last_name,
+                'first_name' => $this->user?->first_name,
+                'last_name' => $this->user?->last_name,
             ],
             'vehicle_id' => $this->vehicle_id,
-            'transit_company_id' => $this->transit_company_id,
-            'departure' => $this->departure,
-            'destination' => $this->destination,
-            'departure_date' => $this->departure_date,
+            'departure_id' => $this->departure,
+            'destination_id' => $this->destination,
+            'departure' => $this->departureRegion?->state?->name . ' > ' . $this->departureRegion?->name,
+            'destination' => $this->destinationRegion?->state?->name . ' > ' . $this->destinationRegion?->name,
             'departure_time' => $this->departure_time,
-            'start_date' => $this->start_date,
-            'end_date' => $this->end_date,
-            'repeat_trip' => $this->repeat_trip,
+            'trip_duration' => $this->trip_duration,
+            'start_date' => $this->type == 'one-time' ? $this->departure_date : $this->start_date,
             'trip_days' => $this->trip_days,
             'reoccur_duration' => $this->reoccur_duration,
             'bus_type' => $this->bus_type,
             'price' => $this->price,
             'bus_stops' => $this->bus_stops,
-            'means' => $this->means,
             'type' => $this->type,
             'status' => $this->status,
+            'manifest_status' => $this->manifests->count() == 0 ? 'processing' : 'created',
             'reason' => $this->reason,
             'date_cancelled' => $this->date_cancelled,
             'created_at' => $this->created_at,

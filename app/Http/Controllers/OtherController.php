@@ -18,4 +18,14 @@ class OtherController extends Controller
     {
         return $this->service->getStates();
     }
+
+    public function getBank()
+    {
+        return $this->service->getBank();
+    }
+
+    public function accountLookUp(Request $request)
+    {
+        return $this->service->accountLookUp($request);
+    }
 }
