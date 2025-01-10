@@ -8,10 +8,9 @@ on:
 
 env:
   PROJECT_ID: "travi-mobile-mvp"
-  
+
 jobs:
   build-image:
-    needs: terraform
     runs-on: ubuntu-latest
     name: 'Build and push docker image to Artifact Registry'
 
