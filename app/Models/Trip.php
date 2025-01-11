@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Vehicle\Vehicle;
 use Illuminate\Database\Eloquent\Model;
 
 class Trip extends Model
@@ -86,5 +87,9 @@ class Trip extends Model
     public function destinationRegion()
     {
         return $this->belongsTo(RouteSubregion::class, 'destination');
+    }
+
+    public function vehicle(){
+        return $this->hasOne(Vehicle::class, 'id', 'vehicle_id');
     }
 }

@@ -54,7 +54,7 @@ class TripService
 
     public function getTrip(Trip $trip)
     {
-        $trip->load(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests']);
+        $trip->load(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests', 'vehicle']);
 
         $data = new TripResource($trip);
 

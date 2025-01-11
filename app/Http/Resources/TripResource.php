@@ -50,10 +50,13 @@ class TripResource extends JsonResource
                     'seat' => (int)$passenger?->selected_seat,
                 ];
             })->toArray() : [],
-            'selected_seats' => $this->tripBookings ? $this->tripBookings->map(function ($passenger) {
+            'selected_seats' => $this->tripBookings ? explode(',', str_replace(['[',']','"'], '', implode(',',$this->tripBookings->map(function ($passenger) {
                 return $passenger->selected_seat;
-            })->toArray() : [],
+            })->toArray()))) : [],
             'total_selected_seats' => $this->tripBookings ? $this->tripBookings->count() : 0,
+            'available_seats' => collect(json_decode($this->vehicle->seats))->filter(fn($item) => !in_array($item, explode(',', str_replace(['[',']','"'], '', implode(',',$this->tripBookings->map(function ($passenger) {
+                return $passenger->selected_seat;
+            })->toArray())))))->toArray()
         ];
     }
 }
