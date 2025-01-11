@@ -159,6 +159,8 @@ Route::middleware(JWTAuthenticator::class)
 
                     // Transaction
                     Route::get('/recent-transaction/{user_id}', 'recentTransaction');
+                    Route::get('/recent-earning/{user_id}', 'recentEarning');
+                    Route::get('/statistics/{user_id}', 'stats');
                 });
         });
 

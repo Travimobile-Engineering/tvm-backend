@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enum\PaymentMethod;
+use App\Enum\TripStatus;
 use App\Models\Trip;
 use App\Models\User;
 use App\Models\Transaction;
@@ -14,11 +16,10 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\QueryException;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Models\Notification;
 use App\Models\TransitCompany;
+use App\Models\TripPayment;
 
 class TripBookingService
 {
@@ -41,24 +42,32 @@ class TripBookingService
     public function store($request)
     {
         try{
-
             $payment_methods = ['wallet', 'paystack', 'transfer'];
-            if(isset($request->amount_paid) && $request->amount_paid > 0){
-                
-                $amount_paid = $request->amount_paid;
-                
-                if(!isset($request->payment_method)) return['message' => 'Payment method is required', 'code' => 400];
-                if(!in_array($request->payment_method, $payment_methods)) return['message' => 'Invalid payment method', 'code' => 400];
 
-                if($request->payment_method == $payment_methods[0]){
+            if(isset($request->amount_paid) && $request->amount_paid > 0){
+
+                $amount_paid = $request->amount_paid;
+
+                if(!isset($request->payment_method)) {
+                    return['message' => 'Payment method is required', 'code' => 400];
+                }
+
+                if(!in_array($request->payment_method, $payment_methods)) {
+                    return['message' => 'Invalid payment method', 'code' => 400];
+                }
+
+                if($request->payment_method == PaymentMethod::WALLET){
 
                     if(!isset($request->pin) || $request->pin != Auth::user()->txn_pin){
                         return ['message' => 'Invalid transaction pin', 'code' => 400];
                     }
 
-                    if($amount_paid > $this->user->wallet) return['message' => 'You balance is insufficient to complete your request', 'code' => 400];
+                    if($amount_paid > $this->user->wallet) {
+                        return['message' => 'You balance is insufficient to complete your request', 'code' => 400];
+                    }
+
                     User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet - $amount_paid]);
-                    
+
                     Transaction::create([
                         'title' => 'Bus ticket purchase',
                         'amount' => $amount_paid,
@@ -66,8 +75,11 @@ class TripBookingService
                     ]);
                 }
 
-                if($request->payment_method == $payment_methods[1]){
-                    if(!isset($request->txn_reference)) return['message' => 'Transaction reference is required', 'code' => 400];
+                if($request->payment_method == PaymentMethod::PAYSTACK){
+                    if(!isset($request->txn_reference)) {
+                        return['message' => 'Transaction reference is required', 'code' => 400];
+                    }
+
                     $txn_ref = $request->txn_reference;
 
                     $ppc = new PaystackPaymentController();
@@ -75,28 +87,40 @@ class TripBookingService
                     $response = $ppc->verifyTransaction($txn_ref, $amount_paid);
 
                     if($response['status'] == 'success'){
+                        $trip = Trip::findOrFail($request->trip_id);
+
+                        TripPayment::create([
+                            'user_id' => $this->user->id,
+                            'trip_id' => $request->trip_id,
+                            'driver_id' => $trip->user_id,
+                            'amount' => $amount_paid,
+                            'status' => 'pending'
+                        ]);
+
                         // Transaction::create([
                         //     'user_id' => $this->user->id,
                         //     'title' => 'Bus ticket purchase',
-                        //     'amount' => $amount,
+                        //     'amount' => $amount_paid,
                         //     'type' => 'DR',
                         //     'txn_reference' => $txn_ref
                         // ]);
                     }
-                    else return['message' => $response, 'code' => 400];
-
+                    else {
+                        return['message' => $response, 'code' => 400];
+                    }
                 }
             }
 
-            $trip = Trip::where('uuid', $request->trip_id)
-            ->where('status', 1);
+            $trip = Trip::where('id', $request->trip_id)
+            ->where('status', TripStatus::ACTIVE);
 
             if(!$trip->exists()) return['message' => 'Invalid trip ID or trip is no longer available', 'code' => 400];
 
             //get the vehicle for this trip
             $trip = $trip->select('transit_company_id', 'vehicle_id', 'departure', 'destination', 'departure_at', 'estimated_arrival_at')->first();
+
             $vehicle = Vehicle::where('id', $trip->vehicle_id)->select()->first();
-            $seats = json_decode($vehicle->seats);
+            $seats = json_decode($vehicle?->seats);
 
             $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','state_id')->get()->first();
             $departure_state = DB::table('states')->where('id', $departure_town->state_id)->select('name')->get()->first();
@@ -111,10 +135,11 @@ class TripBookingService
             $trip->seats = $seats;
 
             //total number of seats in this vehicle
-            $total_seats = count($trip->seats);
+            $total_seats = count($trip->seats ?? []);
 
             //get the total bookings for this trip
             $bookings = TripBooking::where('trip_id', $request->trip_id)->where('status', 1);
+
             if(count($bookings->get()) >= $total_seats) return['message' => 'Number of passengers for this trip already complete', 'code' => 400];
 
             //get the already selected seats in the vehicle for this trip
@@ -157,7 +182,7 @@ class TripBookingService
                     ])
                 ]);
                 if(count($bookings->get()) >= $total_seats){
-                    $trip = Trip::where('uuid', $request->trip_id)
+                    $trip = Trip::where('id', $request->trip_id)
                     ->update(['status' => 0]);
                 }
                 $booking->departure = $departure;
@@ -170,7 +195,7 @@ class TripBookingService
                 ];
 
                 $booking->company_detail = [
-                    'name' => $transit_company->name, 
+                    'name' => $transit_company->name,
                     'logo_url' => $transit_company->logo_url ?? null,
                 ];
                 $booking->user_detail = Auth::user();

@@ -48,6 +48,7 @@ class Trip extends Model
         static::creating(function ($trip) {
             $trip->uuid = getRandomNumber();
         });
+
         static::retrieved(function($model){
             $model->from = getRouteStateAndTownNameFromTownId($model->departure);
             $model->to = getRouteStateAndTownNameFromTownId($model->destination);
@@ -67,6 +68,11 @@ class Trip extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function vehicle()
+    {
+        return $this->belongsTo(Vehicle::class, 'vehicle_id');
     }
 
     public function tripBookings()
@@ -89,7 +95,7 @@ class Trip extends Model
         return $this->belongsTo(RouteSubregion::class, 'destination');
     }
 
-    public function vehicle(){
-        return $this->hasOne(Vehicle::class, 'id', 'vehicle_id');
-    }
+    // public function vehicle(){
+    //     return $this->hasOne(Vehicle::class, 'id', 'vehicle_id');
+    // }
 }

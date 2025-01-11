@@ -35,6 +35,7 @@ class User extends Authenticatable implements JWTSubject
         'next_of_kin_full_name',
         'next_of_kin_phone_number',
         'next_of_kin_gender',
+        'next_of_kin_relationship',
         'verification_code',
         'verification_code_expires_at',
         'custom_fields',
@@ -47,6 +48,7 @@ class User extends Authenticatable implements JWTSubject
         'profile_photo',
         'public_id',
         'driver_verified',
+        'agent_id',
     ];
 
     protected $guarded = [

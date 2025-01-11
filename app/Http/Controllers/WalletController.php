@@ -74,8 +74,18 @@ class WalletController extends Controller
         return $this->service->recentTransaction($userId);
     }
 
+    public function recentEarning($userId)
+    {
+        return $this->service->recentEarning($userId);
+    }
+
     public function walletTopUp(WalletTopUpRequest $request)
     {
         return $this->service->walletTopUp($request);
+    }
+
+    public function stats($userId)
+    {
+        return $this->service->stats($userId);
     }
 }

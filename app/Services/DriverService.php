@@ -6,31 +6,42 @@ use App\Enum\DocumentStatus;
 use App\Http\Resources\BusStopResource;
 use App\Models\Document;
 use App\Models\User;
+use App\Trait\DriverTrait;
 use App\Trait\HttpResponse;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\DB;
 
 class DriverService
 {
-    use HttpResponse;
+    use HttpResponse, DriverTrait;
 
     public function addDriverInfo($request)
     {
-        $user = User::with(['driverVehicle', 'documents'])
+        $user = User::with(['vehicle', 'documents', 'transitCompany'])
             ->findOrFail($request->user_id);
+
+        $accountExist = hasOnboarded($request->user_id);
+
+        if($accountExist) {
+            return $this->error(null, "Account already exist!", 400);
+        }
 
         DB::beginTransaction();
 
         try {
             $profilePhoto = uploadFile($request, 'profile_photo', 'driver/documents');
 
-            $user->driverVehicle()->create([
-                'vehicle_year' => $request->vehicle_year,
-                'vehicle_model' => $request->vehicle_model,
-                'vehicle_color' => $request->vehicle_color,
-                'plate_number' => $request->plate_number,
-                'vehicle_type' => $request->vehicle_type,
-                'vehicle_capacity' => $request->vehicle_capacity,
+            $company = $this->createTransitCompany($user, $request);
+
+            $user->vehicle()->create([
+                'company_id' => $company->id,
+                'brand_id' => 0,
+                'year' => $request->vehicle_year,
+                'model' => $request->vehicle_model,
+                'color' => $request->vehicle_color,
+                'plate_no' => $request->plate_number,
+                'type' => $request->vehicle_type,
+                'capacity' => $request->vehicle_capacity,
                 'seats' => $request->seats,
                 'seat_row' => $request->seat_row,
                 'seat_column' => $request->seat_column,
@@ -71,6 +82,10 @@ class DriverService
             }
 
             $user->update([
+                'gender' => $request->gender,
+                'next_of_kin_full_name' => $request->next_of_kin_full_name,
+                'next_of_kin_phone_number' => $request->next_of_kin_phone_number,
+                'next_of_kin_relationship' => $request->next_of_kin_relationship,
                 'transit_company_union_id' => $request->transit_company_union_id,
                 'profile_photo' => $profilePhoto['url'],
                 'public_id' => $profilePhoto['public_id'],

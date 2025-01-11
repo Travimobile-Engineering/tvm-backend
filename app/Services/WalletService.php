@@ -12,7 +12,6 @@ use App\Mail\ConfirmationEmail;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Services\Paystack\PaystackService;
-use App\Http\Requests\WalletSetTransactionPinRequest;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -256,19 +255,77 @@ class WalletService
     {
         $user = authUser();
 
-        if($user->id != $userId) {
+        if ($user->id != $userId) {
             return $this->error(null, "Unauthorized action.", 401);
         }
 
-        $transactions = Transaction::where([
-            'receiver_id' => $userId,
-            'title' => "Bus ticket purchase"
-        ])
-        ->select('id', 'user_id', 'title', 'amount', 'status', 'created_at')
-        ->get();
+        $date = request()->input('date');
 
-        return $this->success($transactions, "Recent transactions");
+        $user = User::with(['transactions' => function ($query) use ($date) {
+            if ($date) {
+                $query->whereDate('created_at', $date);
+            }
+        }])->findOrFail($userId);
+
+        $relatedTransactions = Transaction::where('receiver_id', $userId)
+            ->where('title', "Bus ticket purchase")
+            ->select('id', 'user_id', 'title', 'amount', 'status', 'created_at')
+            ->get();
+
+        $transactions = $user->transactions->map(function ($transaction) {
+            return [
+                'id' => $transaction->id,
+                'title' => $transaction->title,
+                'amount' => (int)$transaction->amount,
+                'status' => $transaction->status,
+                'created_at' => $transaction->created_at,
+            ];
+        });
+
+        $relatedTransactions = $relatedTransactions->map(function ($transaction) {
+            return [
+                'id' => $transaction->id,
+                'title' => $transaction->title,
+                'amount' => (int)$transaction->amount,
+                'status' => $transaction->status,
+                'created_at' => $transaction->created_at,
+            ];
+        });
+
+        $allTransactions = $transactions->merge($relatedTransactions);
+
+        return $this->success($allTransactions, "Recent transactions");
     }
+
+
+    public function recentEarning($userId)
+    {
+        $user = authUser();
+
+        if ($user->id != $userId) {
+            return $this->error(null, "Unauthorized action.", 401);
+        }
+
+        $date = request()->input('date');
+
+        $user = User::with(['driverTripPayments' => function ($query) use ($date) {
+            if ($date) {
+                $query->whereDate('created_at', $date);
+            }
+        }])->findOrFail($userId);
+
+        $earnings = $user->driverTripPayments->map(function ($payment) {
+            return [
+                'id' => $payment->id,
+                'amount' => (int)$payment->amount,
+                'status' => $payment->status,
+                'created_at' => $payment->created_at,
+            ];
+        });
+
+        return $this->success($earnings, "Recent earnings");
+    }
+
 
     public function walletTopUp($request)
     {
@@ -297,5 +354,36 @@ class WalletService
             'status' => 'success',
             'data' => $paystackInstance,
         ];
+    }
+
+    public function stats($userId)
+    {
+        $startDate = request()->input('start_date') ?: now()->startOfWeek();
+        $endDate = request()->input('end_date') ?: now()->endOfWeek();
+    
+        $allDays = [
+            'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+        ];
+    
+        $transactions = Transaction::where('user_id', $userId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw("
+                DAYNAME(created_at) as day_of_week,
+                SUM(CASE WHEN type = 'CR' THEN amount ELSE 0 END) as inflow,
+                SUM(CASE WHEN type = 'DR' THEN amount ELSE 0 END) as outflow
+            ")
+            ->groupBy('day_of_week')
+            ->get()
+            ->keyBy('day_of_week');
+    
+        $statistics = collect($allDays)->map(function ($day) use ($transactions) {
+            return [
+                'day' => $day,
+                'inflow' => (int) ($transactions[$day]->inflow ?? 0),
+                'outflow' => (int) ($transactions[$day]->outflow ?? 0),
+            ];
+        });
+    
+        return $this->success($statistics, "Transaction statistics retrieved successfully.");
     }
 }
