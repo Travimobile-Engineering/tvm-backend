@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Vehicle\Vehicle;
 use Illuminate\Database\Eloquent\Model;
 
 class Trip extends Model
@@ -47,6 +48,7 @@ class Trip extends Model
         static::creating(function ($trip) {
             $trip->uuid = getRandomNumber();
         });
+
         static::retrieved(function($model){
             $model->from = getRouteStateAndTownNameFromTownId($model->departure);
             $model->to = getRouteStateAndTownNameFromTownId($model->destination);
@@ -66,6 +68,11 @@ class Trip extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function vehicle()
+    {
+        return $this->belongsTo(Vehicle::class, 'vehicle_id');
     }
 
     public function tripBookings()

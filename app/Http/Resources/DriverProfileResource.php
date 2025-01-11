@@ -14,6 +14,9 @@ class DriverProfileResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $pendingBalance = $this->driverTripPayments->where('status', 'pending')
+            ->sum('amount');
+
         return [
             'id' => (int)$this->id,
             'first_name' => $this->first_name,
@@ -37,18 +40,19 @@ class DriverProfileResource extends JsonResource
                 'name' => $this->transitCompany?->name,
                 'email' => $this->transitCompany?->email,
                 'address' => $this->transitCompany?->address,
+                'park' => $this->transitCompany?->park,
             ],
             'vehicle' => (object)[
-                'id' => (int)$this->driverVehicle?->id,
-                'year' => $this->driverVehicle?->vehicle_year,
-                'model' => $this->driverVehicle?->vehicle_model,
-                'color' => $this->driverVehicle?->vehicle_color,
-                'type' => $this->driverVehicle?->vehicle_type,
-                'capacity' => $this->driverVehicle?->vehicle_capacity,
-                'plate_number' => $this->driverVehicle?->plate_number,
-                'seats' => json_decode($this->driverVehicle?->seats),
-                'seat_row' => $this->driverVehicle?->seat_row,
-                'seat_column' => $this->driverVehicle?->seat_column
+                'id' => (int)$this->vehicle?->id,
+                'year' => $this->vehicle?->year,
+                'model' => $this->vehicle?->model,
+                'color' => $this->vehicle?->color,
+                'type' => $this->vehicle?->type,
+                'capacity' => $this->vehicle?->capacity,
+                'plate_number' => $this->vehicle?->plate_no,
+                'seats' => json_decode($this->vehicle?->seats) ?? $this->vehicle?->seats,
+                'seat_row' => $this->vehicle?->seat_row,
+                'seat_column' => $this->vehicle?->seat_column
             ],
             'documents' => $this->documents ? $this->documents->map(function($document) {
                 return [
@@ -60,9 +64,10 @@ class DriverProfileResource extends JsonResource
                     'status' => $document->status,
                 ];
             })->toArray() : [],
-            'wallet' => (object)[
+            'wallet_setup' => hasSetupWallet($this->id),
+            'wallet_info' => (object)[
                 'available_balance' => $this->wallet,
-                'pending_balance' => 0,
+                'pending_balance' => $pendingBalance,
             ],
         ];
     }

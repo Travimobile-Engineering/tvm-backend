@@ -3,22 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trip;
-use App\Models\TripBooking;
 use App\Trait\HttpResponse;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Models\TransitCompany;
-use Illuminate\Support\Carbon;
-use App\Models\Vehicle\Vehicle;
-use App\Services\ValidationRules;
 use App\Services\Trip\TripService;
-use Illuminate\Support\Facades\DB;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\QueryException;
 use App\Http\Requests\TransportOneTimeRequest;
-use Illuminate\Validation\ValidationException;
 use App\Http\Requests\TransportRecurringRequest;
 
 class TripController extends Controller
@@ -132,6 +120,7 @@ class TripController extends Controller
     public function startTrip(Request $request)
     {
         $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
             'trip_id' => ['required', 'integer', 'exists:trips,id'],
         ]);
 

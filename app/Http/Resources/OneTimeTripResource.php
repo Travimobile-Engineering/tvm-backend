@@ -23,6 +23,18 @@ class OneTimeTripResource extends JsonResource
                 'last_name' => $this->user->last_name,
             ],
             'vehicle_id' => $this->vehicle_id,
+            'vehicle' => (object)[
+                'name' => $this->vehicle?->name,
+                'year' => $this->vehicle?->year,
+                'model' => $this->vehicle?->model,
+                'color' => $this->vehicle?->color,
+                'type' => $this->vehicle?->type,
+                'capacity' => $this->vehicle?->capacity,
+                'plate_number' => $this->vehicle?->plate_no,
+                'seats' => json_decode($this->vehicle?->seats) ?? $this->vehicle?->seats,
+                'seat_row' => $this->vehicle?->seat_row,
+                'seat_column' => $this->vehicle?->seat_column
+            ],
             'departure_id' => $this->departure,
             'destination_id' => $this->destination,
             'departure' => $this->departureRegion?->state?->name . ' > ' . $this->departureRegion?->name,
