@@ -1,0 +1,36 @@
+name: Build and Push travi worke-queue Image to Registry
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  PROJECT_ID: "travi-mobile-mvp"
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    name: 'Build and push docker image to Artifact Registry'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Authenticate to Google Cloud
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: Configure Docker to use gcloud as a credential helper
+      run: gcloud auth configure-docker europe-west2-docker.pkg.dev
+
+    - name: Build Docker image
+      run: docker build -f Dockerfile.worker -t europe-west2-docker.pkg.dev/travi-mobile-mvp/travi-mobile-registry/work-queue:latest .
+
+    - name: Push Docker image to Artifact Registry
+      run: docker push europe-west2-docker.pkg.dev/travi-mobile-mvp/travi-mobile-registry/work-queue:latest

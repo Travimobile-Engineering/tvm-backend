@@ -35,7 +35,6 @@ class TripController extends Controller
     }
 
     public function getTrip(Trip $trip){
-
         return $this->service->getTrip($trip);
     }
 

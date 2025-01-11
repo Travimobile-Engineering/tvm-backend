@@ -35,11 +35,11 @@ class Trip extends Model
         'destination_park',
     ];
 
-    protected $hidden = ['id'];
+    protected $hidden = [];
 
     public function getRouteKeyName()
     {
-        return 'id';
+        return 'uuid';
     }
 
     protected static function boot()
