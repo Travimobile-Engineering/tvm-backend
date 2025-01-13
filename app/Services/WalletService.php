@@ -184,7 +184,7 @@ class WalletService
 
             $user->update([
                 'verification_code' => getCode(),
-                'verification_code_expires_at' => now()->addMinutes(10),
+                'verification_code_expires_at' => now()->addMinutes(30),
             ]);
 
             DB::commit();
@@ -201,10 +201,10 @@ class WalletService
 
     public function verifyPin($request)
     {
-        $user = User::with('driverPin')->where('id', $request->user_id)
+        $user = User::with('driverPin')
             ->where('verification_code', $request->code)
             ->where('verification_code_expires_at', '>', now())
-            ->first();
+            ->find($request->user_id);
 
 
         if (! $user) {
