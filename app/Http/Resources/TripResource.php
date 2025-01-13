@@ -14,7 +14,7 @@ class TripResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $seats = json_decode($this->vehicle?->seats) ?? $this->vehicle?->seats;
+        $seats = $this->vehicle?->seats;
         $totalSeats = is_array($seats) ? count($seats) : 0;
         $totalSelectedSeats = $this->tripBookings ? $this->tripBookings->count() : 0;
         $availableSeats = $totalSeats - $totalSelectedSeats;
