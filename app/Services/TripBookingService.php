@@ -120,7 +120,7 @@ class TripBookingService
             $trip = $trip->select('transit_company_id', 'vehicle_id', 'departure', 'destination', 'departure_at', 'estimated_arrival_at')->first();
 
             $vehicle = Vehicle::where('id', $trip->vehicle_id)->select()->first();
-            $seats = json_decode($vehicle?->seats);
+            $seats = $vehicle?->seats;
 
             $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','state_id')->get()->first();
             $departure_state = DB::table('states')->where('id', $departure_town->state_id)->select('name')->get()->first();
