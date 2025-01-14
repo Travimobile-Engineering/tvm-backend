@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Services\Paystack\PaystackService;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Mail\VerifyPinMail;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -183,13 +184,13 @@ class WalletService
             }
 
             $user->update([
-                'verification_code' => getCode(),
+                'verification_code' => $code,
                 'verification_code_expires_at' => now()->addMinutes(30),
             ]);
 
             DB::commit();
 
-            sendMail($user->email, new ConfirmationEmail($user->first_name, $code));
+            sendMail($user->email, new VerifyPinMail($user->first_name, $code));
 
             return $this->success(null, "Created successfully", 201);
         } catch (\Throwable $th) {
@@ -360,11 +361,11 @@ class WalletService
     {
         $startDate = request()->input('start_date') ?: now()->startOfWeek();
         $endDate = request()->input('end_date') ?: now()->endOfWeek();
-    
+
         $allDays = [
             'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
         ];
-    
+
         $transactions = Transaction::where('user_id', $userId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->selectRaw("
@@ -375,7 +376,7 @@ class WalletService
             ->groupBy('day_of_week')
             ->get()
             ->keyBy('day_of_week');
-    
+
         $statistics = collect($allDays)->map(function ($day) use ($transactions) {
             return [
                 'day' => $day,
@@ -383,7 +384,7 @@ class WalletService
                 'outflow' => (int) ($transactions[$day]->outflow ?? 0),
             ];
         });
-    
+
         return $this->success($statistics, "Transaction statistics retrieved successfully.");
     }
 }
