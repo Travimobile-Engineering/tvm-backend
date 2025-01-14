@@ -146,8 +146,24 @@ class WalletService
 
             DB::beginTransaction();
 
-            if(! empty($user->driverBank)) {
-                return $this->error(null, "You have created a bank!", 400);
+            if (!empty($user->driverBank)) {
+                if ($user->driverPin?->status === 'active') {
+                    return $this->error(null, "Your bank is already active. You cannot create a new bank!", 403);
+                }
+
+                if ($user->driverPin?->status === 'pending') {
+                    $user->update([
+                        'verification_code' => $code,
+                        'verification_code_expires_at' => now()->addMinutes(30),
+                    ]);
+
+                    sendMail($user->email, new VerifyPinMail($user->first_name, $code));
+
+                    DB::commit();
+                    return $this->success(null, "Verification email resent successfully", 200);
+                }
+
+                return $this->error(null, "You have already created a bank.", 403);
             }
 
             $user->driverBank()->create([
