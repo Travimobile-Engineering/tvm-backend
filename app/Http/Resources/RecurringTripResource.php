@@ -14,6 +14,11 @@ class RecurringTripResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $seats = $this->vehicle?->seats;
+        $totalSeats = is_array($seats) ? count($seats) : 0;
+        $totalSelectedSeats = $this->tripBookings ? $this->tripBookings->count() : 0;
+        $availableSeats = $totalSeats - $totalSelectedSeats;
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -30,7 +35,7 @@ class RecurringTripResource extends JsonResource
                 'type' => $this->vehicle?->type,
                 'capacity' => $this->vehicle?->capacity,
                 'plate_number' => $this->vehicle?->plate_no,
-                'seats' => json_decode($this->vehicle?->seats) ?? $this->vehicle?->seats,
+                'seats' => $this->vehicle?->seats,
                 'seat_row' => $this->vehicle?->seat_row,
                 'seat_column' => $this->vehicle?->seat_column
             ],
@@ -63,6 +68,9 @@ class RecurringTripResource extends JsonResource
                 return $passenger->selected_seat;
             })->toArray() : [],
             'total_selected_seats' => $this->tripBookings ? $this->tripBookings->count() : 0,
+            'total_seat' => is_array($seats = $this->vehicle?->seats) ? count($seats) : 0,
+            'available_seat' => $availableSeats,
+            'manifest_fee' => 1000,
         ];
     }
 }

@@ -112,6 +112,7 @@ class TripService
 
         $query = Trip::with(
                 [
+                    'user',
                     'vehicle',
                     'departureRegion.state',
                     'destinationRegion.state',
@@ -438,6 +439,8 @@ class TripService
     {
         $type = request()->query('type');
         $date = request()->query('date');
+        $departure = request()->query('departure');
+        $destination = request()->query('destination');
 
         $query = Trip::with(
                 [
@@ -450,7 +453,15 @@ class TripService
                 ]
             )
             ->where('user_id', $userId)
-            ->where('status', TripStatus::ACTIVE);
+            ->where('status', TripStatus::ACTIVE)
+            ->where(function ($query) {
+                $date = request()->query('date', date('Y-m-d'));
+                $time = request()->query('time', '00:00:00');
+                $departureAt = "$date $time";
+
+                $query->where('departure_at', '>=', $departureAt)
+                    ->orWhere('start_date', '>=', now());
+            });
 
         if ($type) {
             $query->where('type', $type);
@@ -458,6 +469,14 @@ class TripService
 
         if ($date) {
             $query->whereDate('created_at', $date);
+        }
+
+        if ($departure) {
+            $query->where('departure', $departure);
+        }
+
+        if ($destination) {
+            $query->where('destination', $destination);
         }
 
         $trips = $query->get();
@@ -477,6 +496,8 @@ class TripService
     {
         $type = request()->query('type');
         $date = request()->query('date');
+        $departure = request()->query('departure');
+        $destination = request()->query('destination');
 
         $query = Trip::with(
                 [
@@ -488,7 +509,15 @@ class TripService
                     'manifests'
                 ]
             )
-            ->where('status', TripStatus::ACTIVE);
+            ->where('status', TripStatus::ACTIVE)
+            ->where(function ($query) {
+                $date = request()->query('date', date('Y-m-d'));
+                $time = request()->query('time', '00:00:00');
+                $departureAt = "$date $time";
+
+                $query->where('departure_at', '>=', $departureAt)
+                    ->orWhere('start_date', '>=', now());
+            });
 
         if ($type) {
             $query->where('type', $type);
@@ -498,12 +527,22 @@ class TripService
             $query->whereDate('created_at', $date);
         }
 
+        if ($departure) {
+            $query->where('departure', $departure);
+        }
+
+        if ($destination) {
+            $query->where('destination', $destination);
+        }
+
         $trips = $query->get();
 
         if ($type === TripType::RECURRING) {
             $data = RecurringTripResource::collection($trips);
-        } else {
+        } elseif ($type === TripType::ONETIME) {
             $data = OneTimeTripResource::collection($trips);
+        } else {
+            $data = TripResource::collection($trips);
         }
 
         return $this->success($data, "All trips", 200);

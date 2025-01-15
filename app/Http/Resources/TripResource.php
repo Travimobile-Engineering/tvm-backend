@@ -72,7 +72,7 @@ class TripResource extends JsonResource
             'total_selected_seats' => $this->tripBookings ? $this->tripBookings->count() : 0,
             'total_seat' => is_array($seats = $this->vehicle?->seats) ? count($seats) : 0,
             'available_seat' => $availableSeats,
-            'manifest_fee' => 20000,
+            'manifest_fee' => 1000,
         ];
     }
 }
