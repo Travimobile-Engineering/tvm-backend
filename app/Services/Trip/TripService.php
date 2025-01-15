@@ -21,7 +21,7 @@ class TripService
 {
     use HttpResponse, DriverTrait;
 
-    const TRIP_CHARGE_AMOUNT = 20000;
+    const TRIP_CHARGE_AMOUNT = 1000;
 
     public function createOneTime($request)
     {
@@ -61,7 +61,8 @@ class TripService
         return $this->success($data, "Trip details");
     }
 
-    public function getTrips($request)
+    // Old Code New code being used (getTrip)
+    public function getTripss($request)
     {
         $trips = Trip::where('trips.status', 1);
 
@@ -94,6 +95,52 @@ class TripService
             );
 
         return $this->success($trips->get(), "Trips");
+    }
+
+    /**
+     * Refactored to improve code readability, maintainability, and performance:
+     * - Utilizes eager loading (`with`) to optimize database queries by reducing the number of queries.
+     * - Replaces multiple conditional `where` calls with a more compact and dynamic closure for query construction.
+     * - Filters data using query parameters (`request()->query`) for flexibility and adherence to RESTful practices.
+     * - Applies a resource transformation (`TripResource`) for a consistent API response format.
+     * - Ensures that queries are dynamically constructed based on input parameters, promoting reusability and clean code.
+     */
+    public function getTrips($request)
+    {
+        $departure = request()->query('departure');
+        $destination = request()->query('destination');
+
+        $query = Trip::with(
+                [
+                    'vehicle',
+                    'departureRegion.state',
+                    'destinationRegion.state',
+                    'manifests'
+                ]
+            )
+            ->where('status', 'active')
+            ->where(function ($query) use ($request) {
+                $date = $request->query('date', date('Y-m-d'));
+                $time = $request->query('time', '00:00:00');
+                $departureAt = "$date $time";
+
+                $query->where('departure_at', '>=', $departureAt)
+                    ->orWhere('start_date', '>=', now());
+            });
+
+        if ($departure) {
+            $query->where('departure', $departure);
+        }
+
+        if ($destination) {
+            $query->where('destination', $destination);
+        }
+
+        $trips = $query->get();
+
+        $data = TripResource::collection($trips);
+
+        return $this->success($data, "Available trips", 200);
     }
 
     public function getOneTime($id)
