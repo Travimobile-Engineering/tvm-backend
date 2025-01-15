@@ -54,7 +54,7 @@ class TripService
 
     public function getTrip(Trip $trip)
     {
-        $trip->load(['user', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests', 'vehicle']);
+        $trip->load(['user.transitCompany', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests', 'vehicle']);
 
         $data = new TripResource($trip);
 
@@ -112,11 +112,11 @@ class TripService
 
         $query = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
                 ]
             )
             ->where('status', TripStatus::ACTIVE)
@@ -148,7 +148,7 @@ class TripService
     {
         $trip = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
@@ -172,7 +172,7 @@ class TripService
     {
         $trips = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
@@ -267,7 +267,7 @@ class TripService
     {
         $trip = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
@@ -291,7 +291,7 @@ class TripService
     {
         $trips = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
@@ -370,7 +370,7 @@ class TripService
 
         $query = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
@@ -397,7 +397,7 @@ class TripService
     {
         $trips = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
@@ -418,7 +418,7 @@ class TripService
     {
         $trips = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
@@ -444,7 +444,7 @@ class TripService
 
         $query = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
@@ -501,7 +501,7 @@ class TripService
 
         $query = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
@@ -552,7 +552,7 @@ class TripService
     {
         $trip = Trip::with(
                 [
-                    'user',
+                    'user.transitCompany',
                     'vehicle',
                     'tripBookings.user',
                     'departureRegion.state',
