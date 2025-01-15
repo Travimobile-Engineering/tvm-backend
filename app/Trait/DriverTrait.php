@@ -10,7 +10,7 @@ trait DriverTrait
 {
     use HttpResponse;
 
-    const TRIP_CHARGE_AMOUNT = 20000;
+    const TRIP_CHARGE_AMOUNT = 1000;
 
     protected function createTransitCompany($user, $request)
     {
