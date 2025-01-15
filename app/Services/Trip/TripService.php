@@ -118,7 +118,7 @@ class TripService
                     'manifests'
                 ]
             )
-            ->where('status', 'active')
+            ->where('status', TripStatus::ACTIVE)
             ->where(function ($query) use ($request) {
                 $date = $request->query('date', date('Y-m-d'));
                 $time = $request->query('time', '00:00:00');
