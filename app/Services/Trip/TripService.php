@@ -70,7 +70,7 @@ class TripService
             $date = $request->date ?? date('Y-m-d');
             $time = $request->time ?? '00:00:00';
             $departureAt = "$date $time";
-            $trips->where('departure_at', '>=', $departureAt);
+            $trips->where('departure_date', '>=', $departureAt);
         }
 
         if (!empty($request->departure)) {
@@ -125,7 +125,7 @@ class TripService
                 $time = $request->query('time', '00:00:00');
                 $departureAt = "$date $time";
 
-                $query->where('departure_at', '>=', $departureAt)
+                $query->where('departure_date', '>=', $departureAt)
                     ->orWhere('start_date', '>=', now());
             });
 
@@ -379,7 +379,7 @@ class TripService
                 ]
             )
             ->where('user_id', $userId)
-            ->whereDate('departure_at', '>', now())
+            ->whereDate('departure_date', '>', now())
             ->orWhereDate('start_date', '>', now());
 
         if ($date) {
@@ -459,7 +459,7 @@ class TripService
                 $time = request()->query('time', '00:00:00');
                 $departureAt = "$date $time";
 
-                $query->where('departure_at', '>=', $departureAt)
+                $query->where('departure_date', '>=', $departureAt)
                     ->orWhere('start_date', '>=', now());
             });
 
@@ -515,7 +515,7 @@ class TripService
                 $time = request()->query('time', '00:00:00');
                 $departureAt = "$date $time";
 
-                $query->where('departure_at', '>=', $departureAt)
+                $query->where('departure_date', '>=', $departureAt)
                     ->orWhere('start_date', '>=', now());
             });
 
