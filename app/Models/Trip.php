@@ -95,7 +95,4 @@ class Trip extends Model
         return $this->belongsTo(RouteSubregion::class, 'destination');
     }
 
-    // public function vehicle(){
-    //     return $this->hasOne(Vehicle::class, 'id', 'vehicle_id');
-    // }
 }

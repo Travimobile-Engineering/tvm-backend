@@ -12,4 +12,9 @@ class RouteSubregion extends Model
     {
         return $this->belongsTo(State::class);
     }
+
+    public function parks()
+    {
+        return $this->hasMany(Park::class, 'route_subregion_id');
+    }
 }

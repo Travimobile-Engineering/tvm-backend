@@ -2,14 +2,18 @@
 
 namespace App\Services;
 
-use App\Enum\PaymentMethod;
-use App\Enum\TripStatus;
 use App\Models\Trip;
 use App\Models\User;
+use App\Enum\TripStatus;
+use App\Enum\PaymentMethod;
 use App\Models\Transaction;
 use App\Models\TripBooking;
+use App\Models\TripPayment;
+use App\Trait\HttpResponse;
 use Illuminate\Support\Str;
+use App\Models\Notification;
 use Illuminate\Http\Request;
+use App\Models\TransitCompany;
 use App\Models\Vehicle\Vehicle;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -17,12 +21,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\QueryException;
 use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Models\Notification;
-use App\Models\TransitCompany;
-use App\Models\TripPayment;
 
 class TripBookingService
 {
+    use HttpResponse;
+
     protected $user;
 
     public function __construct(){
@@ -111,42 +114,58 @@ class TripBookingService
                 }
             }
 
-            $trip = Trip::where('id', $request->trip_id)
-            ->where('status', TripStatus::ACTIVE);
+            $trip = Trip::with(
+                    [
+                        'user.transitCompany',
+                        'vehicle',
+                        'tripBookings.user',
+                        'departureRegion.state',
+                        'destinationRegion.state',
+                        'manifests'
+                    ]
+                )
+                ->where('id', $request->trip_id)
+                ->where('status', TripStatus::ACTIVE)
+                ->first();
 
-            if(!$trip->exists()) return['message' => 'Invalid trip ID or trip is no longer available', 'code' => 400];
+            if(!$trip->exists()) {
+                return['message' => 'Invalid trip ID or trip is no longer available', 'code' => 400];
+            }
 
-            //get the vehicle for this trip
-            $trip = $trip->select('transit_company_id', 'vehicle_id', 'departure', 'destination', 'departure_at', 'estimated_arrival_at')->first();
+            $seats = $trip->vehicle?->seats;
 
-            $vehicle = Vehicle::where('id', $trip->vehicle_id)->select()->first();
-            $seats = $vehicle?->seats;
+            if (is_string($seats)) {
+                $seats = json_decode($seats, true);
+                if (!is_array($seats)) {
+                    return ['message' => 'Invalid seats data format', 'code' => 400];
+                }
+            }
 
-            $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->select('name','state_id')->get()->first();
-            $departure_state = DB::table('states')->where('id', $departure_town->state_id)->select('name')->get()->first();
-            $departure = $departure_state->name.' > '.$departure_town->name;
-
-            $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->select('name','state_id')->get()->first();
-            $destination_state = DB::table('states')->where('id', $destination_town->state_id)->select('name')->get()->first();
-            $destination = $destination_state->name.' > '.$destination_town->name;
+            $departure = $trip->departureRegion?->state?->name . ' > ' . $trip->departureRegion?->name;
+            $destination = $trip->destinationRegion?->state?->name . ' > ' . $trip->destinationRegion?->name;
 
             $transit_company = TransitCompany::where('id', $trip->transit_company_id)->first();
 
-            $trip->seats = $seats;
-
             //total number of seats in this vehicle
-            $total_seats = count($trip->seats ?? []);
+            $total_seats = count($seats ?? []);
 
             //get the total bookings for this trip
             $bookings = TripBooking::where('trip_id', $request->trip_id)->where('status', 1);
 
-            if(count($bookings->get()) >= $total_seats) return['message' => 'Number of passengers for this trip already complete', 'code' => 400];
+            if(count($bookings->get()) >= $total_seats) {
+                return['message' => 'Number of passengers for this trip already complete', 'code' => 400];
+            }
 
             //get the already selected seats in the vehicle for this trip
             $selected_seats = $bookings->pluck('selected_seat')->toArray();
 
-            if(!in_array(ucfirst($request->selected_seat), $seats)) return['message' => 'Invalid seat selection', 'code' => 400];
-            if(in_array(ucfirst($request->selected_seat), $selected_seats)) return['message' => 'Selected seat already taken', 'code' => 400];
+            if(!in_array(ucfirst($request->selected_seat), $seats)) {
+                return['message' => 'Invalid seat selection', 'code' => 400];
+            }
+
+            if(in_array(ucfirst($request->selected_seat), $selected_seats)) {
+                return['message' => 'Selected seat already taken', 'code' => 400];
+            }
 
             $available_seats = array_filter($seats, function($seat) use ($selected_seats){
                 return !in_array($seat, $selected_seats);
@@ -154,8 +173,9 @@ class TripBookingService
 
             $trip->available_seats = $available_seats;
 
-            do $booking_id = strtoupper(Str::random(14));
-            while(TripBooking::where('booking_id', $booking_id)->exists());
+            do {
+                $booking_id = strtoupper(Str::random(14));
+            } while(TripBooking::where('booking_id', $booking_id)->exists());
 
             $booking = TripBooking::create([
                 'booking_id' => $booking_id,
@@ -181,25 +201,31 @@ class TripBookingService
                         'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
                     ])
                 ]);
+
                 if(count($bookings->get()) >= $total_seats){
-                    $trip = Trip::where('id', $request->trip_id)
-                    ->update(['status' => 0]);
+                    Trip::where('id', $request->trip_id)
+                    ->update(['status' => TripStatus::ACTIVE]);
+
+                    $trip = Trip::find($request->trip_id);
                 }
+
                 $booking->departure = $departure;
                 $booking->destination = $destination;
-                $booking->departure_at = $trip->departure_at;
-                $booking->estimated_arrival_at = $trip->estimated_arrival_at;
+                $booking->departure_at = $trip?->departure_at;
+                $booking->estimated_arrival_at = $trip?->estimated_arrival_at;
                 $booking->vehicle_detail = [
-                    'name' => $vehicle->name,
-                    'plate_no' => $vehicle->plate_no,
+                    'name' => $trip->vehicle?->name,
+                    'plate_no' => $trip->vehicle?->plate_no,
                 ];
 
                 $booking->company_detail = [
                     'name' => $transit_company->name,
                     'logo_url' => $transit_company->logo_url ?? null,
                 ];
+
                 $booking->user_detail = Auth::user();
-                return['message' => 'Booking created successfully', 'data' => $booking];
+
+                return $this->success($booking, 'Booking created successfully');
             }
         }
         catch(QueryException $e){

@@ -25,6 +25,10 @@ class TripService
 
     public function createOneTime($request)
     {
+        if ($request->departure_id == $request->destination_id) {
+            return $this->error("Departure and destination cannot be the same", 400);
+        }
+
         try {
 
             $user = User::with(['transitCompany', 'vehicle'])->findOrFail($request->user_id);
@@ -54,7 +58,16 @@ class TripService
 
     public function getTrip(Trip $trip)
     {
-        $trip->load(['user.transitCompany', 'tripBookings.user', 'departureRegion.state', 'destinationRegion.state', 'manifests', 'vehicle']);
+        $trip->load([
+            'user.transitCompany',
+            'tripBookings.user',
+            'departureRegion.state',
+            'destinationRegion.state',
+            'manifests',
+            'vehicle',
+            'departureRegion.parks',
+            'destinationRegion.parks',
+        ]);
 
         $data = new TripResource($trip);
 
@@ -108,18 +121,19 @@ class TripService
     public function getTrips()
     {
         $date = request()->query('date');
+        $time = request()->query('time');
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
-        $query = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifests',
-                ]
-            )
+        $query = Trip::with([
+                'user.transitCompany',
+                'vehicle',
+                'departureRegion.state',
+                'destinationRegion.state',
+                'manifests',
+                'departureRegion.parks',
+                'destinationRegion.parks',
+            ])
             ->where('status', TripStatus::ACTIVE);
 
         if ($departure) {
@@ -130,9 +144,13 @@ class TripService
             $query->where('destination', $destination);
         }
 
-        if ($date) {
-            $query->whereDate('departure_date', $date)
-                ->orWhereDate('start_date', $date);
+        if ($date && $time) {
+            $query->where(function ($q) use ($date, $time) {
+                $q->whereDate('departure_date', '>=', $date)
+                ->whereTime('departure_time', '=', $time);
+            });
+        } elseif ($date) {
+            $query->whereDate('departure_date', $date);
         }
 
         $trips = $query->get();
@@ -141,6 +159,7 @@ class TripService
 
         return $this->success($data, "Available trips", 200);
     }
+
 
     public function getOneTime($id)
     {
@@ -151,7 +170,9 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                 ]
             )
             ->where('type', TripType::ONETIME)
@@ -175,6 +196,8 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                     'manifests'
                 ]
             )
@@ -211,6 +234,10 @@ class TripService
 
     public function createRecurring($request)
     {
+        if ($request->departure_id == $request->destination_id) {
+            return $this->error("Departure and destination cannot be the same", 400);
+        }
+
         try {
 
             $user = User::with(['transitCompany', 'vehicle'])->findOrFail($request->user_id);
@@ -239,7 +266,8 @@ class TripService
                         'departure' => $request->departure_id,
                         'destination' => $request->destination_id,
                         'trip_duration' => $request->trip_duration,
-                        'start_date' => $tripDateTime->format('Y-m-d'),
+                        'departure_date' => $tripDateTime->format('Y-m-d'),
+                        'departure_time' => $time,
                         'trip_days' => [$day],
                         'trip_schedule' => $tripSchedule,
                         'reoccur_duration' => $request->reoccur_duration,
@@ -270,7 +298,9 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                 ]
             )
             ->where('type', TripType::RECURRING)
@@ -294,7 +324,9 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                 ]
             )
             ->where('user_id', $userId)
@@ -373,7 +405,9 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                 ]
             )
             ->where('user_id', $userId)
@@ -400,7 +434,9 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                 ]
             )
             ->where('user_id', $userId)
@@ -421,7 +457,9 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                 ]
             )
             ->where('user_id', $userId)
@@ -437,6 +475,7 @@ class TripService
     {
         $type = request()->query('type');
         $date = request()->query('date');
+        $time = request()->query('time');
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
@@ -447,7 +486,9 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                 ]
             )
             ->where('user_id', $userId)
@@ -457,17 +498,21 @@ class TripService
             $query->where('type', $type);
         }
 
-        if ($date) {
-            $query->whereDate('departure_date', $date)
-                ->orWhereDate('start_date', $date);
-        }
-
         if ($departure) {
             $query->where('departure', $departure);
         }
 
         if ($destination) {
             $query->where('destination', $destination);
+        }
+
+        if ($date && $time) {
+            $query->where(function ($q) use ($date, $time) {
+                $q->whereDate('departure_date', '>=', $date)
+                ->whereTime('departure_time', '=', $time);
+            });
+        } elseif ($date) {
+            $query->whereDate('departure_date', $date);
         }
 
         $trips = $query->get();
@@ -487,6 +532,7 @@ class TripService
     {
         $type = request()->query('type');
         $date = request()->query('date');
+        $time = request()->query('time');
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
@@ -497,7 +543,9 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                 ]
             )
             ->where('status', TripStatus::ACTIVE);
@@ -506,17 +554,21 @@ class TripService
             $query->where('type', $type);
         }
 
-        if ($date) {
-            $query->whereDate('departure_date', $date)
-                ->orWhereDate('start_date', $date);
-        }
-
         if ($departure) {
             $query->where('departure', $departure);
         }
 
         if ($destination) {
             $query->where('destination', $destination);
+        }
+
+        if ($date && $time) {
+            $query->where(function ($q) use ($date, $time) {
+                $q->whereDate('departure_date', '>=', $date)
+                ->whereTime('departure_time', '=', $time);
+            });
+        } elseif ($date) {
+            $query->whereDate('departure_date', $date);
         }
 
         $trips = $query->get();
@@ -541,7 +593,9 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifests',
+                    'departureRegion.parks',
+                    'destinationRegion.parks',
                 ]
             )
             ->where('id', $tripId)

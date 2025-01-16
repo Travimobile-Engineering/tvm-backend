@@ -2,24 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Trip;
-use App\Models\User;
-use App\Models\Transaction;
 use App\Models\TripBooking;
 use App\Trait\HttpResponse;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Models\Vehicle\Vehicle;
-use Illuminate\Support\Facades\DB;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Log;
 use App\Services\TripBookingService;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\QueryException;
-use Illuminate\Validation\ValidationException;
 use App\Http\Requests\TripBookingCreateRequest;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Requests\TripBookingUpdateRequest;
 
 class TripBookingController extends Controller
@@ -43,7 +30,7 @@ class TripBookingController extends Controller
      */
     public function store(TripBookingCreateRequest $request)
     {
-        return $this->response($this->service->store($request));
+        return $this->service->store($request);
     }
 
     /**
