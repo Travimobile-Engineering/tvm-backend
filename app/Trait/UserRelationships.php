@@ -11,8 +11,10 @@ use App\Models\Transaction;
 use App\Models\TransitCompany;
 use App\Models\Trip;
 use App\Models\TripBooking;
+use App\Models\TripPayment;
 use App\Models\UserTransferReceipient;
 use App\Models\UserWithdrawLog;
+use App\Models\Vehicle\Vehicle;
 
 trait UserRelationships
 {
@@ -28,12 +30,12 @@ trait UserRelationships
 
     public function transitCompany()
     {
-        return $this->belongsTo(TransitCompany::class, 'user_id');
+        return $this->hasOne(TransitCompany::class, 'user_id');
     }
 
-    public function driverVehicle()
+    public function vehicle()
     {
-        return $this->hasOne(DriverVehicle::class, 'user_id');
+        return $this->hasOne(Vehicle::class, 'user_id');
     }
 
     public function documents()
@@ -69,6 +71,16 @@ trait UserRelationships
     public function transactions()
     {
         return $this->hasMany(Transaction::class, 'user_id');
+    }
+
+    public function userTripPayments()
+    {
+        return $this->hasMany(TripPayment::class, 'user_id');
+    }
+
+    public function driverTripPayments()
+    {
+        return $this->hasMany(TripPayment::class, 'driver_id', 'id');
     }
 }
 

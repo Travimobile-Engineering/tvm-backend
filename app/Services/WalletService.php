@@ -12,8 +12,8 @@ use App\Mail\ConfirmationEmail;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Services\Paystack\PaystackService;
-use App\Http\Requests\WalletSetTransactionPinRequest;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Mail\VerifyPinMail;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -146,8 +146,24 @@ class WalletService
 
             DB::beginTransaction();
 
-            if(! empty($user->driverBank)) {
-                return $this->error(null, "You have created a bank!", 400);
+            if (!empty($user->driverBank)) {
+                if ($user->driverPin?->status === 'active') {
+                    return $this->error(null, "Your bank is already active. You cannot create a new bank!", 403);
+                }
+
+                if ($user->driverPin?->status === 'pending') {
+                    $user->update([
+                        'verification_code' => $code,
+                        'verification_code_expires_at' => now()->addMinutes(30),
+                    ]);
+
+                    sendMail($user->email, new VerifyPinMail($user->first_name, $code));
+
+                    DB::commit();
+                    return $this->success(null, "Verification email resent successfully", 200);
+                }
+
+                return $this->error(null, "You have already created a bank.", 403);
             }
 
             $user->driverBank()->create([
@@ -184,13 +200,13 @@ class WalletService
             }
 
             $user->update([
-                'verification_code' => getCode(),
-                'verification_code_expires_at' => now()->addMinutes(10),
+                'verification_code' => $code,
+                'verification_code_expires_at' => now()->addMinutes(30),
             ]);
 
             DB::commit();
 
-            sendMail($user->email, new ConfirmationEmail($user->first_name, $code));
+            sendMail($user->email, new VerifyPinMail($user->first_name, $code));
 
             return $this->success(null, "Created successfully", 201);
         } catch (\Throwable $th) {
@@ -202,10 +218,10 @@ class WalletService
 
     public function verifyPin($request)
     {
-        $user = User::with('driverPin')->where('id', $request->user_id)
+        $user = User::with('driverPin')
             ->where('verification_code', $request->code)
             ->where('verification_code_expires_at', '>', now())
-            ->first();
+            ->find($request->user_id);
 
 
         if (! $user) {
@@ -256,19 +272,77 @@ class WalletService
     {
         $user = authUser();
 
-        if($user->id != $userId) {
+        if ($user->id != $userId) {
             return $this->error(null, "Unauthorized action.", 401);
         }
 
-        $transactions = Transaction::where([
-            'receiver_id' => $userId,
-            'title' => "Bus ticket purchase"
-        ])
-        ->select('id', 'user_id', 'title', 'amount', 'status', 'created_at')
-        ->get();
+        $date = request()->input('date');
 
-        return $this->success($transactions, "Recent transactions");
+        $user = User::with(['transactions' => function ($query) use ($date) {
+            if ($date) {
+                $query->whereDate('created_at', $date);
+            }
+        }])->findOrFail($userId);
+
+        $relatedTransactions = Transaction::where('receiver_id', $userId)
+            ->where('title', "Bus ticket purchase")
+            ->select('id', 'user_id', 'title', 'amount', 'status', 'created_at')
+            ->get();
+
+        $transactions = $user->transactions->map(function ($transaction) {
+            return [
+                'id' => $transaction->id,
+                'title' => $transaction->title,
+                'amount' => (int)$transaction->amount,
+                'status' => $transaction->status,
+                'created_at' => $transaction->created_at,
+            ];
+        });
+
+        $relatedTransactions = $relatedTransactions->map(function ($transaction) {
+            return [
+                'id' => $transaction->id,
+                'title' => $transaction->title,
+                'amount' => (int)$transaction->amount,
+                'status' => $transaction->status,
+                'created_at' => $transaction->created_at,
+            ];
+        });
+
+        $allTransactions = $transactions->merge($relatedTransactions);
+
+        return $this->success($allTransactions, "Recent transactions");
     }
+
+
+    public function recentEarning($userId)
+    {
+        $user = authUser();
+
+        if ($user->id != $userId) {
+            return $this->error(null, "Unauthorized action.", 401);
+        }
+
+        $date = request()->input('date');
+
+        $user = User::with(['driverTripPayments' => function ($query) use ($date) {
+            if ($date) {
+                $query->whereDate('created_at', $date);
+            }
+        }])->findOrFail($userId);
+
+        $earnings = $user->driverTripPayments->map(function ($payment) {
+            return [
+                'id' => $payment->id,
+                'amount' => (int)$payment->amount,
+                'status' => $payment->status,
+                'created_at' => $payment->created_at,
+            ];
+        });
+
+        return $this->success($earnings, "Recent earnings");
+    }
+
 
     public function walletTopUp($request)
     {
@@ -297,5 +371,36 @@ class WalletService
             'status' => 'success',
             'data' => $paystackInstance,
         ];
+    }
+
+    public function stats($userId)
+    {
+        $startDate = request()->input('start_date') ?: now()->startOfWeek();
+        $endDate = request()->input('end_date') ?: now()->endOfWeek();
+
+        $allDays = [
+            'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+        ];
+
+        $transactions = Transaction::where('user_id', $userId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw("
+                DAYNAME(created_at) as day_of_week,
+                SUM(CASE WHEN type = 'CR' THEN amount ELSE 0 END) as inflow,
+                SUM(CASE WHEN type = 'DR' THEN amount ELSE 0 END) as outflow
+            ")
+            ->groupBy('day_of_week')
+            ->get()
+            ->keyBy('day_of_week');
+
+        $statistics = collect($allDays)->map(function ($day) use ($transactions) {
+            return [
+                'day' => $day,
+                'inflow' => (int) ($transactions[$day]->inflow ?? 0),
+                'outflow' => (int) ($transactions[$day]->outflow ?? 0),
+            ];
+        });
+
+        return $this->success($statistics, "Transaction statistics retrieved successfully.");
     }
 }

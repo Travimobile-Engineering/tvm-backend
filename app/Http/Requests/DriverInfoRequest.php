@@ -41,6 +41,7 @@ class DriverInfoRequest extends FormRequest
             'seats' => 'required',
             'seat_row' => 'required',
             'seat_column' => 'required',
+            'union_states_chapter' => 'required|integer'
         ];
     }
 }

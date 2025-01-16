@@ -70,7 +70,7 @@ class VehicleController extends Controller
                 'color' => $request->color,
                 'seats' => $request->seats,
             ]);
-    
+
             if($vehicle){
                 return response()->json(['message' => 'Vehicle created successfully', 'data' => $vehicle], 200);
             }
@@ -92,7 +92,6 @@ class VehicleController extends Controller
      */
     public function show(Vehicle $vehicle)
     {
-        $vehicle->seats = json_decode($vehicle->seats);
         return response()->json([
             'data' => $vehicle
         ], 200);
@@ -123,14 +122,14 @@ class VehicleController extends Controller
         $tCompany = TransitCompany::where('id', $request->company_id);
         if(!$tCompany->exists()) return response()->json(['error' => 'Invalid company ID'], 400);
 
-        
+
         $owner = $tCompany->get(['user_id', 'id'])->first();
         if($owner->user_id != $this->user->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
-        
+
         if($vehicle->company_id != $owner->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
 
         try{
-            
+
             $status = $vehicle->update([
                 'name' => $request->name,
                 'company_id' => $request->company_id,
@@ -142,7 +141,7 @@ class VehicleController extends Controller
                 'color' => $request->color,
                 'seats' => $request->seats,
             ]);
-    
+
             if($status){
                 return response()->json(['message' => 'Vehicle updated successfully', 'data' => $vehicle], 200);
             }

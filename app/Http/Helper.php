@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -73,5 +74,38 @@ if (!function_exists('sendMail')) {
     }
 }
 
+if (!function_exists('hasSetupWallet')) {
+    function hasSetupWallet(int $userId): bool
+    {
+        $user = User::with(['driverBank', 'driverPin'])->find($userId);
 
+        if (!$user) {
+            return false;
+        }
+
+        $hasBankDetails = $user->driverBank()->exists();
+
+        $hasPin = $user->driverPin()
+            ->where('status', 'active')
+            ->exists();
+
+        return $hasBankDetails && $hasPin;
+    }
+}
+
+if (!function_exists('hasOnboarded')) {
+    function hasOnboarded(int $userId): bool
+    {
+        $user = User::with(['vehicle', 'documents'])->find($userId);
+
+        if (!$user) {
+            return false;
+        }
+
+        $hasVehicleDetails = $user->vehicle()->exists();
+        $hasDocumentsDetails = $user->documents()->exists();
+
+        return $user && $hasVehicleDetails && $hasDocumentsDetails;
+    }
+}
 

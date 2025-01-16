@@ -7,9 +7,27 @@ use Illuminate\Support\Carbon;
 
 class TransitCompany extends Model
 {
-    protected $guarded = [
-        'created_at',
-        'updated_at',
+    protected $fillable = [
+        'user_id',
+        'name',
+        'short_name',
+        'reg_no',
+        'url',
+        'email',
+        'country_code',
+        'type',
+        'state',
+        'lga',
+        'phone',
+        'address',
+        'about_details',
+        'union_id',
+        'union_states_chapter',
+        'ev',
+        'sv',
+        'ver_code',
+        'ver_code_expires_at',
+        'park',
     ];
 
     protected $hidden = [
