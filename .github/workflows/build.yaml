@@ -1,0 +1,70 @@
+name: Laravel CI/CD
+
+on:
+  push:
+    branches:
+      - 'feature/*'
+
+jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2' # Use the required PHP version for Laravel
+          extensions: mbstring, bcmath, intl
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Check code for bugs and errors
+        #run: vendor/bin/phpstan analyse
+        run: echo "check code for bugs and errors using phpstan"
+
+
+  unit-test:
+    needs: compile-code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, bcmath, intl
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install
+
+      - name: Set up .env
+        run: cp .env.example .env && php artisan key:generate
+
+      - name: Run unit tests
+        #run: vendor/bin/phpunit --coverage-text
+        run: echo "run unit test"
+
+  sonarqube-test:
+    needs: [compile-code, unit-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SonarQube Scanner
+        uses: sonarsource/sonarqube-scan-action@v2
+        with:
+          host-url: ${{ secrets.SONAR_HOST_URL }}
+          project-key: ${{ secrets.SONAR_PROJECT_KEY }}
+          project-name: LaravelApp
+
+      - name: Run SonarQube scan
+        #run: sonar-scanner
+        run: echo "run sonarqube to check for security vulnerabilities"
