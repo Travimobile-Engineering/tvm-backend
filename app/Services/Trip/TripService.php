@@ -119,15 +119,7 @@ class TripService
                     'manifests',
                 ]
             )
-            ->where('status', TripStatus::ACTIVE)
-            ->where(function ($query) use ($request) {
-                $date = $request->query('date', date('Y-m-d'));
-                $time = $request->query('time', '00:00:00');
-                $departureAt = "$date $time";
-
-                $query->where('departure_date', '>=', $departureAt)
-                    ->orWhere('start_date', '>=', now());
-            });
+            ->where('status', TripStatus::ACTIVE);
 
         if ($departure) {
             $query->where('departure', $departure);
@@ -135,6 +127,11 @@ class TripService
 
         if ($destination) {
             $query->where('destination', $destination);
+        }
+
+        if ($date) {
+            $query->whereDate('departure_date', $date)
+                ->orWhereDate('start_date', $date);
         }
 
         $trips = $query->get();
@@ -453,22 +450,15 @@ class TripService
                 ]
             )
             ->where('user_id', $userId)
-            ->where('status', TripStatus::ACTIVE)
-            ->where(function ($query) {
-                $date = request()->query('date', date('Y-m-d'));
-                $time = request()->query('time', '00:00:00');
-                $departureAt = "$date $time";
-
-                $query->where('departure_date', '>=', $departureAt)
-                    ->orWhere('start_date', '>=', now());
-            });
+            ->where('status', TripStatus::ACTIVE);
 
         if ($type) {
             $query->where('type', $type);
         }
 
         if ($date) {
-            $query->whereDate('created_at', $date);
+            $query->whereDate('departure_date', $date)
+                ->orWhereDate('start_date', $date);
         }
 
         if ($departure) {
@@ -509,22 +499,15 @@ class TripService
                     'manifests'
                 ]
             )
-            ->where('status', TripStatus::ACTIVE)
-            ->where(function ($query) {
-                $date = request()->query('date', date('Y-m-d'));
-                $time = request()->query('time', '00:00:00');
-                $departureAt = "$date $time";
-
-                $query->where('departure_date', '>=', $departureAt)
-                    ->orWhere('start_date', '>=', now());
-            });
+            ->where('status', TripStatus::ACTIVE);
 
         if ($type) {
             $query->where('type', $type);
         }
 
         if ($date) {
-            $query->whereDate('created_at', $date);
+            $query->whereDate('departure_date', $date)
+                ->orWhereDate('start_date', $date);
         }
 
         if ($departure) {
