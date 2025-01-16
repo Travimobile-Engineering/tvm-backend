@@ -105,8 +105,9 @@ class TripService
      * - Applies a resource transformation (`TripResource`) for a consistent API response format.
      * - Ensures that queries are dynamically constructed based on input parameters, promoting reusability and clean code.
      */
-    public function getTrips($request)
+    public function getTrips()
     {
+        $date = request()->query('date');
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
