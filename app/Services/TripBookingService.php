@@ -114,6 +114,7 @@ class TripBookingService
                 }
             }
 
+            
             $trip = Trip::with(
                     [
                         'user.transitCompany',
@@ -125,12 +126,13 @@ class TripBookingService
                     ]
                 )
                 ->where('id', $request->trip_id)
-                ->where('status', TripStatus::ACTIVE)
-                ->first();
+                ->where('status', TripStatus::ACTIVE);
 
             if(!$trip->exists()) {
                 return['message' => 'Invalid trip ID or trip is no longer available', 'code' => 400];
             }
+
+            $trip = $trip->first();
 
             $seats = $trip->vehicle?->seats;
 
