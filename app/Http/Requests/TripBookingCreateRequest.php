@@ -24,7 +24,7 @@ class TripBookingCreateRequest extends FormRequest
         return [
             'trip_id' => 'required',
             'third_party_booking' => 'nullable|int',
-            'selected_seat' => 'required|string',
+            'selected_seat' => 'required',
             'trip_type' => 'required|int',
             'travelling_with' => 'nullable|string',
             'third_party_passenger_details' => 'nullable|string',

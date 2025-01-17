@@ -33,6 +33,8 @@ class DriverService
 
             $company = $this->createTransitCompany($user, $request);
 
+            $convertedSeats = [$request->seats];
+
             $user->vehicle()->create([
                 'company_id' => $company->id,
                 'brand_id' => 0,
@@ -42,7 +44,7 @@ class DriverService
                 'plate_no' => $request->plate_number,
                 'type' => $request->vehicle_type,
                 'capacity' => $request->vehicle_capacity,
-                'seats' => $request->seats,
+                'seats' => $convertedSeats,
                 'seat_row' => $request->seat_row,
                 'seat_column' => $request->seat_column,
             ]);
