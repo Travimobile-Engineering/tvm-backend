@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('short_name')->nullable();
             $table->string('reg_no')->nullable();
             $table->string('url')->nullable();
-            $table->string('email');
+            $table->string('email')->nullable();
             $table->string('country_code', 5)->default('NG');
             $table->string('state')->nullable();
             $table->string('lga')->nullable();
@@ -29,8 +29,8 @@ return new class extends Migration
             $table->foreignId('union_states_chapter')->constrained('states');
             $table->unsignedTinyInteger('ev')->default(0);
             $table->unsignedTinyInteger('sv')->default(0);
-            $table->string('ver_code');
-            $table->timestamp('ver_code_expires_at');
+            $table->string('ver_code')->nullable();
+            $table->timestamp('ver_code_expires_at')->nullable();
             $table->timestamps();
         });
     }

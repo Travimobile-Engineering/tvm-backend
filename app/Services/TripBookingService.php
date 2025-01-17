@@ -114,7 +114,7 @@ class TripBookingService
                 }
             }
 
-            
+
             $trip = Trip::with(
                     [
                         'user.transitCompany',
@@ -135,7 +135,7 @@ class TripBookingService
             $trip = $trip->first();
 
             $seats = $trip->vehicle?->seats;
-            
+
             if (is_string($seats)) {
                 $seats = json_decode($seats, true);
             }
