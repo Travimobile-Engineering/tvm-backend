@@ -135,13 +135,15 @@ class TripBookingService
             $trip = $trip->first();
 
             $seats = $trip->vehicle?->seats;
-
+            
             if (is_string($seats)) {
                 $seats = json_decode($seats, true);
-                if (!is_array($seats)) {
-                    return ['message' => 'Invalid seats data format', 'code' => 400];
-                }
             }
+            // if (!is_array($seats)) {
+            //     return ['message' => 'Invalid seats data format', 'code' => 400];
+            // }
+
+
 
             $departure = $trip->departureRegion?->state?->name . ' > ' . $trip->departureRegion?->name;
             $destination = $trip->destinationRegion?->state?->name . ' > ' . $trip->destinationRegion?->name;
