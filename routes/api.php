@@ -47,7 +47,7 @@ Route::prefix('auth')
     Route::post('/forgot-password-email', [ForgotPasswordEmailController::class, 'send_password_reset_link']);
     Route::get('/reset-password', fn()=> "Oops! Please bear with us. We are currently working on this page")->name('password.reset');
     Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
-    Route::post('/verify', [RegisterController::class, 'verify_account']);
+    // Route::post('/verify', [RegisterController::class, 'verify_account']);
     Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
 });
 

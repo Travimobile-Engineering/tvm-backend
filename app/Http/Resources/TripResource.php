@@ -19,6 +19,10 @@ class TripResource extends JsonResource
         $totalSelectedSeats = $this->tripBookings ? $this->tripBookings->count() : 0;
         $availableSeats = $totalSeats - $totalSelectedSeats;
 
+        $selected_seats = $this->tripBookings ? explode(",",implode(",", $this->tripBookings->map(function ($passenger) {
+            return str_replace(["[", "]", "\""], "", $passenger->selected_seat);
+        })->toArray())) : [];
+
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
@@ -70,12 +74,11 @@ class TripResource extends JsonResource
                     'seat' => (int)$passenger?->selected_seat,
                 ];
             })->toArray() : [],
-            'selected_seats' => $this->tripBookings ? $this->tripBookings->map(function ($passenger) {
-                return $passenger->selected_seat;
-            })->toArray() : [],
+            'selected_seats' => $selected_seats,
             'total_selected_seats' => $this->tripBookings ? $this->tripBookings->count() : 0,
             'total_seat' => is_array($seats = $this->vehicle?->seats) ? count($seats) : 0,
-            'available_seat' => $availableSeats,
+            'available_seat_count' => $availableSeats,
+            'available_seats' => collect($this->vehicle?->seats)->filter(fn($seat) => !in_array($seat, $selected_seats))->values(),
             'manifest_fee' => 1000,
         ];
     }
