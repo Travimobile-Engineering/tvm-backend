@@ -138,11 +138,12 @@ class TripBookingService
 
             if (is_string($seats)) {
                 $seats = json_decode($seats, true);
+                if (!is_array($seats)) {
+                    $seats = explode(',',$seats);
+                    // return ['message' => 'Invalid seats data format', 'code' => 400];
+                }
             }
 
-            // if (!is_array($seats)) {
-            //     return ['message' => 'Invalid seats data format', 'code' => 400];
-            // }
 
             
 
@@ -156,7 +157,7 @@ class TripBookingService
 
             //get the total bookings for this trip
             $bookings = TripBooking::where('trip_id', $request->trip_id)->where('status', 1);
-            dd(count($bookings->get()));
+            // dd(count($bookings->get()));
             if(count($bookings->get()) >= $total_seats) {
                 return['message' => 'Number of passengers for this trip already complete', 'code' => 400];
             }
