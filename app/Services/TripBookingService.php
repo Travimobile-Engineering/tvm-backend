@@ -139,9 +139,6 @@ class TripBookingService
             if (is_string($seats)) {
                 $seats = json_decode($seats, true);
             }
-            // if (!is_array($seats)) {
-            //     return ['message' => 'Invalid seats data format', 'code' => 400];
-            // }
 
 
 
