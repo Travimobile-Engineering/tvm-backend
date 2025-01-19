@@ -51,8 +51,6 @@ COPY --from=build /app /var/www/html
 
 COPY /var/www/html/000-default.conf /etc/apache2/sites-available/000-default.conf
 
-COPY /var/www/html/.htaccess /var/www/html/public/.htaccess
-
 RUN [ -f /var/www/html/public/index.php ] || (echo "index.php is missing" && exit 1)
 
 RUN chown -R www-data:www-data /var/www/html \
