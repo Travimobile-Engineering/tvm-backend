@@ -1,0 +1,173 @@
+<?php
+
+namespace App\Trait;
+
+use App\Enum\PaymentMethod;
+use App\Enum\TripStatus;
+use App\Models\Notification;
+use App\Models\Trip;
+use App\Models\TripBooking;
+use App\Models\User;
+use App\Services\Payment\HandlePaymentService;
+use App\Services\Payment\PaymentDetailService;
+use Illuminate\Support\Facades\DB;
+
+trait TripBookingTrait
+{
+    use HttpResponse;
+
+    public function processPayment($request, $result, $paymentProcessor, $trip)
+    {
+        if (isset($paymentProcessor)) {
+            $paymentService = new HandlePaymentService($paymentProcessor);
+            $paymentDetails = PaymentDetailService::paystackPayDetails($request, $trip);
+            return $paymentService->process($paymentDetails);
+        }
+
+        return $result;
+    }
+
+    protected function walletPayment($amount_paid, $request, $user)
+    {
+        if(! $request->pin || $request->pin != $user->txn_pin){
+            return $this->error(null, "Invalid transaction pin",  400);
+        }
+
+        if($amount_paid > $user->wallet) {
+            return $this->error(null, "Your balance is insufficient to complete your request",  400);
+        }
+
+        if ($user->wallet < $amount_paid) {
+            return $this->error(null, "Insufficient balance!", 400);
+        }
+
+        if ($request->payment_method == PaymentMethod::WALLET) {
+            $trip = $this->tripCheck($request);
+
+            if ($trip instanceof \Illuminate\Http\JsonResponse && $trip->getStatusCode() !== 200) {
+                return $trip;
+            }
+        }
+
+        DB::transaction(function () use ($request, $user, $amount_paid) {
+            $user = User::with(['transactions'])->findOrFail($user->id);
+            $trip = Trip::with(
+                [
+                    'user.transitCompany',
+                    'vehicle',
+                    'tripBookings.user',
+                    'departureRegion.state',
+                    'destinationRegion.state',
+                    'manifests'
+                ]
+            )
+            ->findOrFail($request->trip_id);
+
+            $user->wallet -= $amount_paid;
+            $user->save();
+            $destination = $trip->destinationRegion?->state?->name . ' > ' . $trip->destinationRegion?->name;
+
+            do {
+                $booking_id = getRandomNumber();
+            } while(TripBooking::where('booking_id', $booking_id)->exists());
+
+            TripBooking::create([
+                'booking_id' => $booking_id,
+                'trip_id' => $trip->id,
+                'user_id' => $user->id,
+                'third_party_booking' => $request->third_party_booking ?? 0,
+                'selected_seat' => ucfirst($request->selected_seat),
+                'trip_type' => $request->trip_type,
+                'travelling_with' => $request->travelling_with ?? null,
+                'third_party_passenger_details' => $request->third_party_passenger_details ?? null,
+                'amount_paid' => $amount_paid ?? 0,
+                'payment_method' => $request->payment_method ?? '',
+                'payment_status' => 1,
+            ]);
+
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Booking Successful',
+                'description' => 'Your bus ticket to '.$destination.' on '.date("M jS Y h:iA",strtotime($trip->departure_at)).' has been successfully booked',
+                'additional_data' => json_encode([
+                    'booking_id' => $booking_id,
+                    'note' => 'Please arrive atleast 30 minutes early to ensure a smooth boarding experience.',
+                    'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
+                ])
+            ]);
+
+            $user->driverTripPayments()->create([
+                'user_id' => $user->id,
+                'trip_id' => $request->trip_id,
+                'driver_id' => $trip->user_id,
+                'amount' => $amount_paid,
+                'status' => 'pending'
+            ]);
+
+            $user->transactions()->create([
+                'title' => 'Bus ticket purchase',
+                'amount' => $amount_paid,
+                'type' => "DR",
+                'txn_reference' => "wallet"
+            ]);
+        });
+
+        return $this->success(null, "Payment successful", 200);
+    }
+
+    protected function tripCheck($request)
+    {
+        $trip = Trip::with(
+            [
+                'user.transitCompany',
+                'vehicle',
+                'tripBookings.user',
+                'departureRegion.state',
+                'destinationRegion.state',
+                'manifests'
+            ]
+        )
+        ->where('status', TripStatus::ACTIVE)
+        ->find($request->trip_id);
+
+        if(! $trip) {
+            return $this->error(null, "Invalid trip ID or trip is no longer available", 400);
+        }
+
+        $seats = $trip->vehicle?->seats;
+
+        if (! is_array($seats)) {
+            return $this->error(null, "Invalid seats data format", 400);
+        }
+
+        $total_seats = count($seats ?? []);
+        $bookings = $trip->tripBookings()->where('status', 1)->get();
+
+        $selected_seats = $bookings->pluck('selected_seat')->toArray();
+
+        $already_taken_seats = array_map('ucfirst', array_merge(...array_map(function ($seats) {
+            return explode(', ', $seats);
+        }, $selected_seats)));
+
+        if($bookings->count() >= $total_seats) {
+            throw new \Exception("Number of passengers for this trip already complete", 400);
+        }
+
+        $request_seats = array_map('ucfirst', array_map('trim', explode(',', $request->selected_seat)));
+
+        foreach ($request_seats as $seat) {
+            if (!in_array($seat, $seats)) {
+                return $this->error(null, "Invalid seat selection: $seat", 400);
+            }
+
+            if (in_array($seat, $already_taken_seats)) {
+                return $this->error(null, "Selected seat already taken: $seat", 400);
+            }
+        }
+
+        return $trip;
+    }
+}
+
+
+
