@@ -38,13 +38,13 @@ jobs:
       id: tag
       run: |
         if [[ $GITHUB_REF == refs/heads/master ]]; then
-          echo "tag=prod" >> $GITHUB_ENV
+          echo "tag=main" >> $GITHUB_ENV
         elif [[ $GITHUB_REF == refs/heads/dev ]]; then
           echo "tag=dev" >> $GITHUB_ENV
         fi
 
     - name: Build Docker image
-      run: docker build -t europe-west2-docker.pkg.dev/travi-mobile-mvp/travi-mobile-registry/work-queue:${{ env.tag }} .
+      run: docker build -f Dockerfile.worker -t europe-west2-docker.pkg.dev/travi-mobile-mvp/travi-mobile-registry/work-queue:${{ env.tag }} .
 
     - name: Push Docker image to Artifact Registry
       run: docker push europe-west2-docker.pkg.dev/travi-mobile-mvp/travi-mobile-registry/work-queue:${{ env.tag }}

@@ -41,13 +41,19 @@ COPY . /app
 RUN composer install --no-dev --optimize-autoloader
 
 # Stage 2: Production stage
-FROM php:8.1-apache
+FROM php:8.2-apache
 
 RUN a2enmod rewrite
 
 WORKDIR /var/www/html
 
 COPY --from=build /app /var/www/html
+
+COPY /var/www/html/000-default.conf /etc/apache2/sites-available/000-default.conf
+
+COPY /var/www/html/.htaccess /var/www/html/public/.htaccess
+
+RUN [ -f /var/www/html/public/index.php ] || (echo "index.php is missing" && exit 1)
 
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
