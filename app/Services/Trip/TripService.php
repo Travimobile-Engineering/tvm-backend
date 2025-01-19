@@ -147,7 +147,7 @@ class TripService
         if ($date && $time) {
             $query->where(function ($q) use ($date, $time) {
                 $q->whereDate('departure_date', '>=', $date)
-                ->whereTime('departure_time', '=', $time);
+                ->whereTime('departure_time', '>=', $time);
             });
         } elseif ($date) {
             $query->whereDate('departure_date', $date);
