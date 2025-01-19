@@ -38,7 +38,7 @@ jobs:
       id: tag
       run: |
         if [[ $GITHUB_REF == refs/heads/master ]]; then
-          echo "tag=prod" >> $GITHUB_ENV
+          echo "tag=main" >> $GITHUB_ENV
         elif [[ $GITHUB_REF == refs/heads/dev ]]; then
           echo "tag=dev" >> $GITHUB_ENV
         fi

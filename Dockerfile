@@ -41,7 +41,7 @@ COPY . /app
 RUN composer install --no-dev --optimize-autoloader
 
 # Stage 2: Production stage
-FROM php:8.1-apache
+FROM php:8.2-apache
 
 RUN a2enmod rewrite
 
