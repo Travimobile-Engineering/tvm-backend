@@ -49,7 +49,7 @@ WORKDIR /var/www/html
 
 COPY --from=build /app /var/www/html
 
-COPY /var/www/html/000-default.conf /etc/apache2/sites-available/000-default.conf
+COPY ./000-default.conf /etc/apache2/sites-available/000-default.conf
 
 RUN [ -f /var/www/html/public/index.php ] || (echo "index.php is missing" && exit 1)
 
