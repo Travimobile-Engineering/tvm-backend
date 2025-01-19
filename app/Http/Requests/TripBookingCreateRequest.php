@@ -29,7 +29,7 @@ class TripBookingCreateRequest extends FormRequest
             'travelling_with' => 'nullable|string',
             'third_party_passenger_details' => 'nullable|string',
             'amount_paid' => 'nullable|int',
-            'payment_method' => 'nullable',
+            //'payment_method' => 'required_if:amount_paid,>0|in:wallet,paystack,transfer',
             'payment_status' => 'nullable|integer',
             'txn_reference' => 'nullable|string'
         ];

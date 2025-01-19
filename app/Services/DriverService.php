@@ -33,7 +33,12 @@ class DriverService
 
             $company = $this->createTransitCompany($user, $request);
 
-            $convertedSeats = [$request->seats];
+            $seatsString = $request->seats;
+            $seatSplit = explode(',', $seatsString);
+
+            $seats = array_map(function ($seat) {
+                return trim($seat, '"');
+            }, $seatSplit);
 
             $user->vehicle()->create([
                 'company_id' => $company->id,
@@ -44,7 +49,7 @@ class DriverService
                 'plate_no' => $request->plate_number,
                 'type' => $request->vehicle_type,
                 'capacity' => $request->vehicle_capacity,
-                'seats' => $convertedSeats,
+                'seats' => $seats,
                 'seat_row' => $request->seat_row,
                 'seat_column' => $request->seat_column,
             ]);

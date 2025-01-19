@@ -50,7 +50,7 @@ class DriverProfileResource extends JsonResource
                 'type' => $this->vehicle?->type,
                 'capacity' => $this->vehicle?->capacity,
                 'plate_number' => $this->vehicle?->plate_no,
-                'seats' => json_decode($this->vehicle?->seats) ?? $this->vehicle?->seats,
+                'seats' => $this->vehicle?->seats,
                 'seat_row' => $this->vehicle?->seat_row,
                 'seat_column' => $this->vehicle?->seat_column
             ],

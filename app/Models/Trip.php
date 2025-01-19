@@ -95,4 +95,9 @@ class Trip extends Model
         return $this->belongsTo(RouteSubregion::class, 'destination');
     }
 
+    public function paymentLogs()
+    {
+        return $this->hasMany(PaymentLog::class, 'trip_id');
+    }
+
 }

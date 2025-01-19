@@ -51,6 +51,12 @@ Route::prefix('auth')
     Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
 });
 
+Route::prefix('route')
+    ->group(function(){
+        Route::get('/get-covered-routes', [RouteController::class, 'getCoveredRoutes']);
+        Route::get('/get-regions', [RouteController::class, 'getRegions']);
+    });
+
 Route::middleware(JWTAuthenticator::class)
 ->group(function(){
 
@@ -71,12 +77,6 @@ Route::middleware(JWTAuthenticator::class)
         Route::get('/get-unions', 'getUnions');
         Route::post('/edit/{transitCompany}', 'update');
         Route::get('/{transitCompany}', 'show');
-    });
-
-    Route::prefix('route')
-    ->group(function(){
-        Route::get('/get-covered-routes', [RouteController::class, 'getCoveredRoutes']);
-        Route::get('/get-regions', [RouteController::class, 'getRegions']);
     });
 
     Route::prefix('vehicle')
