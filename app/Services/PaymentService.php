@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enum\PaymentType;
 use App\Enum\PaystackEvent;
-use App\Enum\TripStatus;
 use App\Models\Notification;
 use App\Models\Trip;
 use App\Models\TripBooking;

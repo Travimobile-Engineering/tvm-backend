@@ -164,7 +164,7 @@ Route::middleware(JWTAuthenticator::class)
 
     Route::prefix('trip-booking')
     ->group(function(){
-        Route::post('/create', [TripBookingController::class, 'store']);
+        Route::post('/create', [TripBookingController::class, 'booking']);
         Route::post('/edit/{tripBooking}', [TripBookingController::class, 'update']);
         Route::get('/cancel/{booking_id}', [TripBookingController::class, 'cancelTripBooking']);
         Route::get('/history/{user}', [TripBookingController::class, 'getUserTripBookingHistory']);
