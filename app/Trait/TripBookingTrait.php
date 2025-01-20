@@ -16,15 +16,22 @@ trait TripBookingTrait
 {
     use HttpResponse;
 
-    public function processPayment($request, $result, $paymentProcessor, $trip)
+    public function processPayment($request, $result, $paymentProcessor)
     {
-        if (isset($paymentProcessor)) {
-            $paymentService = new HandlePaymentService($paymentProcessor);
-            $paymentDetails = PaymentDetailService::paystackPayDetails($request, $trip);
-            return $paymentService->process($paymentDetails);
+        if (! isset($paymentProcessor)) {
+            return $result;
         }
 
-        return $result;
+        $trip = $this->handleTripCheck($request);
+
+        if ($trip instanceof \Illuminate\Http\JsonResponse && $trip->getStatusCode() !== 200) {
+            return $trip;
+        }
+
+        $paymentService = new HandlePaymentService($paymentProcessor);
+        $paymentDetails = PaymentDetailService::paystackPayDetails($request, $trip);
+
+        return $paymentService->process($paymentDetails);
     }
 
     protected function walletPayment($amount_paid, $request, $user)
@@ -41,12 +48,14 @@ trait TripBookingTrait
             return $this->error(null, "Insufficient balance!", 400);
         }
 
-        if ($request->payment_method == PaymentMethod::WALLET) {
-            $trip = $this->tripCheck($request);
+        if($amount_paid <= 0) {
+            return $this->error(null, "Amount cannot be lesser than 0",  400);
+        }
 
-            if ($trip instanceof \Illuminate\Http\JsonResponse && $trip->getStatusCode() !== 200) {
-                return $trip;
-            }
+        $trip = $this->handleTripCheck($request);
+
+        if ($trip instanceof \Illuminate\Http\JsonResponse && $trip->getStatusCode() !== 200) {
+            return $trip;
         }
 
         DB::transaction(function () use ($request, $user, $amount_paid) {
@@ -113,6 +122,19 @@ trait TripBookingTrait
         });
 
         return $this->success(null, "Payment successful", 200);
+    }
+
+    protected function handleTripCheck($request)
+    {
+        if ($request->payment_method === PaymentMethod::PAYSTACK) {
+            return $this->tripCheck($request);
+        }
+
+        if ($request->payment_method === PaymentMethod::WALLET) {
+            return $this->tripCheck($request);
+        }
+
+        return null;
     }
 
     protected function tripCheck($request)

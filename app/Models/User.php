@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -98,5 +99,10 @@ class User extends Authenticatable implements JWTSubject
             'password' => 'hashed',
             'driver_verified' => 'boolean',
         ];
+    }
+
+    public function totalTrips(): Attribute
+    {
+        return Attribute::get(fn () => $this->trips()->count());
     }
 }
