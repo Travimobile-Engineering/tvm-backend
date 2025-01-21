@@ -3,7 +3,6 @@
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SendTestMailController;
 use App\Http\Middleware\JWTAuthenticator;
@@ -164,13 +163,15 @@ Route::middleware(JWTAuthenticator::class)
         });
 
     Route::prefix('trip-booking')
-    ->group(function(){
-        Route::post('/create', [TripBookingController::class, 'booking']);
-        Route::post('/edit/{tripBooking}', [TripBookingController::class, 'update']);
-        Route::get('/cancel/{booking_id}', [TripBookingController::class, 'cancelTripBooking']);
-        Route::get('/history/{user}', [TripBookingController::class, 'getUserTripBookingHistory']);
-        Route::get('/{tripBooking}', [TripBookingController::class, 'show']);
-    });
+        ->controller(TripBookingController::class)
+        ->group(function(){
+            Route::post('/create', 'booking');
+            Route::post('/edit/{tripBooking}', 'update');
+            Route::get('/cancel/{booking_id}', 'cancelTripBooking');
+            Route::get('/history/{user}', 'getUserTripBookingHistory');
+            Route::get('/{tripBooking}', 'show');
+            Route::get('/payment/{reference}', 'getPaymentRef');
+        });
 
     Route::prefix('payment')
     ->group(function(){

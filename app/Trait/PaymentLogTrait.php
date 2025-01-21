@@ -22,7 +22,7 @@ trait PaymentLogTrait
         $ref = $paymentData['reference'];
         $status = $paymentData['status'];
 
-        $user->paymentLogs()->create([
+        return $user->paymentLogs()->create([
             'trip_id' => $tripId,
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,

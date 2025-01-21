@@ -34,4 +34,9 @@ class PaymentLog extends Model
     {
         return $this->belongsTo(Trip::class);
     }
+
+    public function tripBooking()
+    {
+        return $this->hasOne(TripBooking::class, 'payment_log_id');
+    }
 }

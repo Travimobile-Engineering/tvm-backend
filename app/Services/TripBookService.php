@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enum\PaymentMethod;
+use App\Models\PaymentLog;
 use App\Trait\HttpResponse;
 use App\Trait\TripBookingTrait;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +28,22 @@ class TripBookService
 
         return $this->processPayment($request, $result, $paymentProcessor);
     }
+
+    public function getPaymentRef($reference)
+    {
+        $paymentLog = PaymentLog::with('tripBooking')
+            ->where('reference', $reference)
+            ->firstOrFail();
+
+        $data = (object) [
+            'booking_id' => $paymentLog->tripBooking?->booking_id,
+            'status' => $paymentLog->status,
+        ];
+
+        return $this->success($data, 'Payment reference fetched successfully');
+    }
 }
+
 
 
 

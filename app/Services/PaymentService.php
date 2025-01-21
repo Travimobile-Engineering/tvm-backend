@@ -93,7 +93,7 @@ class PaymentService
             throw new \Exception("User with ID: {$userId} not found.");
         }
 
-        $this->logPayment($user, $event);
+       $paymentLog = $this->logPayment($user, $event);
 
         try {
             DB::beginTransaction();
@@ -146,6 +146,7 @@ class PaymentService
 
             TripBooking::create([
                 'booking_id' => $booking_id,
+                'payment_log_id' => $paymentLog->id,
                 'trip_id' => $tripId,
                 'user_id' => $user->id,
                 'third_party_booking' => $thirdPartyBooking ?? 0,

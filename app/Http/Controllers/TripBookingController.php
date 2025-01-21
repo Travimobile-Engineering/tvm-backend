@@ -73,4 +73,9 @@ class TripBookingController extends Controller
     {
         return $this->tripBookService->store($request);
     }
+
+    public function getPaymentRef($reference)
+    {
+        return $this->tripBookService->getPaymentRef($reference);
+    }
 }
