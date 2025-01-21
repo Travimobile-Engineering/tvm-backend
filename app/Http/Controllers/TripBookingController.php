@@ -8,14 +8,17 @@ use Illuminate\Http\Request;
 use App\Services\TripBookingService;
 use App\Http\Requests\TripBookingCreateRequest;
 use App\Http\Requests\TripBookingUpdateRequest;
+use App\Services\TripBookService;
 
 class TripBookingController extends Controller
 {
     use HttpResponse;
     protected $service;
+    protected $tripBookService;
 
-    public function __construct(TripBookingService $service){
+    public function __construct(TripBookingService $service, TripBookService $tripBookService){
         $this->service = $service;
+        $this->tripBookService = $tripBookService;
     }
     /**
      * Display a listing of the resource.
@@ -64,5 +67,10 @@ class TripBookingController extends Controller
     public function destroy(TripBooking $tripBooking)
     {
         //
+    }
+
+    public function booking(TripBookingCreateRequest $request)
+    {
+        return $this->tripBookService->store($request);
     }
 }

@@ -4,10 +4,8 @@ use App\Http\Controllers\AgentController;
 use App\Http\Controllers\Auth\ForgotPasswordEmailController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\Auth\VerifyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SendTestMailController;
-use App\Http\Middleware\CheckExpectsJson;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
@@ -51,6 +49,12 @@ Route::prefix('auth')
     Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
 });
 
+Route::prefix('route')
+    ->group(function(){
+        Route::get('/get-covered-routes', [RouteController::class, 'getCoveredRoutes']);
+        Route::get('/get-regions', [RouteController::class, 'getRegions']);
+    });
+
 Route::middleware(JWTAuthenticator::class)
 ->group(function(){
 
@@ -71,12 +75,6 @@ Route::middleware(JWTAuthenticator::class)
         Route::get('/get-unions', 'getUnions');
         Route::post('/edit/{transitCompany}', 'update');
         Route::get('/{transitCompany}', 'show');
-    });
-
-    Route::prefix('route')
-    ->group(function(){
-        Route::get('/get-covered-routes', [RouteController::class, 'getCoveredRoutes']);
-        Route::get('/get-regions', [RouteController::class, 'getRegions']);
     });
 
     Route::prefix('vehicle')
@@ -166,7 +164,7 @@ Route::middleware(JWTAuthenticator::class)
 
     Route::prefix('trip-booking')
     ->group(function(){
-        Route::post('/create', [TripBookingController::class, 'store']);
+        Route::post('/create', [TripBookingController::class, 'booking']);
         Route::post('/edit/{tripBooking}', [TripBookingController::class, 'update']);
         Route::get('/cancel/{booking_id}', [TripBookingController::class, 'cancelTripBooking']);
         Route::get('/history/{user}', [TripBookingController::class, 'getUserTripBookingHistory']);

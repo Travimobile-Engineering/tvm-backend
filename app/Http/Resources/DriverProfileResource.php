@@ -35,6 +35,8 @@ class DriverProfileResource extends JsonResource
             'profile_photo' => $this->profile_photo,
             'status' => ($this->email_verified || $this->sms_verified) ? 'verified' : 'pending',
             'driver_verified' => $this->driver_verified,
+            'total_ride' => $this->total_trips,
+            'rating' => 3.5,
             'transit_company' => (object)[
                 'id' => $this->transitCompany?->id,
                 'name' => $this->transitCompany?->name,
@@ -50,7 +52,7 @@ class DriverProfileResource extends JsonResource
                 'type' => $this->vehicle?->type,
                 'capacity' => $this->vehicle?->capacity,
                 'plate_number' => $this->vehicle?->plate_no,
-                'seats' => json_decode($this->vehicle?->seats) ?? $this->vehicle?->seats,
+                'seats' => $this->vehicle?->seats,
                 'seat_row' => $this->vehicle?->seat_row,
                 'seat_column' => $this->vehicle?->seat_column
             ],

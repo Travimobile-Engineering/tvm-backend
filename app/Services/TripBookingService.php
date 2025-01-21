@@ -114,6 +114,7 @@ class TripBookingService
                 }
             }
 
+            // Get the trip
             $trip = Trip::with(
                     [
                         'user.transitCompany',
@@ -124,30 +125,18 @@ class TripBookingService
                         'manifests'
                     ]
                 )
-                ->where('id', $request->trip_id)
-                ->where('status', TripStatus::ACTIVE);
+                ->where('status', TripStatus::ACTIVE)
+                ->find($request->trip_id);
 
-            if(!$trip->exists()) {
-                return['message' => 'Invalid trip ID or trip is no longer available', 'code' => 400];
+            if(! $trip) {
+                return $this->error(null, 'Invalid trip ID or trip is no longer available', 404);
             }
-
-            $trip = $trip->first();
 
             $seats = $trip->vehicle?->seats;
 
-            if (is_string($seats)) {
-                $seats = json_decode($seats, true);
-                if (!is_array($seats)) {
-                    $seats = explode(',',$seats);
-                    // return ['message' => 'Invalid seats data format', 'code' => 400];
-                }
+            if (! is_array($seats)) {
+                return $this->error(null, "Invalid seats data format", 400);
             }
-
-            // if (!is_array($seats)) {
-            //     return ['message' => 'Invalid seats data format', 'code' => 400];
-            // }
-
-
 
             $departure = $trip->departureRegion?->state?->name . ' > ' . $trip->departureRegion?->name;
             $destination = $trip->destinationRegion?->state?->name . ' > ' . $trip->destinationRegion?->name;
@@ -201,6 +190,7 @@ class TripBookingService
 
             if($booking){
                 Notification::create([
+                    'user_id' => $this->user->id,
                     'title' => 'Booking Successful',
                     'description' => 'Your bus ticket to '.$destination.' on '.date("M jS Y h:iA",strtotime($trip->departure_at)).' has been successfully booked',
                     'additional_data' => json_encode([
