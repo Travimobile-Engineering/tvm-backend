@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgentController;
-use App\Http\Controllers\Auth\ForgotPasswordEmailController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
@@ -42,9 +42,10 @@ Route::prefix('auth')
 ->group(function(){
     Route::post('/signup', [RegisterController::class, 'signup']);
     Route::post('/login', [AuthenticateController::class, 'login']);
-    Route::post('/forgot-password-email', [ForgotPasswordEmailController::class, 'send_password_reset_link']);
+    Route::post('/forgot-password-email', [ForgotPasswordController::class, 'send_password_reset_otp']);
+    Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verify_password_reset_otp']);
     Route::get('/reset-password', fn()=> "Oops! Please bear with us. We are currently working on this page")->name('password.reset');
-    Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
+    Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
     // Route::post('/verify', [RegisterController::class, 'verify_account']);
     Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
 });
