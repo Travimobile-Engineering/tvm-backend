@@ -56,7 +56,7 @@ class ForgotPasswordController extends Controller
         if(!$verify['status']) return $this->error(null, $verify['message']);
         if(is_null($this->password)) return $this->error(null, 'Password cannot be null');
         $this->user->password = Hash::make($this->password);
-        $this->user->verification_code = null;
+        $this->user->verification_code = "";
         $this->user->verification_code_expires_at = null;
         $this->user->save();
         return $this->success(null, 'User password updated successfully');
