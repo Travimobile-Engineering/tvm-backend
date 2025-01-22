@@ -44,6 +44,32 @@ if (!function_exists('uploadFile')) {
     }
 }
 
+if (!function_exists('uploadFilesBatch')) {
+    function uploadFilesBatch($request, $files, $folder, $oldPublicIds = [])
+    {
+        $results = [];
+        foreach ($files as $key) {
+            $oldPublicId = $oldPublicIds[$key] ?? null;
+
+            if ($oldPublicId) {
+                Cloudinary::destroy($oldPublicId);
+            }
+
+            if ($request->hasFile($key)) {
+                $image = $request->file($key)->storeOnCloudinary($folder);
+                $results[$key] = [
+                    'url' => $image->getSecurePath(),
+                    'public_id' => $image->getPublicId(),
+                ];
+            } else {
+                $results[$key] = ['url' => null, 'public_id' => null];
+            }
+        }
+
+        return $results;
+    }
+}
+
 if(!function_exists('getRouteStateAndTownNameFromTownId')){
     function getRouteStateAndTownNameFromTownId(int $id) :string{
         $town = DB::table('route_subregions')->where('id', $id)->first();
