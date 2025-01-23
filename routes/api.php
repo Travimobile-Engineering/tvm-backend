@@ -22,6 +22,8 @@ use App\Http\Controllers\WalletController;
 
 
 Route::get('/', fn() => response(null, 200)) ;
+
+Route::get('/aaa', fn() => throw new \Exception('test'));
 // {
     // return view('welcome');
     // return 'welcome to tvm console! nothing spoil 😇👍';

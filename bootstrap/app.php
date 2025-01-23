@@ -1,7 +1,8 @@
 <?php
 
-use App\Http\Middleware\TransactionPinMiddleware;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Application;
+use App\Http\Middleware\TransactionPinMiddleware;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
@@ -17,5 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->reportable(function (Throwable $e) {
+            Log::channel('slack')->error($e->getMessage(),[
+                'file' => $e->getFile(),
+                'Line' => $e->getLine(),
+                'code' => $e->getCode(),
+            ]);
+        });
     })->create();
