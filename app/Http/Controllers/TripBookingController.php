@@ -58,7 +58,7 @@ class TripBookingController extends Controller
     }
 
     public function getUserTripBookingHistory(Request $request){
-        return $this->response($this->service->getUserTripBookingHistory($request));
+        return $this->service->userBookingHistory($request);
     }
 
     /**

@@ -36,7 +36,7 @@ class TripBooking extends Model
 
     public function trip()
     {
-        return $this->belongsTo(Trip::class, 'trip_id', 'uuid');
+        return $this->belongsTo(Trip::class, 'trip_id');
     }
 
     public function paymentLog()

@@ -266,53 +266,45 @@ class TripBookingService
      */
     public function update($request, $tripBooking)
     {
-        try{
-
-            if($this->user->id != $tripBooking->user_id) return['message' => 'You do not have the permission to complete this request', 'code' => 400];
-
-            $trip = Trip::where('uuid', $request->trip_id)
-            ->where('status', 1)->exists();
-
-            if(!$trip) return['message' => 'Invalid booking ID', 'code' => 400];
-
-            $booking = $tripBooking->update([
-                'trip_id' => $request->trip_id,
-                'selected_seat' => ucfirst($request->selected_seat),
-                'trip_type' => $request->trip_type,
-                'travelling_with' => $request->travelling_with ?? '',
-                'amount_paid' => $request->amount_paid ?? 0,
-                'payment_method' => $request->payment_method ?? '',
-                'payment_status' => $request->payment_status
-            ]);
-
-            if($booking){
-                return['message' => 'Booking updated successfully', 'data' => $tripBooking];
-            }
+        if($this->user->id != $tripBooking->user_id) {
+            return $this->error(null, 'You do not have the permission to complete this request', 400);
         }
-        catch(QueryException $e){
-            if($e->getCode() === '23000'){
-                return['message' => 'Integrity constraint violation: Cannot add or update a child row: a foreign key constraint fails', 'code' => 400];
-            }
-            else{
-                return['message' => $e->getMessage(), 'code' => 400];
-            }
+
+        $trip = Trip::where('uuid', $request->trip_id)
+            ->where('status', 1)
+            ->exists();
+
+        if(!$trip) {
+            return $this->error(null, 'Invalid booking ID', 400);
         }
+
+        $tripBooking->update([
+            'trip_id' => $request->trip_id,
+            'selected_seat' => ucfirst($request->selected_seat),
+            'trip_type' => $request->trip_type,
+            'travelling_with' => $request->travelling_with ?? '',
+            'amount_paid' => $request->amount_paid ?? 0,
+            'payment_method' => $request->payment_method ?? '',
+            'payment_status' => $request->payment_status
+        ]);
+
+        return $this->success($tripBooking, 'Booking updated successfully');
     }
 
-    public function cancelTripBooking($request){
+    public function cancelTripBooking($request)
+    {
+        $booking = TripBooking::where('booking_id', $request->booking_id)->firstOrFail();
 
-
-        $bookingId = $request->booking_id;
-        $booking = TripBooking::where('booking_id', $bookingId);
-        if(!$booking->exists()) return['message' => 'Invalid booking ID', 'code' => 400];
-
-        $booking = $booking->first();
-        if($this->user->id != $booking->user_id) return['message' => 'You do not have the permission to complete this request', 'code' => 400];
+        if($this->user->id != $booking->user_id) {
+            return $this->error(null, 'You do not have the permission to complete this request', 400);
+        }
 
         $booking->update(['status' => 0]);
-        return['message' => 'Booking cancelled successfully'];
+
+        return $this->success($booking, 'Booking cancelled successfully');
     }
 
+    // Old version (Not optimized & not used anymore)
     public function getUserTripBookingHistory($request){
         $user_id = $request->user;
         $is_email = filter_var($request->user, FILTER_VALIDATE_EMAIL) ? true : false;
@@ -344,6 +336,21 @@ class TripBookingService
             }
         }
         return['data' => $hty];
+    }
+
+    // New version, optimized and shorter
+    public function userBookingHistory($request)
+    {
+        $user = User::findOrFail($request->user);
+        $history = TripBooking::with([
+            'trip' => function ($query) {
+                $query->select('id', 'departure', 'destination', 'departure_date', 'trip_duration');
+            },
+        ])
+            ->where('user_id', $user->id)
+            ->get();
+
+        return $this->success($history, 'Booking History Fetched Successfully');
     }
 
     /**
