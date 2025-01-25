@@ -56,6 +56,7 @@ class PaymentService
         $paymentData = $event['data'];
         $userId = $paymentData['metadata']['user_id'];
         $amount = $paymentData['amount'];
+        $formattedAmount = number_format($amount / 100, 2, '.', '');
         $ref = $paymentData['reference'];
 
         try {
@@ -64,7 +65,7 @@ class PaymentService
             DB::beginTransaction();
 
             $user->update([
-                'wallet' => $user->wallet + $amount
+                'wallet' => $user->wallet + $formattedAmount
             ]);
 
             $user->transactions()->create([
@@ -75,7 +76,7 @@ class PaymentService
             ]);
 
             DB::commit();
-            info("User with ID: {$user->id} topped up wallet with amount: {$amount}");
+            info("User with ID: {$user->id} topped up wallet with amount: {$formattedAmount}");
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
