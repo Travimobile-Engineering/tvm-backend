@@ -632,11 +632,10 @@ class TripService
     public function startTrip($request)
     {
         $user = User::with(['transactions', 'driverTripPayments'])->findOrFail($request->user_id);
-
         $trip = Trip::with(['tripBookings.user', 'manifests'])->find($request->trip_id);
 
         if (!$trip) {
-            return $this->error(null, "Data not found!", 404);
+            return $this->error(null, "Trip not found!", 404);
         }
 
         if ($user->wallet < self::TRIP_CHARGE_AMOUNT) {
@@ -695,7 +694,7 @@ class TripService
                 'message' => "Failed to start trip: " . $e->getMessage(),
             ]);
 
-            return $this->error(null, "Failed to start trip", 200);
+            return $this->error(null, "Failed to start trip: " . $e->getMessage(), 400);
         }
     }
 
