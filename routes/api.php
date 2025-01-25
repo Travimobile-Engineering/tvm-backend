@@ -153,8 +153,7 @@ Route::middleware(JWTAuthenticator::class)
                     Route::post('/verify-pin', 'verifyPin');
                     Route::post('/withdraw', 'withdraw')
                         ->middleware('transaction.pin');
-                    Route::post('/topup', 'walletTopUp')
-                        ->middleware('transaction.pin');
+                    Route::post('/topup', 'walletTopUp');
 
                     // Transaction
                     Route::get('/recent-transaction/{user_id}', 'recentTransaction');

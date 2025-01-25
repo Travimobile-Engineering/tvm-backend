@@ -25,7 +25,6 @@ class WalletTopUpRequest extends FormRequest
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'email' => ['required', 'email'],
             'amount' => ['required', 'string'],
-            'pin' => ['required', 'numeric', 'digits:4'],
             'redirect_url' => ['required', 'string', 'url']
         ];
     }
