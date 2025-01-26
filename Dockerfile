@@ -1,5 +1,5 @@
 
-FROM php:8.2-fpm-bullseye
+FROM php:8.2-fpm
 
 WORKDIR /var/www
 
@@ -47,18 +47,7 @@ RUN chown -R www-data:www-data /var/www
 
 RUN chmod -R 755 /var/www/storage
 
-RUN apt-get update && apt-get install -y \
-    nginx \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+EXPOSE 9000
 
-COPY ./server/default.conf /etc/nginx/conf.d/default.conf
-
-RUN apt-get update && apt-get install -y supervisor \
-    && mkdir -p /var/log/supervisor
-
-COPY ./server/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-EXPOSE 80
-
-CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["php-fpm"]
 
