@@ -52,12 +52,6 @@ FROM nginx:alpine
 
 WORKDIR /var/www/
 
-RUN groupadd -r laravel && useradd -r -g laravel laravel
-
-RUN chown -R laravel:laravel /var/www/
-
-USER laravel
-
 COPY --from=builder /var/www .
 
 COPY ./server/default.conf /etc/nginx/conf.d/default.conf
