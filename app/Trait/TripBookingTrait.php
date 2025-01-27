@@ -3,6 +3,7 @@
 namespace App\Trait;
 
 use App\Enum\PaymentMethod;
+use App\Enum\PaymentType;
 use App\Enum\TripStatus;
 use App\Models\Notification;
 use App\Models\Trip;
@@ -58,7 +59,9 @@ trait TripBookingTrait
             return $trip;
         }
 
-        DB::transaction(function () use ($request, $user, $amount_paid) {
+        try {
+            DB::beginTransaction();
+
             $user = User::with(['transactions'])->findOrFail($user->id);
             $trip = Trip::with(
                 [
@@ -80,8 +83,29 @@ trait TripBookingTrait
                 $booking_id = getRandomNumber();
             } while(TripBooking::where('booking_id', $booking_id)->exists());
 
+            $ref = getRandomString();
+
+            $paymentLog = $user->paymentLogs()->create([
+                'trip_id' => $request->trip_id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'amount' => $amount_paid,
+                'reference' => $ref,
+                'channel' => "wallet",
+                'currency' => "NGN",
+                'ip_address' => $request->ip(),
+                'paid_at' => now(),
+                'createdAt' => now(),
+                'transaction_date' => now(),
+                'status' => "success",
+                'type' => PaymentType::TRIP_BOOKING,
+            ]);
+
             TripBooking::create([
                 'booking_id' => $booking_id,
+                'payment_log_id' => $paymentLog->id,
                 'trip_id' => $trip->id,
                 'user_id' => $user->id,
                 'third_party_booking' => $request->third_party_booking ?? 0,
@@ -119,9 +143,18 @@ trait TripBookingTrait
                 'type' => "DR",
                 'txn_reference' => "wallet"
             ]);
-        });
 
-        return $this->success(null, "Payment successful", 200);
+            DB::commit();
+
+            $data = (object) [
+                'reference' => $ref,
+            ];
+
+            return $this->success($data, "Payment successful", 200);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw $th;
+        }
     }
 
     protected function handleTripCheck($request)

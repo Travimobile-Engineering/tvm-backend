@@ -12,6 +12,13 @@ if (!function_exists('authUser')) {
     }
 }
 
+if (!function_exists('getRandomString')) {
+    function getRandomString()
+    {
+        return Str::random(10);
+    }
+}
+
 if (!function_exists('getRandomNumber')) {
     function getRandomNumber()
     {

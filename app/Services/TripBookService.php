@@ -33,7 +33,11 @@ class TripBookService
     {
         $paymentLog = PaymentLog::with('tripBooking')
             ->where('reference', $reference)
-            ->firstOrFail();
+            ->first();
+
+        if(! $paymentLog) {
+            return $this->error(null, 'Invalid payment reference', 400);
+        }
 
         $data = (object) [
             'booking_id' => $paymentLog->tripBooking?->booking_id,

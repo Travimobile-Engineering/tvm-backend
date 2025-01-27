@@ -35,6 +35,10 @@ class TripBookingResource extends JsonResource
                 'departure_park' => $this->trip?->departureRegion?->parks->pluck('name')->join(', '),
                 'destination' => $this->trip?->destinationRegion?->state?->name . ' > ' . $this->trip?->destinationRegion?->name,
                 'destination_park' => $this->trip?->destinationRegion?->parks->pluck('name')->join(', '),
+                'departure_date' => $this->trip?->departure_date,
+                'departure_time' => $this->trip?->departure_time,
+                'trip_duration' => $this->trip?->trip_duration,
+                'estimated_arrival_time' => $this->trip?->trip_duration,
             ],
             'user_detail' => (object)[
                 'first_name' => $this->user?->first_name,
