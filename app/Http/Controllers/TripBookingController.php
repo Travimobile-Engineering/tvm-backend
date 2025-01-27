@@ -41,7 +41,7 @@ class TripBookingController extends Controller
      */
     public function show(TripBooking $tripBooking)
     {
-        return $this->response($this->service->show($tripBooking));
+        return $this->service->show($tripBooking);
     }
 
     /**

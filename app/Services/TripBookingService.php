@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\QueryException;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Http\Resources\TripBookingResource;
 
 class TripBookingService
 {
@@ -242,23 +243,29 @@ class TripBookingService
      */
     public function show($tripBooking)
     {
-        if($tripBooking->user_id != $this->user->id) return['message' => 'You do not have permission to complete this request', 'code' => 400];
-        $trip = Trip::firstWhere('uuid', $tripBooking->trip_id);
+        if($tripBooking->user_id != $this->user->id) {
+            return $this->error(null, 'You do not have the permission to complete this request', 400);
+        }
 
-        $departure_town = DB::table('route_subregions')->where('id', $trip->departure)->first();
-        $departure_state = DB::table('states')->where('id', $departure_town->state_id)->first();
-        $destination_town = DB::table('route_subregions')->where('id', $trip->destination)->first();
-        $destination_state = DB::table('states')->where('id', $destination_town->state_id)->first();
+        $booking = TripBooking::with([
+                'trip',
+                'user.transitCompany',
+                'trip.departureRegion.state',
+                'trip.destinationRegion.state',
+                'trip.departureRegion.parks',
+                'trip.destinationRegion.parks',
+                'trip.vehicle',
+            ])
+            ->where('booking_id', $tripBooking->booking_id)
+            ->first();
 
-        $trip->departure = $departure_state->name.' > '.$departure_town->name;
-        $trip->destination = $destination_state->name.' > '.$destination_town->name;
+        if(!$booking) {
+            return $this->error(null, 'Invalid booking ID', 400);
+        }
 
-        $tripBooking['trip_detail'] = $trip;
-        $tripBooking['transit_company_detail'] = TransitCompany::firstWhere('id', $trip->transit_company_id);
-        $tripBooking['user_detail'] = Auth::user();
-        $tripBooking['vehicle_detail'] = Vehicle::firstWhere('id', $trip->vehicle_id);
-        return['data' => $tripBooking];
+        $data = new TripBookingResource($booking);
 
+        return $this->success($data, 'Booking fetched successfully');
     }
 
     /**
