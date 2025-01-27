@@ -1,5 +1,5 @@
 
-FROM php:8.2-fpm
+FROM php:8.2-fpm AS builder
 
 WORKDIR /var/www
 
@@ -47,7 +47,16 @@ RUN chown -R www-data:www-data /var/www
 
 RUN chmod -R 755 /var/www/storage
 
-EXPOSE 9000
+#second stage
+FROM nginx:alpine
 
-CMD ["php-fpm"]
+WORKDIR /var/www/
+
+COPY --from=builder /var/www .
+
+COPY ./server/default.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
 
