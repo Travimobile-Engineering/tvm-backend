@@ -30,6 +30,7 @@ class TripResource extends JsonResource
             'user' => (object)[
                 'first_name' => $this->user?->first_name,
                 'last_name' => $this->user?->last_name,
+                'profile_photo' => $this->user?->profile_photo,
             ],
             'vehicle_id' => $this->vehicle_id,
             'vehicle' => (object)[

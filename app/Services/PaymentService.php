@@ -70,7 +70,7 @@ class PaymentService
 
             $user->transactions()->create([
                 'title' => PaymentType::FUND_WALLET,
-                'amount' => $amount,
+                'amount' => $formattedAmount,
                 'type' => PaymentType::CR,
                 'txn_reference' => $ref
             ]);
