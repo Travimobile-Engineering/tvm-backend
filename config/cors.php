@@ -22,7 +22,7 @@ return [
     'allowed_methods' => ['GET, POST, PUT, OPTIONS'],
     // 'allowed_origins' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173', 'https://v6.travimobile.com','https://v1.travimobile.com'],
+    'allowed_origins' => ['http://localhost:5173', 'https://v6.travimobile.com','https://v.travimobile.com','https://v1.travimobile.com'],
 
     'allowed_origins_patterns' => [],
 

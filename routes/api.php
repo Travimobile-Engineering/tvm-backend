@@ -1,19 +1,18 @@
 <?php
 
 use App\Http\Controllers\AgentController;
-use App\Http\Controllers\Auth\ForgotPasswordEmailController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\Auth\VerifyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SendTestMailController;
-use App\Http\Middleware\CheckExpectsJson;
 use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OtherController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TransitCompanyController;
 use App\Http\Controllers\TripBookingController;
@@ -22,23 +21,40 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\WalletController;
 
 
-Route::get('/', function () {
-    // return view('welcome');
-    return 'welcome to tvm console! nothing spoil 😇👍';
-});
+Route::get('/', fn() => response(null, 200)) ;
 
-Route::get('/states', [OtherController::class, 'getStates']);
+// {
+    // return view('welcome');
+    // return 'welcome to tvm console! nothing spoil 😇👍';
+
+// });
+
+Route::controller(OtherController::class)
+    ->group(function () {
+        Route::get('/states', 'getStates');
+        Route::get('/bank', 'getBank');
+        Route::post('/account/lookup', 'accountLookUp');
+    });
+
+Route::post('/payment/webhook', [PaymentController::class, 'webhook']);
 
 Route::prefix('auth')
 ->group(function(){
     Route::post('/signup', [RegisterController::class, 'signup']);
     Route::post('/login', [AuthenticateController::class, 'login']);
-    Route::post('/forgot-password-email', [ForgotPasswordEmailController::class, 'send_password_reset_link']);
+    Route::post('/forgot-password-email', [ForgotPasswordController::class, 'send_password_reset_otp']);
+    Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verify_password_reset_otp']);
     Route::get('/reset-password', fn()=> "Oops! Please bear with us. We are currently working on this page")->name('password.reset');
-    Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
-    Route::post('/verify', [RegisterController::class, 'verify_account']);
+    Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+    // Route::post('/verify', [RegisterController::class, 'verify_account']);
     Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
 });
+
+Route::prefix('route')
+    ->group(function(){
+        Route::get('/get-covered-routes', [RouteController::class, 'getCoveredRoutes']);
+        Route::get('/get-regions', [RouteController::class, 'getRegions']);
+    });
 
 Route::middleware(JWTAuthenticator::class)
 ->group(function(){
@@ -60,12 +76,6 @@ Route::middleware(JWTAuthenticator::class)
         Route::get('/get-unions', 'getUnions');
         Route::post('/edit/{transitCompany}', 'update');
         Route::get('/{transitCompany}', 'show');
-    });
-
-    Route::prefix('route')
-    ->group(function(){
-        Route::get('/get-covered-routes', [RouteController::class, 'getCoveredRoutes']);
-        Route::get('/get-regions', [RouteController::class, 'getRegions']);
     });
 
     Route::prefix('vehicle')
@@ -135,21 +145,37 @@ Route::middleware(JWTAuthenticator::class)
             Route::post('/edit-document', 'updateDriverDocuments');
             Route::delete('/remove-document/{id}', 'removeDocument');
             Route::put('/edit-union', 'updateUnion');
+
+            Route::prefix('wallet')
+                ->controller(WalletController::class)
+                ->group(function () {
+                    Route::post('/setup', 'driverWalletSetup');
+                    Route::post('/verify-pin', 'verifyPin');
+                    Route::post('/withdraw', 'withdraw')
+                        ->middleware('transaction.pin');
+                    Route::post('/topup', 'walletTopUp');
+
+                    // Transaction
+                    Route::get('/recent-transaction/{user_id}', 'recentTransaction');
+                    Route::get('/recent-earning/{user_id}', 'recentEarning');
+                    Route::get('/statistics/{user_id}', 'stats');
+                });
         });
 
     Route::prefix('trip-booking')
-    ->group(function(){
-        Route::post('/create', [TripBookingController::class, 'store']);
-        Route::post('/edit/{tripBooking}', [TripBookingController::class, 'update']);
-        Route::get('/cancel/{booking_id}', [TripBookingController::class, 'cancelTripBooking']);
-        Route::get('/history/{user}', [TripBookingController::class, 'getUserTripBookingHistory']);
-        Route::get('/{tripBooking}', [TripBookingController::class, 'show']);
-    });
+        ->controller(TripBookingController::class)
+        ->group(function(){
+            Route::post('/create', 'booking');
+            Route::post('/edit/{tripBooking}', 'update');
+            Route::get('/cancel/{booking_id}', 'cancelTripBooking');
+            Route::get('/history/{user}', 'getUserTripBookingHistory');
+            Route::get('/{tripBooking}', 'show');
+            Route::get('/payment/{reference}', 'getPaymentRef');
+        });
 
     Route::prefix('payment')
     ->group(function(){
         Route::post('/initialize-paystack-transaction', [PaystackPaymentController::class, 'intializeTransaction']);
-
     });
 
     Route::prefix('wallet')
@@ -160,6 +186,12 @@ Route::middleware(JWTAuthenticator::class)
         Route::get('/transactions', [WalletController::class, 'getTransactions']);
         Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
     });
+
+    Route::prefix('notification')
+    ->controller(NotificationController::class)
+    ->group(function(){
+        Route::get('/', 'all');
+    });
 });
 
 Route::prefix('agent')->controller(AgentController::class)
@@ -169,6 +201,6 @@ Route::prefix('agent')->controller(AgentController::class)
 
 Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);
 Route::fallback(function(){
-    return response()->json(['error' => 'page not found'], 404);
+    return response('page not found', 400);
 });
 

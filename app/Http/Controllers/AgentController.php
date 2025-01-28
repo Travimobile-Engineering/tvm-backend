@@ -13,6 +13,6 @@ class AgentController extends Controller
         $agent = User::where('agent_id', $request->agent_id);
         if(!$agent->exists()) return response()->json(['error' => 'Invalid agent ID']);
 
-        return response()->json(['data' => $agent->get()->first()]);
+        return response()->json(['data' => $agent->get(['first_name', 'last_name', 'email', 'agent_id', 'profile_photo_url'])->first()]);
     }
 }

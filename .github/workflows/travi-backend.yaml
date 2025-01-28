@@ -1,0 +1,52 @@
+
+name: Build and Push Travi Backend Image to Registry
+
+on:
+  push:
+    branches: [ master, dev ]
+  pull_request:
+    branches: [ master, dev ]
+
+env:
+  PROJECT_ID: "travi-mobile-mvp"
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    name: 'Build and push docker image to Artifact Registry'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Authenticate to Google Cloud
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: Configure Docker to use gcloud as a credential helper
+      run: gcloud auth configure-docker europe-west2-docker.pkg.dev
+
+    - name: Extract short commit SHA
+      id: vars
+      run: echo "short_commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+    - name: Determine tag
+      id: tag
+      run: |
+        if [[ $GITHUB_REF == refs/heads/master ]]; then
+          echo "tag=${{ env.short_commit_sha }}-prod" >> $GITHUB_ENV
+        elif [[ $GITHUB_REF == refs/heads/dev ]]; then
+          echo "tag=${{ env.short_commit_sha }}-dev" >> $GITHUB_ENV
+        fi
+
+    - name: Build Docker image
+      run: docker build -t europe-west2-docker.pkg.dev/travi-mobile-mvp/travi-mobile-registry/travi-backend:${{ env.tag }} .
+
+    - name: Push Docker image to Artifact Registry
+      run: docker push europe-west2-docker.pkg.dev/travi-mobile-mvp/travi-mobile-registry/travi-backend:${{ env.tag }}
+
+

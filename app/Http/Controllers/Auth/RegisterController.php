@@ -2,51 +2,63 @@
 
 namespace App\Http\Controllers\auth;
 
-use App\Http\Controllers\Controller;
-use App\Mail\ConfirmationEmail;
 use App\Models\User;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use App\Mail\ConfirmationEmail;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\RegisterRequest;
 use Illuminate\Validation\ValidationException;
 
 class RegisterController extends Controller
 {
     //method to register a new user
-    public function signup(Request $request){
-
-        try{
-            $validation = $request->validate([
-                'full_name' => 'required|string|max:255',
-                'email' => 'nullable|string|email|max:255',
-                'phone_number' => 'required|numeric',
-                'password' => 'required|string|min:8',
-                'address' => 'nullable|string|max:255',
-                'nin' => 'nullable|string',
-                'verification_code' => 'nullable|numeric',
-                'user_category' => 'nullable|int',
-            ]);
-
-        }catch(ValidationException $e){
-            return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
-        }
+    public function signup(RegisterRequest $request){
         
+        $category = ["1"];
+        if(isset($request->user_category) && $request->user_category == 2){
+            
+            $agent_id = strtoupper(generateUniqueRandomString('users', 'agent_id', 12));
+            $category[] = "2";
+
+
+            $request->validate([
+                'address' => 'required',
+                // 'email' => 'required',
+                // 'phone_number' => 'required',
+                'nin' => 'required',
+            ]);
+        }
+
+        $is_email = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
+        $email = !$is_email ? "" : $request->contact;
+        $phone_number = !$is_email ? $request->contact : "";
+
         do $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_RIGHT);
         while(strlen($verification_code) < 5);
 
-        $user = User::where('phone_number', $request->phone_number)->first();
-        if($user && $user->email_verified == 1) return response()->json(['error' => 'Phone number already exist'], status: 400);
-
-        $user = User::where('email', $request->email)->first();
-        if($user){
-            if($user->email_verified == 1) return response()->json(['error' => 'Email address already exist'], status: 400);
-            elseif(!isset($request->verification_code) || empty($request->verification_code)){
-                $this->send_verification_code($request, false, $verification_code);
-                return response()->json(['Message' => 'User created successfully'], 200);
-            }
+        if(!empty($phone_number)){
+            $user = User::where('phone_number', $phone_number)->first();
+            if($user && $user->email_verified == 1) return response()->json(['error' => 'Phone number already exist'], status: 400);
         }
 
+        if(!empty($email)){
+            $user = User::where('email', $email)->first();
+            if($user && $user->email_verified == 1) return response()->json(['error' => 'Email address already exist'], status: 400);
+        }
+
+        $user = User::where('email', $email)
+        ->where('phone_number', $phone_number)->first();
+        if($user && (!isset($request->verification_code) || empty($request->verification_code))){
+            
+            $user->verification_code = $verification_code;
+            $user->verification_code_expires_at = Carbon::now()->addMinutes(10);
+            $user->save();
+            $this->send_verification_code($request, false, $verification_code);
+            return response()->json(['Message' => 'User created successfully'], 200);
+        }
         
         if(isset($request->verification_code) && !empty($request->verification_code)){
             
@@ -65,33 +77,21 @@ class RegisterController extends Controller
             while(User::where('uuid', $uuid)->exists());
     
             // Get the first name and last name
-            $names = explode(' ', $validation['full_name'], 2);
+            $names = explode(' ', $request->full_name, 2);
     
-            $category = [1];
-            if(isset($request->user_category) && $request->user_category == 2){
-                $category[] = 2;
-    
-                try{
-                    $request->validate([
-                        'address' => 'required',
-                        'email' => 'required',
-                        'phone_number' => 'required',
-                        'nin' => 'required',
-                    ]);
         
-                }catch(ValidationException $e){
-                    return response()->json(['error' => array("message" => collect($e->errors())->flatten()->first())], 400);
-                }
-            } 
-            $user = User::where('email', $request->email)->update([
-                'phone_number' => $validation['phone_number'],
+            $user = User::where('email', $email)
+            ->where('phone_number', $phone_number)
+            ->update([
+                'phone_number' => $phone_number,
                 'first_name' => $names[0],
                 'last_name' => $names[1] ?? "",
-                'password' => Hash::make($validation['password']),
-                'user_category' => json_encode(value: $category),
+                'password' => Hash::make($request->password),
+                'user_category' => json_encode($category),
+                'agent_id' => $agent_id ?? null,
                 'uuid' => $uuid,
-                'address' => $validation['address'] ?? "",
-                'nin' => $validation['nin'] ?? "",
+                'address' => $request->address ?? "",
+                'nin' => $request->nin ?? "",
             ]);
 
             if($user) return response()->json(['message' => 'Account verified successfully'], 200);
@@ -99,8 +99,8 @@ class RegisterController extends Controller
         }
         
         $user = User::create([
-            'email' => $validation['email'] ?? "",
-            'phone_number' => $validation['phone_number'],
+            'email' => $email ?? "",
+            'phone_number' => $phone_number,
             'verification_code' => $verification_code,
             'verification_code_expires_at' => Carbon::now()->addMinutes(10)
         ]);
@@ -113,9 +113,7 @@ class RegisterController extends Controller
     }
 
     public function send_verification_code(
-        Request $request,
-        bool $returnResponse = true,
-        int $verification_code = null
+        Request $request, bool $returnResponse = true, int $verification_code = null
     )
     {
 
@@ -135,9 +133,7 @@ class RegisterController extends Controller
                     $user->save();
                 }
 
-                $name = $user->first_name.' '.$user->last_name;
-
-                Mail::to($email)->send(new ConfirmationEmail($name, $verification_code));
+                Mail::to($email)->send(new ConfirmationEmail($request->full_name, $verification_code));
                 
                 if($returnResponse)
                 return response()->json(['Message' => 'Verification code sent to your email address'], 200);
@@ -157,8 +153,8 @@ class RegisterController extends Controller
             ]);
 
             $user = User::where([
-                'email' => $validation['email'],
-                'verification_code' => $validation['verification_code']
+                'email' => $request->email,
+                'verification_code' => $request->verification_code
             ])->first();
     
             if($user){

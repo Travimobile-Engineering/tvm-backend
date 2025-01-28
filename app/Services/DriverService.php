@@ -6,74 +6,99 @@ use App\Enum\DocumentStatus;
 use App\Http\Resources\BusStopResource;
 use App\Models\Document;
 use App\Models\User;
+use App\Trait\DriverTrait;
 use App\Trait\HttpResponse;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\DB;
 
 class DriverService
 {
-    use HttpResponse;
+    use HttpResponse, DriverTrait;
 
     public function addDriverInfo($request)
     {
-        $user = User::with(['driverVehicle', 'documents'])
+        $user = User::with(['vehicle', 'documents', 'transitCompany'])
             ->findOrFail($request->user_id);
+
+        $accountExist = hasOnboarded($request->user_id);
+
+        if($accountExist) {
+            return $this->error(null, "Account already exist!", 400);
+        }
+
+        $fileKeys = ['profile_photo', 'license_photo', 'nin_photo', 'vehicle_insurance_photo'];
 
         DB::beginTransaction();
 
         try {
-            $profilePhoto = uploadFile($request, 'profile_photo', 'driver/documents');
+            $fileUploads = uploadFilesBatch($request, $fileKeys, 'driver/documents');
 
-            $user->driverVehicle()->create([
-                'vehicle_year' => $request->vehicle_year,
-                'vehicle_model' => $request->vehicle_model,
-                'vehicle_color' => $request->vehicle_color,
-                'plate_number' => $request->plate_number,
-                'vehicle_type' => $request->vehicle_type,
-                'vehicle_capacity' => $request->vehicle_capacity,
-                'seats' => $request->seats,
+            $company = $this->createTransitCompany($user, $request);
+
+            $seatsString = $request->seats;
+            $seatSplit = explode(',', $seatsString);
+
+            $seats = array_map(function ($seat) {
+                return trim($seat, '"');
+            }, $seatSplit);
+
+            $user->vehicle()->create([
+                'company_id' => $company->id,
+                'brand_id' => 0,
+                'year' => $request->vehicle_year,
+                'model' => $request->vehicle_model,
+                'color' => $request->vehicle_color,
+                'plate_no' => $request->plate_number,
+                'type' => $request->vehicle_type,
+                'capacity' => $request->vehicle_capacity,
+                'seats' => $seats,
                 'seat_row' => $request->seat_row,
                 'seat_column' => $request->seat_column,
             ]);
 
-            if ($request->hasFile('license_photo')) {
-                $licensePhoto = uploadFile($request, 'license_photo', 'driver/documents');
-                $user->documents()->create([
+            $documentTypes = [
+                'license_photo' => [
                     'type' => 'license',
-                    'image_url' => $licensePhoto['url'],
-                    'public_id' => $licensePhoto['public_id'],
-                    'number' => $request->license_number,
-                    'expiration_date' => $request->license_expiration_date,
-                    'status' => DocumentStatus::PENDING,
-                ]);
-            }
-
-            if ($request->hasFile('nin_photo')) {
-                $ninPhoto = uploadFile($request, 'nin_photo', 'driver/documents');
-                $user->documents()->create([
+                    'extra_fields' => [
+                        'number' => $request->license_number,
+                        'expiration_date' => $request->license_expiration_date,
+                    ]
+                ],
+                'nin_photo' => [
                     'type' => 'nin',
-                    'image_url' => $ninPhoto['url'],
-                    'public_id' => $ninPhoto['public_id'],
-                    'number' => $request->nin,
-                    'status' => DocumentStatus::PENDING,
-                ]);
-            }
-
-            if ($request->hasFile('vehicle_insurance_photo')) {
-                $vehiclePhoto = uploadFile($request, 'vehicle_insurance_photo', 'driver/documents');
-                $user->documents()->create([
+                    'extra_fields' => [
+                        'number' => $request->nin,
+                    ]
+                ],
+                'vehicle_insurance_photo' => [
                     'type' => 'vehicle_insurance',
-                    'image_url' => $vehiclePhoto['url'],
-                    'public_id' => $vehiclePhoto['public_id'],
-                    'expiration_date' => $request->vehicle_insurance_expiration_date,
-                    'status' => DocumentStatus::PENDING,
-                ]);
+                    'extra_fields' => [
+                        'expiration_date' => $request->vehicle_insurance_expiration_date,
+                    ]
+                ],
+            ];
+
+            foreach ($documentTypes as $key => $docDetails) {
+                if (!empty($fileUploads[$key]['url']) || ($docDetails['type'] === 'nin' && $request->filled('nin'))) {
+                    $user->documents()->create([
+                        'type' => $docDetails['type'],
+                        'image_url' => $fileUploads[$key]['url'] ?? null,
+                        'public_id' => $fileUploads[$key]['public_id'] ?? null,
+                        'number' => $docDetails['extra_fields']['number'] ?? null,
+                        'expiration_date' => $docDetails['extra_fields']['expiration_date'] ?? null,
+                        'status' => DocumentStatus::PENDING,
+                    ]);
+                }
             }
 
             $user->update([
+                'gender' => $request->gender,
+                'next_of_kin_full_name' => $request->next_of_kin_full_name,
+                'next_of_kin_phone_number' => $request->next_of_kin_phone_number,
+                'next_of_kin_relationship' => $request->next_of_kin_relationship,
                 'transit_company_union_id' => $request->transit_company_union_id,
-                'profile_photo' => $profilePhoto['url'],
-                'public_id' => $profilePhoto['public_id'],
+                'profile_photo' => $fileUploads['profile_photo']['url'] ?? null,
+                'public_id' => $fileUploads['profile_photo']['public_id'] ?? null,
                 'driver_verified' => true,
             ]);
 

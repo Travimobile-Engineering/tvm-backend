@@ -22,16 +22,16 @@ class TripBookingCreateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'trip_id' => 'required|string',
-                'third_party_booking' => 'nullable|int',
-                'selected_seat' => 'required|string',
-                'trip_type' => 'required|int',
-                'travelling_with' => 'nullable|string',
-                'third_party_passenger_details' => 'nullable|string',
-                'amount_paid' => 'nullable|int',
-                'payment_method' => 'nullable',
-                'payment_status' => 'nullable|integer',
-                'txn_reference' => 'nullable|string'
+            'trip_id' => 'required',
+            'third_party_booking' => 'nullable|int',
+            'selected_seat' => 'required|string',
+            'trip_type' => 'required|int',
+            'travelling_with' => 'nullable|string',
+            'third_party_passenger_details' => 'nullable|string',
+            'amount_paid' => 'nullable|int',
+            //'payment_method' => 'required_if:amount_paid,>0|in:wallet,paystack,transfer',
+            'payment_status' => 'nullable|integer',
+            'txn_reference' => 'nullable|string'
         ];
     }
 }

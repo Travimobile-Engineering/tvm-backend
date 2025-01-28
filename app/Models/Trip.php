@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Vehicle\Vehicle;
 use Illuminate\Database\Eloquent\Model;
 
 class Trip extends Model
@@ -28,7 +29,18 @@ class Trip extends Model
         'date_cancelled',
         'status',
         'means',
+        'trip_duration',
+        'trip_schedule',
+        'departure_park',
+        'destination_park',
     ];
+
+    protected $hidden = [];
+
+    public function getRouteKeyName()
+    {
+        return 'uuid';
+    }
 
     protected static function boot()
     {
@@ -36,12 +48,18 @@ class Trip extends Model
         static::creating(function ($trip) {
             $trip->uuid = getRandomNumber();
         });
+
+        static::retrieved(function($model){
+            $model->from = getRouteStateAndTownNameFromTownId($model->departure);
+            $model->to = getRouteStateAndTownNameFromTownId($model->destination);
+        });
     }
 
     protected function casts(): array
     {
         return [
             'trip_days' => 'array',
+            'trip_schedule' => 'array',
             'bus_stops' => 'array',
             'date_cancelled' => 'datetime',
         ];
@@ -50,6 +68,11 @@ class Trip extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function vehicle()
+    {
+        return $this->belongsTo(Vehicle::class, 'vehicle_id');
     }
 
     public function tripBookings()
@@ -62,8 +85,19 @@ class Trip extends Model
         return $this->hasMany(Manifest::class, 'trip_id');
     }
 
-    protected $hidden = ['id'];
-    public function getRouteKeyName(){
-        return 'uuid';
+    public function departureRegion()
+    {
+        return $this->belongsTo(RouteSubregion::class, 'departure');
     }
+
+    public function destinationRegion()
+    {
+        return $this->belongsTo(RouteSubregion::class, 'destination');
+    }
+
+    public function paymentLogs()
+    {
+        return $this->hasMany(PaymentLog::class, 'trip_id');
+    }
+
 }

@@ -14,6 +14,11 @@ class OneTimeTripResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $seats = $this->vehicle?->seats;
+        $totalSeats = is_array($seats) ? count($seats) : 0;
+        $totalSelectedSeats = $this->tripBookings ? $this->tripBookings->count() : 0;
+        $availableSeats = $totalSeats - $totalSelectedSeats;
+        
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
@@ -23,18 +28,32 @@ class OneTimeTripResource extends JsonResource
                 'last_name' => $this->user->last_name,
             ],
             'vehicle_id' => $this->vehicle_id,
-            'transit_company_id' => $this->transit_company_id,
-            'departure' => $this->departure,
-            'destination' => $this->destination,
+            'vehicle' => (object)[
+                'name' => $this->vehicle?->name,
+                'year' => $this->vehicle?->year,
+                'model' => $this->vehicle?->model,
+                'color' => $this->vehicle?->color,
+                'type' => $this->vehicle?->type,
+                'capacity' => $this->vehicle?->capacity,
+                'plate_number' => $this->vehicle?->plate_no,
+                'seats' => $this->vehicle?->seats,
+                'seat_row' => $this->vehicle?->seat_row,
+                'seat_column' => $this->vehicle?->seat_column
+            ],
+            'departure_id' => $this->departure,
+            'destination_id' => $this->destination,
+            'departure' => $this->departureRegion?->state?->name . ' > ' . $this->departureRegion?->name,
+            'destination' => $this->destinationRegion?->state?->name . ' > ' . $this->destinationRegion?->name,
             'departure_date' => $this->departure_date,
             'departure_time' => $this->departure_time,
-            'repeat_trip' => $this->repeat_trip,
+            'trip_duration' => $this->trip_duration,
             'bus_type' => $this->bus_type,
             'price' => $this->price,
             'bus_stops' => $this->bus_stops,
             'means' => $this->means,
             'type' => $this->type,
             'status' => $this->status,
+            'manifest_status' => $this->manifests->count() == 0 ? 'processing' : 'created',
             'reason' => $this->reason,
             'date_cancelled' => $this->date_cancelled,
             'created_at' => $this->created_at,
@@ -51,6 +70,9 @@ class OneTimeTripResource extends JsonResource
                 return $passenger->selected_seat;
             })->toArray() : [],
             'total_selected_seats' => $this->tripBookings ? $this->tripBookings->count() : 0,
+            'total_seat' => is_array($seats = $this->vehicle?->seats) ? count($seats) : 0,
+            'available_seat' => $availableSeats,
+            'manifest_fee' => 1000,
         ];
     }
 }

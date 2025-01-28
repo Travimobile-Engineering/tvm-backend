@@ -2,33 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Trip;
-use App\Models\User;
-use App\Models\Transaction;
 use App\Models\TripBooking;
 use App\Trait\HttpResponse;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Models\Vehicle\Vehicle;
-use Illuminate\Support\Facades\DB;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Log;
 use App\Services\TripBookingService;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\QueryException;
-use Illuminate\Validation\ValidationException;
 use App\Http\Requests\TripBookingCreateRequest;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Requests\TripBookingUpdateRequest;
+use App\Services\TripBookService;
 
 class TripBookingController extends Controller
 {
     use HttpResponse;
     protected $service;
+    protected $tripBookService;
 
-    public function __construct(TripBookingService $service){
+    public function __construct(TripBookingService $service, TripBookService $tripBookService){
         $this->service = $service;
+        $this->tripBookService = $tripBookService;
     }
     /**
      * Display a listing of the resource.
@@ -43,7 +33,7 @@ class TripBookingController extends Controller
      */
     public function store(TripBookingCreateRequest $request)
     {
-        return $this->response($this->service->store($request));
+        return $this->service->store($request);
     }
 
     /**
@@ -51,7 +41,7 @@ class TripBookingController extends Controller
      */
     public function show(TripBooking $tripBooking)
     {
-        return $this->response($this->service->show($tripBooking));
+        return $this->service->show($tripBooking);
     }
 
     /**
@@ -59,16 +49,16 @@ class TripBookingController extends Controller
      */
     public function update(TripBookingUpdateRequest $request, TripBooking $tripBooking)
     {
-        return $this->response($this->service->update($request, $tripBooking));
+        return $this->service->update($request, $tripBooking);
 
     }
 
     public function cancelTripBooking(Request $request){
-        return $this->response($this->service->cancelTripBooking($request));
+        return $this->service->cancelTripBooking($request);
     }
 
     public function getUserTripBookingHistory(Request $request){
-        return $this->response($this->service->getUserTripBookingHistory($request));
+        return $this->service->userBookingHistory($request);
     }
 
     /**
@@ -77,5 +67,15 @@ class TripBookingController extends Controller
     public function destroy(TripBooking $tripBooking)
     {
         //
+    }
+
+    public function booking(TripBookingCreateRequest $request)
+    {
+        return $this->tripBookService->store($request);
+    }
+
+    public function getPaymentRef($reference)
+    {
+        return $this->tripBookService->getPaymentRef($reference);
     }
 }

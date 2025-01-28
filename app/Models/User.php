@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -35,6 +36,7 @@ class User extends Authenticatable implements JWTSubject
         'next_of_kin_full_name',
         'next_of_kin_phone_number',
         'next_of_kin_gender',
+        'next_of_kin_relationship',
         'verification_code',
         'verification_code_expires_at',
         'custom_fields',
@@ -47,6 +49,7 @@ class User extends Authenticatable implements JWTSubject
         'profile_photo',
         'public_id',
         'driver_verified',
+        'agent_id',
     ];
 
     protected $guarded = [
@@ -70,7 +73,6 @@ class User extends Authenticatable implements JWTSubject
         'email_verified',
         'sms_verified',
         'email_verified_at',
-        'txn_pin',
         'is_admin',
         'created_at',
         'updated_at'
@@ -97,5 +99,10 @@ class User extends Authenticatable implements JWTSubject
             'password' => 'hashed',
             'driver_verified' => 'boolean',
         ];
+    }
+
+    public function totalTrips(): Attribute
+    {
+        return Attribute::get(fn () => $this->trips()->count());
     }
 }

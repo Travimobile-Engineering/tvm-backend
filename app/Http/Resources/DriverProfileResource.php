@@ -14,6 +14,9 @@ class DriverProfileResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $pendingBalance = $this->driverTripPayments->where('status', 'pending')
+            ->sum('amount');
+
         return [
             'id' => (int)$this->id,
             'first_name' => $this->first_name,
@@ -32,23 +35,26 @@ class DriverProfileResource extends JsonResource
             'profile_photo' => $this->profile_photo,
             'status' => ($this->email_verified || $this->sms_verified) ? 'verified' : 'pending',
             'driver_verified' => $this->driver_verified,
+            'total_ride' => $this->total_trips,
+            'rating' => 3.5,
             'transit_company' => (object)[
                 'id' => $this->transitCompany?->id,
                 'name' => $this->transitCompany?->name,
                 'email' => $this->transitCompany?->email,
                 'address' => $this->transitCompany?->address,
+                'park' => $this->transitCompany?->park,
             ],
             'vehicle' => (object)[
-                'id' => (int)$this->driverVehicle?->id,
-                'year' => $this->driverVehicle?->vehicle_year,
-                'model' => $this->driverVehicle?->vehicle_model,
-                'color' => $this->driverVehicle?->vehicle_color,
-                'type' => $this->driverVehicle?->vehicle_type,
-                'capacity' => $this->driverVehicle?->vehicle_capacity,
-                'plate_number' => $this->driverVehicle?->plate_number,
-                'seats' => json_decode($this->driverVehicle?->seats),
-                'seat_row' => $this->driverVehicle?->seat_row,
-                'seat_column' => $this->driverVehicle?->seat_column
+                'id' => (int)$this->vehicle?->id,
+                'year' => $this->vehicle?->year,
+                'model' => $this->vehicle?->model,
+                'color' => $this->vehicle?->color,
+                'type' => $this->vehicle?->type,
+                'capacity' => $this->vehicle?->capacity,
+                'plate_number' => $this->vehicle?->plate_no,
+                'seats' => $this->vehicle?->seats,
+                'seat_row' => $this->vehicle?->seat_row,
+                'seat_column' => $this->vehicle?->seat_column
             ],
             'documents' => $this->documents ? $this->documents->map(function($document) {
                 return [
@@ -60,6 +66,11 @@ class DriverProfileResource extends JsonResource
                     'status' => $document->status,
                 ];
             })->toArray() : [],
+            'wallet_setup' => hasSetupWallet($this->id),
+            'wallet_info' => (object)[
+                'available_balance' => $this->wallet,
+                'pending_balance' => $pendingBalance,
+            ],
         ];
     }
 }
