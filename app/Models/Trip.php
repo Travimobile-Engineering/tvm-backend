@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use App\Models\Vehicle\Vehicle;
+use App\Trait\ClearsResponseCache;
 use Illuminate\Database\Eloquent\Model;
 
 class Trip extends Model
 {
+    use ClearsResponseCache;
+
     protected $fillable = [
         'user_id',
         'uuid',

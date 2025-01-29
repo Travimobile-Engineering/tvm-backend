@@ -12,10 +12,12 @@ use App\Http\Resources\OneTimeTripResource;
 use App\Http\Resources\RecurringTripResource;
 use App\Models\BusStop;
 use App\Models\Manifest;
+use App\Models\TripBooking;
 use App\Models\TripLog;
 use App\Models\User;
 use App\Trait\DriverTrait;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TripService
 {
@@ -638,6 +640,13 @@ class TripService
             return $this->error(null, "Trip not found!", 404);
         }
 
+        $currentDateTime = now();
+        $tripDepartureDateTime = Carbon::parse("{$trip->departure_date} {$trip->departure_time}");
+
+        if (!$currentDateTime->equalTo($tripDepartureDateTime)) {
+            return $this->error(null, "Cannot start trip. Current date and time do not match the scheduled departure.", 400);
+        }
+
         if ($user->wallet < self::TRIP_CHARGE_AMOUNT) {
             return $this->error(null, "Insufficient wallet balance!", 400);
         }
@@ -713,5 +722,45 @@ class TripService
     {
         $trips = Trip::where('trips.status', 1)->limit(5)->inRandomOrder();
         return $this->success($trips->get(), "Trips");
+    }
+
+    public function downloadTicket($bookingId)
+    {
+        $booking = TripBooking::with([
+            'user',
+            'trip.user.transitCompany',
+            'trip.vehicle',
+            'trip.departureRegion.state',
+            'trip.destinationRegion.state',
+            'trip.departureRegion.parks',
+            'trip.destinationRegion.parks',
+            ])
+            ->where('booking_id', $bookingId)
+            ->first();
+
+        if (!$booking) {
+            return $this->error(null, "Booking not found", 404);
+        }
+        $pdf = Pdf::loadView('ticket.booking', [
+            'company' => $booking->trip?->user?->transitCompany?->name,
+            'profile_photo' => $booking->trip?->user?->profile_photo,
+            'vehicle' => $booking->trip?->vehicle?->model,
+            'air_conditioned' => $booking->trip?->vehicle?->air_conditioned ? 'AC' : 'Non-AC',
+            'departure' => $booking->trip?->departureRegion?->name,
+            'destination' => $booking->trip?->destinationRegion?->name,
+            'departure_park' => $booking->trip?->departureRegion?->parks?->pluck('name')->join(', '),
+            'destination_park' => $booking->trip?->destinationRegion?->parks?->pluck('name')->join(', '),
+            'departure_date' => $booking->trip?->departure_date,
+            'departure_time' => $booking->trip?->departure_time,
+            'duration' => $booking->trip?->trip_duration,
+            'passenger' => $booking->user?->first_name . ' ' . $booking->user?->last_name,
+            'seat' => $booking->selected_seat,
+            'ticket_id' => $booking->booking_id,
+            'bus_number' => $booking->trip?->vehicle?->plate_no,
+            'price' => $booking->trip?->price,
+        ]);
+        $fileName = 'ticket_' . str_replace(' ', '_', $booking->user?->first_name) . '_' . $booking->booking_id . '.pdf';
+
+        return $pdf->download($fileName);
     }
 }

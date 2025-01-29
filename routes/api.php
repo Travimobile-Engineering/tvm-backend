@@ -91,10 +91,10 @@ Route::middleware(JWTAuthenticator::class)
         ->controller(TripController::class)
         ->group(function () {
             Route::post('/create', 'store');
-            Route::get('/popular', 'getPopularTrips');
+            Route::get('/popular', 'getPopularTrips')->middleware('cacheResponse:300');
             Route::post('/edit/{trip}', 'update');
-            Route::get('/get-trips', 'getTrips');
-            Route::get('/{trip}', 'getTrip');
+            Route::get('/get-trips', 'getTrips')->middleware('cacheResponse:300');
+            Route::get('/{trip}', 'getTrip')->middleware('doNotCacheResponse');
 
             // Get Bus Stops
             Route::get('/bus-stops/{state_id}', 'getBusStops');
@@ -129,7 +129,9 @@ Route::middleware(JWTAuthenticator::class)
 
             Route::prefix('/passenger')
                 ->group(function () {
-                    Route::get('/get-trips', 'getAll');
+                    Route::get('/get-trips', 'getAll')->middleware('cacheResponse:300');
+                    Route::get('/ticket/download/{booking_id}', 'downloadTicket')
+                        ->middleware('doNotCacheResponse');
                 });
         });
 
@@ -168,8 +170,8 @@ Route::middleware(JWTAuthenticator::class)
             Route::post('/create', 'booking');
             Route::post('/edit/{tripBooking}', 'update');
             Route::get('/cancel/{booking_id}', 'cancelTripBooking');
-            Route::get('/history/{user}', 'getUserTripBookingHistory');
-            Route::get('/{tripBooking}', 'show');
+            Route::get('/history/{user}', 'getUserTripBookingHistory')->middleware('cacheResponse:300');
+            Route::get('/{tripBooking}', 'show')->middleware('doNotCacheResponse');
             Route::get('/payment/{reference}', 'getPaymentRef');
         });
 

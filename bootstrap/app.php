@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'transaction.pin' => TransactionPinMiddleware::class,
+            'cacheResponse' => \Spatie\ResponseCache\Middlewares\CacheResponse::class,
+            'doNotCacheResponse' => \Spatie\ResponseCache\Middlewares\DoNotCacheResponse::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

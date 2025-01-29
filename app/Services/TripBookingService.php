@@ -248,7 +248,7 @@ class TripBookingService
         }
 
         $booking = TripBooking::with([
-                'trip',
+                'trip.user',
                 'user.transitCompany',
                 'trip.departureRegion.state',
                 'trip.destinationRegion.state',

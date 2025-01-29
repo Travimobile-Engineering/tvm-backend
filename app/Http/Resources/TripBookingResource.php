@@ -44,6 +44,12 @@ class TripBookingResource extends JsonResource
                 'first_name' => $this->user?->first_name,
                 'last_name' => $this->user?->last_name,
             ],
+            'driver_detail' => (object)[
+                'first_name' => $this->trip?->user?->first_name,
+                'last_name' => $this->trip?->user?->last_name,
+                'phone_number' => $this->trip?->user?->phone_number,
+                'profile_photo' => $this->trip?->user?->profile_photo,
+            ],
             'vehicle_detail' => (object)[
                 'name' => $this->trip?->vehicle?->model,
                 'plate_number' => $this->trip?->vehicle?->plate_no,
@@ -52,6 +58,7 @@ class TripBookingResource extends JsonResource
                 'color' => $this->trip?->vehicle?->color,
                 'year' => $this->trip?->vehicle?->year,
                 'seats' => $this->trip?->vehicle?->seats,
+                'air_conditioned' => $this->trip?->vehicle?->air_conditioned,
             ],
             'transit_company_detail' => (object)[
                 'name' => $this->user?->transitCompany?->name,
