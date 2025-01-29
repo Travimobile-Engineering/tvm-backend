@@ -26,30 +26,39 @@ class RegisterController extends Controller
 
             $request->validate([
                 'address' => 'required',
-                'email' => 'required',
-                'phone_number' => 'required',
+                // 'email' => 'required',
+                // 'phone_number' => 'required',
                 'nin' => 'required',
             ]);
         }
 
+        $is_email = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
+        $email = !$is_email ? "" : $request->contact;
+        $phone_number = !$is_email ? $request->contact : "";
+
         do $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_RIGHT);
         while(strlen($verification_code) < 5);
 
-        $user = User::where('phone_number', $request->phone_number)->first();
-        if($user && $user->email_verified == 1) return response()->json(['error' => 'Phone number already exist'], status: 400);
-
-        $user = User::where('email', $request->email)->first();
-        if($user){
-            if($user->email_verified == 1) return response()->json(['error' => 'Email address already exist'], status: 400);
-            elseif(!isset($request->verification_code) || empty($request->verification_code)){
-                $user->verification_code = $verification_code;
-                $user->verification_code_expires_at = Carbon::now()->addMinutes(10);
-                $user->save();
-                $this->send_verification_code($request, false, $verification_code);
-                return response()->json(['Message' => 'User created successfully'], 200);
-            }
+        if(!empty($phone_number)){
+            $user = User::where('phone_number', $phone_number)->first();
+            if($user && $user->email_verified == 1) return response()->json(['error' => 'Phone number already exist'], status: 400);
         }
 
+        if(!empty($email)){
+            $user = User::where('email', $email)->first();
+            if($user && $user->email_verified == 1) return response()->json(['error' => 'Email address already exist'], status: 400);
+        }
+
+        $user = User::where('email', $email)
+        ->where('phone_number', $phone_number)->first();
+        if($user && (!isset($request->verification_code) || empty($request->verification_code))){
+            
+            $user->verification_code = $verification_code;
+            $user->verification_code_expires_at = Carbon::now()->addMinutes(10);
+            $user->save();
+            $this->send_verification_code($request, false, $verification_code);
+            return response()->json(['Message' => 'User created successfully'], 200);
+        }
         
         if(isset($request->verification_code) && !empty($request->verification_code)){
             
@@ -71,8 +80,10 @@ class RegisterController extends Controller
             $names = explode(' ', $request->full_name, 2);
     
         
-            $user = User::where('email', $request->email)->update([
-                'phone_number' => $request->phone_number,
+            $user = User::where('email', $email)
+            ->where('phone_number', $phone_number)
+            ->update([
+                'phone_number' => $phone_number,
                 'first_name' => $names[0],
                 'last_name' => $names[1] ?? "",
                 'password' => Hash::make($request->password),
@@ -88,8 +99,8 @@ class RegisterController extends Controller
         }
         
         $user = User::create([
-            'email' => $request->email ?? "",
-            'phone_number' => $request->phone_number,
+            'email' => $email ?? "",
+            'phone_number' => $phone_number,
             'verification_code' => $verification_code,
             'verification_code_expires_at' => Carbon::now()->addMinutes(10)
         ]);
@@ -102,9 +113,7 @@ class RegisterController extends Controller
     }
 
     public function send_verification_code(
-        Request $request,
-        bool $returnResponse = true,
-        int $verification_code = null
+        Request $request, bool $returnResponse = true, int $verification_code = null
     )
     {
 
