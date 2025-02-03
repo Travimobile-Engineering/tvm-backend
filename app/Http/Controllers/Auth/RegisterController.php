@@ -117,7 +117,7 @@ class RegisterController extends Controller
     )
     {
 
-        $email = $request->email;
+        $email = $request->contact;
 
         
         if(!empty($email)){
