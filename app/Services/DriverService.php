@@ -348,7 +348,7 @@ class DriverService
 
     public function editDescription($request)
     {
-        $user = User::with('vehicle')->findOrFail($request->user_id);
+        $user = User::with('vehicle')->find($request->user_id);
 
         if (!$user) {
             return $this->error(null, 'User not found', 404);
@@ -366,7 +366,7 @@ class DriverService
     public function editLocation($request)
     {
         $user = User::with(['vehicle.preferredLocations'])
-            ->findOrFail($request->user_id);
+            ->find($request->user_id);
         
         if(!$user) {
             return $this->error(null, 'User not found', 404);
