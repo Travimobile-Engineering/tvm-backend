@@ -162,6 +162,11 @@ Route::middleware(JWTAuthenticator::class)
                     Route::get('/recent-earning/{user_id}', 'recentEarning');
                     Route::get('/statistics/{user_id}', 'stats');
                 });
+
+            Route::post('/setup-vehicle', 'setupVehicle');
+            Route::post('/vehicle-requirements', 'vehicleReq');
+            Route::put('/edit-description', 'editDescription');
+            Route::put('/edit-location', 'editLocation');
         });
 
     Route::prefix('trip-booking')

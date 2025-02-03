@@ -58,4 +58,38 @@ class DriverController extends Controller
 
         return $this->service->updateUnion($request);
     }
+
+    public function setupVehicle(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        return $this->service->setupVehicle($request);
+    }
+
+    public function vehicleReq(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'management_type' => 'required|in:travi_hire,self_managed',
+            'is_ac_available' => 'required|boolean',
+            'vehicle_interior_images' => 'required|array|min:1',
+            'vehicle_interior_images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'vehicle_exterior_images' => 'required|array|min:1',
+            'vehicle_exterior_images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        return $this->service->vehicleReq($request);
+    }
+
+    public function editDescription(Request $request)
+    {
+        return $this->service->editDescription($request);
+    }
+
+    public function editLocation(Request $request)
+    {
+        return $this->service->editLocation($request);
+    }
 }
