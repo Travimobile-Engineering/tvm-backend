@@ -5,6 +5,7 @@ use Illuminate\Foundation\Application;
 use App\Http\Middleware\TransactionPinMiddleware;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,5 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 'Line' => $e->getLine(),
                 'code' => $e->getCode(),
             ]);
+        });
+
+        $exceptions->renderable(function (NotFoundHttpException $e, $request) {
+            // Handle JSON request 404's
+            if ($request->json()) {
+                return response()->json(['message' => 'Resource was not Found'], 404);
+            }
+
+            throw $e;
         });
     })->create();

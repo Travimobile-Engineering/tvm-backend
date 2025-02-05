@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Enum\DocumentStatus;
+use App\Enum\PremiumUpgradeStatus;
 use App\Http\Resources\BusStopResource;
 use App\Models\Document;
 use App\Models\User;
+use App\Models\Vehicle\Vehicle;
 use App\Trait\DriverTrait;
 use App\Trait\HttpResponse;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -31,7 +33,7 @@ class DriverService
         DB::beginTransaction();
 
         try {
-            $fileUploads = uploadFilesBatch($request, $fileKeys, 'driver/documents');
+            $fileUploads = uploadFilesBatches($request, $fileKeys, 'driver/documents');
 
             $company = $this->createTransitCompany($user, $request);
 
@@ -234,6 +236,153 @@ class DriverService
         ]);
 
         return $this->success(null, "Union updated successfully", 200);
+    }
+
+    public function setupVehicle($request)
+    {
+        $user = User::with(['vehicle.preferredLocations', 'vehicle.tripSchedule'])
+            ->findOrFail($request->user_id);
+
+        if (!$user->vehicle) {
+            return $this->error('Vehicle not found', 404);
+        }
+
+        $user->vehicle()->update([
+            'description' => $request->description,
+        ]);
+
+        if (!empty($request->route_ids)) {
+            foreach ($request->route_ids as $routeId) {
+                $user->vehicle->preferredLocations()->updateOrCreate(
+                    ['vehicle_id' => $user->vehicle->id, 'route_id' => $routeId],
+                    []
+                );
+            }
+        }
+
+        if (!empty($request->trip_days)) {
+            $tripDays = $request->trip_days;
+
+            $user->vehicle->tripSchedule()->updateOrCreate(
+                ['vehicle_id' => $user->vehicle->id],
+                $tripDays
+            );
+        }
+
+        return $this->success(null, "Saved successfully");
+    }
+
+    public function vehicleReq($request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = User::with([
+                    'premiumUpgrades',
+                    'vehicle.vehicleImages',
+                    'vehicle.premiumUpgrades',
+                ])
+                ->findOrFail($request->user_id);
+
+            $vehicle = $user->vehicle;
+
+            if (!$vehicle) {
+                return $this->error(null, 'Vehicle not found', 404);
+            }
+
+            if ($user->premiumUpgrades->isNotEmpty()) {
+                return $this->error(null, 'You already have a premium upgrade', 400);
+            }
+
+            $vehicle->update([
+                'ac' => $request->is_ac_available,
+            ]);
+
+            $user->premiumUpgrades()->create([
+                'vehicle_id' => $vehicle->id,
+                'management_type' => $request->management_type,
+                'status' => PremiumUpgradeStatus::PENDING,
+            ]);
+
+            if ($request->hasFile('vehicle_interior_images')) {
+                $interiorImages = uploadFilesBatch(
+                    $request->file('vehicle_interior_images'),
+                    'driver/vehicle/interior'
+                );
+    
+                foreach ($interiorImages as $image) {
+                    if ($image['url'] !== null) {
+                        $vehicle->vehicleImages()->create([
+                            'type' => 'interior',
+                            'url' => $image['url'],
+                            'public_id' => $image['public_id'],
+                        ]);
+                    }
+                }
+            }
+    
+            if ($request->hasFile('vehicle_exterior_images')) {
+                $exteriorImages = uploadFilesBatch(
+                    $request->file('vehicle_exterior_images'),
+                    'driver/vehicle/exterior'
+                );
+    
+                foreach ($exteriorImages as $image) {
+                    if ($image['url'] !== null) {
+                        $vehicle->vehicleImages()->create([
+                            'type' => 'exterior',
+                            'url' => $image['url'],
+                            'public_id' => $image['public_id'],
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+            return $this->success(null, "Saved successfully");
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw $th;
+        }
+    }
+
+    public function editDescription($request)
+    {
+        $user = User::with('vehicle')->find($request->user_id);
+
+        if (!$user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        $vehicle = Vehicle::findOrFail($request->vehicle_id);
+
+        $vehicle->update([
+            'description' => $request->description,
+        ]);
+
+        return $this->success(null, "Saved successfully");
+    }
+
+    public function editLocation($request)
+    {
+        $user = User::with(['vehicle.preferredLocations'])
+            ->find($request->user_id);
+        
+        if(!$user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        if (!empty($request->route_ids)) {
+            $user->vehicle->preferredLocations()->delete();
+            foreach ($request->route_ids as $routeId) {
+                $user->vehicle->preferredLocations()->updateOrCreate(
+                    ['vehicle_id' => $user->vehicle->id, 'route_id' => $routeId],
+                    []
+                );
+            }
+        }
+
+        return $this->success(null, "Saved successfully");
     }
 
 }

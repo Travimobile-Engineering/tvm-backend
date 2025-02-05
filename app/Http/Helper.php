@@ -51,8 +51,8 @@ if (!function_exists('uploadFile')) {
     }
 }
 
-if (!function_exists('uploadFilesBatch')) {
-    function uploadFilesBatch($request, $files, $folder, $oldPublicIds = [])
+if (!function_exists('uploadFilesBatches')) {
+    function uploadFilesBatches($request, $files, $folder, $oldPublicIds = [])
     {
         $results = [];
         foreach ($files as $key) {
@@ -71,6 +71,34 @@ if (!function_exists('uploadFilesBatch')) {
             } else {
                 $results[$key] = ['url' => null, 'public_id' => null];
             }
+        }
+
+        return $results;
+    }
+}
+
+if (!function_exists('uploadFilesBatch')) {
+    function uploadFilesBatch($files, $folder, $oldPublicIds = [])
+    {
+        $results = [];
+
+        foreach ($files as $file) {
+            if (!($file instanceof \Illuminate\Http\UploadedFile)) {
+                continue;
+            }
+
+            $oldPublicId = $oldPublicIds[$file->getClientOriginalName()] ?? null;
+
+            if ($oldPublicId) {
+                Cloudinary::destroy($oldPublicId);
+            }
+
+            $image = $file->storeOnCloudinary($folder);
+
+            $results[] = [
+                'url' => $image->getSecurePath(),
+                'public_id' => $image->getPublicId(),
+            ];
         }
 
         return $results;

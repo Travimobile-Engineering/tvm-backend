@@ -8,6 +8,7 @@ use App\Models\DriverBank;
 use App\Models\DriverPin;
 use App\Models\DriverVehicle;
 use App\Models\PaymentLog;
+use App\Models\PremiumUpgrade;
 use App\Models\Transaction;
 use App\Models\TransitCompany;
 use App\Models\Trip;
@@ -87,6 +88,11 @@ trait UserRelationships
     public function paymentLogs()
     {
         return $this->hasMany(PaymentLog::class, 'user_id');
+    }
+
+    public function premiumUpgrades()
+    {
+        return $this->hasMany(PremiumUpgrade::class, 'user_id');
     }
 }
 

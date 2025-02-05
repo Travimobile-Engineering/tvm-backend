@@ -54,8 +54,55 @@ class DriverProfileResource extends JsonResource
                 'plate_number' => $this->vehicle?->plate_no,
                 'seats' => $this->vehicle?->seats,
                 'seat_row' => $this->vehicle?->seat_row,
-                'seat_column' => $this->vehicle?->seat_column
+                'seat_column' => $this->vehicle?->seat_column,
+                'description' => $this->vehicle?->description,
+                'preferred_location' => $this->vehicle?->preferredLocations ? $this->vehicle?->preferredLocations->map(function ($location) {
+                    return [
+                        'id' => $location->subRegion?->id,
+                        'name' => $location->subRegion?->state?->name . ' > ' . $location->subRegion?->name,
+                    ];
+                })->toArray() : [],
+                'trip_schedule' => (object)[
+                    'sunday' => $this->vehicle?->tripSchedule?->sunday,
+                    'monday' => $this->vehicle?->tripSchedule?->monday,
+                    'tuesday' => $this->vehicle?->tripSchedule?->tuesday,
+                    'wednesday' => $this->vehicle?->tripSchedule?->wednesday,
+                    'thursday' => $this->vehicle?->tripSchedule?->thursday,
+                    'friday' => $this->vehicle?->tripSchedule?->friday,
+                    'saturday' => $this->vehicle?->tripSchedule?->saturday,
+                ],
             ],
+            'premium_upgrades' => $this->premiumUpgrades ? $this->premiumUpgrades->map(function($upgrade) {
+                return [
+                    'id' => (int)$upgrade->id,
+                    'vehicle' => (object)[
+                        'id' => (int)$upgrade->vehicle?->id,
+                        'model' => $upgrade->vehicle?->model,
+                        'type' => $upgrade->vehicle?->type,
+                        'color' => $upgrade->vehicle?->color,
+                        'ac' => $upgrade->vehicle?->ac,
+                        'capacity' => $upgrade->vehicle?->capacity,
+                        'plate_number' => $upgrade->vehicle?->plate_no,
+                        'total_seats' => is_array($seats = $upgrade->vehicle?->seats) ? count($seats) : 0,
+                    ],
+                    'description' => $this->vehicle?->description,
+                    'management_type' => ucwords(str_replace('_', ' ', $upgrade->management_type)),
+                    'status' => $upgrade->status,
+                    'images' => $this->vehicle?->vehicleImages ? $this->vehicle?->vehicleImages->map(function ($image) {
+                        return [
+                            'id' => (int)$image->id,
+                            'type' => $image->type,
+                            'url' => $image->url,
+                        ];
+                    })->toArray() : [],
+                    'preferred_location' => $this->vehicle?->preferredLocations ? $this->vehicle?->preferredLocations->map(function ($location) {
+                        return [
+                            'id' => $location->subRegion?->id,
+                            'name' => $location->subRegion?->state?->name . ' > ' . $location->subRegion?->name,
+                        ];
+                    })->toArray() : [],
+                ];
+            })->toArray() : [],
             'documents' => $this->documents ? $this->documents->map(function($document) {
                 return [
                     'id' => (int)$document->id,
