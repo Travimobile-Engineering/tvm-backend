@@ -146,31 +146,32 @@ class RegisterController extends Controller
     }
 
     public function verify_account(Request $request){
-        try{
-            $validation = $request->validate([
-                'email' => 'required|exists:users,email',
-                'verification_code' => 'required|numeric|digits:5'
-            ]);
+        
+        $request->validate([
+            'contact' => 'required',
+            'verification_code' => 'required|numeric|digits:5'
+        ]);
 
-            $user = User::where([
-                'email' => $request->email,
-                'verification_code' => $request->verification_code
-            ])->first();
-    
-            if($user){
-                if($user->verification_code_expires_at > Carbon::now()){
-                    $user->email_verified = 1;
-                    $user->email_verified_at = Carbon::now();
-                    $user->save();
-                    return ['status' => true, 'message' => 'User account verified successfully'];
-                }
-                else return ['status' => false, 'error' => 'Verification code has expired'];
+        $is_email = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
+        $email = $is_email == false ? "" : $is_email;
+        $phone_number = $is_email == false ? $request->contact : "";
+
+        $user = User::where([
+            'email' => $email,
+            'phone_number' => $phone_number,
+            'verification_code' => $request->verification_code
+        ])->first();
+
+        if($user){
+            if($user->verification_code_expires_at > Carbon::now()){
+                $user->email_verified = 1;
+                $user->email_verified_at = Carbon::now();
+                $user->save();
+                return ['status' => true, 'message' => 'User account verified successfully'];
             }
-            else return ['status' => false, 'error' => 'Invalid email or verification code'];
+            else return ['status' => false, 'error' => 'Verification code has expired'];
         }
-        catch(ValidationException $e){
-            return ['status' => false, 'error' => collect($e->errors())->flatten()->first()];
-        }
+        else return ['status' => false, 'error' => 'Invalid ID or verification code'];
 
     }
 }
