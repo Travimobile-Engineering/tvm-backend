@@ -43,7 +43,7 @@ jobs:
         fi
 
     - name: Build Docker image
-      run: docker build -f Dockerfile.nginx -t europe-west2-docker.pkg.dev/travi-mobile-mvp/travi-mobile-registry/backend-nginx:${{ env.tag }} .
+      run: docker build -f Dockerfile.nginx -t europe-west2-docker.pkg.dev/travi-mobile-manifest-project/travi-mobile-registry/backend-nginx:${{ env.tag }} .
 
     - name: Push Docker image to Artifact Registry
-      run: docker push europe-west2-docker.pkg.dev/travi-mobile-mvp/travi-mobile-registry/backend-nginx:${{ env.tag }}
+      run: docker push europe-west2-docker.pkg.dev/travi-mobile-manifest-project/travi-mobile-registry/backend-nginx:${{ env.tag }}
