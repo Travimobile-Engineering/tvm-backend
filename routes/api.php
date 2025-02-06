@@ -1,24 +1,25 @@
 <?php
 
-use App\Http\Controllers\AgentController;
-use App\Http\Controllers\Auth\ForgotPasswordController;
-use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\SendTestMailController;
-use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\AuthenticateController;
-use App\Http\Controllers\DriverController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\OtherController;
-use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\RouteController;
-use App\Http\Controllers\TransitCompanyController;
-use App\Http\Controllers\TripBookingController;
 use App\Http\Controllers\TripController;
-use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\AgentController;
+use App\Http\Controllers\OtherController;
+use App\Http\Controllers\RouteController;
+use App\Http\Middleware\JWTAuthenticator;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\PremiumHireController;
+use App\Http\Controllers\TripBookingController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SendTestMailController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\TransitCompanyController;
+use App\Http\Controllers\Auth\AuthenticateController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Payment\PaystackPaymentController;
 
 
 Route::get('/', fn() => response(null, 200)) ;
@@ -167,6 +168,44 @@ Route::middleware(JWTAuthenticator::class)
             Route::post('/vehicle-requirements', 'vehicleReq');
             Route::put('/edit-description', 'editDescription');
             Route::put('/edit-location', 'editLocation');
+            Route::post('/set-availability', 'setAvailability');
+        });
+
+    Route::prefix('premium')
+        ->controller(PremiumHireController::class)
+        ->group(function () {
+            Route::get('/vehicle-lookup', 'vehicleLookup');
+            Route::get('/vehicle/{vehicle_id}', 'vehicleDetail');
+            Route::post('/add/charter', 'addCharter');
+            Route::get('/charter/{user_id}', 'getCharter');
+            Route::post('/charter/payment', 'payCharter');
+            Route::get('/user/booking/{user_id}', 'userBookings');
+            Route::prefix('booking')
+                ->group(function () {
+                    Route::get('/completed/{user_id}', 'completedBookings');
+                    Route::get('/canceled/{user_id}', 'cancelledBookings');
+                    Route::get('/upcoming/{user_id}', 'upcomingBookings');
+                    Route::get('/detail/{id}', 'bookingDetails');
+                });
+            Route::post('/user/add/passenger', 'addPassenger');
+            Route::get('/user/passenger/{user_id}', 'getPassengers');
+            Route::put('/user/passenger/edit', 'editPassenger');
+            Route::delete('/user/passenger/delete/{id}', 'deletePassenger');
+            Route::put('/cancel-booking', 'cancelBooking');
+            Route::post('/review', 'review');
+            Route::get('/review', 'getReviews');
+
+            Route::prefix('trip')
+                ->group(function () {
+                    Route::get('/completed/{user_id}', 'driverCompletedBookings');
+                    Route::get('/canceled/{user_id}', 'driverCanceledBookings');
+                    Route::get('/upcoming/{user_id}', 'driverUpcomingBookings');
+                    Route::get('/detail/{id}', 'driverTripDetails');
+                    Route::put('/accept/{id}', 'acceptTrip');
+                    Route::put('/cancel', 'cancelTrip');
+                    Route::put('/start/{id}', 'startTrip');
+                    Route::post('/finish', 'finishTrip');
+                });
         });
 
     Route::prefix('trip-booking')

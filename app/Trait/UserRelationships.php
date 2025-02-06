@@ -6,14 +6,18 @@ use App\Models\BusStop;
 use App\Models\Document;
 use App\Models\DriverBank;
 use App\Models\DriverPin;
-use App\Models\DriverVehicle;
 use App\Models\PaymentLog;
+use App\Models\PremiumHireBooking;
+use App\Models\PremiumHireBookingPassenger;
+use App\Models\PremiumHireManifest;
+use App\Models\PremiumHireRating;
 use App\Models\PremiumUpgrade;
 use App\Models\Transaction;
 use App\Models\TransitCompany;
 use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\TripPayment;
+use App\Models\UnavailableDate;
 use App\Models\UserTransferReceipient;
 use App\Models\UserWithdrawLog;
 use App\Models\Vehicle\Vehicle;
@@ -93,6 +97,36 @@ trait UserRelationships
     public function premiumUpgrades()
     {
         return $this->hasMany(PremiumUpgrade::class, 'user_id');
+    }
+
+    public function unavailableDates()
+    {
+        return $this->hasMany(UnavailableDate::class, 'user_id');
+    }
+
+    public function premiumHireBookings()
+    {
+        return $this->hasMany(PremiumHireBooking::class, 'user_id');
+    }
+
+    public function driverPremiumHireBookings()
+    {
+        return $this->hasMany(PremiumHireBooking::class, 'driver_id');
+    }
+
+    public function premiumHireBookingPassengers()
+    {
+        return $this->hasMany(PremiumHireBookingPassenger::class, 'user_id');
+    }
+
+    public function premiumHireManifests()
+    {
+        return $this->hasMany(PremiumHireManifest::class, 'user_id');
+    }
+
+    public function premiumHireRatings()
+    {
+        return $this->hasMany(PremiumHireRating::class, 'user_id');
     }
 }
 

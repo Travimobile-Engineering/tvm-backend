@@ -3,6 +3,7 @@
 namespace App\Models\Vehicle;
 
 use App\Models\PreferredLocation;
+use App\Models\PremiumHireBooking;
 use App\Models\PremiumUpgrade;
 use App\Models\TripSchedule;
 use App\Models\UnavailableDate;
@@ -69,5 +70,10 @@ class Vehicle extends Model
     public function premiumUpgrades()
     {
         return $this->hasMany(PremiumUpgrade::class);
+    }
+
+    public function premiumHireBookings()
+    {
+        return $this->hasMany(PremiumHireBooking::class);
     }
 }

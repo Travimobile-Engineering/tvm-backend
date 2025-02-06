@@ -56,21 +56,6 @@ class DriverProfileResource extends JsonResource
                 'seat_row' => $this->vehicle?->seat_row,
                 'seat_column' => $this->vehicle?->seat_column,
                 'description' => $this->vehicle?->description,
-                'preferred_location' => $this->vehicle?->preferredLocations ? $this->vehicle?->preferredLocations->map(function ($location) {
-                    return [
-                        'id' => $location->subRegion?->id,
-                        'name' => $location->subRegion?->state?->name . ' > ' . $location->subRegion?->name,
-                    ];
-                })->toArray() : [],
-                'trip_schedule' => (object)[
-                    'sunday' => $this->vehicle?->tripSchedule?->sunday,
-                    'monday' => $this->vehicle?->tripSchedule?->monday,
-                    'tuesday' => $this->vehicle?->tripSchedule?->tuesday,
-                    'wednesday' => $this->vehicle?->tripSchedule?->wednesday,
-                    'thursday' => $this->vehicle?->tripSchedule?->thursday,
-                    'friday' => $this->vehicle?->tripSchedule?->friday,
-                    'saturday' => $this->vehicle?->tripSchedule?->saturday,
-                ],
             ],
             'premium_upgrades' => $this->premiumUpgrades ? $this->premiumUpgrades->map(function($upgrade) {
                 return [
@@ -101,6 +86,18 @@ class DriverProfileResource extends JsonResource
                             'name' => $location->subRegion?->state?->name . ' > ' . $location->subRegion?->name,
                         ];
                     })->toArray() : [],
+                    'trip_schedule' => (object)[
+                        'sunday' => $this->vehicle?->tripSchedule?->sunday,
+                        'monday' => $this->vehicle?->tripSchedule?->monday,
+                        'tuesday' => $this->vehicle?->tripSchedule?->tuesday,
+                        'wednesday' => $this->vehicle?->tripSchedule?->wednesday,
+                        'thursday' => $this->vehicle?->tripSchedule?->thursday,
+                        'friday' => $this->vehicle?->tripSchedule?->friday,
+                        'saturday' => $this->vehicle?->tripSchedule?->saturday,
+                    ],
+                    'unavailable_dates' => $this->vehicle?->unavailableDates ? $this->vehicle?->unavailableDates->map(function ($date) {
+                        return $date->date;
+                    })->toArray() : []
                 ];
             })->toArray() : [],
             'documents' => $this->documents ? $this->documents->map(function($document) {

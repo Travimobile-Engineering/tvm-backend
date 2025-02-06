@@ -89,6 +89,7 @@ class ProfileController extends Controller
                 'driverTripPayments',
                 'trips',
                 'premiumUpgrades.vehicle',
+                'unavailableDates',
             ])
             ->findOrFail($this->user->id);
 

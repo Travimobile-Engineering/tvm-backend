@@ -6,11 +6,10 @@ use App\Enum\PaymentType;
 
 trait PaymentLogTrait
 {
-    public function logPayment($user, $event)
+    public function logPayment($user, $event, $type, $tripId = null)
     {
         $paymentData = $event['data'];
 
-        $tripId = $paymentData['metadata']['trip_id'];
         $channel = $paymentData['channel'];
         $currency = $paymentData['currency'];
         $ip_address = $paymentData['ip_address'];
@@ -37,7 +36,7 @@ trait PaymentLogTrait
             'createdAt' => $createdAt,
             'transaction_date' => $transaction_date,
             'status' => $status,
-            'type' => PaymentType::TRIP_BOOKING,
+            'type' => $type,
         ]);
     }
 }

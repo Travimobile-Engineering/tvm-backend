@@ -264,7 +264,10 @@ class DriverService
             $tripDays = $request->trip_days;
 
             $user->vehicle->tripSchedule()->updateOrCreate(
-                ['vehicle_id' => $user->vehicle->id],
+                [
+                    'user_id' => $request->user_id,
+                    'vehicle_id' => $user->vehicle->id
+                ],
                 $tripDays
             );
         }
@@ -379,6 +382,38 @@ class DriverService
                     ['vehicle_id' => $user->vehicle->id, 'route_id' => $routeId],
                     []
                 );
+            }
+        }
+
+        return $this->success(null, "Saved successfully");
+    }
+
+    public function setAvailability($request)
+    {
+        $user = User::with(['vehicle.tripSchedule', 'unavailableDates'])->findOrFail($request->user_id);
+
+        if (!$user->vehicle) {
+            return $this->error('Vehicle not found', 404);
+        }
+
+        if (!empty($request->trip_days)) {
+            $tripDays = $request->trip_days;
+
+            $user->vehicle->tripSchedule()->updateOrCreate(
+                [
+                    'user_id' => $request->user_id,
+                    'vehicle_id' => $user->vehicle->id
+                ],
+                $tripDays
+            );
+        }
+
+        if (!empty($request->unavailable_dates)) {
+            foreach ($request->unavailable_dates as $date) {
+                $user->unavailableDates()->create([
+                    'vehicle_id' => $user->vehicle->id,
+                    'date' => $date,
+                ]);
             }
         }
 

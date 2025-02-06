@@ -5,12 +5,12 @@ namespace App\Models;
 use App\Models\Vehicle\Vehicle;
 use Illuminate\Database\Eloquent\Model;
 
-class UnavailableDate extends Model
+class Charter extends Model
 {
     protected $fillable = [
         'user_id',
         'vehicle_id',
-        'date',
+        'number_of_vehicles',
     ];
 
     public function user()
