@@ -13,10 +13,9 @@ class PremiumHireBooking extends Model
         'driver_id',
         'vehicle_id',
         'payment_log_id',
-        'number_of_vehicles',
         'ticket_type',
-        'departure_id',
-        'destination_id',
+        'lng',
+        'lat',
         'bus_stops',
         'luggage',
         'amount',
@@ -49,16 +48,6 @@ class PremiumHireBooking extends Model
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class, 'vehicle_id');
-    }
-
-    public function departureRegion()
-    {
-        return $this->belongsTo(RouteSubregion::class, 'departure_id');
-    }
-
-    public function destinationRegion()
-    {
-        return $this->belongsTo(RouteSubregion::class, 'destination_id');
     }
 
     public function premiumHireManifests()

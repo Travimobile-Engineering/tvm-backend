@@ -2,8 +2,6 @@
 
 namespace App\Trait;
 
-use App\Enum\PaymentType;
-
 trait PaymentLogTrait
 {
     public function logPayment($user, $event, $type, $tripId = null)

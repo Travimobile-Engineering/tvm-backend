@@ -82,7 +82,7 @@ class ProfileController extends Controller
     {
         $user = User::with([
                 'transitCompany',
-                'vehicle.preferredLocations.subRegion.state',
+                'vehicle',
                 'vehicle.vehicleImages',
                 'vehicle.tripSchedule',
                 'documents',

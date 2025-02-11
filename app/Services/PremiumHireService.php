@@ -9,6 +9,7 @@ use App\Http\Resources\PremiumHireBookingResource;
 use App\Http\Resources\PremiumHireTripResource;
 use App\Http\Resources\PremiumHireVehicleResource;
 use App\Models\Charter;
+use App\Models\PaymentLog;
 use App\Models\PremiumHireBooking;
 use App\Models\PremiumHireBookingPassenger;
 use App\Models\PremiumHireManifest;
@@ -30,8 +31,26 @@ class PremiumHireService
 
     public function vehicleLookup($request)
     {
-        $vehicles = Vehicle::whereRaw("JSON_LENGTH(seats) = ?", [$request->vehicle_seat])
-            ->with(['premiumUpgrades.vehicle.vehicleImages'])
+        $latitude = $request->lat;
+        $longitude = $request->lng;
+        $seatCount = $request->vehicle_seat;
+        $radius = 10;
+
+        $nearbyUsers = User::select('id')
+        ->selectRaw("(
+            6371 * acos(
+                cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) +
+                sin(radians(?)) * sin(radians(lat))
+            )
+        ) AS distance", [$latitude, $longitude, $latitude])
+        ->having("distance", "<", $radius)
+        ->pluck('id');
+
+        $vehicles = Vehicle::whereIn('user_id', $nearbyUsers)
+            ->whereRaw("JSON_LENGTH(seats) = ?", [$seatCount])
+            ->with([
+                'premiumUpgrades.vehicle.vehicleImages',
+            ])
             ->get();
 
         $data = $vehicles->flatMap(function ($vehicle) {
@@ -73,17 +92,15 @@ class PremiumHireService
             return $this->error(null, 'Unauthorized action.', 401);
         }
 
-        $noOfVehicles = $request->number_of_vehicles;
+        $vehicle = Vehicle::with('user')->findOrFail($request->vehicle_id);
 
-        if($noOfVehicles <= 0) {
-            return $this->error(null, 'No of vehicle should be 1 or more.', 403);
+        if(! $vehicle?->user->is_available) {
+            return $this->error(null, 'Driver is not available', 400);
         }
 
         Charter::updateOrCreate([
             'user_id' => $user->id ?: null,
             'vehicle_id' => $request->vehicle_id,
-        ], [
-            'number_of_vehicles' => $noOfVehicles,
         ]);
 
         return $this->success(null, "Vehicle added to charter");
@@ -120,10 +137,9 @@ class PremiumHireService
             'metadata' => json_encode([
                 'user_id' => $request->input('user_id'),
                 'vehicle_id' => $request->input('vehicle_id'),
-                'number_of_vehicles' => $request->input('number_of_vehicles'),
                 'ticket_type' => $request->input('ticket_type'),
-                'departure_id' => $request->input('departure_id'),
-                'destination_id' => $request->input('destination_id'),
+                'lng' => $request->input('lng'),
+                'lat' => $request->input('lat'),
                 'bus_stops' => $request->input('bus_stops'),
                 'luggage' => $request->input('luggage'),
                 'date' => $request->input('date'),
@@ -140,12 +156,30 @@ class PremiumHireService
         ];
     }
 
+    public function getPaymentRef($reference)
+    {
+        $paymentLog = PaymentLog::with('premiumHireBooking')
+            ->where('reference', $reference)
+            ->first();
+
+        if(! $paymentLog) {
+            return $this->error(null, 'Invalid payment reference', 400);
+        }
+
+        $data = (object) [
+            'booking_id' => $paymentLog->premiumHireBooking?->uuid,
+            'status' => $paymentLog->status,
+        ];
+
+        return $this->success($data, 'Payment reference fetched successfully');
+    }
+
     public function userBookings($userId)
     {
         $user = User::with([
+                'vehicle',
                 'premiumHireBookingPassengers',
-                'premiumHireBookings.departureRegion.state',
-                'premiumHireBookings.destinationRegion.state',
+                'premiumHireBookings',
             ])
             ->findOrFail($userId);
         $bookings = $user->premiumHireBookings;
@@ -269,9 +303,7 @@ class PremiumHireService
     public function getReviews()
     {
         $reviews = PremiumHireRating::with('user')->get();
-
         $averageRating = $reviews->avg('rating');
-
         $ratingsCount = $reviews->groupBy('rating')->map->count();
 
         $reviewsList = $reviews->map(function ($review) {
@@ -302,8 +334,6 @@ class PremiumHireService
     public function completedBookings($userId)
     {
         $bookings = PremiumHireBooking::with([
-            'departureRegion.state',
-            'destinationRegion.state',
             'vehicle',
         ])
             ->where('user_id', $userId)
@@ -313,8 +343,8 @@ class PremiumHireService
         $data = $bookings->map(function ($booking) {
             return [
                 'id' => $booking->id,
-                'departure' => $booking->departureRegion?->state?->name . ', ' . $booking->departureRegion?->name,
-                'destination' => $booking->destinationRegion?->state?->name . ', ' . $booking->destinationRegion?->name,
+                'lng' => $booking->lng,
+                'lat' => $booking->lat,
                 'date' => $booking->date,
                 'ticket_id' => $booking->uuid,
                 'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
@@ -329,8 +359,6 @@ class PremiumHireService
     public function canceledBookings($userId)
     {
         $bookings = PremiumHireBooking::with([
-            'departureRegion.state',
-            'destinationRegion.state',
             'vehicle',
         ])
             ->where('user_id', $userId)
@@ -340,8 +368,8 @@ class PremiumHireService
         $data = $bookings->map(function ($booking) {
             return [
                 'id' => $booking->id,
-                'departure' => $booking->departureRegion?->state?->name . ', ' . $booking->departureRegion?->name,
-                'destination' => $booking->destinationRegion?->state?->name . ', ' . $booking->destinationRegion?->name,
+                'lng' => $booking->lng,
+                'lat' => $booking->lat,
                 'date' => $booking->date,
                 'ticket_id' => $booking->uuid,
                 'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
@@ -356,8 +384,6 @@ class PremiumHireService
     public function upcomingBookings($userId)
     {
         $bookings = PremiumHireBooking::with([
-            'departureRegion.state',
-            'destinationRegion.state',
             'vehicle',
         ])
             ->where('user_id', $userId)
@@ -367,8 +393,8 @@ class PremiumHireService
         $data = $bookings->map(function ($booking) {
             return [
                 'id' => $booking->id,
-                'departure' => $booking->departureRegion?->state?->name . ', ' . $booking->departureRegion?->name,
-                'destination' => $booking->destinationRegion?->state?->name . ', ' . $booking->destinationRegion?->name,
+                'lng' => $booking->lng,
+                'lat' => $booking->lat,
                 'date' => $booking->date,
                 'ticket_id' => $booking->uuid,
                 'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
@@ -383,10 +409,9 @@ class PremiumHireService
     public function bookingDetails($id)
     {
         $booking = PremiumHireBooking::with([
-            'departureRegion.state',
-            'destinationRegion.state',
             'vehicle',
             'premiumHireBookingPassengers',
+            'premiumHireBookings',
         ])
             ->findOrFail($id);
 
@@ -398,8 +423,6 @@ class PremiumHireService
     public function driverCompletedBookings($userId)
     {
         $bookings = PremiumHireBooking::with([
-            'departureRegion.state',
-            'destinationRegion.state',
             'vehicle',
         ])
             ->where('driver_id', $userId)
@@ -409,8 +432,8 @@ class PremiumHireService
         $data = $bookings->map(function ($booking) {
             return [
                 'id' => $booking->id,
-                'departure' => $booking->departureRegion?->state?->name . ', ' . $booking->departureRegion?->name,
-                'destination' => $booking->destinationRegion?->state?->name . ', ' . $booking->destinationRegion?->name,
+                'lng' => $booking->lng,
+                'lat' => $booking->lat,
                 'date' => $booking->date,
                 'ticket_id' => $booking->uuid,
                 'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
@@ -425,8 +448,6 @@ class PremiumHireService
     public function driverCanceledBookings($userId)
     {
         $bookings = PremiumHireBooking::with([
-            'departureRegion.state',
-            'destinationRegion.state',
             'vehicle',
         ])
             ->where('driver_id', $userId)
@@ -436,8 +457,8 @@ class PremiumHireService
         $data = $bookings->map(function ($booking) {
             return [
                 'id' => $booking->id,
-                'departure' => $booking->departureRegion?->state?->name . ', ' . $booking->departureRegion?->name,
-                'destination' => $booking->destinationRegion?->state?->name . ', ' . $booking->destinationRegion?->name,
+                'lng' => $booking->lng,
+                'lat' => $booking->lat,
                 'date' => $booking->date,
                 'ticket_id' => $booking->uuid,
                 'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
@@ -452,8 +473,6 @@ class PremiumHireService
     public function driverUpcomingBookings($userId)
     {
         $bookings = PremiumHireBooking::with([
-            'departureRegion.state',
-            'destinationRegion.state',
             'vehicle',
         ])
             ->where('driver_id', $userId)
@@ -463,8 +482,8 @@ class PremiumHireService
         $data = $bookings->map(function ($booking) {
             return [
                 'id' => $booking->id,
-                'departure' => $booking->departureRegion?->state?->name . ', ' . $booking->departureRegion?->name,
-                'destination' => $booking->destinationRegion?->state?->name . ', ' . $booking->destinationRegion?->name,
+                'lng' => $booking->lng,
+                'lat' => $booking->lat,
                 'date' => $booking->date,
                 'ticket_id' => $booking->uuid,
                 'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
@@ -479,12 +498,10 @@ class PremiumHireService
     public function driverTripDetails($id)
     {
         $trip = PremiumHireBooking::with([
-            'user',
-            'departureRegion.state',
-            'destinationRegion.state',
-            'vehicle',
-            'premiumHireBookingPassengers',
-        ])
+                'user',
+                'vehicle',
+                'premiumHireBookingPassengers',
+            ])
             ->findOrFail($id);
 
         $data = new PremiumHireTripResource($trip);

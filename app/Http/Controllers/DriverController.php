@@ -79,13 +79,17 @@ class DriverController extends Controller
         return $this->service->editDescription($request);
     }
 
-    public function editLocation(Request $request)
-    {
-        return $this->service->editLocation($request);
-    }
-
     public function setAvailability(Request $request)
     {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'is_available' => ['required', 'boolean'],
+            'lng' => ['required', 'numeric'],
+            'lat' => ['required', 'numeric'],
+            'trip_days' => ['required'],
+            'unavailable_dates' => ['required', 'array'],
+        ]);
+
         return $this->service->setAvailability($request);
     }
 }

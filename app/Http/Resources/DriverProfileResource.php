@@ -37,6 +37,9 @@ class DriverProfileResource extends JsonResource
             'driver_verified' => $this->driver_verified,
             'total_ride' => $this->total_trips,
             'rating' => 3.5,
+            'is_available' => $this->is_available,
+            'lng' => (float)$this->lng,
+            'lat' => (float)$this->lat,
             'transit_company' => (object)[
                 'id' => $this->transitCompany?->id,
                 'name' => $this->transitCompany?->name,
@@ -78,12 +81,6 @@ class DriverProfileResource extends JsonResource
                             'id' => (int)$image->id,
                             'type' => $image->type,
                             'url' => $image->url,
-                        ];
-                    })->toArray() : [],
-                    'preferred_location' => $this->vehicle?->preferredLocations ? $this->vehicle?->preferredLocations->map(function ($location) {
-                        return [
-                            'id' => $location->subRegion?->id,
-                            'name' => $location->subRegion?->state?->name . ' > ' . $location->subRegion?->name,
                         ];
                     })->toArray() : [],
                     'trip_schedule' => (object)[

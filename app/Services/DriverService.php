@@ -240,7 +240,7 @@ class DriverService
 
     public function setupVehicle($request)
     {
-        $user = User::with(['vehicle.preferredLocations', 'vehicle.tripSchedule'])
+        $user = User::with(['vehicle', 'vehicle.tripSchedule'])
             ->findOrFail($request->user_id);
 
         if (!$user->vehicle) {
@@ -250,15 +250,6 @@ class DriverService
         $user->vehicle()->update([
             'description' => $request->description,
         ]);
-
-        if (!empty($request->route_ids)) {
-            foreach ($request->route_ids as $routeId) {
-                $user->vehicle->preferredLocations()->updateOrCreate(
-                    ['vehicle_id' => $user->vehicle->id, 'route_id' => $routeId],
-                    []
-                );
-            }
-        }
 
         if (!empty($request->trip_days)) {
             $tripDays = $request->trip_days;
@@ -312,7 +303,7 @@ class DriverService
                     $request->file('vehicle_interior_images'),
                     'driver/vehicle/interior'
                 );
-    
+
                 foreach ($interiorImages as $image) {
                     if ($image['url'] !== null) {
                         $vehicle->vehicleImages()->create([
@@ -323,13 +314,13 @@ class DriverService
                     }
                 }
             }
-    
+
             if ($request->hasFile('vehicle_exterior_images')) {
                 $exteriorImages = uploadFilesBatch(
                     $request->file('vehicle_exterior_images'),
                     'driver/vehicle/exterior'
                 );
-    
+
                 foreach ($exteriorImages as $image) {
                     if ($image['url'] !== null) {
                         $vehicle->vehicleImages()->create([
@@ -366,28 +357,6 @@ class DriverService
         return $this->success(null, "Saved successfully");
     }
 
-    public function editLocation($request)
-    {
-        $user = User::with(['vehicle.preferredLocations'])
-            ->find($request->user_id);
-        
-        if(!$user) {
-            return $this->error(null, 'User not found', 404);
-        }
-
-        if (!empty($request->route_ids)) {
-            $user->vehicle->preferredLocations()->delete();
-            foreach ($request->route_ids as $routeId) {
-                $user->vehicle->preferredLocations()->updateOrCreate(
-                    ['vehicle_id' => $user->vehicle->id, 'route_id' => $routeId],
-                    []
-                );
-            }
-        }
-
-        return $this->success(null, "Saved successfully");
-    }
-
     public function setAvailability($request)
     {
         $user = User::with(['vehicle.tripSchedule', 'unavailableDates'])->findOrFail($request->user_id);
@@ -395,6 +364,12 @@ class DriverService
         if (!$user->vehicle) {
             return $this->error('Vehicle not found', 404);
         }
+
+        $user->update([
+            'is_available' => $request->is_available,
+            "lng" => $request->lng,
+            "lat" => $request->lat,
+        ]);
 
         if (!empty($request->trip_days)) {
             $tripDays = $request->trip_days;

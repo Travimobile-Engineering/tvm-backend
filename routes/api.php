@@ -167,7 +167,6 @@ Route::middleware(JWTAuthenticator::class)
             Route::post('/setup-vehicle', 'setupVehicle');
             Route::post('/vehicle-requirements', 'vehicleReq');
             Route::put('/edit-description', 'editDescription');
-            Route::put('/edit-location', 'editLocation');
             Route::post('/set-availability', 'setAvailability');
         });
 
@@ -179,6 +178,7 @@ Route::middleware(JWTAuthenticator::class)
             Route::post('/add/charter', 'addCharter');
             Route::get('/charter/{user_id}', 'getCharter');
             Route::post('/charter/payment', 'payCharter');
+            Route::get('/payment/{reference}', 'getPaymentRef');
             Route::get('/user/booking/{user_id}', 'userBookings');
             Route::prefix('booking')
                 ->group(function () {

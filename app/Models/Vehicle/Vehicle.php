@@ -46,12 +46,7 @@ class Vehicle extends Model
     {
         return $this->belongsTo(User::class);
     }
-
-    public function preferredLocations()
-    {
-        return $this->hasMany(PreferredLocation::class);
-    }
-
+    
     public function tripSchedule()
     {
         return $this->hasOne(TripSchedule::class);

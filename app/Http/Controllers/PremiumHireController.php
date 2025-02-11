@@ -40,6 +40,11 @@ class PremiumHireController extends Controller
         return $this->service->payCharter($request);
     }
 
+    public function getPaymentRef($reference)
+    {
+        return $this->service->getPaymentRef($reference);
+    }
+
     public function userBookings($userId)
     {
         return $this->service->userBookings($userId);

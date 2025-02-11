@@ -167,10 +167,10 @@ trait PaymentTrait
         $vehicle =  Vehicle::with('user')->find($vehicleId);
         $type = PaymentType::PREMIUM_HIRE;
         $user = User::with([
-            'transactions',
-            'paymentLogs',
-            'premiumHireBookings'
-        ])
+                'transactions',
+                'paymentLogs',
+                'premiumHireBookings'
+            ])
             ->find($userId);
 
         $paymentLog = $this->logPayment($user, $event, $type);
@@ -178,10 +178,9 @@ trait PaymentTrait
         try {
             DB::beginTransaction();
 
-            $vehicleNo = $paymentData['metadata']['number_of_vehicles'];
             $ticketType = $paymentData['metadata']['ticket_type'];
-            $departureId = $paymentData['metadata']['departure_id'];
-            $destinationId = $paymentData['metadata']['destination_id'];
+            $lng = $paymentData['metadata']['lng'];
+            $lat = $paymentData['metadata']['lat'];
             $busStops = $paymentData['metadata']['bus_stops'];
             $luggage = $paymentData['metadata']['luggage'];
             $paymentType = $paymentData['metadata']['payment_type'];
@@ -201,10 +200,9 @@ trait PaymentTrait
                 'driver_id' => $vehicle->user_id,
                 'vehicle_id' => $vehicleId,
                 'payment_log_id' => $paymentLog->id,
-                'number_of_vehicles' => $vehicleNo,
                 'ticket_type' => $ticketType,
-                'departure_id' => $departureId,
-                'destination_id' => $destinationId,
+                'lng' => $lng,
+                'lat' => $lat,
                 'bus_stops' => $busStops,
                 'luggage' => $luggage,
                 'amount' => $formattedAmount,

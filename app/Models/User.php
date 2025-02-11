@@ -50,6 +50,9 @@ class User extends Authenticatable implements JWTSubject
         'public_id',
         'driver_verified',
         'agent_id',
+        'is_available',
+        'lng',
+        'lat',
     ];
 
     protected $guarded = [
