@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\auth;
 
 use App\Models\User;
+use App\Enum\MailingEnum;
+use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use App\Mail\ConfirmationEmail;
@@ -14,12 +16,13 @@ use Illuminate\Validation\ValidationException;
 
 class RegisterController extends Controller
 {
+    use HttpResponse;
     //method to register a new user
     public function signup(RegisterRequest $request){
-        
+
         $category = ["1"];
         if(isset($request->user_category) && $request->user_category == 2){
-            
+
             $agent_id = strtoupper(generateUniqueRandomString('users', 'agent_id', 12));
             $category[] = "2";
 
@@ -52,19 +55,19 @@ class RegisterController extends Controller
         $user = User::where('email', $email)
         ->where('phone_number', $phone_number)->first();
         if($user && (!isset($request->verification_code) || empty($request->verification_code))){
-            
+
             $user->verification_code = $verification_code;
             $user->verification_code_expires_at = Carbon::now()->addMinutes(10);
             $user->save();
             $this->send_verification_code($request, false, $verification_code);
             return response()->json(['Message' => 'User created successfully'], 200);
         }
-        
+
         if(isset($request->verification_code) && !empty($request->verification_code)){
-            
+
             $response = $this->verify_account($request);
             if($response['status'] == false) return response()->json(['error' => $response['error']], 400);
-            
+
             do{
                 $uuid = (String) time();
                 $randomNumber = '';
@@ -75,11 +78,11 @@ class RegisterController extends Controller
                 $uuid = $randomNumber . $uuid;
             }
             while(User::where('uuid', $uuid)->exists());
-    
+
             // Get the first name and last name
             $names = explode(' ', $request->full_name, 2);
-    
-        
+
+
             $user = User::where('email', $email)
             ->where('phone_number', $phone_number)
             ->update([
@@ -97,7 +100,7 @@ class RegisterController extends Controller
             if($user) return response()->json(['message' => 'Account verified successfully'], 200);
             else return response()->json(['error' => 'Ooops! An error occured. Please try again'], 400);
         }
-        
+
         $user = User::create([
             'email' => $email ?? "",
             'phone_number' => $phone_number,
@@ -112,16 +115,12 @@ class RegisterController extends Controller
         else return response()->json(['error' => 'Failed to create user'], 400);
     }
 
-    public function send_verification_code(
-        Request $request, bool $returnResponse = true, int $verification_code = null
-    )
+    public function send_verification_code( Request $request, bool $returnResponse = true, int $verification_code = null)
     {
-
         $email = $request->contact;
 
-        
         if(!empty($email)){
-            
+
             $user = User::where('email', $email)->first();
             if($user){
 
@@ -133,20 +132,31 @@ class RegisterController extends Controller
                     $user->save();
                 }
 
-                Mail::to($email)->send(new ConfirmationEmail($request->full_name, $verification_code));
-                
-                if($returnResponse)
-                return response()->json(['Message' => 'Verification code sent to your email address'], 200);
-            }
-            else return response()->json(['error' => 'User not found'], 400);
-            
+                //Mail::to($email)->send(new ConfirmationEmail($request->full_name, $verification_code));
 
+                $type = MailingEnum::SIGN_UP_OTP;
+                $subject = "Verify Account";
+                $mail_class = "App\Mail\ConfirmationEmail";
+                $data = [
+                    'name' => $request->full_name,
+                    'verification_code' => $verification_code
+                ];
+                mailSend($type, $user, $subject, $mail_class, $data);
+
+                if($returnResponse) {
+                  return $this->success(null, "Verification code sent to your email address");
+                }
+
+            }
+            else {
+                return response()->json(['error' => 'User not found'], 400);
+            }
         }
-        
+
     }
 
     public function verify_account(Request $request){
-        
+
         $request->validate([
             'contact' => 'required',
             'verification_code' => 'required|numeric|digits:5'

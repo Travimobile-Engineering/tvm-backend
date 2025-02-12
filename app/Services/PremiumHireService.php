@@ -2,26 +2,27 @@
 
 namespace App\Services;
 
-use App\Enum\PaymentType;
-use App\Enum\TripStatus;
-use App\Http\Resources\CharterResource;
-use App\Http\Resources\PremiumHireBookingResource;
-use App\Http\Resources\PremiumHireTripResource;
-use App\Http\Resources\PremiumHireVehicleResource;
-use App\Models\Charter;
-use App\Models\PaymentLog;
-use App\Models\PremiumHireBooking;
-use App\Models\PremiumHireBookingPassenger;
-use App\Models\PremiumHireManifest;
-use App\Models\PremiumHireRating;
-use App\Models\PremiumUpgrade;
 use App\Models\User;
-use App\Models\Vehicle\Vehicle;
+use App\Models\Charter;
+use App\Enum\TripStatus;
+use App\Enum\PaymentType;
+use App\Models\PaymentLog;
 use App\Trait\DriverTrait;
+use App\Enum\BookingStatus;
 use App\Trait\HttpResponse;
-use Illuminate\Support\Facades\Auth;
+use App\Models\PremiumUpgrade;
+use App\Models\Vehicle\Vehicle;
+use App\Models\PremiumHireRating;
+use App\Models\PremiumHireBooking;
 use Illuminate\Support\Facades\DB;
+use App\Models\PremiumHireManifest;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\CharterResource;
+use App\Models\PremiumHireBookingPassenger;
 use Unicodeveloper\Paystack\Facades\Paystack;
+use App\Http\Resources\PremiumHireTripResource;
+use App\Http\Resources\PremiumHireBookingResource;
+use App\Http\Resources\PremiumHireVehicleResource;
 
 class PremiumHireService
 {
@@ -104,7 +105,7 @@ class PremiumHireService
             return $this->error(null, 'Driver is not available', 400);
         }
 
-        Charter::updateOrCreate(
+        $charter = Charter::updateOrCreate(
             [
                 'user_id' => $user?->id,
                 'vehicle_id' => $request->vehicle_id,
@@ -114,7 +115,11 @@ class PremiumHireService
             ]
         );
 
-        return $this->success(null, "Vehicle added to charter");
+        $data = (object) [
+            'id' => $charter->id
+        ];
+
+        return $this->success($data, "Vehicle added to charter");
     }
 
     public function getCharter($userId)
@@ -131,6 +136,14 @@ class PremiumHireService
         $data = new CharterResource($items);
 
         return $this->success($data, "Charter");
+    }
+
+    public function removeCharter($id)
+    {
+        $item = Charter::findOrFail($id);
+        $item->delete();
+
+        return $this->success(null, "Removed successfully");
     }
 
     public function payCharter($request)
@@ -151,8 +164,11 @@ class PremiumHireService
                 'ticket_type' => $request->input('ticket_type'),
                 'lng' => $request->input('lng'),
                 'lat' => $request->input('lat'),
+                'pickup_location' => $request->input('pickup_location'),
+                'dropoff_location' => $request->input('dropoff_location'),
                 'bus_stops' => $request->input('bus_stops'),
                 'luggage' => $request->input('luggage'),
+                'time' => $request->input('time'),
                 'date' => $request->input('date'),
                 'payment_type' => PaymentType::PREMIUM_HIRE,
             ]),
@@ -342,13 +358,19 @@ class PremiumHireService
         return $this->success($data, "Reviews");
     }
 
-    public function completedBookings($userId)
+    public function getBookings($userId)
     {
+        $query = request()->query('type', BookingStatus::COMPLETED->value);
+
+        if (!BookingStatus::isValid($query)) {
+            return $this->error(null, "Invalid type. Allowed values are: " . implode(', ', BookingStatus::values()), 400);
+        }
+
         $bookings = PremiumHireBooking::with([
             'vehicle',
         ])
             ->where('user_id', $userId)
-            ->where('status', TripStatus::COMPLETED)
+            ->where('status', $query)
             ->get();
 
         $data = $bookings->map(function ($booking) {
@@ -356,6 +378,9 @@ class PremiumHireService
                 'id' => $booking->id,
                 'lng' => $booking->lng,
                 'lat' => $booking->lat,
+                'pickup_location' => $booking->pickup_location,
+                'dropoff_location' => $booking->dropoff_location,
+                'time' => $booking->time,
                 'date' => $booking->date,
                 'ticket_id' => $booking->uuid,
                 'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
@@ -365,56 +390,6 @@ class PremiumHireService
         });
 
         return $this->success($data, "Completed Bookings");
-    }
-
-    public function canceledBookings($userId)
-    {
-        $bookings = PremiumHireBooking::with([
-            'vehicle',
-        ])
-            ->where('user_id', $userId)
-            ->where('status', TripStatus::CANCELLED)
-            ->get();
-
-        $data = $bookings->map(function ($booking) {
-            return [
-                'id' => $booking->id,
-                'lng' => $booking->lng,
-                'lat' => $booking->lat,
-                'date' => $booking->date,
-                'ticket_id' => $booking->uuid,
-                'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
-                'amount' => $booking->amount,
-                'status' => $booking->status,
-            ];
-        });
-
-        return $this->success($data, "Cancelled Bookings");
-    }
-
-    public function upcomingBookings($userId)
-    {
-        $bookings = PremiumHireBooking::with([
-            'vehicle',
-        ])
-            ->where('user_id', $userId)
-            ->where('status', TripStatus::UPCOMING)
-            ->get();
-
-        $data = $bookings->map(function ($booking) {
-            return [
-                'id' => $booking->id,
-                'lng' => $booking->lng,
-                'lat' => $booking->lat,
-                'date' => $booking->date,
-                'ticket_id' => $booking->uuid,
-                'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
-                'amount' => $booking->amount,
-                'status' => $booking->status,
-            ];
-        });
-
-        return $this->success($data, "Upcoming Bookings");
     }
 
     public function bookingDetails($id)
@@ -431,13 +406,19 @@ class PremiumHireService
         return $this->success($data, "Booking Details");
     }
 
-    public function driverCompletedBookings($userId)
+    public function driverBookings($userId)
     {
+        $query = request()->query('type', BookingStatus::COMPLETED->value);
+
+        if (!BookingStatus::isValid($query)) {
+            return $this->error(null, "Invalid type. Allowed values are: " . implode(', ', BookingStatus::values()), 400);
+        }
+
         $bookings = PremiumHireBooking::with([
             'vehicle',
         ])
             ->where('driver_id', $userId)
-            ->where('status', TripStatus::COMPLETED)
+            ->where('status', $query)
             ->get();
 
         $data = $bookings->map(function ($booking) {
@@ -445,6 +426,9 @@ class PremiumHireService
                 'id' => $booking->id,
                 'lng' => $booking->lng,
                 'lat' => $booking->lat,
+                'pickup_location' => $booking->pickup_location,
+                'dropoff_location' => $booking->dropoff_location,
+                'time' => $booking->time,
                 'date' => $booking->date,
                 'ticket_id' => $booking->uuid,
                 'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
@@ -454,56 +438,6 @@ class PremiumHireService
         });
 
         return $this->success($data, "Completed Bookings");
-    }
-
-    public function driverCanceledBookings($userId)
-    {
-        $bookings = PremiumHireBooking::with([
-            'vehicle',
-        ])
-            ->where('driver_id', $userId)
-            ->where('status', TripStatus::CANCELLED)
-            ->get();
-
-        $data = $bookings->map(function ($booking) {
-            return [
-                'id' => $booking->id,
-                'lng' => $booking->lng,
-                'lat' => $booking->lat,
-                'date' => $booking->date,
-                'ticket_id' => $booking->uuid,
-                'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
-                'amount' => $booking->amount,
-                'status' => $booking->status,
-            ];
-        });
-
-        return $this->success($data, "Cancelled Bookings");
-    }
-
-    public function driverUpcomingBookings($userId)
-    {
-        $bookings = PremiumHireBooking::with([
-            'vehicle',
-        ])
-            ->where('driver_id', $userId)
-            ->where('status', TripStatus::UPCOMING)
-            ->get();
-
-        $data = $bookings->map(function ($booking) {
-            return [
-                'id' => $booking->id,
-                'lng' => $booking->lng,
-                'lat' => $booking->lat,
-                'date' => $booking->date,
-                'ticket_id' => $booking->uuid,
-                'seat_number' => is_array($seats = $booking->vehicle?->seats) ? count($seats) : 0,
-                'amount' => $booking->amount,
-                'status' => $booking->status,
-            ];
-        });
-
-        return $this->success($data, "Upcoming Bookings");
     }
 
     public function driverTripDetails($id)

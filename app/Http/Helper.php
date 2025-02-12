@@ -1,10 +1,11 @@
 <?php
 
 use App\Models\User;
+use App\Models\Mailing;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Mail;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 if (!function_exists('authUser')) {
     function authUser() {
@@ -167,6 +168,22 @@ if (!function_exists('hasOnboarded')) {
         $hasDocumentsDetails = $user->documents()->exists();
 
         return $user && $hasVehicleDetails && $hasDocumentsDetails;
+    }
+}
+
+if (! function_exists('mailSend')) {
+    function mailSend($type, $recipient, $subject, $mail_class, $payloadData = []) {
+        $data = [
+            'type' => $type,
+            'email' => $recipient->email,
+            'subject' => $subject,
+            'body' => "",
+            'mailable' => $mail_class,
+            'scheduled_at' => now(),
+            'payload' => array_merge($payloadData)
+        ];
+
+        Mailing::saveData($data);
     }
 }
 

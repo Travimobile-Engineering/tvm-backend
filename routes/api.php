@@ -177,14 +177,13 @@ Route::middleware(JWTAuthenticator::class)
             Route::get('/vehicle/{vehicle_id}', 'vehicleDetail');
             Route::post('/add/charter', 'addCharter');
             Route::get('/charter/{user_id}', 'getCharter');
+            Route::delete('/remove/charter/{id}', 'removeCharter');
             Route::post('/charter/payment', 'payCharter');
             Route::get('/payment/{reference}', 'getPaymentRef');
             Route::get('/user/booking/{user_id}', 'userBookings');
             Route::prefix('booking')
                 ->group(function () {
-                    Route::get('/completed/{user_id}', 'completedBookings');
-                    Route::get('/canceled/{user_id}', 'cancelledBookings');
-                    Route::get('/upcoming/{user_id}', 'upcomingBookings');
+                    Route::get('/{user_id}', 'getBookings');
                     Route::get('/detail/{id}', 'bookingDetails');
                 });
             Route::post('/user/add/passenger', 'addPassenger');
@@ -197,9 +196,7 @@ Route::middleware(JWTAuthenticator::class)
 
             Route::prefix('trip')
                 ->group(function () {
-                    Route::get('/completed/{user_id}', 'driverCompletedBookings');
-                    Route::get('/canceled/{user_id}', 'driverCanceledBookings');
-                    Route::get('/upcoming/{user_id}', 'driverUpcomingBookings');
+                    Route::get('/{user_id}', 'driverBookings');
                     Route::get('/detail/{id}', 'driverTripDetails');
                     Route::put('/accept/{id}', 'acceptTrip');
                     Route::put('/cancel', 'cancelTrip');

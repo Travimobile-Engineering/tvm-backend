@@ -35,6 +35,11 @@ class PremiumHireController extends Controller
         return $this->service->getCharter($userId);
     }
 
+    public function removeCharter($id)
+    {
+        return $this->service->removeCharter($id);
+    }
+
     public function payCharter(CharterPaymentRequest $request)
     {
         return $this->service->payCharter($request);
@@ -96,19 +101,9 @@ class PremiumHireController extends Controller
         return $this->service->getReviews();
     }
 
-    public function completedBookings($userId)
+    public function getBookings($userId)
     {
-        return $this->service->completedBookings($userId);
-    }
-
-    public function canceledBookings($userId)
-    {
-        return $this->service->canceledBookings($userId);
-    }
-
-    public function upcomingBookings($userId)
-    {
-        return $this->service->upcomingBookings($userId);
+        return $this->service->getBookings($userId);
     }
 
     public function bookingDetails($id)
@@ -116,19 +111,9 @@ class PremiumHireController extends Controller
         return $this->service->bookingDetails($id);
     }
 
-    public function driverCompletedBookings($userId)
+    public function driverBookings($userId)
     {
-        return $this->service->driverCompletedBookings($userId);
-    }
-
-    public function driverCanceledBookings($userId)
-    {
-        return $this->service->driverCanceledBookings($userId);
-    }
-
-    public function driverUpcomingBookings($userId)
-    {
-        return $this->service->driverUpcomingBookings($userId);
+        return $this->service->driverBookings($userId);
     }
 
     public function driverTripDetails($id)

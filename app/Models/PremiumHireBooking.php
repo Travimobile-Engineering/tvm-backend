@@ -25,6 +25,9 @@ class PremiumHireBooking extends Model
         'date',
         'reason',
         'status',
+        'pickup_location',
+        'dropoff_location',
+        'time',
     ];
 
     protected function casts(): array

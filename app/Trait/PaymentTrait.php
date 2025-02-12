@@ -181,9 +181,12 @@ trait PaymentTrait
             $ticketType = $paymentData['metadata']['ticket_type'];
             $lng = $paymentData['metadata']['lng'];
             $lat = $paymentData['metadata']['lat'];
+            $pickup_location = $paymentData['metadata']['pickup_location'];
+            $dropoff_location = $paymentData['metadata']['dropoff_location'];
             $busStops = $paymentData['metadata']['bus_stops'];
             $luggage = $paymentData['metadata']['luggage'];
             $paymentType = $paymentData['metadata']['payment_type'];
+            $time = $paymentData['metadata']['time'];
             $date = $paymentData['metadata']['date'];
             $amount = $paymentData['amount'];
             $formattedAmount = number_format($amount / 100, 2, '.', '');
@@ -203,12 +206,15 @@ trait PaymentTrait
                 'ticket_type' => $ticketType,
                 'lng' => $lng,
                 'lat' => $lat,
+                'pickup_location' => $pickup_location,
+                'dropoff_location' => $dropoff_location,
                 'bus_stops' => $busStops,
                 'luggage' => $luggage,
                 'amount' => $formattedAmount,
                 'payment_type' => $paymentType,
                 'payment_status' => $status,
                 'payment_method' => PaymentMethod::PAYSTACK,
+                'time' => $time,
                 'date' => $date,
                 'status' => TripStatus::UPCOMING,
             ]);

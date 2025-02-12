@@ -23,9 +23,12 @@ class PremiumHireBookingResource extends JsonResource
             ],
             'amount' => $this->amount,
             'ticket_type' => $this->ticket_type,
+            'time' => $this->time,
             'date' => $this->date,
             'lng' => $this->lng,
             'lat' => $this->lat,
+            'pickup_location' => $this->pickup_location,
+            'dropoff_location' => $this->dropoff_location,
             'bus_stops' => $this->bus_stops,
             'luggage' => $this->luggage,
             'passengers' => $this->premiumHireBookingPassengers ? $this->premiumHireBookingPassengers->map(function ($passenger) {
