@@ -37,18 +37,22 @@ class PremiumHireService
         $radius = 10;
 
         $nearbyUsers = User::select('id')
-        ->selectRaw("(
-            6371 * acos(
-                cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) +
-                sin(radians(?)) * sin(radians(lat))
-            )
-        ) AS distance", [$latitude, $longitude, $latitude])
-        ->having("distance", "<", $radius)
-        ->pluck('id');
+            ->selectRaw(DB::raw("(
+                6371 * acos(
+                    cos(radians(:latitude)) * cos(radians(lat)) * cos(radians(lng) - radians(:longitude)) +
+                    sin(radians(:latitude)) * sin(radians(lat))
+                )
+            ) AS distance"), [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ])
+            ->having("distance", "<", $radius)
+            ->pluck('id');
 
         $vehicles = Vehicle::whereIn('user_id', $nearbyUsers)
             ->whereRaw("JSON_LENGTH(seats) = ?", [$seatCount])
             ->with([
+                'user',
                 'premiumUpgrades.vehicle.vehicleImages',
             ])
             ->get();
@@ -58,6 +62,7 @@ class PremiumHireService
                 return [
                     'vehicle_id' => $vehicle->id,
                     'vehicle_model' => $vehicle->model,
+                    'company_logo' => $vehicle->user->profile_photo,
                     'ac' => $vehicle->ac,
                     'seats' => is_array($seats = $vehicle->seats) ? count($seats) : 0,
                     'image' => $vehicle->vehicleImages()->value('url'),
@@ -98,10 +103,15 @@ class PremiumHireService
             return $this->error(null, 'Driver is not available', 400);
         }
 
-        Charter::updateOrCreate([
-            'user_id' => $user->id ?: null,
-            'vehicle_id' => $request->vehicle_id,
-        ]);
+        Charter::updateOrCreate(
+            [
+                'user_id' => $user?->id,
+                'vehicle_id' => $request->vehicle_id,
+            ],
+            [
+                'updated_at' => now(),
+            ]
+        );
 
         return $this->success(null, "Vehicle added to charter");
     }

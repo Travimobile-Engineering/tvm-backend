@@ -16,6 +16,7 @@ class CharterResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'user_id' => $this->user_id,
             'vehicle_id' => $this->vehicle_id,
             'vehicle_model' => $this->vehicle->model,
             'ac' => $this->vehicle->ac,
