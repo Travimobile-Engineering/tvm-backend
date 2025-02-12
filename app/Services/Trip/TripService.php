@@ -640,12 +640,12 @@ class TripService
             return $this->error(null, "Trip not found!", 404);
         }
 
-        $currentDateTime = now();
-        $tripDepartureDateTime = Carbon::parse("{$trip->departure_date} {$trip->departure_time}");
+        // $currentDateTime = now();
+        // $tripDepartureDateTime = Carbon::parse("{$trip->departure_date} {$trip->departure_time}");
 
-        if (!$currentDateTime->equalTo($tripDepartureDateTime)) {
-            return $this->error(null, "Cannot start trip. Current date and time do not match the scheduled departure.", 400);
-        }
+        // if (!$currentDateTime->equalTo($tripDepartureDateTime)) {
+        //     return $this->error(null, "Cannot start trip. Current date and time do not match the scheduled departure.", 400);
+        // }
 
         if ($user->wallet < self::TRIP_CHARGE_AMOUNT) {
             return $this->error(null, "Insufficient wallet balance!", 400);
