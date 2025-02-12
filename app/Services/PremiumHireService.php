@@ -39,12 +39,13 @@ class PremiumHireService
         $nearbyUsers = User::select('id')
             ->selectRaw(DB::raw("(
                 6371 * acos(
-                    cos(radians(:latitude)) * cos(radians(lat)) * cos(radians(lng) - radians(:longitude)) +
-                    sin(radians(:latitude)) * sin(radians(lat))
+                    cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) +
+                    sin(radians(?)) * sin(radians(lat))
                 )
             ) AS distance"), [
-                'latitude' => $latitude,
-                'longitude' => $longitude,
+                $latitude,
+                $longitude,
+                $latitude
             ])
             ->having("distance", "<", $radius)
             ->pluck('id');
