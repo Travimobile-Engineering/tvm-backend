@@ -24,7 +24,6 @@ class AddCharterRequest extends FormRequest
         return [
             'user_id' => 'required|exists:users,id',
             'vehicle_id' => 'required|exists:vehicles,id',
-            'number_of_vehicles' => 'required|integer|min:1',
         ];
     }
 }
