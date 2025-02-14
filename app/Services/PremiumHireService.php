@@ -194,7 +194,8 @@ class PremiumHireService
         }
 
         $data = (object) [
-            'booking_id' => $paymentLog->premiumHireBooking?->uuid,
+            'booking_id' => $paymentLog->premiumHireBooking?->id,
+            'uuid' => $paymentLog->premiumHireBooking?->uuid,
             'status' => $paymentLog->status,
         ];
 
