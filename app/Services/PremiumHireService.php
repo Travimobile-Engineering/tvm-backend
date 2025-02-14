@@ -398,7 +398,6 @@ class PremiumHireService
         $booking = PremiumHireBooking::with([
             'vehicle',
             'premiumHireBookingPassengers',
-            'premiumHireBookings',
         ])
             ->findOrFail($id);
 

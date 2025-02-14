@@ -18,8 +18,8 @@ class PremiumHireBookingResource extends JsonResource
             'id' => $this->id,
             'vehicle' => (object)[
                 'id' => $this->vehicle_id,
-                'model' => $this->vehicle->model,
-                'image' => $this->vehicle->vehicleImages()->value('url'),
+                'model' => $this->vehicle?->model,
+                'image' => $this->vehicle?->vehicleImages()->value('url'),
             ],
             'amount' => $this->amount,
             'ticket_type' => $this->ticket_type,
