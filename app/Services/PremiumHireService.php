@@ -80,6 +80,7 @@ class PremiumHireService
     public function vehicleDetail($id)
     {
         $vehicle = PremiumUpgrade::with([
+                'user',
                 'vehicle.vehicleImages',
                 'vehicle.premiumHireRatings',
             ])
@@ -257,6 +258,8 @@ class PremiumHireService
         $data = $passengers->map(function ($passenger) {
             return [
                 'id' => $passenger->id,
+                'user_id' => $passenger->user_id,
+                'premium_hire_booking_id' => $passenger->premium_hire_booking_id,
                 'name' => $passenger->name,
                 'email' => $passenger->email,
                 'phone_number' => $passenger->phone_number,
@@ -280,28 +283,34 @@ class PremiumHireService
         $premiumHireBooking = $user->premiumHireBookings()->find($request->booking_id);
 
         if (!$premiumHireBooking) {
-            return $this->error('No premium hire booking found for this user.', 404);
+            return $this->error(null, 'No premium hire booking found for this user.', 404);
         }
-
-        $passengers = $user->premiumHireBookingPassengers()
-            ->where('premium_hire_booking_id', $request->booking_id)
-            ->get();
 
         if (!empty($request->passengers)) {
             foreach ($request->passengers as $passenger) {
-                $passengers->updateOrCreate(
-                    [
+                if (!empty($passenger['id'])) {
+                    $user->premiumHireBookingPassengers()
+                        ->where('id', $passenger['id'])
+                        ->where('premium_hire_booking_id', $request->booking_id)
+                        ->update([
+                            'name' => $passenger['name'],
+                            'email' => $passenger['email'] ?? null,
+                            'phone_number' => $passenger['phone_number'],
+                            'gender' => $passenger['gender'] ?? null,
+                            'next_of_kin' => $passenger['next_of_kin'] ?? null,
+                            'next_of_kin_phone_number' => $passenger['next_of_kin_phone_number'] ?? null,
+                        ]);
+                } else {
+                    $user->premiumHireBookingPassengers()->create([
                         'premium_hire_booking_id' => $request->booking_id,
                         'name' => $passenger['name'],
-                    ],
-                    [
                         'email' => $passenger['email'] ?? null,
                         'phone_number' => $passenger['phone_number'],
                         'gender' => $passenger['gender'] ?? null,
                         'next_of_kin' => $passenger['next_of_kin'] ?? null,
                         'next_of_kin_phone_number' => $passenger['next_of_kin_phone_number'] ?? null,
-                    ]
-                );
+                    ]);
+                }
             }
         }
 
@@ -378,10 +387,6 @@ class PremiumHireService
         $reviews = PremiumHireRating::with(['vehicle.user'])
             ->where('vehicle_id', $vehicleId)
             ->get();
-
-        if ($reviews->isEmpty()) {
-            return $this->error(null, 'No reviews found for this vehicle', 404);
-        }
 
         $averageRating = $reviews->avg('rating');
         $ratingsCount = $reviews->groupBy('rating')->map(fn ($group) => $group->count());

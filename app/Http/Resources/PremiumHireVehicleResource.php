@@ -17,6 +17,7 @@ class PremiumHireVehicleResource extends JsonResource
         return [
             'vehicle_id' => $this->id,
             'vehicle_model' => $this->vehicle?->model,
+            'company_logo' => $this->user?->profile_photo,
             'ac' => $this->vehicle?->ac,
             'description' => $this->vehicle?->description,
             'amount' => 250000,

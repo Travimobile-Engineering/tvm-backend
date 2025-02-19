@@ -83,15 +83,6 @@ class DriverProfileResource extends JsonResource
                             'url' => $image->url,
                         ];
                     })->toArray() : [],
-                    'trip_schedule' => (object)[
-                        'sunday' => $this->vehicle?->tripSchedule?->sunday,
-                        'monday' => $this->vehicle?->tripSchedule?->monday,
-                        'tuesday' => $this->vehicle?->tripSchedule?->tuesday,
-                        'wednesday' => $this->vehicle?->tripSchedule?->wednesday,
-                        'thursday' => $this->vehicle?->tripSchedule?->thursday,
-                        'friday' => $this->vehicle?->tripSchedule?->friday,
-                        'saturday' => $this->vehicle?->tripSchedule?->saturday,
-                    ],
                     'unavailable_dates' => $this->vehicle?->unavailableDates ? $this->vehicle?->unavailableDates->map(function ($date) {
                         return $date->date;
                     })->toArray() : []
