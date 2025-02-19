@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 'file' => $e->getFile(),
                 'Line' => $e->getLine(),
                 'code' => $e->getCode(),
+                'url' => request()->fullUrl(),
             ]);
         });
 

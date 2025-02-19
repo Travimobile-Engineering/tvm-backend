@@ -83,9 +83,9 @@ class Trip extends Model
         return $this->hasMany(TripBooking::class, 'trip_id');
     }
 
-    public function manifests()
+    public function manifest()
     {
-        return $this->hasMany(Manifest::class, 'trip_id');
+        return $this->hasOne(Manifest::class, 'trip_id');
     }
 
     public function departureRegion()

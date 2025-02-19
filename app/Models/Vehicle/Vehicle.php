@@ -4,6 +4,7 @@ namespace App\Models\Vehicle;
 
 use App\Models\PreferredLocation;
 use App\Models\PremiumHireBooking;
+use App\Models\PremiumHireRating;
 use App\Models\PremiumUpgrade;
 use App\Models\TripSchedule;
 use App\Models\UnavailableDate;
@@ -46,7 +47,7 @@ class Vehicle extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function tripSchedule()
     {
         return $this->hasOne(TripSchedule::class);
@@ -70,5 +71,10 @@ class Vehicle extends Model
     public function premiumHireBookings()
     {
         return $this->hasMany(PremiumHireBooking::class);
+    }
+
+    public function premiumHireRatings()
+    {
+        return $this->hasMany(PremiumHireRating::class, 'vehicle_id');
     }
 }

@@ -60,14 +60,14 @@ class PremiumHireController extends Controller
         return $this->service->addPassenger($request);
     }
 
-    public function getPassengers($userId)
+    public function getPassengers($userId, $bookingId)
     {
-        return $this->service->getPassengers($userId);
+        return $this->service->getPassengers($userId, $bookingId);
     }
 
-    public function editPassenger(Request $request)
+    public function editPassenger(Request $request, $userId)
     {
-        return $this->service->editPassenger($request);
+        return $this->service->editPassenger($request, $userId);
     }
 
     public function deletePassenger($id)
@@ -99,6 +99,11 @@ class PremiumHireController extends Controller
     public function getReviews()
     {
         return $this->service->getReviews();
+    }
+
+    public function getSingleReview($vehicleId)
+    {
+        return $this->service->getSingleReview($vehicleId);
     }
 
     public function getBookings($userId)
