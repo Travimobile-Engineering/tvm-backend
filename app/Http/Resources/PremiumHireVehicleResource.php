@@ -29,7 +29,7 @@ class PremiumHireVehicleResource extends JsonResource
                 ->where('type', 'exterior')
                 ->get()
                 ->pluck('url'),
-            'rating' => $this->premiumHireRatings->avg('rating'),
+            'rating' => $this->premiumHireRatings?->avg('rating') ?? 0,
         ];
     }
 }

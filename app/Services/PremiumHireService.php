@@ -69,7 +69,7 @@ class PremiumHireService
                     'ac' => $vehicle->ac,
                     'seats' => is_array($seats = $vehicle->seats) ? count($seats) : 0,
                     'image' => $vehicle->vehicleImages()->value('url'),
-                    'rating' => $vehicle->premiumHireRatings->avg('rating'),
+                    'rating' => $vehicle->premiumHireRatings?->avg('rating') ?? 0,
                 ];
             });
         });
