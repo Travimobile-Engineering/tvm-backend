@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enum\ManifestStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,12 +15,15 @@ class TripResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $filteredBookings = $this->tripBookings->where('payment_status', 1)
+                            ->where('manifest_status', ManifestStatus::COMPLETED);
+
         $seats = $this->vehicle?->seats;
         $totalSeats = is_array($seats) ? count($seats) : 0;
-        $totalSelectedSeats = $this->tripBookings ? $this->tripBookings->count() : 0;
+        $totalSelectedSeats = $filteredBookings ? $filteredBookings->count() : 0;
         $availableSeats = $totalSeats - $totalSelectedSeats;
 
-        $selected_seats = $this->tripBookings ? explode(",",implode(",", $this->tripBookings->map(function ($passenger) {
+        $selected_seats = $filteredBookings ? explode(",",implode(",", $this->tripBookings->map(function ($passenger) {
             return str_replace(["[", "]", "\""], "", $passenger->selected_seat);
         })->toArray())) : [];
 
@@ -63,11 +67,11 @@ class TripResource extends JsonResource
             'bus_stops' => $this->bus_stops,
             'type' => $this->type,
             'status' => $this->status,
-            'manifest_status' => $this->manifests->count() == 0 ? 'processing' : 'created',
+            'manifest_status' => $this->manifest?->status,
             'reason' => $this->reason,
             'date_cancelled' => $this->date_cancelled,
             'created_at' => $this->created_at,
-            'passengers' => $this->tripBookings ? $this->tripBookings->map(function ($passenger) {
+            'passengers' => $filteredBookings ? $filteredBookings->map(function ($passenger) {
                 return [
                     'id' => $passenger?->user?->id,
                     'first_name' => $passenger?->user?->first_name,
@@ -75,12 +79,12 @@ class TripResource extends JsonResource
                     'seat' => $passenger?->selected_seat,
                 ];
             })->toArray() : [],
-            'selected_seats' => $this->tripBookings ? $this->tripBookings->map(function ($passenger) {
+            'selected_seats' => $filteredBookings ? $filteredBookings->map(function ($passenger) {
                 return $passenger?->selected_seat;
             })->flatMap(function ($seat) {
                 return explode(',', str_replace('"', '', $seat));
             })->unique()->values()->toArray() : [],
-            'total_selected_seats' => $this->tripBookings ? $this->tripBookings->count() : 0,
+            'total_selected_seats' => $filteredBookings ? $filteredBookings->count() : 0,
             'total_seat' => is_array($seats = $this->vehicle?->seats) ? count($seats) : 0,
             'available_seat_count' => $availableSeats,
             'available_seats' => collect($this->vehicle?->seats)->filter(fn($seat) => !in_array($seat, $selected_seats))->values(),
