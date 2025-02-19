@@ -1,10 +1,11 @@
 <?php
 
 use App\Models\User;
+use App\Models\Mailing;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Mail;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 if (!function_exists('authUser')) {
     function authUser() {
@@ -51,8 +52,8 @@ if (!function_exists('uploadFile')) {
     }
 }
 
-if (!function_exists('uploadFilesBatch')) {
-    function uploadFilesBatch($request, $files, $folder, $oldPublicIds = [])
+if (!function_exists('uploadFilesBatches')) {
+    function uploadFilesBatches($request, $files, $folder, $oldPublicIds = [])
     {
         $results = [];
         foreach ($files as $key) {
@@ -71,6 +72,34 @@ if (!function_exists('uploadFilesBatch')) {
             } else {
                 $results[$key] = ['url' => null, 'public_id' => null];
             }
+        }
+
+        return $results;
+    }
+}
+
+if (!function_exists('uploadFilesBatch')) {
+    function uploadFilesBatch($files, $folder, $oldPublicIds = [])
+    {
+        $results = [];
+
+        foreach ($files as $file) {
+            if (!($file instanceof \Illuminate\Http\UploadedFile)) {
+                continue;
+            }
+
+            $oldPublicId = $oldPublicIds[$file->getClientOriginalName()] ?? null;
+
+            if ($oldPublicId) {
+                Cloudinary::destroy($oldPublicId);
+            }
+
+            $image = $file->storeOnCloudinary($folder);
+
+            $results[] = [
+                'url' => $image->getSecurePath(),
+                'public_id' => $image->getPublicId(),
+            ];
         }
 
         return $results;
@@ -139,6 +168,22 @@ if (!function_exists('hasOnboarded')) {
         $hasDocumentsDetails = $user->documents()->exists();
 
         return $user && $hasVehicleDetails && $hasDocumentsDetails;
+    }
+}
+
+if (! function_exists('mailSend')) {
+    function mailSend($type, $recipient, $subject, $mail_class, $payloadData = []) {
+        $data = [
+            'type' => $type,
+            'email' => $recipient->email,
+            'subject' => $subject,
+            'body' => "",
+            'mailable' => $mail_class,
+            'scheduled_at' => now(),
+            'payload' => array_merge($payloadData)
+        ];
+
+        Mailing::saveData($data);
     }
 }
 

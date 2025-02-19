@@ -12,9 +12,7 @@ use App\Models\TripPayment;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Str;
 use App\Models\Notification;
-use Illuminate\Http\Request;
 use App\Models\TransitCompany;
-use App\Models\Vehicle\Vehicle;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
@@ -248,7 +246,7 @@ class TripBookingService
         }
 
         $booking = TripBooking::with([
-                'trip',
+                'trip.user',
                 'user.transitCompany',
                 'trip.departureRegion.state',
                 'trip.destinationRegion.state',

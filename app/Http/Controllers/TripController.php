@@ -135,4 +135,9 @@ class TripController extends Controller
         return $this->service->getPopularTrips();
     }
 
+    public function downloadTicket($bookingId)
+    {
+        return $this->service->downloadTicket($bookingId);
+    }
+
 }

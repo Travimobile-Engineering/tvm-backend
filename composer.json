@@ -6,9 +6,11 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.1",
         "cloudinary-labs/cloudinary-laravel": "^2.2",
         "laravel/framework": "^11.9",
         "laravel/tinker": "^2.9",
+        "spatie/laravel-responsecache": "^7.6",
         "tymon/jwt-auth": "^2.1",
         "unicodeveloper/laravel-paystack": "^1.2"
     },

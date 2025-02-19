@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class CharterResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'user_id' => $this->user_id,
+            'vehicle_id' => $this->vehicle_id,
+            'vehicle_model' => $this->vehicle->model,
+            'ac' => $this->vehicle->ac,
+            'image' => $this->vehicle->vehicleImages()->value('url'),
+            'amount' => 250000,
+        ];
+    }
+}

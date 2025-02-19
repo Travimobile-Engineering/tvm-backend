@@ -80,7 +80,17 @@ class ProfileController extends Controller
 
     public function getDriverProfile()
     {
-        $user = User::with(['transitCompany', 'vehicle', 'documents', 'driverTripPayments', 'trips'])
+        $user = User::with([
+                'transitCompany',
+                'vehicle',
+                'vehicle.vehicleImages',
+                'vehicle.tripSchedule',
+                'documents',
+                'driverTripPayments',
+                'trips',
+                'premiumUpgrades.vehicle',
+                'unavailableDates',
+            ])
             ->findOrFail($this->user->id);
 
         $data = new DriverProfileResource($user);

@@ -1,24 +1,25 @@
 <?php
 
-use App\Http\Controllers\AgentController;
-use App\Http\Controllers\Auth\ForgotPasswordController;
-use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\SendTestMailController;
-use App\Http\Middleware\JWTAuthenticator;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\AuthenticateController;
-use App\Http\Controllers\DriverController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\OtherController;
-use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\RouteController;
-use App\Http\Controllers\TransitCompanyController;
-use App\Http\Controllers\TripBookingController;
 use App\Http\Controllers\TripController;
-use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\AgentController;
+use App\Http\Controllers\OtherController;
+use App\Http\Controllers\RouteController;
+use App\Http\Middleware\JWTAuthenticator;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\PremiumHireController;
+use App\Http\Controllers\TripBookingController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SendTestMailController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\TransitCompanyController;
+use App\Http\Controllers\Auth\AuthenticateController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Payment\PaystackPaymentController;
 
 
 Route::get('/', fn() => response(null, 200)) ;
@@ -91,10 +92,10 @@ Route::middleware(JWTAuthenticator::class)
         ->controller(TripController::class)
         ->group(function () {
             Route::post('/create', 'store');
-            Route::get('/popular', 'getPopularTrips');
+            Route::get('/popular', 'getPopularTrips')->middleware('cacheResponse:300');
             Route::post('/edit/{trip}', 'update');
-            Route::get('/get-trips', 'getTrips');
-            Route::get('/{trip}', 'getTrip');
+            Route::get('/get-trips', 'getTrips')->middleware('cacheResponse:300');
+            Route::get('/{trip}', 'getTrip')->middleware('doNotCacheResponse');
 
             // Get Bus Stops
             Route::get('/bus-stops/{state_id}', 'getBusStops');
@@ -129,7 +130,9 @@ Route::middleware(JWTAuthenticator::class)
 
             Route::prefix('/passenger')
                 ->group(function () {
-                    Route::get('/get-trips', 'getAll');
+                    Route::get('/get-trips', 'getAll')->middleware('cacheResponse:300');
+                    Route::get('/ticket/download/{booking_id}', 'downloadTicket')
+                        ->middleware('doNotCacheResponse');
                 });
         });
 
@@ -160,6 +163,46 @@ Route::middleware(JWTAuthenticator::class)
                     Route::get('/recent-earning/{user_id}', 'recentEarning');
                     Route::get('/statistics/{user_id}', 'stats');
                 });
+
+            Route::post('/setup-vehicle', 'setupVehicle');
+            Route::post('/vehicle-requirements', 'vehicleReq');
+            Route::put('/edit-description', 'editDescription');
+            Route::post('/set-availability', 'setAvailability');
+        });
+
+    Route::prefix('premium')
+        ->controller(PremiumHireController::class)
+        ->group(function () {
+            Route::get('/vehicle-lookup', 'vehicleLookup');
+            Route::get('/vehicle/{vehicle_id}', 'vehicleDetail');
+            Route::post('/add/charter', 'addCharter');
+            Route::get('/charter/{user_id}', 'getCharter');
+            Route::delete('/remove/charter/{id}', 'removeCharter');
+            Route::post('/charter/payment', 'payCharter');
+            Route::get('/payment/{reference}', 'getPaymentRef');
+            Route::get('/user/booking/{user_id}', 'userBookings');
+            Route::prefix('booking')
+                ->group(function () {
+                    Route::get('/{user_id}', 'getBookings');
+                    Route::get('/detail/{id}', 'bookingDetails');
+                });
+            Route::post('/user/add/passenger', 'addPassenger');
+            Route::get('/user/passenger/{user_id}', 'getPassengers');
+            Route::put('/user/passenger/edit', 'editPassenger');
+            Route::delete('/user/passenger/delete/{id}', 'deletePassenger');
+            Route::put('/cancel-booking', 'cancelBooking');
+            Route::post('/review', 'review');
+            Route::get('/review', 'getReviews');
+
+            Route::prefix('trip')
+                ->group(function () {
+                    Route::get('/{user_id}', 'driverBookings');
+                    Route::get('/detail/{id}', 'driverTripDetails');
+                    Route::put('/accept/{id}', 'acceptTrip');
+                    Route::put('/cancel', 'cancelTrip');
+                    Route::put('/start/{id}', 'startTrip');
+                    Route::post('/finish', 'finishTrip');
+                });
         });
 
     Route::prefix('trip-booking')
@@ -168,8 +211,8 @@ Route::middleware(JWTAuthenticator::class)
             Route::post('/create', 'booking');
             Route::post('/edit/{tripBooking}', 'update');
             Route::get('/cancel/{booking_id}', 'cancelTripBooking');
-            Route::get('/history/{user}', 'getUserTripBookingHistory');
-            Route::get('/{tripBooking}', 'show');
+            Route::get('/history/{user}', 'getUserTripBookingHistory')->middleware('cacheResponse:300');
+            Route::get('/{tripBooking}', 'show')->middleware('doNotCacheResponse');
             Route::get('/payment/{reference}', 'getPaymentRef');
         });
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DriverInfoRequest;
+use App\Http\Requests\VehicleRequirementRequest;
 use App\Services\DriverService;
 use Illuminate\Http\Request;
 
@@ -57,5 +58,38 @@ class DriverController extends Controller
         ]);
 
         return $this->service->updateUnion($request);
+    }
+
+    public function setupVehicle(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        return $this->service->setupVehicle($request);
+    }
+
+    public function vehicleReq(VehicleRequirementRequest $request)
+    {
+        return $this->service->vehicleReq($request);
+    }
+
+    public function editDescription(Request $request)
+    {
+        return $this->service->editDescription($request);
+    }
+
+    public function setAvailability(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'is_available' => ['required', 'boolean'],
+            'lng' => ['required', 'numeric'],
+            'lat' => ['required', 'numeric'],
+            'trip_days' => ['required'],
+            'unavailable_dates' => ['required', 'array'],
+        ]);
+
+        return $this->service->setAvailability($request);
     }
 }
