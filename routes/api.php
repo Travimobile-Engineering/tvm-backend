@@ -191,7 +191,7 @@ Route::middleware(JWTAuthenticator::class)
                 Route::post('/passenger', 'addPassenger');
                 Route::get('/passenger/{user_id}/{booking_id}', 'getPassengers');
                 Route::put('/passenger/{user_id}', 'editPassenger');
-                Route::delete('/passenger/{id}', 'deletePassenger');
+                Route::delete('/passengers', 'deletePassenger');
             });
             Route::put('/cancel-booking', 'cancelBooking');
             Route::post('/review', 'review');

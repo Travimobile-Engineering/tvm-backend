@@ -70,7 +70,7 @@ trait TripBookingTrait
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifest'
                 ]
             )
             ->findOrFail($request->trip_id);
@@ -179,7 +179,7 @@ trait TripBookingTrait
                 'tripBookings.user',
                 'departureRegion.state',
                 'destinationRegion.state',
-                'manifests'
+                'manifest'
             ]
         )
         ->where('status', TripStatus::ACTIVE)

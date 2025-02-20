@@ -317,11 +317,9 @@ class PremiumHireService
         return $this->success(null, "Passenger(s) updated successfully");
     }
 
-    public function deletePassenger($id)
+    public function deletePassenger($request)
     {
-        $passenger = PremiumHireBookingPassenger::findOrFail($id);
-        $passenger->delete();
-
+        PremiumHireBookingPassenger::whereIn('id', $request->ids)->delete();
         return $this->success(null, "Passenger deleted successfully");
     }
 
@@ -384,7 +382,7 @@ class PremiumHireService
 
     public function getSingleReview($vehicleId)
     {
-        $reviews = PremiumHireRating::with(['vehicle.user'])
+        $reviews = PremiumHireRating::with(['user'])
             ->where('vehicle_id', $vehicleId)
             ->get();
 
@@ -393,7 +391,7 @@ class PremiumHireService
 
         $reviewsList = $reviews->map(function ($review) {
             return [
-                'name' => optional($review->vehicle->user)->first_name . ' ' . optional($review->vehicle->user)->last_name,
+                'name' => optional($review->user)->first_name . ' ' . optional($review->user)->last_name,
                 'date' => $review->created_at->diffForHumans(),
                 'comment' => $review->comment,
                 'rating' => $review->rating,
