@@ -106,7 +106,11 @@ class PremiumHireService
 
         $vehicle = Vehicle::with('user')->findOrFail($request->vehicle_id);
 
-        if(! $vehicle?->user->is_available) {
+        if (!$vehicle->user) {
+            return $this->error(null, 'Vehicle owner not found', 400);
+        }
+
+        if (!$vehicle->user->is_available) {
             return $this->error(null, 'Driver is not available', 400);
         }
 
