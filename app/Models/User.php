@@ -53,6 +53,7 @@ class User extends Authenticatable implements JWTSubject
         'is_available',
         'lng',
         'lat',
+        'trip_extended_time',
     ];
 
     protected $guarded = [

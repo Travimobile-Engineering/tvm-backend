@@ -72,6 +72,11 @@ class PremiumHireController extends Controller
 
     public function deletePassenger(Request $request)
     {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:premium_hire_booking_passengers,id'
+        ]);
+
         return $this->service->deletePassenger($request);
     }
 

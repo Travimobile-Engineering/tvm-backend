@@ -323,7 +323,13 @@ class PremiumHireService
 
     public function deletePassenger($request)
     {
-        PremiumHireBookingPassenger::whereIn('id', $request->ids)->delete();
+        $ids = $request->input('ids');
+
+        if (!is_array($ids) || empty($ids)) {
+            return $this->error("Invalid request: No passengers selected for deletion", 400);
+        }
+
+        PremiumHireBookingPassenger::whereIn('id', $ids)->delete();
         return $this->success(null, "Passenger deleted successfully");
     }
 

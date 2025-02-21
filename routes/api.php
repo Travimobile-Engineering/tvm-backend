@@ -126,6 +126,9 @@ Route::middleware(JWTAuthenticator::class)
                     // Trip update
                     Route::put('/cancel/{id}', 'cancelTrip');
                     Route::put('/complete/{id}', 'completeTrip');
+
+                    // Extend time
+                    Route::put('/settings/extend-time', 'extendTime');
                 });
 
             Route::prefix('/passenger')

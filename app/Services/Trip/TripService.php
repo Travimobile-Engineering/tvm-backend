@@ -758,4 +758,15 @@ class TripService
 
         return $pdf->download($fileName);
     }
+
+    public function extendTime($request)
+    {
+        $user = User::findOrFail($request->user_id);
+
+        $user->update([
+            'trip_extended_time' => $request->trip_extended_time,
+        ]);
+
+        return $this->success(null, "Settings saved successfully");
+    }
 }
