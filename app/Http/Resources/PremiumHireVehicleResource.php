@@ -15,8 +15,10 @@ class PremiumHireVehicleResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'vehicle_id' => $this->id,
+            'id' => $this->id,
+            'vehicle_id' => $this->vehicle?->id,
             'vehicle_model' => $this->vehicle?->model,
+            'company_logo' => $this->user?->profile_photo,
             'ac' => $this->vehicle?->ac,
             'description' => $this->vehicle?->description,
             'amount' => 250000,
@@ -29,7 +31,7 @@ class PremiumHireVehicleResource extends JsonResource
                 ->where('type', 'exterior')
                 ->get()
                 ->pluck('url'),
-            'rating' => $this->premiumHireRatings->avg('rating'),
+            'rating' => $this->premiumHireRatings?->avg('rating') ?? 0,
         ];
     }
 }

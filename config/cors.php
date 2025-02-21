@@ -19,7 +19,7 @@ return [
     'paths' => ['*'],
 
     // 'allowed_methods' => ['*'],
-    'allowed_methods' => ['GET, POST, PUT, OPTIONS, DELETE, PATCH'],
+    'allowed_methods' => ['GET, POST, PUT, PATCH, OPTIONS, DELETE'],
     // 'allowed_origins' => ['*'],
 
     'allowed_origins' => ['http://localhost:5173', 'https://v6.travimobile.com','https://v.travimobile.com','https://v1.travimobile.com','https://travimobile.com'],

@@ -101,6 +101,7 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'driver_verified' => 'boolean',
+            'is_available' => 'boolean',
         ];
     }
 

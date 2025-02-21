@@ -87,7 +87,7 @@ trait PaymentTrait
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifest'
                 ]
             )
                 ->findOrFail($tripId);

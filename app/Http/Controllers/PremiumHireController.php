@@ -70,9 +70,9 @@ class PremiumHireController extends Controller
         return $this->service->editPassenger($request, $userId);
     }
 
-    public function deletePassenger($id)
+    public function deletePassenger(Request $request)
     {
-        return $this->service->deletePassenger($id);
+        return $this->service->deletePassenger($request);
     }
 
     public function cancelBooking(Request $request)
