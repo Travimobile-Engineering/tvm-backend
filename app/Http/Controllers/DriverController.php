@@ -86,7 +86,6 @@ class DriverController extends Controller
             'is_available' => ['required', 'boolean'],
             'lng' => ['required', 'numeric'],
             'lat' => ['required', 'numeric'],
-            'trip_days' => ['required'],
             'unavailable_dates' => ['required', 'array'],
         ]);
 

@@ -140,4 +140,14 @@ class TripController extends Controller
         return $this->service->downloadTicket($bookingId);
     }
 
+    public function extendTime(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'trip_extended_time' => ['required', 'regex:/^\d{2}:\d{2}$/'],
+        ]);
+
+        return $this->service->extendTime($request);
+    }
+
 }

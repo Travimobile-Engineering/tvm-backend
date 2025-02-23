@@ -56,6 +56,7 @@ class PremiumHireService
             ->with([
                 'user',
                 'premiumUpgrades.vehicle.vehicleImages',
+                'premiumHireRatings',
             ])
             ->get();
 
@@ -68,7 +69,7 @@ class PremiumHireService
                     'ac' => $vehicle->ac,
                     'seats' => is_array($seats = $vehicle->seats) ? count($seats) : 0,
                     'image' => $vehicle->vehicleImages()->value('url'),
-                    'rating' => 3.5,
+                    'rating' => $vehicle->premiumHireRatings?->avg('rating') ?? 0,
                 ];
             });
         });
@@ -78,7 +79,11 @@ class PremiumHireService
 
     public function vehicleDetail($id)
     {
-        $vehicle = PremiumUpgrade::with(['vehicle.vehicleImages'])
+        $vehicle = PremiumUpgrade::with([
+                'user',
+                'vehicle.vehicleImages',
+                'vehicle.premiumHireRatings',
+            ])
             ->where('vehicle_id', $id)
             ->first();
 
@@ -101,7 +106,11 @@ class PremiumHireService
 
         $vehicle = Vehicle::with('user')->findOrFail($request->vehicle_id);
 
-        if(! $vehicle?->user->is_available) {
+        if (!$vehicle->user) {
+            return $this->error(null, 'Vehicle owner not found', 400);
+        }
+
+        if (!$vehicle->user->is_available) {
             return $this->error(null, 'Driver is not available', 400);
         }
 
@@ -240,15 +249,21 @@ class PremiumHireService
         return $this->success(null, "Passenger(s) added successfully");
     }
 
-    public function getPassengers($userId)
+    public function getPassengers($userId, $bookingId)
     {
         $user = User::with('premiumHireBookingPassengers')
             ->findOrFail($userId);
-        $passengers = $user->premiumHireBookingPassengers;
+
+
+        $passengers = $user->premiumHireBookingPassengers()
+            ->where('premium_hire_booking_id', $bookingId)
+            ->get();
 
         $data = $passengers->map(function ($passenger) {
             return [
                 'id' => $passenger->id,
+                'user_id' => $passenger->user_id,
+                'premium_hire_booking_id' => $passenger->premium_hire_booking_id,
                 'name' => $passenger->name,
                 'email' => $passenger->email,
                 'phone_number' => $passenger->phone_number,
@@ -261,46 +276,60 @@ class PremiumHireService
         return $this->success($data, "Passengers");
     }
 
-    public function editPassenger($request)
+    public function editPassenger($request, $userId)
     {
         $user = User::with([
                 'premiumHireBookingPassengers',
                 'premiumHireBookings'
             ])
-            ->findOrFail($request->user_id);
+            ->findOrFail($userId);
 
-        $premiumHireBooking = $user->premiumHireBookings->first();
+        $premiumHireBooking = $user->premiumHireBookings()->find($request->booking_id);
 
         if (!$premiumHireBooking) {
-            return $this->error('No premium hire booking found for this user.', 404);
+            return $this->error(null, 'No premium hire booking found for this user.', 404);
         }
 
         if (!empty($request->passengers)) {
             foreach ($request->passengers as $passenger) {
-                $user->premiumHireBookingPassengers()->updateOrCreate(
-                    [
-                        'premium_hire_booking_id' => $premiumHireBooking->id,
+                if (!empty($passenger['id'])) {
+                    $user->premiumHireBookingPassengers()
+                        ->where('id', $passenger['id'])
+                        ->where('premium_hire_booking_id', $request->booking_id)
+                        ->update([
+                            'name' => $passenger['name'],
+                            'email' => $passenger['email'] ?? null,
+                            'phone_number' => $passenger['phone_number'],
+                            'gender' => $passenger['gender'] ?? null,
+                            'next_of_kin' => $passenger['next_of_kin'] ?? null,
+                            'next_of_kin_phone_number' => $passenger['next_of_kin_phone_number'] ?? null,
+                        ]);
+                } else {
+                    $user->premiumHireBookingPassengers()->create([
+                        'premium_hire_booking_id' => $request->booking_id,
                         'name' => $passenger['name'],
-                    ],
-                    [
                         'email' => $passenger['email'] ?? null,
                         'phone_number' => $passenger['phone_number'],
                         'gender' => $passenger['gender'] ?? null,
                         'next_of_kin' => $passenger['next_of_kin'] ?? null,
                         'next_of_kin_phone_number' => $passenger['next_of_kin_phone_number'] ?? null,
-                    ]
-                );
+                    ]);
+                }
             }
         }
 
         return $this->success(null, "Passenger(s) updated successfully");
     }
 
-    public function deletePassenger($id)
+    public function deletePassenger($request)
     {
-        $passenger = PremiumHireBookingPassenger::findOrFail($id);
-        $passenger->delete();
+        $ids = $request->input('ids');
 
+        if (!is_array($ids) || empty($ids)) {
+            return $this->error("Invalid request: No passengers selected for deletion", 400);
+        }
+
+        PremiumHireBookingPassenger::whereIn('id', $ids)->delete();
         return $this->success(null, "Passenger deleted successfully");
     }
 
@@ -320,7 +349,9 @@ class PremiumHireService
         $user = User::with('premiumHireRatings')
             ->findOrFail($request->user_id);
 
-        $user->premiumHireRatings()->create([
+        PremiumHireRating::create([
+            'user_id' => $user->id,
+            'vehicle_id' => $request->vehicle_id,
             'rating' => $request->rating,
             'comment' => $request->comment,
         ]);
@@ -330,13 +361,13 @@ class PremiumHireService
 
     public function getReviews()
     {
-        $reviews = PremiumHireRating::with('user')->get();
+        $reviews = PremiumHireRating::with(['vehicle.user'])->get();
         $averageRating = $reviews->avg('rating');
         $ratingsCount = $reviews->groupBy('rating')->map->count();
 
         $reviewsList = $reviews->map(function ($review) {
             return [
-                'name' => $review->user->first_name . ' ' . $review->user->last_name,
+                'name' => $review->vehicle?->user?->first_name . ' ' . $review->vehicle?->user?->last_name,
                 'date' => $review->created_at->diffForHumans(),
                 'comment' => $review->comment,
                 'rating' => $review->rating,
@@ -357,6 +388,40 @@ class PremiumHireService
         ];
 
         return $this->success($data, "Reviews");
+    }
+
+    public function getSingleReview($vehicleId)
+    {
+        $reviews = PremiumHireRating::with(['user'])
+            ->where('vehicle_id', $vehicleId)
+            ->get();
+
+        $averageRating = $reviews->avg('rating');
+        $ratingsCount = $reviews->groupBy('rating')->map(fn ($group) => $group->count());
+
+        $reviewsList = $reviews->map(function ($review) {
+            return [
+                'name' => optional($review->user)->first_name . ' ' . optional($review->user)->last_name,
+                'date' => $review->created_at->diffForHumans(),
+                'comment' => $review->comment,
+                'rating' => $review->rating,
+            ];
+        });
+
+        $data = [
+            'averageRating' => round($averageRating, 1),
+            'totalRatings' => $reviews->count(),
+            'ratingsCount' => [
+                '5' => $ratingsCount->get(5, 0),
+                '4' => $ratingsCount->get(4, 0),
+                '3' => $ratingsCount->get(3, 0),
+                '2' => $ratingsCount->get(2, 0),
+                '1' => $ratingsCount->get(1, 0),
+            ],
+            'reviews' => $reviewsList,
+        ];
+
+        return $this->success($data, "Reviews retrieved successfully");
     }
 
     public function getBookings($userId)
@@ -396,13 +461,14 @@ class PremiumHireService
     public function bookingDetails($id)
     {
         $booking = PremiumHireBooking::with([
+            'driver',
             'vehicle',
             'premiumHireBookingPassengers',
+            'paymentLog',
         ])
             ->findOrFail($id);
 
         $data = new PremiumHireBookingResource($booking);
-
         return $this->success($data, "Booking Details");
     }
 
@@ -468,7 +534,8 @@ class PremiumHireService
     {
         $booking = PremiumHireBooking::findOrFail($id);
         $booking->update([
-            'status' => TripStatus::INPROGRESS
+            'status' => TripStatus::INPROGRESS,
+            'start_trip_date' => now(),
         ]);
 
         return $this->success(null, "Trip started successfully");
@@ -519,7 +586,10 @@ class PremiumHireService
             $this->topUpWallet($user);
             $this->chargeWallet($user);
 
-            $booking->update(['status' => TripStatus::COMPLETED]);
+            $booking->update([
+                'status' => TripStatus::COMPLETED,
+                'end_trip_date' => now(),
+            ]);
 
             DB::commit();
 

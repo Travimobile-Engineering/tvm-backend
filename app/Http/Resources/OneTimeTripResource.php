@@ -18,7 +18,7 @@ class OneTimeTripResource extends JsonResource
         $totalSeats = is_array($seats) ? count($seats) : 0;
         $totalSelectedSeats = $this->tripBookings ? $this->tripBookings->count() : 0;
         $availableSeats = $totalSeats - $totalSelectedSeats;
-        
+
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,

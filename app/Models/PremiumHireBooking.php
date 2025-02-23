@@ -28,6 +28,8 @@ class PremiumHireBooking extends Model
         'pickup_location',
         'dropoff_location',
         'time',
+        'start_trip_date',
+        'end_trip_date',
     ];
 
     protected function casts(): array
@@ -61,5 +63,10 @@ class PremiumHireBooking extends Model
     public function premiumHireBookingPassengers()
     {
         return $this->hasMany(PremiumHireBookingPassenger::class);
+    }
+
+    public function paymentLog()
+    {
+        return $this->belongsTo(PaymentLog::class);
     }
 }

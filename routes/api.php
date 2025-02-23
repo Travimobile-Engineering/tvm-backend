@@ -126,6 +126,9 @@ Route::middleware(JWTAuthenticator::class)
                     // Trip update
                     Route::put('/cancel/{id}', 'cancelTrip');
                     Route::put('/complete/{id}', 'completeTrip');
+
+                    // Extend time
+                    Route::put('/settings/extend-time', 'extendTime');
                 });
 
             Route::prefix('/passenger')
@@ -186,13 +189,17 @@ Route::middleware(JWTAuthenticator::class)
                     Route::get('/{user_id}', 'getBookings');
                     Route::get('/detail/{id}', 'bookingDetails');
                 });
-            Route::post('/user/add/passenger', 'addPassenger');
-            Route::get('/user/passenger/{user_id}', 'getPassengers');
-            Route::put('/user/passenger/edit', 'editPassenger');
-            Route::delete('/user/passenger/delete/{id}', 'deletePassenger');
+
+            Route::prefix('user')->group(function () {
+                Route::post('/passenger', 'addPassenger');
+                Route::get('/passenger/{user_id}/{booking_id}', 'getPassengers');
+                Route::put('/passenger/{user_id}', 'editPassenger');
+                Route::delete('/passengers', 'deletePassenger');
+            });
             Route::put('/cancel-booking', 'cancelBooking');
             Route::post('/review', 'review');
             Route::get('/review', 'getReviews');
+            Route::get('/review/{vehicle_id}', 'getSingleReview');
 
             Route::prefix('trip')
                 ->group(function () {

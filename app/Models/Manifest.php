@@ -8,14 +8,7 @@ class Manifest extends Model
 {
     protected $fillable = [
         'trip_id',
-        'booking_id',
-        'first_name',
-        'last_name',
-        'email',
-        'phone_number',
-        'next_of_kin',
-        'next_of_kin_phone',
-        'seat',
+        'status',
     ];
 
     public function trip()

@@ -20,6 +20,7 @@ class TripBooking extends Model
         'status',
         'payment_status',
         'payment_method',
+        'manifest_status',
     ];
 
     protected $hidden = ['id'];
