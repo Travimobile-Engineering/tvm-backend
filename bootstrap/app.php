@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'transaction.pin' => TransactionPinMiddleware::class,
             'cacheResponse' => \Spatie\ResponseCache\Middlewares\CacheResponse::class,
             'doNotCacheResponse' => \Spatie\ResponseCache\Middlewares\DoNotCacheResponse::class,
+            'agent.auth' => \App\Http\Middleware\AgentAuthMiddleware::class,
+            'validate.header' => \App\Http\Middleware\ValidateHeader::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

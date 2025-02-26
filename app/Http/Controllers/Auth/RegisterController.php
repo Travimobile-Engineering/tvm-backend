@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\auth;
+namespace App\Http\Controllers\Auth;
 
 use App\Models\User;
 use App\Enum\MailingEnum;
@@ -12,11 +12,15 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\RegisterRequest;
-use Illuminate\Validation\ValidationException;
+use App\Services\Auth\AuthService;
 
 class RegisterController extends Controller
 {
     use HttpResponse;
+
+    public function __construct(protected AuthService $service)
+    {}
+
     //method to register a new user
     public function signup(RegisterRequest $request){
 
@@ -67,18 +71,6 @@ class RegisterController extends Controller
 
             $response = $this->verify_account($request);
             if($response['status'] == false) return response()->json(['error' => $response['error']], 400);
-
-            do{
-                $uuid = (String) time();
-                $randomNumber = '';
-                $remainingDigits = 16 - strlen($uuid);
-                for($i=0; $i< $remainingDigits; $i++){
-                    $randomNumber .= mt_rand(0, 9);
-                }
-                $uuid = $randomNumber . $uuid;
-            }
-            while(User::where('uuid', $uuid)->exists());
-
             // Get the first name and last name
             $names = explode(' ', $request->full_name, 2);
 
@@ -91,8 +83,6 @@ class RegisterController extends Controller
                 'last_name' => $names[1] ?? "",
                 'password' => Hash::make($request->password),
                 'user_category' => json_encode($category),
-                'agent_id' => $agent_id ?? null,
-                'uuid' => $uuid,
                 'address' => $request->address ?? "",
                 'nin' => $request->nin ?? "",
             ]);
@@ -183,5 +173,21 @@ class RegisterController extends Controller
         }
         else return ['status' => false, 'error' => 'Invalid ID or verification code'];
 
+    }
+
+    public function agentSignUp(Request $request)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:200'],
+            'contact' => ['required', 'string'],
+            'password' => ['required', 'string', 'confirmed', 'min:8']
+        ]);
+
+        return $this->service->agentSignUp($request);
+    }
+
+    public function verifyAcount(Request $request)
+    {
+        return $this->service->verifyAcount($request);
     }
 }

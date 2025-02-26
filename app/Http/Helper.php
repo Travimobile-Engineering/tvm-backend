@@ -6,10 +6,11 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Auth;
 
 if (!function_exists('authUser')) {
     function authUser() {
-        return auth()->user();
+        return Auth::guard('api')->user();
     }
 }
 
@@ -115,11 +116,23 @@ if(!function_exists('getRouteStateAndTownNameFromTownId')){
     }
 }
 
-if(!function_exists('generateUniqueRandomString')){
-    function generateUniqueRandomString($table, $column, $length = 16){
-        do $str = Str::random($length);
-        while(DB::table($table)->where($column, $str)->exists());
+if (!function_exists('generateUniqueRandomString')) {
+    function generateUniqueRandomString($table, $column, $length = 16) {
+        do {
+            $str = Str::random($length);
+        } while (DB::table($table)->where($column, $str)->exists());
+
         return $str;
+    }
+}
+
+if (!function_exists('generateUniqueNumber')) {
+    function generateUniqueNumber($table, $column, $length = 10) {
+        do {
+            $number = str_pad(mt_rand(0, pow(10, $length) - 1), $length, '0', STR_PAD_LEFT);
+        } while (DB::table($table)->where($column, $number)->exists());
+
+        return $number;
     }
 }
 

@@ -11,6 +11,7 @@ class TripBooking extends Model
         'booking_id',
         'user_id',
         'trip_id',
+        'agent_id',
         'third_party_booking',
         'selected_seat',
         'trip_type',
@@ -24,6 +25,14 @@ class TripBooking extends Model
     ];
 
     protected $hidden = ['id'];
+
+    protected function casts(): array
+    {
+        return [
+            'travelling_with' => 'array',
+            'third_party_passenger_details' => 'array',
+        ];
+    }
 
     public function getRouteKeyName()
     {

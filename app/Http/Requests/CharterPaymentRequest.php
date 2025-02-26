@@ -24,7 +24,6 @@ class CharterPaymentRequest extends FormRequest
         return [
             'user_id' => ['required', 'exists:users,id'],
             'vehicle_id' => ['required', 'exists:vehicles,id'],
-            'charter_id' => ['required', 'exists:charters,id'],
             'email' => ['required', 'email'],
             'amount' => ['required', 'numeric'],
             'ticket_type' => ['required', 'string'],

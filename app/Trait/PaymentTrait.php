@@ -5,7 +5,6 @@ namespace App\Trait;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
-use App\Models\Charter;
 use App\Models\Notification;
 use App\Models\PremiumHireBooking;
 use App\Models\Trip;
@@ -237,8 +236,6 @@ trait PaymentTrait
                 'type' => PaymentType::CR,
                 'txn_reference' => $ref
             ]);
-
-            Charter::where('user_id', $userId)->delete();
 
             DB::commit();
         } catch (\Throwable $th) {

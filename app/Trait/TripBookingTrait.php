@@ -17,7 +17,7 @@ trait TripBookingTrait
 {
     use HttpResponse;
 
-    public function processPayment($request, $result, $paymentProcessor)
+    public function processPayment($request, $result, $paymentProcessor = null)
     {
         if (! isset($paymentProcessor)) {
             return $result;
@@ -107,12 +107,13 @@ trait TripBookingTrait
                 'booking_id' => $booking_id,
                 'payment_log_id' => $paymentLog->id,
                 'trip_id' => $trip->id,
-                'user_id' => $user->id,
+                'user_id' => $request->user_id,
+                'agent_id' => $user->id ?? null,
                 'third_party_booking' => $request->third_party_booking ?? 0,
                 'selected_seat' => ucfirst($request->selected_seat),
                 'trip_type' => $request->trip_type,
-                'travelling_with' => $request->travelling_with ?? null,
-                'third_party_passenger_details' => $request->third_party_passenger_details ?? null,
+                'travelling_with' => $request->travelling_with,
+                'third_party_passenger_details' => $request->third_party_passenger_details,
                 'amount_paid' => $amount_paid ?? 0,
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => 1,

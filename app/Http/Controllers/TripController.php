@@ -131,7 +131,8 @@ class TripController extends Controller
         return $this->service->getBusStops($destinationId);
     }
 
-    public function getPopularTrips(){
+    public function getPopularTrips()
+    {
         return $this->service->getPopularTrips();
     }
 
