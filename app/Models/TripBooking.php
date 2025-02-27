@@ -22,6 +22,7 @@ class TripBooking extends Model
         'payment_status',
         'payment_method',
         'manifest_status',
+        'receive_sms',
     ];
 
     protected $hidden = ['id'];
@@ -31,6 +32,7 @@ class TripBooking extends Model
         return [
             'travelling_with' => 'array',
             'third_party_passenger_details' => 'array',
+            'receive_sms' => 'boolean',
         ];
     }
 

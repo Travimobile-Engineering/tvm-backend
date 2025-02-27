@@ -29,8 +29,6 @@ class CharterPaymentRequest extends FormRequest
             'ticket_type' => ['required', 'string'],
             'pickup_location' => ['required', 'string', 'max:200'],
             'dropoff_location' => ['required', 'string', 'max:200'],
-            'bus_stops' => ['required', 'array'],
-            'luggage' => ['required', 'array'],
             'time' => ['required'],
             'date' => ['required'],
             'redirect_url' => ['required', 'url'],

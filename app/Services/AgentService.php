@@ -71,13 +71,16 @@ class AgentService
     public function ticketSearch($request)
     {
         $user = authUser();
-        $query = $request->input('query');
+        $query = $request->input('search');
 
-        $tickets = TripBooking::where('user_id', $user->id)
-            ->where(function($q) use ($query) {
-                $q->where('booking_id', 'LIKE', "%{$query}%")
-                ->orWhere('travelling_with', 'LIKE', "%{$query}%")
-                ->orWhereJsonContains('travelling_with', ['name' => $query]);
+        $tickets = TripBooking::with('user')
+            ->where('agent_id', $user->id)
+            ->where(function ($q) use ($query) {
+                $q->where('booking_id', 'LIKE', "%{$query}%");
+            })
+            ->orWhereHas('user', function ($q) use ($query) {
+                $q->where('first_name', 'LIKE', "%{$query}%")
+                ->orWhere('last_name', 'LIKE', "%{$query}%");
             })
             ->get();
 
@@ -119,6 +122,77 @@ class AgentService
         ]);
 
         return $this->success($user, "User created successfully");
+    }
+
+    public function bookingHistory($userId)
+    {
+        $status = request()->query('status');
+
+        $bookingsQuery = TripBooking::with([
+                'user' => function ($query) {
+                    $query->select('id', 'first_name', 'last_name', 'phone_number');
+                },
+                'trip' => function ($query) {
+                    $query->select('id', 'departure', 'destination', 'departure_date', 'departure_time', 'trip_duration', 'status');
+                },
+            ])
+            ->where('agent_id', $userId);
+
+        if (!empty($status)) {
+            $bookingsQuery->whereHas('trip', function ($query) use ($status) {
+                $query->where('status', $status);
+            });
+        }
+
+        $bookings = $bookingsQuery->get();
+
+        return $this->success($bookings, 'Booking History Fetched Successfully');
+    }
+
+    public function bookingDetail($bookingId)
+    {
+        $booking = TripBooking::with([
+                'user' => function ($query) {
+                    $query->select('id', 'first_name', 'last_name', 'phone_number');
+                },
+                'trip' => function ($query) {
+                    $query->select(
+                        'id',
+                        'departure',
+                        'destination',
+                        'departure_date',
+                        'departure_time',
+                        'trip_duration',
+                        'reason',
+                        'date_cancelled',
+                        'status',
+                    );
+                },
+            ])
+            ->where('booking_id', $bookingId)
+            ->first();
+
+        if (! $booking) {
+            return $this->error('Booking not found', 404);
+        }
+
+        return $this->success($booking, 'Booking History Fetched Successfully');
+    }
+
+    public function cancelTrip($request, $tripId)
+    {
+        $trip = Trip::find($tripId);
+
+        if (! $trip) {
+            return $this->error('Trip not found', 404);
+        }
+
+        $trip->update([
+            'reason' => $request->reason,
+            'status' => TripStatus::CANCELLED,
+        ]);
+
+        return $this->success($trip, 'Trip cancelled successfully');
     }
 }
 

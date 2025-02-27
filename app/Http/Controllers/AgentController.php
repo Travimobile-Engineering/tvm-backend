@@ -48,4 +48,23 @@ class AgentController extends Controller
 
         return $this->service->addUser($request);
     }
+
+    public function bookingHistory($userId)
+    {
+        return $this->service->bookingHistory($userId);
+    }
+
+    public function bookingDetail($bookingId)
+    {
+        return $this->service->bookingDetail($bookingId);
+    }
+
+    public function cancelTrip(Request $request, $tripId)
+    {
+        $request->validate([
+            'reason' => 'required|string',
+        ]);
+
+        return $this->service->cancelTrip($request, $tripId);
+    }
 }

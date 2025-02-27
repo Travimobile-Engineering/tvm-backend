@@ -34,6 +34,11 @@ trait UserRelationships
         return $this->hasMany(TripBooking::class, 'user_id');
     }
 
+    public function agentTripBookings()
+    {
+        return $this->hasMany(TripBooking::class, 'user_id', 'agent_id');
+    }
+
     public function transitCompany()
     {
         return $this->hasOne(TransitCompany::class, 'user_id');

@@ -258,9 +258,12 @@ Route::middleware('validate.header')
                 Route::post('/info', 'agentInfo');
                 Route::post('/bus-search', 'busSearch');
                 Route::post('/buy-ticket', 'buyTicket');
-                Route::get('/ticket/search', 'ticketSearch');
+                Route::post('/ticket/search', 'ticketSearch');
                 Route::post('/search/passenger', 'searchPassenger');
-                Route::post('add-user', 'addUser');
+                Route::post('/add-user', 'addUser');
+                Route::get('/{user_id}/booking-history', 'bookingHistory');
+                Route::get('/booking-detail/{booking_id}', 'bookingDetail');
+                Route::put('/cancel-trip/{trip_id}', 'cancelTrip');
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

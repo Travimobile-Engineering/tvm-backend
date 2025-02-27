@@ -12,6 +12,7 @@ use App\Models\TripBooking;
 use App\Models\User;
 use App\Models\Vehicle\Vehicle;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 trait PaymentTrait
 {
@@ -160,22 +161,22 @@ trait PaymentTrait
 
     protected function handlePremiumHire($event)
     {
-        $paymentData = $event['data'];
-        $vehicleId = $paymentData['metadata']['vehicle_id'];
-        $userId = $paymentData['metadata']['user_id'];
-        $vehicle =  Vehicle::with('user')->find($vehicleId);
-        $type = PaymentType::PREMIUM_HIRE;
-        $user = User::with([
-                'transactions',
-                'paymentLogs',
-                'premiumHireBookings'
-            ])
-            ->find($userId);
-
-        $paymentLog = $this->logPayment($user, $event, $type);
-
         try {
             DB::beginTransaction();
+
+            $paymentData = $event['data'];
+            $vehicleId = $paymentData['metadata']['vehicle_id'];
+            $userId = $paymentData['metadata']['user_id'];
+            $vehicle =  Vehicle::with('user')->find($vehicleId);
+            $type = PaymentType::PREMIUM_HIRE;
+            $user = User::with([
+                    'transactions',
+                    'paymentLogs',
+                    'premiumHireBookings'
+                ])
+                ->find($userId);
+
+            $paymentLog = $this->logPayment($user, $event, $type);
 
             $ticketType = $paymentData['metadata']['ticket_type'];
             $lng = $paymentData['metadata']['lng'];
@@ -238,9 +239,9 @@ trait PaymentTrait
             ]);
 
             DB::commit();
-        } catch (\Throwable $th) {
+        } catch (\Exception $e) {
             DB::rollBack();
-            throw $th;
+            Log::info("message: " . $e->getMessage());
         }
     }
 }
