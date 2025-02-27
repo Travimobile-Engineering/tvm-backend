@@ -217,7 +217,7 @@ trait PaymentTrait
                 'payment_method' => PaymentMethod::PAYSTACK,
                 'time' => $time,
                 'date' => $date,
-                'status' => TripStatus::UPCOMING,
+                'status' => TripStatus::REQUEST,
             ]);
 
             Notification::create([

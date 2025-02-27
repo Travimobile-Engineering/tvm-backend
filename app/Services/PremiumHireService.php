@@ -529,7 +529,7 @@ class PremiumHireService
     {
         $booking = PremiumHireBooking::findOrFail($id);
         $booking->update([
-            'status' => TripStatus::ACCEPTED
+            'status' => TripStatus::UPCOMING
         ]);
 
         return $this->success(null, "Trip accepted successfully");
@@ -538,6 +538,11 @@ class PremiumHireService
     public function startTrip($id)
     {
         $booking = PremiumHireBooking::findOrFail($id);
+
+        if($booking->status == TripStatus::COMPLETED) {
+            return $this->error(null, "Trip already completed", 400);
+        }
+
         $booking->update([
             'status' => TripStatus::INPROGRESS,
             'start_trip_date' => now(),
