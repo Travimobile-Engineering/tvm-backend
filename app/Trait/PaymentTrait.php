@@ -162,7 +162,6 @@ trait PaymentTrait
     protected function handlePremiumHire($event)
     {
         try {
-            DB::beginTransaction();
 
             $paymentData = $event['data'];
             $vehicleId = $paymentData['metadata']['vehicle_id'];
@@ -177,6 +176,8 @@ trait PaymentTrait
                 ->find($userId);
 
             $paymentLog = $this->logPayment($user, $event, $type);
+
+            DB::beginTransaction();
 
             $ticketType = $paymentData['metadata']['ticket_type'];
             $lng = $paymentData['metadata']['lng'];
@@ -242,6 +243,7 @@ trait PaymentTrait
         } catch (\Exception $e) {
             DB::rollBack();
             Log::info("message: " . $e->getMessage());
+            return $e->getMessage();
         }
     }
 }

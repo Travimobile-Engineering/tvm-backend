@@ -25,6 +25,7 @@ use App\Http\Controllers\Payment\PaystackPaymentController;
 
 Route::get('/', fn() => response(null, 200)) ;
 
+Route::post('/payment/webhook', [PaymentController::class, 'webhook']);
 Route::middleware('validate.header')
     ->group(function () {
         Route::controller(OtherController::class)
@@ -33,8 +34,6 @@ Route::middleware('validate.header')
                 Route::get('/bank', 'getBank');
                 Route::post('/account/lookup', 'accountLookUp');
             });
-
-        Route::post('/payment/webhook', [PaymentController::class, 'webhook']);
 
         Route::prefix('auth')
         ->group(function(){
