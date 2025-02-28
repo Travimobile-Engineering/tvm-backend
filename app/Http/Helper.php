@@ -152,15 +152,15 @@ if (!function_exists('sendMail')) {
 if (!function_exists('hasSetupWallet')) {
     function hasSetupWallet(int $userId): bool
     {
-        $user = User::with(['driverBank', 'driverPin'])->find($userId);
+        $user = User::with(['userBank', 'userPin'])->find($userId);
 
         if (!$user) {
             return false;
         }
 
-        $hasBankDetails = $user->driverBank()->exists();
+        $hasBankDetails = $user->userBank()->exists();
 
-        $hasPin = $user->driverPin()
+        $hasPin = $user->userPin()
             ->where('status', 'active')
             ->exists();
 

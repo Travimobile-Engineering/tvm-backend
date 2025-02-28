@@ -123,6 +123,7 @@ trait PaymentTrait
                 'amount_paid' => $formattedAmount ?? 0,
                 'payment_method' => $paymentMethod ?? '',
                 'payment_status' => $payStatus ?? 0,
+                'receive_sms' => 0,
             ]);
 
             Notification::create([

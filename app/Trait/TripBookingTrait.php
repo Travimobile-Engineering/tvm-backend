@@ -118,7 +118,7 @@ trait TripBookingTrait
                 'amount_paid' => $amount_paid ?? 0,
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => 1,
-                'receive_sms' => $request->receive_sms,
+                'receive_sms' => $request->receive_sms ?? 0,
             ]);
 
             Notification::create([

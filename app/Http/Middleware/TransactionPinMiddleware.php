@@ -20,21 +20,21 @@ class TransactionPinMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = User::with('driverPin')
+        $user = User::with('userPin')
             ->where('id', $request->user()->id)
             ->first();
 
         if($user) {
-            $pin = $user?->driverPin?->pin;
+            $pin = $user?->userPin?->pin;
 
             if(Hash::check($request->pin, $pin)) {
                 return $next($request);
             }
-            
-            $attempt = $user->driverPin?->attempts;
+
+            $attempt = $user->userPin?->attempts;
             $total = $attempt + 1;
 
-            $user->driverPin()->update([
+            $user->userPin()->update([
                 'attempts' => $total
             ]);
 

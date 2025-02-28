@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AgentBookingRequest;
 use App\Http\Requests\AgentInfoRequest;
+use App\Models\User;
 use App\Services\AgentService;
 use Illuminate\Http\Request;
 
@@ -66,5 +67,45 @@ class AgentController extends Controller
         ]);
 
         return $this->service->cancelTrip($request, $tripId);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        return $this->service->updateProfile($request);
+    }
+
+    public function deleteProfile(User $user)
+    {
+        return $this->service->deleteProfile($user);
+    }
+
+    public function sendOtp(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'email' => 'required|email',
+        ]);
+
+        return $this->service->sendOtp($request);
+    }
+
+    public function verifyPin(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'code' => ['required', 'string'],
+        ]);
+
+        return $this->service->verifyPin($request);
+    }
+
+    public function changePin(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'pin' => 'required|numeric|digits:4|confirmed'
+        ]);
+
+        return $this->service->changePin($request);
     }
 }

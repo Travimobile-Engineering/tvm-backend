@@ -53,7 +53,7 @@ class AuthService
 
         if ($email) {
             $data = [
-                'name' => $request->name,
+                'name' => $user->first_name,
                 'verification_code' => $code
             ];
             mailSend(

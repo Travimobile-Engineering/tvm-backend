@@ -49,9 +49,9 @@ class WalletController extends Controller
         return $this->response($this->service->getTransactionPin());
     }
 
-    public function driverWalletSetup(DriverWalletSetupequest $request)
+    public function walletSetup(DriverWalletSetupequest $request)
     {
-        return $this->service->driverWalletSetup($request);
+        return $this->service->walletSetup($request);
     }
 
     public function verifyPin(Request $request)

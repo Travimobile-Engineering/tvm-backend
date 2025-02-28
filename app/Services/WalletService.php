@@ -102,7 +102,6 @@ class WalletService
             if(!isset($request->verification_code)){
 
             //Pin has already been set. Send OTP
-
             $verification_code = generateVerificationCode();
             $now = Carbon::now();
             $verification_code_expires_at = $now->addMinutes(10);
@@ -135,23 +134,22 @@ class WalletService
         return ['data' => $pin];
     }
 
-    public function driverWalletSetup($request)
+    public function walletSetup($request)
     {
-        $user = User::with(['driverBank', 'driverPin', 'userTransferReceipient'])
+        $user = User::with(['userBank', 'userPin', 'userTransferReceipient'])
             ->findOrFail($request->user_id);
 
         $code = getCode();
 
         try {
-
             DB::beginTransaction();
 
-            if (!empty($user->driverBank)) {
-                if ($user->driverPin?->status === 'active') {
+            if (!empty($user->userBank)) {
+                if ($user->userPin?->status === 'active') {
                     return $this->error(null, "Your bank is already active. You cannot create a new bank!", 403);
                 }
 
-                if ($user->driverPin?->status === 'pending') {
+                if ($user->userPin?->status === 'pending') {
                     $user->update([
                         'verification_code' => $code,
                         'verification_code_expires_at' => now()->addMinutes(30),
@@ -166,7 +164,7 @@ class WalletService
                 return $this->error(null, "You have already created a bank.", 403);
             }
 
-            $user->driverBank()->create([
+            $user->userBank()->create([
                 'bank_name' => $request->bank_name,
                 'account_number' => $request->account_number,
                 'account_name' => $request->account_name,
@@ -190,8 +188,8 @@ class WalletService
 
             PaystackService::createRecipient($user, $fields);
 
-            if(empty($user->driverPin)) {
-                $user->driverPin()->create([
+            if(empty($user->userPin)) {
+                $user->userPin()->create([
                     'pin' => bcrypt($request->pin),
                     'ip_address' => $request->ip(),
                     'device_info' => $request->header('User-Agent'),
@@ -218,7 +216,7 @@ class WalletService
 
     public function verifyPin($request)
     {
-        $user = User::with('driverPin')
+        $user = User::with('userPin')
             ->where('verification_code', $request->code)
             ->where('verification_code_expires_at', '>', now())
             ->find($request->user_id);
@@ -233,7 +231,7 @@ class WalletService
             'verification_code_expires_at' => null,
         ]);
 
-        $user->driverPin()->update([
+        $user->userPin()->update([
             'status' => 'active'
         ]);
 
@@ -242,7 +240,7 @@ class WalletService
 
     public function withdraw($request)
     {
-        $user = User::with(['driverPin', 'userTransferReceipient', 'userWithdrawLogs'])
+        $user = User::with(['userPin', 'userTransferReceipient', 'userWithdrawLogs'])
             ->findOrFail($request->user_id);
 
         if($user->wallet <= 0) {
@@ -253,7 +251,7 @@ class WalletService
             return $this->error(null, "Insufficient wallet balance", 400);
         }
 
-        if(empty($user?->driverPin?->pin)){
+        if(empty($user?->userPin?->pin)){
             return $this->error(null,  "Set your transaction pin!", 400);
         }
 

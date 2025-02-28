@@ -94,6 +94,21 @@ Route::middleware('validate.header')
                 Route::get('/{vehicle}', [VehicleController::class, 'show']);
             });
 
+            Route::prefix('user/wallet')
+                ->controller(WalletController::class)
+                ->group(function () {
+                    Route::post('/setup', 'walletSetup');
+                    Route::post('/verify-pin', 'verifyPin');
+                    Route::post('/withdraw', 'withdraw')
+                        ->middleware('transaction.pin');
+                    Route::post('/topup', 'walletTopUp');
+
+                    // Transaction
+                    Route::get('/recent-transaction/{user_id}', 'recentTransaction');
+                    Route::get('/recent-earning/{user_id}', 'recentEarning');
+                    Route::get('/statistics/{user_id}', 'stats');
+                });
+
             Route::prefix('trip')
                 ->controller(TripController::class)
                 ->group(function () {
@@ -157,21 +172,6 @@ Route::middleware('validate.header')
                     Route::post('/edit-document', 'updateDriverDocuments');
                     Route::delete('/remove-document/{id}', 'removeDocument');
                     Route::put('/edit-union', 'updateUnion');
-
-                    Route::prefix('wallet')
-                        ->controller(WalletController::class)
-                        ->group(function () {
-                            Route::post('/setup', 'driverWalletSetup');
-                            Route::post('/verify-pin', 'verifyPin');
-                            Route::post('/withdraw', 'withdraw')
-                                ->middleware('transaction.pin');
-                            Route::post('/topup', 'walletTopUp');
-
-                            // Transaction
-                            Route::get('/recent-transaction/{user_id}', 'recentTransaction');
-                            Route::get('/recent-earning/{user_id}', 'recentEarning');
-                            Route::get('/statistics/{user_id}', 'stats');
-                        });
 
                     Route::post('/setup-vehicle', 'setupVehicle');
                     Route::post('/vehicle-requirements', 'vehicleReq');
@@ -263,6 +263,13 @@ Route::middleware('validate.header')
                 Route::get('/{user_id}/booking-history', 'bookingHistory');
                 Route::get('/booking-detail/{booking_id}', 'bookingDetail');
                 Route::put('/cancel-trip/{trip_id}', 'cancelTrip');
+                Route::put('update-profile', 'updateProfile');
+                Route::delete('delete-account/{user_id}', 'deleteProfile');
+
+                // Reset Pin
+                Route::post('/pin/send-otp', 'sendOtp');
+                Route::post('/pin/verify', 'verifyPin');
+                Route::post('/pin/change', 'changePin');
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

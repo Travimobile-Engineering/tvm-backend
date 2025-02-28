@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enum\MailingEnum;
 use App\Enum\PaymentMethod;
 use App\Enum\TripStatus;
 use App\Http\Resources\TripBookingResource;
@@ -9,10 +10,8 @@ use App\Http\Resources\TripResource;
 use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\User;
-use App\Services\Payment\PaystackPaymentProcessor;
 use App\Trait\HttpResponse;
 use App\Trait\TripBookingTrait;
-use Illuminate\Support\Facades\Auth;
 
 class AgentService
 {
@@ -193,6 +192,97 @@ class AgentService
         ]);
 
         return $this->success($trip, 'Trip cancelled successfully');
+    }
+
+    public function updateProfile($request)
+    {
+        $user = User::findOrFail($request->user_id);
+
+        $user->update([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'gender' => $request->gender,
+            'nin' => $request->nin,
+            'next_of_kin_full_name' => $request->next_of_kin_full_name,
+            'next_of_kin_relationship' => $request->next_of_kin_relationship,
+            'next_of_kin_phone_number' => $request->next_of_kin_phone_number,
+        ]);
+
+        return $this->success($user, "Profile updated successfully");
+    }
+
+    public function deleteProfile($user)
+    {
+        $user->delete();
+        return $this->success(null, "Account deleted successfully");
+    }
+
+    public function sendOtp($request)
+    {
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user) {
+            return $this->error(null, 'Email not found', 404);
+        }
+
+        if ($user->verification_code !== 0 || ($user->verification_code_expires_at !== null && $user->verification_code_expires_at >= now())) {
+            return $this->error(null, "Code has been sent to you", 400);
+        }        
+
+        $code = generateUniqueNumber('users', 'verification_code', 5);
+
+        $user->update([
+            'verification_code' => $code,
+            'verification_code_expires_at' => now()->addMinutes(10),
+        ]);
+
+        if ($user) {
+            $data = [
+                'name' => $user->first_name,
+                'code' => $code
+            ];
+            mailSend(
+                MailingEnum::VERIFY_OTP,
+                $user,
+                "Verify Pin",
+                "App\Mail\VerifyPinMail",
+                $data
+            );
+        }
+
+        return $this->success(null, 'Verification code sent successfully');
+    }
+
+    public function verifyPin($request)
+    {
+        $user = User::where('id', $request->user_id)
+            ->where('verification_code', $request->code)
+            ->whereFuture('verification_code_expires_at')
+            ->first();
+
+        if (! $user) {
+            return $this->error(null, "Invalid code", 400);
+        }
+
+        $user->update([
+            'verification_code' => 0,
+            'verification_code_expires_at' => null
+        ]);
+
+        return $this->success(null, 'Verified successfully');
+    }
+
+    public function changePin($request)
+    {
+        $user = User::with('userPin')->findOrFail($request->user_id);
+
+        $user->userPin()->update([
+            'pin' => bcrypt($request->pin)
+        ]);
+
+        return $this->success(null, 'Changed successfully');
     }
 }
 
