@@ -171,7 +171,7 @@ class RegisterController extends Controller
             }
             else return ['status' => false, 'error' => 'Verification code has expired'];
         }
-        else return ['status' => false, 'error' => 'Invalid ID or verification code'];
+        else return ['status' => false, 'error' => 'Invalid contact or verification code'];
 
     }
 }
