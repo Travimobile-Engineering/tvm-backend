@@ -2,17 +2,69 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Http\Requests\AgentBookingRequest;
+use App\Http\Requests\AgentInfoRequest;
+use App\Services\AgentService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class AgentController extends Controller
 {
-    public function show(Request $request){
+    public function __construct(protected AgentService $service)
+    {}
 
-        $agent = User::where('agent_id', $request->agent_id);
-        if(!$agent->exists()) return response()->json(['error' => 'Invalid agent ID']);
+    public function agentInfo(AgentInfoRequest $request)
+    {
+        return $this->service->agentInfo($request);
+    }
 
-        return response()->json(['data' => $agent->get(['first_name', 'last_name', 'email', 'agent_id', 'profile_photo_url'])->first()]);
+    public function busSearch(Request $request)
+    {
+        return $this->service->busSearch($request);
+    }
+
+    public function buyTicket(AgentBookingRequest $request)
+    {
+        return $this->service->buyTicket($request);
+    }
+
+    public function ticketSearch(Request $request)
+    {
+        return $this->service->ticketSearch($request);
+    }
+
+    public function searchPassenger(Request $request)
+    {
+        return $this->service->searchPassenger($request);
+    }
+
+    public function addUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'phone_number' => 'required|string|unique:users,phone_number',
+            'gender' => 'required|string',
+            'nin' => 'nullable|string',
+        ]);
+
+        return $this->service->addUser($request);
+    }
+
+    public function bookingHistory($userId)
+    {
+        return $this->service->bookingHistory($userId);
+    }
+
+    public function bookingDetail($bookingId)
+    {
+        return $this->service->bookingDetail($bookingId);
+    }
+
+    public function cancelTrip(Request $request, $tripId)
+    {
+        $request->validate([
+            'reason' => 'required|string',
+        ]);
+
+        return $this->service->cancelTrip($request, $tripId);
     }
 }

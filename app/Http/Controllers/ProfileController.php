@@ -82,13 +82,14 @@ class ProfileController extends Controller
     {
         $user = User::with([
                 'transitCompany',
-                'vehicle.preferredLocations.subRegion.state',
+                'vehicle',
                 'vehicle.vehicleImages',
                 'vehicle.tripSchedule',
                 'documents',
                 'driverTripPayments',
                 'trips',
                 'premiumUpgrades.vehicle',
+                'unavailableDates',
             ])
             ->findOrFail($this->user->id);
 

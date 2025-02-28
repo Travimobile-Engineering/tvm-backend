@@ -39,4 +39,9 @@ class PaymentLog extends Model
     {
         return $this->hasOne(TripBooking::class, 'payment_log_id');
     }
+
+    public function premiumHireBooking()
+    {
+        return $this->hasOne(PremiumHireBooking::class, 'payment_log_id');
+    }
 }

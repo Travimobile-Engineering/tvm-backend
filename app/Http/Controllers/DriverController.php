@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DriverInfoRequest;
+use App\Http\Requests\VehicleRequirementRequest;
 use App\Services\DriverService;
 use Illuminate\Http\Request;
 
@@ -68,18 +69,8 @@ class DriverController extends Controller
         return $this->service->setupVehicle($request);
     }
 
-    public function vehicleReq(Request $request)
+    public function vehicleReq(VehicleRequirementRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'management_type' => 'required|in:travi_hire,self_managed',
-            'is_ac_available' => 'required|boolean',
-            'vehicle_interior_images' => 'required|array|min:1',
-            'vehicle_interior_images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'vehicle_exterior_images' => 'required|array|min:1',
-            'vehicle_exterior_images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
-
         return $this->service->vehicleReq($request);
     }
 
@@ -88,8 +79,16 @@ class DriverController extends Controller
         return $this->service->editDescription($request);
     }
 
-    public function editLocation(Request $request)
+    public function setAvailability(Request $request)
     {
-        return $this->service->editLocation($request);
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'is_available' => ['required', 'boolean'],
+            'lng' => ['required', 'numeric'],
+            'lat' => ['required', 'numeric'],
+            'unavailable_dates' => ['required', 'array'],
+        ]);
+
+        return $this->service->setAvailability($request);
     }
 }

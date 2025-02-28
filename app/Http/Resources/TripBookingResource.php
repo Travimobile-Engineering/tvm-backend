@@ -39,6 +39,8 @@ class TripBookingResource extends JsonResource
                 'departure_time' => $this->trip?->departure_time,
                 'trip_duration' => $this->trip?->trip_duration,
                 'estimated_arrival_time' => $this->trip?->trip_duration,
+                'bus_stops' => $this->trip?->bus_stops,
+                'status' => $this->trip?->status,
             ],
             'user_detail' => (object)[
                 'first_name' => $this->user?->first_name,

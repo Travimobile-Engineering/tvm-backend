@@ -5,6 +5,7 @@ namespace App\Trait;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
+use App\Enum\UserType;
 use App\Models\Notification;
 use App\Models\Trip;
 use App\Models\TripBooking;
@@ -17,7 +18,7 @@ trait TripBookingTrait
 {
     use HttpResponse;
 
-    public function processPayment($request, $result, $paymentProcessor)
+    public function processPayment($request, $result, $paymentProcessor = null)
     {
         if (! isset($paymentProcessor)) {
             return $result;
@@ -70,7 +71,7 @@ trait TripBookingTrait
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests'
+                    'manifest'
                 ]
             )
             ->findOrFail($request->trip_id);
@@ -107,15 +108,17 @@ trait TripBookingTrait
                 'booking_id' => $booking_id,
                 'payment_log_id' => $paymentLog->id,
                 'trip_id' => $trip->id,
-                'user_id' => $user->id,
+                'user_id' => $request->user_id ?? $user->id,
+                'agent_id' => $user->user_category == [UserType::AGENT] ? $user->id : null,
                 'third_party_booking' => $request->third_party_booking ?? 0,
                 'selected_seat' => ucfirst($request->selected_seat),
                 'trip_type' => $request->trip_type,
-                'travelling_with' => $request->travelling_with ?? null,
-                'third_party_passenger_details' => $request->third_party_passenger_details ?? null,
+                'travelling_with' => $request->travelling_with,
+                'third_party_passenger_details' => $request->third_party_passenger_details,
                 'amount_paid' => $amount_paid ?? 0,
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => 1,
+                'receive_sms' => $request->receive_sms,
             ]);
 
             Notification::create([
@@ -179,7 +182,7 @@ trait TripBookingTrait
                 'tripBookings.user',
                 'departureRegion.state',
                 'destinationRegion.state',
-                'manifests'
+                'manifest'
             ]
         )
         ->where('status', TripStatus::ACTIVE)

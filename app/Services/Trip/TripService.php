@@ -2,6 +2,7 @@
 
 namespace App\Services\Trip;
 
+use App\Enum\ManifestStatus;
 use App\Models\Trip;
 use App\Enum\TripType;
 use App\Enum\TripStatus;
@@ -65,7 +66,7 @@ class TripService
             'tripBookings.user',
             'departureRegion.state',
             'destinationRegion.state',
-            'manifests',
+            'manifest',
             'vehicle',
             'departureRegion.parks',
             'destinationRegion.parks',
@@ -132,7 +133,7 @@ class TripService
                 'vehicle',
                 'departureRegion.state',
                 'destinationRegion.state',
-                'manifests',
+                'manifest',
                 'departureRegion.parks',
                 'destinationRegion.parks',
             ])
@@ -172,7 +173,7 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests',
+                    'manifest',
                     'departureRegion.parks',
                     'destinationRegion.parks',
                 ]
@@ -200,7 +201,7 @@ class TripService
                     'destinationRegion.state',
                     'departureRegion.parks',
                     'destinationRegion.parks',
-                    'manifests'
+                    'manifest'
                 ]
             )
             ->where('user_id', $userId)
@@ -300,7 +301,7 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests',
+                    'manifest',
                     'departureRegion.parks',
                     'destinationRegion.parks',
                 ]
@@ -326,7 +327,7 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests',
+                    'manifest',
                     'departureRegion.parks',
                     'destinationRegion.parks',
                 ]
@@ -396,6 +397,76 @@ class TripService
         return $this->success(null, "Trip Completed Successfully", 200);
     }
 
+    public function startTrip($request)
+    {
+        $user = User::with(['transactions', 'driverTripPayments'])->findOrFail($request->user_id);
+        $trip = Trip::with(['tripBookings' => function ($query) {
+            $query->where('payment_status', 1);
+        }, 'manifest'])->find($request->trip_id);
+
+        if (!$trip) {
+            return $this->error(null, "Trip not found!", 404);
+        }
+
+        // $currentDateTime = now();
+        // $tripDepartureDateTime = Carbon::parse("{$trip->departure_date} {$trip->departure_time}");
+
+        // if (!$currentDateTime->equalTo($tripDepartureDateTime)) {
+        //     return $this->error(null, "Cannot start trip. Current date and time do not match the scheduled departure.", 400);
+        // }
+
+        if ($user->wallet < self::TRIP_CHARGE_AMOUNT) {
+            return $this->error(null, "Insufficient wallet balance!", 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            if ($trip->tripBookings->isEmpty()) {
+                return $this->error(null, "No bookings available!", 400);
+            }
+
+            foreach ($trip->tripBookings as $booking) {
+                $booking->update(['manifest_status' => ManifestStatus::COMPLETED]);
+            }
+
+            $trip->manifest()->create([
+                'status' => ManifestStatus::COMPLETED,
+            ]);
+
+            $this->topUpWallet($user);
+            $this->chargeWallet($user);
+
+            $trip->update(['status' => TripStatus::INPROGRESS]);
+
+            TripLog::create([
+                'user_id' => $user->id,
+                'trip_id' => $trip->id,
+                'amount_charged' => self::TRIP_CHARGE_AMOUNT,
+                'retry_attempt' => 1,
+                'status' => 'success',
+                'message' => 'Trip started successfully and manifest created.',
+            ]);
+
+            DB::commit();
+
+            return $this->success(null, "Trip Started Successfully", 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            TripLog::create([
+                'user_id' => $user->id,
+                'trip_id' => $trip->id,
+                'amount_charged' => 0,
+                'retry_attempt' => 0,
+                'status' => 'failure',
+                'message' => "Failed to start trip: " . $e->getMessage(),
+            ]);
+
+            return $this->error(null, "Failed to start trip: " . $e->getMessage(), 400);
+        }
+    }
+
     public function getUpcomingTrips($userId)
     {
         $date = request()->query('date');
@@ -407,7 +478,7 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests',
+                    'manifest',
                     'departureRegion.parks',
                     'destinationRegion.parks',
                 ]
@@ -436,7 +507,7 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests',
+                    'manifest',
                     'departureRegion.parks',
                     'destinationRegion.parks',
                 ]
@@ -459,7 +530,7 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests',
+                    'manifest',
                     'departureRegion.parks',
                     'destinationRegion.parks',
                 ]
@@ -488,7 +559,7 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests',
+                    'manifest',
                     'departureRegion.parks',
                     'destinationRegion.parks',
                 ]
@@ -545,7 +616,7 @@ class TripService
                     'tripBookings.user',
                     'departureRegion.state',
                     'destinationRegion.state',
-                    'manifests',
+                    'manifest',
                     'departureRegion.parks',
                     'destinationRegion.parks',
                 ]
@@ -588,31 +659,31 @@ class TripService
 
     public function getManifestInfo($tripId, $userId)
     {
-        $trip = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'tripBookings.user',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifests',
-                    'departureRegion.parks',
-                    'destinationRegion.parks',
-                ]
-            )
+        $trip = Trip::with([
+                'user.transitCompany',
+                'vehicle',
+                'tripBookings.user',
+                'departureRegion.state',
+                'destinationRegion.state',
+                'manifest',
+                'departureRegion.parks',
+                'destinationRegion.parks',
+            ])
             ->where('id', $tripId)
             ->first();
 
-        if (! $trip) {
+        if (!$trip) {
             return $this->error("Trip not found", 404);
         }
 
         $passenger = $trip->tripBookings
             ->where('user_id', $userId)
+            ->where('payment_status', 1)
+            ->where('manifest_status', ManifestStatus::COMPLETED)
             ->first();
 
-        if (! $passenger) {
-            return $this->error("You do not have permission to complete this request", 400);
+        if (!$passenger) {
+            return $this->error("You do not have permission to complete this request or no valid booking found.", 400);
         }
 
         $info = [
@@ -629,82 +700,6 @@ class TripService
         ];
 
         return $this->success($info, "Passenger Manifest Detail", 200);
-    }
-
-    public function startTrip($request)
-    {
-        $user = User::with(['transactions', 'driverTripPayments'])->findOrFail($request->user_id);
-        $trip = Trip::with(['tripBookings.user', 'manifests'])->find($request->trip_id);
-
-        if (!$trip) {
-            return $this->error(null, "Trip not found!", 404);
-        }
-
-        $currentDateTime = now();
-        $tripDepartureDateTime = Carbon::parse("{$trip->departure_date} {$trip->departure_time}");
-
-        if (!$currentDateTime->equalTo($tripDepartureDateTime)) {
-            return $this->error(null, "Cannot start trip. Current date and time do not match the scheduled departure.", 400);
-        }
-
-        if ($user->wallet < self::TRIP_CHARGE_AMOUNT) {
-            return $this->error(null, "Insufficient wallet balance!", 400);
-        }
-
-        try {
-            DB::beginTransaction();
-
-            if ($trip->tripBookings->isEmpty()) {
-                return $this->error(null, "No bookings available!", 400);
-            }
-
-            foreach ($trip->tripBookings as $booking) {
-                $manifest = new Manifest([
-                    'trip_id' => $trip->id,
-                    'booking_id' => $booking->booking_id,
-                    'first_name' => $booking->user->first_name,
-                    'last_name' => $booking->user->last_name,
-                    'email' => $booking->user->email,
-                    'phone_number' => $booking->user->phone_number,
-                    'next_of_kin' => $booking->next_of_kin_fullname,
-                    'next_of_kin_phone' => $booking->next_of_kin_phone_number,
-                    'seat' => $booking->selected_seat,
-                ]);
-
-                $trip->manifests()->save($manifest);
-            }
-
-            $this->topUpWallet($user);
-            $this->chargeWallet($user);
-
-            $trip->update(['status' => TripStatus::INPROGRESS]);
-
-            TripLog::create([
-                'user_id' => $user->id,
-                'trip_id' => $trip->id,
-                'amount_charged' => self::TRIP_CHARGE_AMOUNT,
-                'retry_attempt' => 1,
-                'status' => 'success',
-                'message' => 'Trip started successfully and manifest created.',
-            ]);
-
-            DB::commit();
-
-            return $this->success(null, "Trip Started Successfully", 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            TripLog::create([
-                'user_id' => $user->id,
-                'trip_id' => $trip->id,
-                'amount_charged' => 0,
-                'retry_attempt' => 0,
-                'status' => 'failure',
-                'message' => "Failed to start trip: " . $e->getMessage(),
-            ]);
-
-            return $this->error(null, "Failed to start trip: " . $e->getMessage(), 400);
-        }
     }
 
     public function getBusStops($stateId)
@@ -762,5 +757,16 @@ class TripService
         $fileName = 'ticket_' . str_replace(' ', '_', $booking->user?->first_name) . '_' . $booking->booking_id . '.pdf';
 
         return $pdf->download($fileName);
+    }
+
+    public function extendTime($request)
+    {
+        $user = User::findOrFail($request->user_id);
+
+        $user->update([
+            'trip_extended_time' => $request->trip_extended_time,
+        ]);
+
+        return $this->success(null, "Settings saved successfully");
     }
 }
