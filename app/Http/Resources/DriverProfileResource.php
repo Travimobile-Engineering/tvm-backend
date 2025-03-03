@@ -23,7 +23,6 @@ class DriverProfileResource extends JsonResource
             'last_name' => $this->last_name,
             'email' => $this->email,
             'phone_number' => $this->phone_number,
-            'profile_picture' => $this->profile_picture,
             'wallet' => $this->wallet,
             'address' => $this->address,
             'gender' => $this->gender,

@@ -13,6 +13,11 @@ class AgentController extends Controller
     public function __construct(protected AgentService $service)
     {}
 
+    public function profile($userId)
+    {
+        return $this->service->profile($userId);
+    }
+
     public function agentInfo(AgentInfoRequest $request)
     {
         return $this->service->agentInfo($request);

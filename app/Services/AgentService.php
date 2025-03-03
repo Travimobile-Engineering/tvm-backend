@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Enum\MailingEnum;
 use App\Enum\PaymentMethod;
 use App\Enum\TripStatus;
+use App\Enum\UserType;
+use App\Http\Resources\AgentProfileResource;
 use App\Http\Resources\TripBookingResource;
 use App\Http\Resources\TripResource;
 use App\Models\Trip;
@@ -16,6 +18,23 @@ use App\Trait\TripBookingTrait;
 class AgentService
 {
     use HttpResponse, TripBookingTrait;
+
+    public function profile($userId)
+    {
+        $user = User::with([
+                'transitCompany',
+            ])
+            ->where('id', $userId)
+            ->first();
+
+        if (!$user) {
+            return $this->error(null, "User not found", 404);
+        }
+
+        $data = new AgentProfileResource($user);
+
+        return $this->success($data, "Agent profile");
+    }
 
     public function agentInfo($request)
     {
