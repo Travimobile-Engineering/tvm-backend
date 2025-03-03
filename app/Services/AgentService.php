@@ -39,8 +39,7 @@ class AgentService
 
     public function busSearch($request)
     {
-        $trips = Trip::where('type', $request->type)
-            ->where('departure', $request->departure)
+        $trips = Trip::where('departure', $request->departure)
             ->where('destination', $request->destination)
             ->where('departure_date', $request->departure_date)
             ->where('departure_time', $request->departure_time)
@@ -229,7 +228,7 @@ class AgentService
 
         if ($user->verification_code !== 0 || ($user->verification_code_expires_at !== null && $user->verification_code_expires_at >= now())) {
             return $this->error(null, "Code has been sent to you", 400);
-        }        
+        }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
 

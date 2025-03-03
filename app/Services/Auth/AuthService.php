@@ -71,7 +71,7 @@ class AuthService
     public function verifyAcount($request)
     {
         $user = User::where('verification_code', $request->code)
-            ->whereFuture('verification_code_expires_at')
+            ->where('verification_code_expires_at', '>=', now())
             ->first();
 
         if (! $user) {
