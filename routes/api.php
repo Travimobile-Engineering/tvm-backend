@@ -255,7 +255,7 @@ Route::middleware('validate.header')
             ->controller(AgentController::class)
             ->group(function(){
                 // Profile
-                Route::get('/profile/{user_id}', 'profile');
+                Route::get('/get-profile', 'profile');
 
                 Route::post('/info', 'agentInfo');
                 Route::post('/bus-search', 'busSearch');

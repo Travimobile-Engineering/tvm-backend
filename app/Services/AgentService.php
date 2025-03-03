@@ -19,8 +19,10 @@ class AgentService
 {
     use HttpResponse, TripBookingTrait;
 
-    public function profile($userId)
+    public function profile()
     {
+        $userId = authUser()->id;
+
         $user = User::with([
                 'transitCompany',
             ])
