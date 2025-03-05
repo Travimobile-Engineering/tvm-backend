@@ -408,6 +408,10 @@ class TripService
             return $this->error(null, "Trip not found!", 404);
         }
 
+        if ($trip->status !== TripStatus::ACTIVE) {
+            return $this->error(null, "Sorry " . $trip->status, 400);
+        }
+
         // $currentDateTime = now();
         // $tripDepartureDateTime = Carbon::parse("{$trip->departure_date} {$trip->departure_time}");
 

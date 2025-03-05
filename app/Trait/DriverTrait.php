@@ -45,9 +45,9 @@ trait DriverTrait
         }
     }
 
-    protected function chargeWallet($user)
+    protected function chargeWallet($user, $amount = null)
     {
-        $user->wallet -= self::TRIP_CHARGE_AMOUNT;
+        $user->wallet -= $amount ?? self::TRIP_CHARGE_AMOUNT;
         $user->save();
 
         $title = "Wallet charged for manifest";

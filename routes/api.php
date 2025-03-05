@@ -24,8 +24,6 @@ use App\Http\Controllers\Payment\PaystackPaymentController;
 
 
 Route::get('/', fn() => response(null, 200)) ;
-
-Route::post('/payment/webhook', [PaymentController::class, 'webhook']);
 Route::middleware('validate.header')
     ->group(function () {
         Route::controller(OtherController::class)
@@ -50,6 +48,9 @@ Route::middleware('validate.header')
             Route::post('/agent/signup', [RegisterController::class, 'agentSignup']);
             Route::post('/verify/account', [RegisterController::class, 'verifyAcount']);
         });
+
+        Route::post('/payment/webhook', [PaymentController::class, 'webhook'])
+            ->withoutMiddleware('validate.header');
 
         // Google Auth
         Route::controller(GoogleAuthController::class)
@@ -123,7 +124,6 @@ Route::middleware('validate.header')
 
                     Route::prefix('/driver')
                         ->group(function () {
-
                             // One Time
                             Route::post('/one-time', 'createOneTime');
                             Route::get('/get-one-time/{id}', 'getOneTime');
@@ -273,6 +273,22 @@ Route::middleware('validate.header')
                 Route::post('/pin/send-otp', 'sendOtp');
                 Route::post('/pin/verify', 'verifyPin');
                 Route::post('/pin/change', 'changePin');
+
+                // Manage driver
+                Route::post('/search-driver', 'searchDriver');
+                Route::post('/impersonate-driver', 'impersonateDriver')
+                    ->middleware('impersonation.throttle');
+
+                // Trip
+                Route::prefix('trip')
+                    ->group(function () {
+                        Route::post('/one-time', 'createOneTimeTrip');
+                        Route::post('/recurring', 'createRecurringTrip');
+                        Route::get('/{user_id}', 'getTrips');
+                        Route::get('/detail/{id}', 'tripDetails');
+                        Route::post('start', 'startTrip')
+                            ->middleware('transaction.pin');
+                    });
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

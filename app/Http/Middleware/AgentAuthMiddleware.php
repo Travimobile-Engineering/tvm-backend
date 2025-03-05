@@ -19,7 +19,7 @@ class AgentAuthMiddleware
     {
         $user = Auth::guard('api')->user();
 
-        if (!$user || $user->user_category !== [UserType::AGENT]) {
+        if (!$user || $user->user_category !== UserType::AGENT) {
             return response()->json(['message' => "Unauthorized: You aren't an agent"], 401);
         }
 

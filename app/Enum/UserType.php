@@ -2,10 +2,11 @@
 
 namespace App\Enum;
 
-enum UserType
+enum UserType: string
 {
-    const SUPERADMIN = 0;
-    const DRIVER = 1;
-    const AGENT = 2;
+    const SUPERADMIN = "super-admin";
+    const DRIVER = "driver";
+    const AGENT = "agent";
+    const PASSENGER = "passenger";
 }
 

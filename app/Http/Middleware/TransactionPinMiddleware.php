@@ -20,8 +20,10 @@ class TransactionPinMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $userId = $request->user_id ?? $request->user()->id;
+
         $user = User::with('userPin')
-            ->where('id', $request->user()->id)
+            ->where('id', $userId)
             ->first();
 
         if($user) {

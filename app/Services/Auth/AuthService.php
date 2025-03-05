@@ -47,7 +47,7 @@ class AuthService
             'phone_number' => $phone,
             'verification_code' => $code,
             'verification_code_expires_at' => now()->addMinutes(10),
-            'user_category' => [UserType::AGENT],
+            'user_category' => UserType::AGENT,
             'password' => bcrypt($request->password),
         ]);
 

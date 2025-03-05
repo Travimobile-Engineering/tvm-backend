@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'doNotCacheResponse' => \Spatie\ResponseCache\Middlewares\DoNotCacheResponse::class,
             'agent.auth' => \App\Http\Middleware\AgentAuthMiddleware::class,
             'validate.header' => \App\Http\Middleware\ValidateHeader::class,
+            'impersonation.throttle' => \App\Http\Middleware\ImpersonationThrottle::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

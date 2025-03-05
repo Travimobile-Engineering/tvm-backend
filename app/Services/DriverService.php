@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enum\DocumentStatus;
 use App\Enum\PremiumUpgradeStatus;
+use App\Enum\UserType;
 use App\Http\Resources\BusStopResource;
 use App\Models\Document;
 use App\Models\User;
@@ -94,6 +95,7 @@ class DriverService
             }
 
             $user->update([
+                'user_category' => UserType::DRIVER,
                 'gender' => $request->gender,
                 'next_of_kin_full_name' => $request->next_of_kin_full_name,
                 'next_of_kin_phone_number' => $request->next_of_kin_phone_number,

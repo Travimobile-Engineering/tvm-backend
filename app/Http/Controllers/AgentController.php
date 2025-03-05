@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AgentBookingRequest;
 use App\Http\Requests\AgentInfoRequest;
+use App\Http\Requests\TransportOneTimeRequest;
+use App\Http\Requests\TransportRecurringRequest;
 use App\Models\User;
 use App\Services\AgentService;
 use Illuminate\Http\Request;
@@ -112,5 +114,56 @@ class AgentController extends Controller
         ]);
 
         return $this->service->changePin($request);
+    }
+
+    public function searchDriver(Request $request)
+    {
+        $request->validate([
+            'search' => 'required|string',
+        ]);
+
+        return $this->service->searchDriver($request);
+    }
+
+    public function impersonateDriver(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'password' => 'required|string',
+        ]);
+
+        return $this->service->impersonateDriver($request);
+    }
+
+    public function createOneTimeTrip(TransportOneTimeRequest $request)
+    {
+        return $this->service->createOneTimeTrip($request);
+    }
+
+    public function createRecurringTrip(TransportRecurringRequest $request)
+    {
+        return $this->service->createRecurringTrip($request);
+    }
+
+    public function getTrips($userId)
+    {
+        return $this->service->getTrips($userId);
+    }
+
+    public function tripDetails($tripId)
+    {
+        return $this->service->tripDetails($tripId);
+    }
+
+    public function startTrip(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'trip_id' => 'required|integer|exists:trips,id',
+            'payment_method' => 'required|string|in:driver_wallet',
+            'pin' => 'required|string',
+        ]);
+
+        return $this->service->startTrip($request);
     }
 }

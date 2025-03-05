@@ -1,5 +1,6 @@
 <?php
 
+use App\Libraries\Utility;
 use App\Models\User;
 use App\Models\Mailing;
 use Illuminate\Support\Str;
@@ -197,6 +198,20 @@ if (! function_exists('mailSend')) {
         ];
 
         Mailing::saveData($data);
+    }
+}
+
+if (! function_exists('encryptData')) {
+    function encryptData($data, $key = null) {
+        $key = $key ?? config('security.encoding_key');
+        return Utility::encrypt($data, $key);
+    }
+}
+
+if (! function_exists('decryptData')) {
+    function decryptData($data, $key = null) {
+        $key = $key ?? config('security.encoding_key');
+        return Utility::decrypt($data, $key);
     }
 }
 
