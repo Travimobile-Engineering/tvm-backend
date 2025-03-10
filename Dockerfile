@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y libicu-dev \
     && docker-php-ext-install -j$(nproc) intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y supervisor
+
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -39,6 +41,8 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 COPY . /var/www
 
 RUN composer install --no-dev --optimize-autoloader
@@ -50,5 +54,5 @@ RUN chmod -R 755 /var/www/storage
 
 EXPOSE 9000
 
-CMD ["php-fpm"]
+CMD bash -c "php-fpm & supervisord -c /etc/supervisor/conf.d/supervisord.conf"
 
