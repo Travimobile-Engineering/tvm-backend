@@ -54,6 +54,11 @@ class WalletController extends Controller
         return $this->service->walletSetup($request);
     }
 
+    public function changeBank(Request $request)
+    {
+        return $this->service->changeBank($request);
+    }
+
     public function verifyPin(Request $request)
     {
         $request->validate([

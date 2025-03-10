@@ -103,6 +103,8 @@ Route::middleware('validate.header')
                     Route::post('/withdraw', 'withdraw')
                         ->middleware('transaction.pin');
                     Route::post('/topup', 'walletTopUp');
+                    Route::post('/change-bank', 'changeBank')
+                        ->middleware('transaction.pin');
 
                     // Transaction
                     Route::get('/recent-transaction/{user_id}', 'recentTransaction');
@@ -256,6 +258,7 @@ Route::middleware('validate.header')
             ->group(function(){
                 // Profile
                 Route::get('/get-profile', 'profile');
+                Route::post('/change-password', 'changePassword');
 
                 Route::post('/info', 'agentInfo');
                 Route::post('/bus-search', 'busSearch');
@@ -272,7 +275,8 @@ Route::middleware('validate.header')
                 // Reset Pin
                 Route::post('/pin/send-otp', 'sendOtp');
                 Route::post('/pin/verify', 'verifyPin');
-                Route::post('/pin/change', 'changePin');
+                Route::post('/pin/change', 'changePin')
+                    ->middleware('verify.pin');
 
                 // Manage driver
                 Route::post('/search-driver', 'searchDriver');
@@ -289,6 +293,14 @@ Route::middleware('validate.header')
                         Route::post('start', 'startTrip')
                             ->middleware('transaction.pin');
                     });
+
+                // Bus-stops
+                Route::post('/bus-stop', 'addBusStop');
+                Route::get('/bus-stop/{user_id}', 'getAllBusStops');
+                Route::get('{user_id}/stops/{state_id}', 'getStop');
+
+                //Notification
+                Route::patch('/notification', 'updateNotification');
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

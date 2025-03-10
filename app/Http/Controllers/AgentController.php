@@ -8,16 +8,32 @@ use App\Http\Requests\TransportOneTimeRequest;
 use App\Http\Requests\TransportRecurringRequest;
 use App\Models\User;
 use App\Services\AgentService;
+use App\Services\DriverService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Password;
 
 class AgentController extends Controller
 {
-    public function __construct(protected AgentService $service)
+    public function __construct(
+        protected AgentService $service,
+        protected DriverService $driverService
+    )
     {}
 
     public function profile()
     {
         return $this->service->profile();
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', Password::defaults()],
+            'confirm_password' => ['required', 'same:new_password']
+        ]);
+
+        return $this->service->changePassword($request);
     }
 
     public function agentInfo(AgentInfoRequest $request)
@@ -90,6 +106,7 @@ class AgentController extends Controller
     {
         $request->validate([
             'user_id' => 'required|integer|exists:users,id',
+            'method' => 'required|string|in:email,sms',
             'email' => 'required|email',
         ]);
 
@@ -165,5 +182,31 @@ class AgentController extends Controller
         ]);
 
         return $this->service->startTrip($request);
+    }
+
+    public function addBusStop(Request $request)
+    {
+        return $this->driverService->addBusStop($request);
+    }
+
+    public function getAllBusStops($userId)
+    {
+        return $this->driverService->getAllBusStops($userId);
+    }
+
+    public function getStop($userId, $stateId)
+    {
+        return $this->driverService->getStop($userId, $stateId);
+    }
+
+    public function updateNotification(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'inbox_notifications' => 'boolean',
+            'email_notifications' => 'boolean',
+        ]);
+
+        return $this->service->updateNotification($request);
     }
 }

@@ -19,6 +19,7 @@ use App\Trait\DriverTrait;
 use App\Trait\HttpResponse;
 use App\Trait\TripBookingTrait;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -36,6 +37,8 @@ class AgentService
 
         $user = User::with([
                 'transitCompany',
+                'busStops.state',
+                'userBank',
             ])
             ->where('id', $userId)
             ->first();
@@ -49,13 +52,31 @@ class AgentService
         return $this->success($data, "Agent profile");
     }
 
+    public function changePassword($request)
+    {
+        $user = User::findOrFail($request->user_id);
+
+        if (Hash::check($request->current_password, $user->password)) {
+            $user->update([
+                'password' => Hash::make($request->new_password),
+            ]);
+
+             return $this->success(null, "Password changed successfully");
+
+        }else {
+            return $this->error(null, 'Old Password did not match', 422);
+        }
+    }
+
     public function agentInfo($request)
     {
         $user = User::findOrFail($request->user_id);
 
         $photo = uploadFile($request, "profile_photo", "agent/profile");
+        $agentId = generateUniqueNumber('users', 'agent_id', 11);
 
         $user->update([
+            'agent_id' => $agentId,
             'profile_photo' => $photo['url'],
             'public_id' => $photo['public_id'],
             'gender' => $request->gender,
@@ -224,13 +245,17 @@ class AgentService
     {
         $user = User::findOrFail($request->user_id);
 
+        $photo = uploadFile($request, "profile_photo", "agent/profile");
+
         $user->update([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
             'phone_number' => $request->phone_number,
             'gender' => $request->gender,
-            'nin' => $request->nin,
+            'nin' => encryptData($request->nin),
+            'profile_photo' => $photo['url'],
+            'public_id' => $photo['public_id'],
             'next_of_kin_full_name' => $request->next_of_kin_full_name,
             'next_of_kin_relationship' => $request->next_of_kin_relationship,
             'next_of_kin_phone_number' => $request->next_of_kin_phone_number,
@@ -258,13 +283,14 @@ class AgentService
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
+        Cache::put('otp_pin_' . $user->id, $code, now()->addMinutes(5));
 
         $user->update([
             'verification_code' => $code,
             'verification_code_expires_at' => now()->addMinutes(10),
         ]);
 
-        if ($user) {
+        if ($request->method === 'email') {
             $data = [
                 'name' => $user->first_name,
                 'code' => $code
@@ -292,6 +318,15 @@ class AgentService
             return $this->error(null, "Invalid code", 400);
         }
 
+        $cachedOTP = Cache::get('otp_pin_' . $user->id);
+
+        if (!$cachedOTP || $cachedOTP !== $request->code) {
+            return $this->error(null, "Invalid OTP", 400);
+        }
+
+        Cache::put('pin_change_verified_' . $user->id, true, now()->addMinutes(5));
+        Cache::forget('otp_pin_' . $user->id);
+
         $user->update([
             'verification_code' => 0,
             'verification_code_expires_at' => null
@@ -307,6 +342,8 @@ class AgentService
         $user->userPin()->update([
             'pin' => bcrypt($request->pin)
         ]);
+
+        Cache::forget('pin_change_verified_' . $user->id);
 
         return $this->success(null, 'Changed successfully');
     }
@@ -527,7 +564,7 @@ class AgentService
 
         if ($request->payment_method === 'driver_wallet' && $user->wallet < $request->amount) {
             return $this->error(null, "Insufficient wallet balance!", 400);
-        }        
+        }
 
         try {
             DB::beginTransaction();
@@ -578,6 +615,18 @@ class AgentService
 
             return $this->error(null, "Failed to start trip: " . $e->getMessage(), 400);
         }
+    }
+
+    public function updateNotification($request)
+    {
+        $user = User::findOrFail($request->user_id);
+
+        $user->update([
+            'inbox_notifications' => $request->inbox_notifications,
+            'email_notifications' => $request->email_notifications,
+        ]);
+
+        return $this->success(null, "Notification settings updated successfully");
     }
 }
 

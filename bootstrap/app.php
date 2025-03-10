@@ -11,6 +11,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'agent.auth' => \App\Http\Middleware\AgentAuthMiddleware::class,
             'validate.header' => \App\Http\Middleware\ValidateHeader::class,
             'impersonation.throttle' => \App\Http\Middleware\ImpersonationThrottle::class,
+            'verify.pin' => \App\Http\Middleware\VerifyPinChange::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
