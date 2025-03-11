@@ -23,6 +23,7 @@ class AgentProfileResource extends JsonResource
             'wallet' => $this->wallet,
             'address' => $this->address,
             'gender' => $this->gender,
+            'agent_id' => $this->agent_id,
             'nin' => decryptData($this->nin),
             'next_of_kin_full_name' => $this->next_of_kin_full_name,
             'next_of_kin_phone_number' => $this->next_of_kin_phone_number,
@@ -41,6 +42,13 @@ class AgentProfileResource extends JsonResource
                 'address' => $this->transitCompany?->address,
                 'park' => $this->transitCompany?->park,
             ],
+            'bank' => (object)[
+                'id' => $this->userBank?->id,
+                'account_name' => $this->userBank?->account_name,
+                'account_number' => $this->userBank?->account_number,
+                'bank_name' => $this->userBank?->bank_name,
+            ],
+            'busstops' => BusStopResource::collection($this->busStops),
             'wallet_setup' => hasSetupWallet($this->id),
             'wallet_info' => (object)[
                 'available_balance' => $this->wallet,

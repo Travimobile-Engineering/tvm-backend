@@ -82,7 +82,9 @@ class User extends Authenticatable implements JWTSubject
         'email_verified_at',
         'is_admin',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'inbox_notifications',
+        'email_notifications',
     ];
 
     // The JWT Identifier method required by the JWT package
@@ -106,6 +108,8 @@ class User extends Authenticatable implements JWTSubject
             'password' => 'hashed',
             'driver_verified' => 'boolean',
             'is_available' => 'boolean',
+            'inbox_notifications' => 'boolean',
+            'email_notifications' => 'boolean',
         ];
     }
 

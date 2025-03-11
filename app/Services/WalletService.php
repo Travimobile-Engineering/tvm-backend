@@ -214,6 +214,38 @@ class WalletService
         }
     }
 
+    public function changeBank($request)
+    {
+        $user = User::with(['userBank', 'userPin', 'userTransferReceipient'])
+            ->findOrFail($request->user_id);
+
+        $user->userBank()->update([
+            'bank_name' => $request->bank_name,
+            'account_number' => $request->account_number,
+            'account_name' => $request->account_name,
+        ]);
+
+        $bank = Bank::where([
+            'name' => $request->bank_name
+        ])->first();
+
+        if(! $bank) {
+            return $this->error(null, "Selected bank not found!", 404);
+        }
+
+        $fields = [
+            'type' => "nuban",
+            'name' => $request->account_name,
+            'account_number' => $request->account_number,
+            'bank_code' => $bank->code,
+            'currency' => $bank->currency
+        ];
+
+        PaystackService::createRecipient($user, $fields);
+
+        return $this->success(null, "Created successfully", 201);
+    }
+
     public function verifyPin($request)
     {
         $user = User::with('userPin')
