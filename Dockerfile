@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y libicu-dev \
 
 RUN apt-get update && apt-get install -y supervisor
 
-
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpng-dev \
