@@ -19,7 +19,7 @@ class AgentAuthMiddleware
     {
         $user = Auth::guard('api')->user();
 
-        if (!$user || !in_array($user->user_type, [UserType::AGENT, UserType::DRIVER])) {
+        if (!$user || !in_array($user->user_category, [UserType::AGENT, UserType::DRIVER])) {
             return response()->json(['message' => "Unauthorized: You aren't authorized to perform this action."], 401);
         }
 

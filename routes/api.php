@@ -270,7 +270,7 @@ Route::middleware('validate.header')
                 Route::get('/booking-detail/{booking_id}', 'bookingDetail');
                 Route::put('/cancel-trip/{trip_id}', 'cancelTrip');
                 Route::put('update-profile', 'updateProfile');
-                Route::delete('delete-account/{user_id}', 'deleteProfile');
+                Route::delete('delete-account', 'deleteProfile');
 
                 // Reset Pin
                 Route::post('/pin/send-otp', 'sendOtp');

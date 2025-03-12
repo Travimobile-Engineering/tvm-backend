@@ -97,9 +97,9 @@ class AgentController extends Controller
         return $this->service->updateProfile($request);
     }
 
-    public function deleteProfile(User $user)
+    public function deleteProfile(Request $request)
     {
-        return $this->service->deleteProfile($user);
+        return $this->service->deleteProfile($request);
     }
 
     public function sendOtp(Request $request)

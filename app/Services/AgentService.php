@@ -264,8 +264,16 @@ class AgentService
         return $this->success($user, "Profile updated successfully");
     }
 
-    public function deleteProfile($user)
+    public function deleteProfile($request)
     {
+        $user = User::where('id', $request->user_id)
+            ->where('agent_id', $request->agent_id)
+            ->first();
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
         $user->delete();
         return $this->success(null, "Account deleted successfully");
     }
