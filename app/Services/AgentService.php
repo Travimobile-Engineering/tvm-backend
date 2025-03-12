@@ -370,7 +370,7 @@ class AgentService
         $driverId = $request->user_id;
         $cacheKey = "impersonation_attempts:driver_{$driverId}";
 
-        $driver = User::where('id', $request->user_id)
+        $driver = User::with(['vehicle'])->where('id', $request->user_id)
                   ->where('user_category', UserType::DRIVER)
                   ->first();
 

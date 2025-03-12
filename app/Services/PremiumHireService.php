@@ -460,7 +460,7 @@ class PremiumHireService
             ];
         });
 
-        return $this->success($data, "Completed Bookings");
+        return $this->success($data, ucfirst($query) . " Bookings");
     }
 
     public function bookingDetails($id)

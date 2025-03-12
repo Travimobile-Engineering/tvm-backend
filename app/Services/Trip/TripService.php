@@ -6,6 +6,7 @@ use App\Enum\ManifestStatus;
 use App\Models\Trip;
 use App\Enum\TripType;
 use App\Enum\TripStatus;
+use App\Events\TripCreated;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\TripResource;
@@ -19,6 +20,7 @@ use App\Models\User;
 use App\Trait\DriverTrait;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Spatie\ResponseCache\Facades\ResponseCache;
 
 class TripService
 {
@@ -33,7 +35,6 @@ class TripService
         }
 
         try {
-
             $user = User::with(['transitCompany', 'vehicle'])->findOrFail($request->user_id);
 
             $trip = Trip::create([
@@ -52,6 +53,8 @@ class TripService
                 'type' => TripType::ONETIME,
                 'status' => TripStatus::ACTIVE,
             ]);
+
+            broadcast(new TripCreated($user, $trip));
 
             return $this->success($trip, "Created successfully", 201);
         } catch (\Throwable $th) {
@@ -379,6 +382,8 @@ class TripService
             'status' => TripStatus::CANCELLED,
         ]);
 
+        ResponseCache::clear();
+
         return $this->success(null, "Trip Cancelled Successfully", 200);
     }
 
@@ -393,6 +398,8 @@ class TripService
         $trip->update([
             'status' => TripStatus::COMPLETED,
         ]);
+
+        ResponseCache::clear();
 
         return $this->success(null, "Trip Completed Successfully", 200);
     }
@@ -453,7 +460,7 @@ class TripService
             ]);
 
             DB::commit();
-
+            ResponseCache::clear();
             return $this->success(null, "Trip Started Successfully", 200);
         } catch (\Exception $e) {
             DB::rollBack();
