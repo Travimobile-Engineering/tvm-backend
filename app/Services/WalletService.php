@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enum\PaymentType;
+use App\Events\WalletFunded;
 use App\Models\Bank;
 use App\Models\User;
 use App\Models\Transaction;
@@ -52,6 +53,8 @@ class WalletService
                     'type' => 'CR',
                     'txn_reference' => $request->reference
                 ]);
+
+                broadcast(new WalletFunded($user, $request->amount));
 
                 return ['message' => 'Wallet funded successfully', 'data' => User::find($this->user->id)];
             }

@@ -77,6 +77,7 @@ class TripResource extends JsonResource
                     'first_name' => $passenger?->user?->first_name,
                     'booking_id' => $passenger?->booking_id,
                     'seat' => $passenger?->selected_seat,
+                    'on_seat' => $passenger?->on_seat,
                 ];
             })->toArray() : [],
             'selected_seats' => $filteredBookings ? $filteredBookings->map(function ($passenger) {

@@ -6,6 +6,7 @@ use App\Models\Trip;
 use App\Models\User;
 use App\Enum\TripStatus;
 use App\Enum\PaymentMethod;
+use App\Events\BookingCancelled;
 use App\Models\Transaction;
 use App\Models\TripBooking;
 use App\Models\TripPayment;
@@ -305,6 +306,8 @@ class TripBookingService
         }
 
         $booking->update(['status' => 0]);
+
+        broadcast(new BookingCancelled($booking, $this->user));
 
         return $this->success($booking, 'Booking cancelled successfully');
     }

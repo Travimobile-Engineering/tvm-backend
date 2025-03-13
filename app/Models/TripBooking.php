@@ -23,6 +23,7 @@ class TripBooking extends Model
         'payment_method',
         'manifest_status',
         'receive_sms',
+        'on_seat',
     ];
 
     protected $hidden = ['id'];
@@ -33,6 +34,7 @@ class TripBooking extends Model
             'travelling_with' => 'array',
             'third_party_passenger_details' => 'array',
             'receive_sms' => 'boolean',
+            'on_seat' => 'boolean',
         ];
     }
 

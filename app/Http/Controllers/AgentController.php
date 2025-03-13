@@ -6,7 +6,6 @@ use App\Http\Requests\AgentBookingRequest;
 use App\Http\Requests\AgentInfoRequest;
 use App\Http\Requests\TransportOneTimeRequest;
 use App\Http\Requests\TransportRecurringRequest;
-use App\Models\User;
 use App\Services\AgentService;
 use App\Services\DriverService;
 use Illuminate\Http\Request;
@@ -208,5 +207,15 @@ class AgentController extends Controller
         ]);
 
         return $this->service->updateNotification($request);
+    }
+
+    public function notifyPassengers(Request $request, $tripId)
+    {
+        return $this->service->notifyPassengers($request, $tripId);
+    }
+
+    public function scanTicket(Request $request, $bookingId = null)
+    {
+        return $this->service->scanTicket($request, $bookingId);
     }
 }

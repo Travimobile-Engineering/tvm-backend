@@ -6,6 +6,7 @@ use App\Enum\PaymentMethod;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
 use App\Enum\UserType;
+use App\Events\TripBooked;
 use App\Models\Notification;
 use App\Models\Trip;
 use App\Models\TripBooking;
@@ -152,6 +153,8 @@ trait TripBookingTrait
             $data = (object) [
                 'reference' => $ref,
             ];
+
+            broadcast(new TripBooked($trip, $user));
 
             return $this->success($data, "Payment successful", 200);
         } catch (\Throwable $th) {

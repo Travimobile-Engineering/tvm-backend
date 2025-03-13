@@ -8,6 +8,9 @@ use App\Enum\PaymentMethod;
 use App\Enum\TripStatus;
 use App\Enum\TripType;
 use App\Enum\UserType;
+use App\Events\TripCancelled;
+use App\Events\TripDepartureNotification;
+use App\Events\TripStart;
 use App\Http\Resources\AgentProfileResource;
 use App\Http\Resources\TripBookingResource;
 use App\Http\Resources\TripResource;
@@ -19,10 +22,12 @@ use App\Trait\DriverTrait;
 use App\Trait\HttpResponse;
 use App\Trait\TripBookingTrait;
 use Carbon\Carbon;
+use App\Notifications\PassengerTripNotification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Spatie\ResponseCache\Facades\ResponseCache;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AgentService
@@ -237,6 +242,9 @@ class AgentService
             'reason' => $request->reason,
             'status' => TripStatus::CANCELLED,
         ]);
+
+        broadcast(new TripCancelled($trip));
+        ResponseCache::clear();
 
         return $this->success($trip, 'Trip cancelled successfully');
     }
@@ -608,6 +616,8 @@ class AgentService
 
             DB::commit();
 
+            broadcast(new TripStart($trip));
+            ResponseCache::clear();
             return $this->success(null, "Trip Started Successfully", 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -635,6 +645,41 @@ class AgentService
         ]);
 
         return $this->success(null, "Notification settings updated successfully");
+    }
+
+    public function notifyPassengers($request)
+    {
+        $trip = Trip::with(['tripBookings'])->findOrFail($request->trip_id);
+
+        foreach ($trip->tripBookings as $passenger) {
+            $passenger->notify(new PassengerTripNotification($trip, $request));
+        }
+
+        broadcast(new TripDepartureNotification($trip));
+
+        return $this->success(null, "Notification sent successfully");
+    }
+
+    public function scanTicket($request, $bookingId)
+    {
+        $ticketId = $bookingId ?? $request->input('booking_id');
+
+        if (!$ticketId) {
+            return $this->error(null, "Ticket ID is required", 400);
+        }
+
+        $booking = TripBooking::where('booking_id', $ticketId)
+            ->first();
+
+        if (!$booking) {
+            return $this->error(null, "Booking not found", 404);
+        }
+
+        $booking->update([
+            'on_seat' => true,
+        ]);
+
+        return $this->success(null, "Ticket scanned successfully");
     }
 }
 

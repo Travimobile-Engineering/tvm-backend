@@ -256,21 +256,27 @@ Route::middleware('validate.header')
             ->middleware('agent.auth')
             ->controller(AgentController::class)
             ->group(function(){
-                // Profile
+                // Profile & Account Management
                 Route::get('/get-profile', 'profile');
+                Route::put('/update-profile', 'updateProfile');
                 Route::post('/change-password', 'changePassword');
+                Route::delete('/delete-account', 'deleteProfile');
 
-                Route::post('/info', 'agentInfo');
+                // Ticket & Trip Management
                 Route::post('/bus-search', 'busSearch');
                 Route::post('/buy-ticket', 'buyTicket');
                 Route::post('/ticket/search', 'ticketSearch');
+                Route::match(['get', 'post'], '/scan-ticket/{booking_id?}', 'scanTicket');
+
+                // Passenger Management
                 Route::post('/search/passenger', 'searchPassenger');
-                Route::post('/add-user', 'addUser');
                 Route::get('/{user_id}/booking-history', 'bookingHistory');
                 Route::get('/booking-detail/{booking_id}', 'bookingDetail');
                 Route::put('/cancel-trip/{trip_id}', 'cancelTrip');
-                Route::put('update-profile', 'updateProfile');
-                Route::delete('delete-account', 'deleteProfile');
+
+                // Agent Information
+                Route::post('/info', 'agentInfo');
+                Route::post('/add-user', 'addUser');
 
                 // Reset Pin
                 Route::post('/pin/send-otp', 'sendOtp');
@@ -292,6 +298,7 @@ Route::middleware('validate.header')
                         Route::get('/detail/{id}', 'tripDetails');
                         Route::post('start', 'startTrip')
                             ->middleware('transaction.pin');
+                        Route::post('/notify', 'notifyPassengers');
                     });
 
                 // Bus-stops
@@ -301,6 +308,7 @@ Route::middleware('validate.header')
 
                 //Notification
                 Route::patch('/notification', 'updateNotification');
+
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

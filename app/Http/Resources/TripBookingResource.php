@@ -25,6 +25,7 @@ class TripBookingResource extends JsonResource
             'travelling_with' => $this->travelling_with,
             'third_party_passenger_details' => $this->third_party_passenger_details,
             'amount_paid' => $this->amount_paid,
+            'on_seat' => $this->on_seat,
             'status' => $this->status,
             'payment_status' => $this->payment_status,
             'payment_method' => $this->payment_method,

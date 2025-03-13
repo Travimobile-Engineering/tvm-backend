@@ -6,7 +6,9 @@ use App\Enum\ManifestStatus;
 use App\Models\Trip;
 use App\Enum\TripType;
 use App\Enum\TripStatus;
+use App\Events\TripCancelled;
 use App\Events\TripCreated;
+use App\Events\TripStart;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\TripResource;
@@ -382,6 +384,7 @@ class TripService
             'status' => TripStatus::CANCELLED,
         ]);
 
+        broadcast(new TripCancelled($trip));
         ResponseCache::clear();
 
         return $this->success(null, "Trip Cancelled Successfully", 200);
@@ -389,7 +392,7 @@ class TripService
 
     public function completeTrip($id)
     {
-        $trip = Trip::find($id);
+        $trip = Trip::with('tripBookings')->find($id);
 
         if (! $trip) {
             return $this->error(null, "Data not found!", 404);
@@ -398,6 +401,12 @@ class TripService
         $trip->update([
             'status' => TripStatus::COMPLETED,
         ]);
+
+        $trip->tripBookings->each(function ($booking) {
+            $booking->update([
+                'status' => 2,
+            ]);
+        });
 
         ResponseCache::clear();
 
@@ -460,6 +469,7 @@ class TripService
             ]);
 
             DB::commit();
+            broadcast(new TripStart($trip));
             ResponseCache::clear();
             return $this->success(null, "Trip Started Successfully", 200);
         } catch (\Exception $e) {
