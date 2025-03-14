@@ -232,7 +232,7 @@ trait TripBookingTrait
 
     private function checkPin($request, $user)
     {
-        if ($user->user_category !== UserType::AGENT) {
+        if (!in_array($user->user_category, [UserType::AGENT, UserType::DRIVER])) {
             if (!$request->pin || $request->pin != $user->txn_pin) {
                 return $this->error(null, "Invalid transaction pin", 400);
             }
