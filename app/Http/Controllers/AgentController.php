@@ -185,6 +185,11 @@ class AgentController extends Controller
 
     public function addBusStop(Request $request)
     {
+        $request->validate([
+            'state_id' => 'required|integer|exists:states,id',
+            'stops' => 'required',
+        ]);
+
         return $this->driverService->addBusStop($request);
     }
 

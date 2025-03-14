@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 trait TripBookingTrait
 {
@@ -39,8 +40,8 @@ trait TripBookingTrait
 
     protected function walletPayment($amount_paid, $request, $user)
     {
-        if(! $request->pin || $request->pin != $user->txn_pin){
-            return $this->error(null, "Invalid transaction pin",  400);
+        if ($response = $this->checkPin($request, $user)) {
+            return $response;
         }
 
         if($amount_paid > $user->wallet) {
@@ -228,6 +229,20 @@ trait TripBookingTrait
 
         return $trip;
     }
+
+    private function checkPin($request, $user)
+    {
+        if ($user->user_category !== UserType::AGENT) {
+            if (!$request->pin || $request->pin != $user->txn_pin) {
+                return $this->error(null, "Invalid transaction pin", 400);
+            }
+        } else {
+            if (!$user->userPin || !Hash::check($request->pin, $user->userPin)) {
+                return $this->error(null, "Invalid transaction pin", 400);
+            }
+        }
+    }
+
 }
 
 
