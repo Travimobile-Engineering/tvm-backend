@@ -38,7 +38,8 @@ class AgentService
 
     public function profile()
     {
-        $userId = authUser()->id;
+        $auth = authUser();
+        $userId = $auth->id;
 
         $user = User::with([
                 'transitCompany',

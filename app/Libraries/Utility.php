@@ -20,6 +20,10 @@ class Utility
 
     public static function decrypt($string, $key)
     {
+        if (self::isPlainText($string)) {
+            return $string;
+        }
+
         $result = '';
         $string = base64_decode($string);
 
@@ -31,6 +35,11 @@ class Utility
             $result .= $char;
         }
         return $result;
+    }
+
+    private static function isPlainText($string)
+    {
+        return ctype_digit($string) || ctype_alpha($string) || ctype_alnum($string);
     }
 }
 

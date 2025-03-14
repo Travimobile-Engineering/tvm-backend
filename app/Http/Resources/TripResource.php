@@ -15,8 +15,7 @@ class TripResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $filteredBookings = $this->tripBookings->where('payment_status', 1)
-                            ->where('manifest_status', ManifestStatus::COMPLETED);
+        $filteredBookings = $this->tripBookings->where('payment_status', 1);
 
         $seats = $this->vehicle?->seats;
         $totalSeats = is_array($seats) ? count($seats) : 0;

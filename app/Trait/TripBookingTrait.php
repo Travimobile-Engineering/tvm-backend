@@ -111,7 +111,7 @@ trait TripBookingTrait
                 'payment_log_id' => $paymentLog->id,
                 'trip_id' => $trip->id,
                 'user_id' => $request->user_id ?? $user->id,
-                'agent_id' => $user->user_category == [UserType::AGENT] ? $user->id : null,
+                'agent_id' => $user->user_category == UserType::AGENT ? $user->id : null,
                 'third_party_booking' => $request->third_party_booking ?? 0,
                 'selected_seat' => ucfirst($request->selected_seat),
                 'trip_type' => $request->trip_type,
