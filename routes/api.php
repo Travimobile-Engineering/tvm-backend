@@ -298,6 +298,7 @@ Route::middleware('validate.header')
                         Route::get('/detail/{id}', 'tripDetails');
                         Route::post('start', 'startTrip')
                             ->middleware('transaction.pin');
+                        Route::patch('complete/{id}', 'completeTrip');
                         Route::post('/notify', 'notifyPassengers');
                     });
 

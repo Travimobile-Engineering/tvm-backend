@@ -8,6 +8,7 @@ use App\Http\Requests\TransportOneTimeRequest;
 use App\Http\Requests\TransportRecurringRequest;
 use App\Services\AgentService;
 use App\Services\DriverService;
+use App\Services\Trip\TripService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
 
@@ -15,7 +16,8 @@ class AgentController extends Controller
 {
     public function __construct(
         protected AgentService $service,
-        protected DriverService $driverService
+        protected DriverService $driverService,
+        protected TripService $tripService,
     )
     {}
 
@@ -183,6 +185,11 @@ class AgentController extends Controller
         return $this->service->startTrip($request);
     }
 
+    public function completeTrip($id)
+    {
+        return $this->tripService->completeTrip($id);
+    }
+
     public function addBusStop(Request $request)
     {
         $request->validate([
@@ -214,9 +221,9 @@ class AgentController extends Controller
         return $this->service->updateNotification($request);
     }
 
-    public function notifyPassengers(Request $request, $tripId)
+    public function notifyPassengers(Request $request)
     {
-        return $this->service->notifyPassengers($request, $tripId);
+        return $this->service->notifyPassengers($request);
     }
 
     public function scanTicket(Request $request, $bookingId = null)

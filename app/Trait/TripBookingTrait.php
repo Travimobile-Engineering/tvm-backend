@@ -237,7 +237,7 @@ trait TripBookingTrait
                 return $this->error(null, "Invalid transaction pin", 400);
             }
         } else {
-            if (!$user->userPin || !Hash::check($request->pin, $user->userPin)) {
+            if (!$user->userPin || !Hash::check($request->pin, $user->userPin->pin)) {
                 return $this->error(null, "Invalid transaction pin", 400);
             }
         }
