@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\SMS;
+use App\Services\SMS\SmsServiceFactory;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
@@ -15,7 +17,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(SMS::class, function ($app) {
+            $provider = config('services.sms.default');
+            return SmsServiceFactory::make($provider);
+        });
     }
 
     /**
