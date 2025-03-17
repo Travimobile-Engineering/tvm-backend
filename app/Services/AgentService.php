@@ -183,9 +183,9 @@ class AgentService
 
     public function bookingHistory($userId)
     {
-        $status = request()->query('status');
+        $status = strtolower(request()->query('status', ''));
 
-        $bookingsQuery = TripBooking::with([
+        $bookings = TripBooking::with([
                 'user' => function ($query) {
                     $query->select('id', 'first_name', 'last_name', 'phone_number');
                 },
@@ -193,15 +193,18 @@ class AgentService
                     $query->select('id', 'departure', 'destination', 'departure_date', 'departure_time', 'trip_duration', 'status');
                 },
             ])
-            ->where('agent_id', $userId);
-
-        if (!empty($status)) {
-            $bookingsQuery->whereHas('trip', function ($query) use ($status) {
-                $query->where('status', $status);
-            });
-        }
-
-        $bookings = $bookingsQuery->get();
+            ->where('agent_id', $userId)
+            ->when($status, function ($query) use ($status) {
+                if ($status === 'upcoming') {
+                    $query->whereHas('trip', function ($tripQuery) {
+                        $tripQuery->whereDate('departure_date', '>', now())
+                                  ->orWhereDate('start_date', '>', now());
+                    });
+                } else {
+                    $query->whereHas('trip', fn($tripQuery) => $tripQuery->where('status', $status));
+                }
+            })
+            ->get();
 
         return $this->success($bookings, 'Booking History Fetched Successfully');
     }
@@ -211,6 +214,7 @@ class AgentService
         $booking = TripBooking::with([
                 'user:id,first_name,last_name,phone_number',
                 'trip:id,vehicle_id,departure,destination,departure_date,departure_time,trip_duration,reason,date_cancelled,status',
+                'trip.vehicle:id,user_id,name,year,model,color,type,capacity,plate_no,seats,seat_row,seat_column',
                 'trip.vehicle.user:id,first_name,last_name,email,phone_number,profile_photo',
             ])
             ->where('booking_id', $bookingId)
@@ -224,9 +228,13 @@ class AgentService
             'driver' => $booking->trip?->vehicle?->user ?? null
         ];
 
+        $vehicle = [
+            'vehicle' => $booking->trip?->vehicle ?? null
+        ];
+
         $bookingData = $booking->toArray();
         unset($bookingData['trip']['vehicle']);
-        $bookingData = array_merge($bookingData, $driver);
+        $bookingData = array_merge($bookingData, $driver, $vehicle);
 
         return $this->success($bookingData, 'Booking History Fetched Successfully');
     }
@@ -410,7 +418,8 @@ class AgentService
 
         return $this->success([
             'token' => $token,
-            'driver' => $driver
+            'driver' => $driver,
+            'wallet_setup' => hasSetupWallet($driver->id),
         ], 'Logged in successfully');
     }
 
