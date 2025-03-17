@@ -304,7 +304,7 @@ class AgentService
         }
 
         if ($user->verification_code !== 0 || ($user->verification_code_expires_at !== null && $user->verification_code_expires_at >= now())) {
-            return $this->error(null, "Code has been sent to you", 400);
+            return $this->error(null, "A verification code has already been sent. Please check your email.", 400);
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);

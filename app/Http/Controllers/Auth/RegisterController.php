@@ -122,8 +122,6 @@ class RegisterController extends Controller
                     $user->save();
                 }
 
-                //Mail::to($email)->send(new ConfirmationEmail($request->full_name, $verification_code));
-
                 $type = MailingEnum::SIGN_UP_OTP;
                 $subject = "Verify Account";
                 $mail_class = "App\Mail\ConfirmationEmail";
@@ -189,5 +187,14 @@ class RegisterController extends Controller
     public function verifyAcount(Request $request)
     {
         return $this->service->verifyAcount($request);
+    }
+
+    public function resendCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        return $this->service->resendCode($request);
     }
 }

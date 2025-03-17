@@ -38,6 +38,7 @@ Route::middleware('validate.header')
             Route::post('/signup', [RegisterController::class, 'signup']);
             Route::post('/login', [AuthenticateController::class, 'login']);
             Route::post('/forgot-password-email', [ForgotPasswordController::class, 'send_password_reset_otp']);
+            Route::post('/resend-code', [RegisterController::class, 'resendCode']);
             Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verify_password_reset_otp']);
             Route::get('/reset-password', fn()=> "Oops! Please bear with us. We are currently working on this page")->name('password.reset');
             Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
