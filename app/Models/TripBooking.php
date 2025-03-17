@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
 
 class TripBooking extends Model
 {
+    use Notifiable;
+
     protected $fillable = [
         'payment_log_id',
         'booking_id',

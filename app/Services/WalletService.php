@@ -30,8 +30,17 @@ class WalletService
         $this->user = JWTAuth::user();
     }
 
-    public function getBalance(){
-        return ['data' => $this->user->wallet];
+    public function getBalance()
+    {
+        $userId = request()->input('userId') ?? authUser()->id;
+
+        $user = User::with('wallet')->find($userId);
+
+        if (!$user) {
+            return $this->error("User not found", 404);
+        }
+
+        return $this->success(['data' => $user->wallet ?? []], "Wallet balance retrieved");
     }
 
     public function fundWallet($request){
@@ -94,8 +103,15 @@ class WalletService
     }
 
     public function getTransactions(){
-        $transactions = Transaction::where('user_id', $this->user->id)->get();
-        return ['data' => $transactions];
+        $userId = request()->input('userId') ?? authUser()->id;
+
+        $user = User::with('transactions')->find($userId);
+
+        if (!$user) {
+            return $this->error("User not found", 404);
+        }
+
+        return $this->success(['data' => $user->transactions ?? []], "Wallet transactions retrieved");
     }
 
     public function setTransactionPin($request){
