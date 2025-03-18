@@ -34,7 +34,7 @@ class WalletService
     {
         $userId = request()->input('userId') ?? $this->user->id;
 
-        $user = User::with('wallet')->find($userId);
+        $user = User::find($userId);
 
         if (!$user) {
             return $this->error("User not found", 404);
@@ -361,7 +361,6 @@ class WalletService
         return $this->success($allTransactions, "Recent transactions");
     }
 
-
     public function recentEarning($userId)
     {
         if ($this->user->id != $userId) {
@@ -387,7 +386,6 @@ class WalletService
 
         return $this->success($earnings, "Recent earnings");
     }
-
 
     public function walletTopUp($request)
     {
