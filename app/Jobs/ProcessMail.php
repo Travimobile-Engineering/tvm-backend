@@ -17,7 +17,7 @@ class ProcessMail implements ShouldQueue
      * Create a new job instance.
      */
     public function __construct(
-        public int $batchSize = 15
+        public int $mailingId
     )
     {}
 
@@ -26,36 +26,31 @@ class ProcessMail implements ShouldQueue
      */
     public function handle(): void
     {
-        $emails = Mailing::where('status', MailingEnum::PENDING)
-                         ->where('attempts', '<', 3)
-                         ->limit($this->batchSize)
-                         ->lockForUpdate()
-                         ->get();
+        $email = Mailing::find($this->mailingId);
 
-        foreach ($emails as $email) {
-            try {
-                if (!class_exists($email->mailable)) {
-                    Log::error("Mailable class {$email->mailable} not found.");
-                    $email->update(['status' => MailingEnum::FAILED]);
-                    continue;
-                }
+        if (!$email) {
+            Log::error("Mailing record not found for ID: {$this->mailingId}");
+            return;
+        }
 
-                $payload = $email->payload ?? [];
-                $mailableInstance = new $email->mailable(...array_values($payload));
+        $mailableClass = $email->mailable;
+        $payload = $email->payload ?? [];
 
-                Mail::to($email->email)->send($mailableInstance);
+        try {
+            $mailableInstance = new $mailableClass(...array_values($payload));
+            Mail::to($email->email)->send($mailableInstance);
 
-                $email->update(['status' => MailingEnum::SENT]);
-            } catch (\Exception $e) {
-                Log::error("Email failed to send: " . $e->getMessage());
+            $email->update(['status' => MailingEnum::SENT]);
 
-                $email->increment('attempts');
-                if ($email->attempts >= $email->max_attempts) {
-                    $email->update([
-                        'status' => MailingEnum::FAILED,
-                        'error_response' => $e->getMessage()
-                    ]);
-                }
+        } catch (\Exception $e) {
+            Log::error("Email failed to send: " . $e->getMessage());
+            $email->increment('attempts');
+
+            if ($email->attempts >= $email->max_attempts) {
+                $email->update([
+                    'status' => MailingEnum::FAILED,
+                    'error_response' => $e->getMessage()
+                ]);
             }
         }
     }
