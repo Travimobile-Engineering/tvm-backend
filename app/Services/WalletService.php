@@ -32,7 +32,7 @@ class WalletService
 
     public function getBalance()
     {
-        $userId = request()->input('userId') ?? authUser()->id;
+        $userId = request()->input('userId') ?? $this->user->id;
 
         $user = User::with('wallet')->find($userId);
 
@@ -103,7 +103,7 @@ class WalletService
     }
 
     public function getTransactions(){
-        $userId = request()->input('userId') ?? authUser()->id;
+        $userId = request()->input('userId') ?? $this->user->id;
 
         $user = User::with('transactions')->find($userId);
 
@@ -319,9 +319,7 @@ class WalletService
 
     public function recentTransaction($userId)
     {
-        $user = authUser();
-
-        if ($user->id != $userId) {
+        if ($this->user->id != $userId) {
             return $this->error(null, "Unauthorized action.", 401);
         }
 
@@ -366,9 +364,7 @@ class WalletService
 
     public function recentEarning($userId)
     {
-        $user = authUser();
-
-        if ($user->id != $userId) {
+        if ($this->user->id != $userId) {
             return $this->error(null, "Unauthorized action.", 401);
         }
 
