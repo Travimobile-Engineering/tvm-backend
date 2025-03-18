@@ -41,4 +41,8 @@ class TransitCompany extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function parks(){
+        return $this->hasMany(Park::class);
+    }
 }
