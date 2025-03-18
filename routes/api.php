@@ -18,6 +18,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SendTestMailController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\TransitCompanyController;
+use App\Http\Controllers\ManifestCheckerController;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
@@ -311,6 +312,12 @@ Route::middleware('validate.header')
                 //Notification
                 Route::patch('/notification', 'updateNotification');
 
+            });
+
+        Route::prefix('manifest-checker')
+            ->controller(ManifestCheckerController::class)
+            ->group(function(){
+                Route::post('/check', 'getManifestData');
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);
