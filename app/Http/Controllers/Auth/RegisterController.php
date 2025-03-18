@@ -123,7 +123,7 @@ class RegisterController extends Controller
                 }
 
                 $type = MailingEnum::SIGN_UP_OTP;
-                $subject = "Verify Account";
+                $subject = "Verify Account";`
                 $mail_class = "App\Mail\ConfirmationEmail";
                 $data = [
                     'name' => $request->full_name,
