@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\ProcessMail;
 use App\Libraries\Utility;
 use App\Models\User;
 use App\Models\Mailing;
@@ -197,7 +198,8 @@ if (! function_exists('mailSend')) {
             'payload' => array_merge($payloadData)
         ];
 
-        Mailing::saveData($data);
+        $mailing = Mailing::saveData($data);
+        dispatch(new ProcessMail($mailing->id));
     }
 }
 

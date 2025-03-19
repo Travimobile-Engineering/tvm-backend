@@ -505,8 +505,7 @@ class TripService
                 ]
             )
             ->where('user_id', $userId)
-            ->whereDate('departure_date', '>', now())
-            ->orWhereDate('start_date', '>', now());
+            ->whereDate('departure_date', '>', now());
 
         if ($date) {
             $query->whereDate('created_at', '=', $date);
