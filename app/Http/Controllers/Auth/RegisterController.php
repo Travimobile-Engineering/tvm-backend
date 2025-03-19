@@ -31,33 +31,30 @@ class RegisterController extends Controller
             $category[] = "2";
 
 
-            $request->validate([
-                'address' => 'required',
-                // 'email' => 'required',
-                // 'phone_number' => 'required',
-                'nin' => 'required',
+            $request->validate([ 'address' => 'required', 'email' => 'required',
+                'phone_number' => 'required', 'nin' => 'required',
             ]);
         }
 
-        $is_email = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
-        $email = !$is_email ? "" : $request->contact;
-        $phone_number = !$is_email ? $request->contact : "";
+        // $is_email = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
+        // $email = !$is_email ? "" : $request->contact;
+        // $phone_number = !$is_email ? $request->contact : "";
 
         do $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_RIGHT);
         while(strlen($verification_code) < 5);
 
-        if(!empty($phone_number)){
-            $user = User::where('phone_number', $phone_number)->first();
+        if(!empty($request->phone_number)){
+            $user = User::where('phone_number', $request->phone_number)->first();
             if($user && $user->email_verified == 1) return response()->json(['error' => 'Phone number already exist'], status: 400);
         }
 
-        if(!empty($email)){
-            $user = User::where('email', $email)->first();
+        if(!empty($request->email)){
+            $user = User::where('email', $request->email)->first();
             if($user && $user->email_verified == 1) return response()->json(['error' => 'Email address already exist'], status: 400);
         }
 
-        $user = User::where('email', $email)
-        ->where('phone_number', $phone_number)->first();
+        $user = User::where('email', $request->email)
+        ->where('phone_number', $request->phone_number)->first();
         if($user && (!isset($request->verification_code) || empty($request->verification_code))){
 
             $user->verification_code = $verification_code;
@@ -75,10 +72,10 @@ class RegisterController extends Controller
             $names = explode(' ', $request->full_name, 2);
 
 
-            $user = User::where('email', $email)
-            ->where('phone_number', $phone_number)
+            $user = User::where('email', $request->email)
+            ->where('phone_number', $request->phone_number)
             ->update([
-                'phone_number' => $phone_number,
+                'phone_number' => $request->phone_number,
                 'first_name' => $names[0],
                 'last_name' => $names[1] ?? "",
                 'password' => Hash::make($request->password),
@@ -92,8 +89,8 @@ class RegisterController extends Controller
         }
 
         $user = User::create([
-            'email' => $email ?? "",
-            'phone_number' => $phone_number,
+            'email' => $request->email ?? "",
+            'phone_number' => $request->phone_number,
             'verification_code' => $verification_code,
             'verification_code_expires_at' => Carbon::now()->addMinutes(10)
         ]);
@@ -107,7 +104,7 @@ class RegisterController extends Controller
 
     public function send_verification_code( Request $request, bool $returnResponse = true, int $verification_code = null)
     {
-        $email = $request->contact;
+        $email = $request->email;
 
         if(!empty($email)){
 
@@ -150,13 +147,13 @@ class RegisterController extends Controller
             'verification_code' => 'required|numeric|digits:5'
         ]);
 
-        $is_email = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
-        $email = $is_email == false ? "" : $is_email;
-        $phone_number = $is_email == false ? $request->contact : "";
+        // $is_email = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
+        // $email = $is_email == false ? "" : $is_email;
+        // $phone_number = $is_email == false ? $request->contact : "";
 
         $user = User::where([
-            'email' => $email,
-            'phone_number' => $phone_number,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
             'verification_code' => $request->verification_code
         ])->first();
 
