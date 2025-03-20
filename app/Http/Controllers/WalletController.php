@@ -76,6 +76,11 @@ class WalletController extends Controller
         return $this->service->withdraw($request);
     }
 
+    public function balanceWithdraw(DriverWithdrawRequest $request)
+    {
+        return $this->service->balanceWithdraw($request);
+    }
+
     public function recentTransaction($userId)
     {
         return $this->service->recentTransaction($userId);

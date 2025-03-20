@@ -104,6 +104,8 @@ Route::middleware('validate.header')
                     Route::post('/verify-pin', 'verifyPin');
                     Route::post('/withdraw', 'withdraw')
                         ->middleware('transaction.pin');
+                    Route::post('/balance/withdraw', 'balanceWithdraw')
+                        ->middleware('transaction.pin');
                     Route::post('/topup', 'walletTopUp');
                     Route::post('/change-bank', 'changeBank')
                         ->middleware('transaction.pin');
