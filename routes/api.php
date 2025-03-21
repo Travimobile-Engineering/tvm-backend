@@ -104,6 +104,8 @@ Route::middleware('validate.header')
                     Route::post('/verify-pin', 'verifyPin');
                     Route::post('/withdraw', 'withdraw')
                         ->middleware('transaction.pin');
+                    Route::post('/balance/withdraw', 'balanceWithdraw')
+                        ->middleware('transaction.pin');
                     Route::post('/topup', 'walletTopUp');
                     Route::post('/change-bank', 'changeBank')
                         ->middleware('transaction.pin');
@@ -252,6 +254,19 @@ Route::middleware('validate.header')
             ->group(function(){
                 Route::get('/', 'all');
             });
+
+            Route::prefix('manifest-checker')
+                ->controller(ManifestCheckerController::class)
+                ->group(function(){
+                    Route::get('/check/{plate_no}', 'getManifestData');
+                    Route::prefix('incident')
+                        ->group(function(){
+                            Route::get('/get-categories', 'getIncidentCategories');
+                            Route::get('/get-types', 'getIncidentTypes');
+                            Route::get('/get-severity-levels', 'getIncidentSeverityLevels');
+                            Route::post('/add', 'addIncident');
+                        });
+                });
         });
 
         Route::prefix('agent')
@@ -312,12 +327,6 @@ Route::middleware('validate.header')
                 //Notification
                 Route::patch('/notification', 'updateNotification');
 
-            });
-
-        Route::prefix('manifest-checker')
-            ->controller(ManifestCheckerController::class)
-            ->group(function(){
-                Route::post('/check', 'getManifestData');
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

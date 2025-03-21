@@ -57,6 +57,8 @@ class User extends Authenticatable implements JWTSubject
         'lng',
         'lat',
         'trip_extended_time',
+        'inbox_notifications',
+        'email_notifications',
     ];
 
     protected $guarded = [
