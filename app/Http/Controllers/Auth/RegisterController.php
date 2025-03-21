@@ -85,7 +85,7 @@ class RegisterController extends Controller
             ]);
 
             if($user) return response()->json(['message' => 'Account verified successfully'], 200);
-            else return response()->json(['error' => 'Ooops! An error occured. Please try again'], 400);
+            else return response()->json(['error' => 'Ooops! An error occurred. Please try again'], 400);
         }
 
         $user = User::create([
