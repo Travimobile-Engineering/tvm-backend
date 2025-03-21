@@ -60,7 +60,11 @@ class AgentService
 
     public function changePassword($request)
     {
-        $user = User::findOrFail($request->user_id);
+        $user = User::find($request->user_id);
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
 
         if (Hash::check($request->current_password, $user->password)) {
             $user->update([
@@ -260,7 +264,11 @@ class AgentService
 
     public function updateProfile($request)
     {
-        $user = User::findOrFail($request->user_id);
+        $user = User::find($request->user_id);
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
 
         $photo = uploadFile($request, "profile_photo", "agent/profile");
 
@@ -301,10 +309,6 @@ class AgentService
 
         if (! $user) {
             return $this->error(null, 'Email not found', 404);
-        }
-
-        if ($user->verification_code !== 0 || ($user->verification_code_expires_at !== null && $user->verification_code_expires_at >= now())) {
-            return $this->error(null, "A verification code has already been sent. Please check your email.", 400);
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
@@ -647,7 +651,11 @@ class AgentService
 
     public function updateNotification($request)
     {
-        $user = User::findOrFail($request->user_id);
+        $user = User::find($request->user_id);
+
+        if (!$user) {
+            return $this->error(null, "User not found", 404);
+        }
 
         $user->update([
             'inbox_notifications' => $request->inbox_notifications,

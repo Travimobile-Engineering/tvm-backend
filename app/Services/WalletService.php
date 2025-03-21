@@ -317,6 +317,16 @@ class WalletService
         return PaystackService::transfer($user, $fields);
     }
 
+    public function balanceWithdraw($request)
+    {
+        $user = User::with(['userPin', 'userTransferReceipient', 'userWithdrawLogs'])
+            ->findOrFail($request->user_id);
+
+        $user->increment('wallet', $request->amount);
+
+        return $this->success(null, "Withdrawal successful");
+    }
+
     public function recentTransaction($userId)
     {
         if ($this->user->id != $userId) {

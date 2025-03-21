@@ -22,12 +22,12 @@ class AddIncidentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category' => 'required',
-            'type' => 'required',
+            'category' => 'required|string',
+            'type' => 'required|string',
             'date' => 'required',
             'time' => 'required',
-            'location' => 'required',
-            'description' => 'required',
+            'location' => 'required|string',
+            'description' => 'required|string',
             'media' => ['file', 'mimes:jpg,jpeg,png,mp4,mpeg,avi,mov'],
         ];
     }
