@@ -53,7 +53,7 @@ class TripService
                 'bus_stops' => $request->bus_stops ?? [],
                 'means' => $request->means ?? 1,
                 'type' => TripType::ONETIME,
-                'status' => TripStatus::ACTIVE,
+                'status' => TripStatus::UPCOMING,
             ]);
 
             broadcast(new TripCreated($user, $trip));
@@ -69,6 +69,7 @@ class TripService
         $trip->load([
             'user.transitCompany',
             'tripBookings.user',
+            'tripBookings.tripBookingPassengers',
             'departureRegion.state',
             'destinationRegion.state',
             'manifest',
@@ -142,7 +143,7 @@ class TripService
                 'departureRegion.parks',
                 'destinationRegion.parks',
             ])
-            ->where('status', TripStatus::ACTIVE);
+            ->where('status', TripStatus::UPCOMING);
 
         if ($departure) {
             $query->where('departure', $departure);
@@ -284,7 +285,7 @@ class TripService
                         'bus_stops' => $request->bus_stops ?? [],
                         'means' => $request->means ?? 1,
                         'type' => TripType::RECURRING,
-                        'status' => TripStatus::ACTIVE,
+                        'status' => TripStatus::UPCOMING,
                     ]);
 
                     $currentDate->addWeek();
@@ -424,7 +425,7 @@ class TripService
             return $this->error(null, "Trip not found!", 404);
         }
 
-        if ($trip->status !== TripStatus::ACTIVE) {
+        if ($trip->status !== TripStatus::UPCOMING) {
             return $this->error(null, "Sorry " . $trip->status, 400);
         }
 
@@ -505,7 +506,7 @@ class TripService
                 ]
             )
             ->where('user_id', $userId)
-            ->whereDate('departure_date', '>', now());
+            ->where('status', TripStatus::UPCOMING);
 
         if ($date) {
             $query->whereDate('created_at', '=', $date);
@@ -585,7 +586,7 @@ class TripService
                 ]
             )
             ->where('user_id', $userId)
-            ->where('status', TripStatus::ACTIVE);
+            ->where('status', TripStatus::UPCOMING);
 
         if ($type) {
             $query->where('type', $type);
@@ -641,7 +642,7 @@ class TripService
                     'destinationRegion.parks',
                 ]
             )
-            ->where('status', TripStatus::ACTIVE);
+            ->where('status', TripStatus::UPCOMING);
 
         if ($type) {
             $query->where('type', $type);
