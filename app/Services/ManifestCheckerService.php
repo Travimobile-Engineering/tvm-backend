@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Incident;
 use App\Models\Manifest;
+use App\Models\WatchList;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -117,5 +118,51 @@ class ManifestCheckerService
         ];
 
         return $this->success($severities, "Incident severities retrieved successfully");
+    }
+
+    public function addUpdateWatchList($request, $action = 'create'){
+        
+        $photo_url = "";
+        $document_links = [];
+
+        if($request->hasFile('photo')){
+            $response = $request->file('photo')->storeOnCloudinary('watch_list');
+            $photo_url = $response->getSecurePath();
+        }
+
+        if($request->hasFile('documents')){
+            
+            $documents = $request->documents;
+            if(is_array($documents)){
+                foreach($documents as $doc){
+                    $response = $request->file($doc)->storeOnCloudinary('watch_list');
+                    $document_links[] = $response->getSecurePath();
+                }
+            }
+        }
+
+        $data = [
+            "full_name" => $request->full_name,
+            "phone" => $request->phone,
+            "email" => $request->email,
+            "dob" => $request->dob,
+            "state_of_origin" => $request->state_of_origin,
+            "nin" => $request->nin,
+            "investigation_officer" => $request->investigation_officer,
+            "io_contact_number" => $request->io_contact_number,
+            "alert_location" => $request->alert_location,
+            "photo_url" => $photo_url,
+            "documents" => json_encode($document_links),
+        ];
+
+        if($action == 'update') {
+            $record = WatchList::find($request->id)->update($data);
+            if($record) return $this->success(null, "Record updated successfully");
+            return $this->error(null, "Failed to update record");
+        }
+
+        $record = WatchList::create($data);
+        if($record) return $this->success(null, "Record successfully added to watch list");
+        return $this->error(null, "Failed to add record to watch list");
     }
 }

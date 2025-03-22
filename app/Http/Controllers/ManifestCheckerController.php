@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AddIncidentRequest;
+use App\Http\Requests\WatchListRequest;
 use App\Services\ManifestCheckerService;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
@@ -39,5 +40,14 @@ class ManifestCheckerController extends Controller
     public function getIncidentSeverityLevels()
     {
         return $this->service->getIncidentSeverityLevels();
+    }
+
+    public function addRecordToWatchList(WatchListRequest $request){
+        return $this->service->addUpdateWatchList($request);
+    }
+
+    public function updateWatchListRecord(WatchListRequest $request){
+        $request->validate(['id' => 'required']);
+        return $this->service->addUpdateWatchList($request, 'update');
     }
 }
