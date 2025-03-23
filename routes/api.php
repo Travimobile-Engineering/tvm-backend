@@ -22,7 +22,7 @@ use App\Http\Controllers\ManifestCheckerController;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
-
+use App\Http\Controllers\UserController;
 
 Route::get('/', fn() => response(null, 200)) ;
 Route::middleware('validate.header')
@@ -96,6 +96,13 @@ Route::middleware('validate.header')
                 Route::post('/edit/{vehicle}', [VehicleController::class, 'update']);
                 Route::get('/{vehicle}', [VehicleController::class, 'show']);
             });
+
+            // All user routes
+            Route::prefix('user')
+                ->controller(UserController::class)
+                ->group(function () {
+                    Route::post('/change-password', 'changePassword');
+                });
 
             Route::prefix('user/wallet')
                 ->controller(WalletController::class)

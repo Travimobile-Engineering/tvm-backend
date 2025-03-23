@@ -270,20 +270,27 @@ class AgentService
             return $this->error(null, 'User not found', 404);
         }
 
-        $photo = uploadFile($request, "profile_photo", "agent/profile");
+        $photo = [
+            'url' => $user->profile_photo,
+            'public_id' => $user->public_id,
+        ];
+
+        if ($request->hasFile('profile_photo')) {
+            $photo = uploadFile($request, "profile_photo", "agent/profile");
+        }
 
         $user->update([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'gender' => $request->gender,
-            'nin' => encryptData($request->nin),
+            'first_name' => $request->first_name ?? $user->first_name,
+            'last_name' => $request->last_name ?? $user->last_name,
+            'email' => $request->email ?? $user->email,
+            'phone_number' => $request->phone_number ?? $user->phone_number,
+            'gender' => $request->gender ?? $user->gender,
+            'nin' => encryptData($request->nin) ?? $user->nin,
             'profile_photo' => $photo['url'],
             'public_id' => $photo['public_id'],
-            'next_of_kin_full_name' => $request->next_of_kin_full_name,
-            'next_of_kin_relationship' => $request->next_of_kin_relationship,
-            'next_of_kin_phone_number' => $request->next_of_kin_phone_number,
+            'next_of_kin_full_name' => $request->next_of_kin_full_name ?? $user->next_of_kin_full_name,
+            'next_of_kin_relationship' => $request->next_of_kin_relationship ?? $user->next_of_kin_relationship,
+            'next_of_kin_phone_number' => $request->next_of_kin_phone_number ?? $user->next_of_kin_phone_number,
         ]);
 
         return $this->success($user, "Profile updated successfully");
