@@ -54,4 +54,9 @@ class ManifestCheckerController extends Controller
     public function getWatchListRecord(Request $request){
         return $this->service->getWatchListRecord($request);
     }
+
+    public function searchWatchList(Request $request){
+        $request->validate(['name' => 'string, required']);
+        return $this->service->searchWatchList($request);
+    }
 }

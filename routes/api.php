@@ -281,6 +281,7 @@ Route::middleware('validate.header')
                             Route::post('/add', 'addRecordToWatchList');
                             Route::post('/update/{id}', 'updateWatchListRecord');
                             Route::get('/get/{id}', 'getWatchListRecord');
+                            Route::post('/search', 'searchWatchList');
                         });
                 });
         });

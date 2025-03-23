@@ -174,4 +174,12 @@ class ManifestCheckerService
 
         return $this->error(null, "Invalid watch list ID");
     }
+
+    public function searchWatchList($request){
+        $records = WatchList::where('full_name', 'LIKE', "%".$request->name."%")->get();
+        if($records){
+            return $this->success($records);
+        }
+        return $this->error(null, "No records found for '".$request->name."'");
+    }
 }
