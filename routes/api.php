@@ -265,9 +265,9 @@ Route::middleware('validate.header')
             Route::prefix('manifest-checker')
                 ->controller(ManifestCheckerController::class)
                 ->group(function(){
-                    
+
                     Route::get('/check/{plate_no}', 'getManifestData');
-                    
+
                     Route::prefix('incident')
                         ->group(function(){
                             Route::get('/get-categories', 'getIncidentCategories');
@@ -275,7 +275,7 @@ Route::middleware('validate.header')
                             Route::get('/get-severity-levels', 'getIncidentSeverityLevels');
                             Route::post('/add', 'addIncident');
                         });
-                    
+
                     Route::prefix('watch-list')
                         ->group(function(){
                             Route::post('/add', 'addRecordToWatchList');
