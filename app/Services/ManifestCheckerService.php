@@ -165,4 +165,21 @@ class ManifestCheckerService
         if($record) return $this->success(null, "Record successfully added to watch list");
         return $this->error(null, "Failed to add record to watch list");
     }
+
+    public function getWatchListRecord($request){
+        $record = WatchList::find($request->id);
+        if($record){
+            return $this->success($record, null);
+        }
+
+        return $this->error(null, "Invalid watch list ID");
+    }
+
+    public function searchWatchList($request){
+        $records = WatchList::where('full_name', 'LIKE', "%".$request->name."%")->get();
+        if($records){
+            return $this->success($records);
+        }
+        return $this->error(null, "No records found for '".$request->name."'");
+    }
 }

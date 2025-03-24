@@ -27,12 +27,13 @@ class WatchListRequest extends FormRequest
             "email" => 'required',
             "dob" => 'required',
             "state_of_origin" => 'required',
-            "nin" => 'required',
+            "nin" => ['required', 'integer'],
             "investigation_officer" => 'required',
             "io_contact_number" => 'required',
             "alert_location" => 'required',
             "photo" => ['nullable', 'mimes:jpg,jpeg,png'],
             "documents" => ['required', 'array'],
+            "status" => ["in:active,in custody,closed", "nullable"]
         ];
     }
 }

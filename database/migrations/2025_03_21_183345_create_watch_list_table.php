@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string("alert_location");
             $table->string("photo_url");
             $table->string("documents");
+            $table->enum("status", ['active', 'closed', 'in custody'])->default('active');
             $table->timestamps();
         });
     }
