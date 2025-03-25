@@ -53,6 +53,8 @@ class AgentProfileResource extends JsonResource
             'wallet_info' => (object)[
                 'available_balance' => $this->wallet,
             ],
+            'sms_notification' => $this->inbox_notifications,
+            'email_notification' => $this->email_notifications,
         ];
     }
 }

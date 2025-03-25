@@ -24,8 +24,9 @@ class WalletController extends Controller
         $this->service = $service;
     }
 
-    public function getBalance(){
-        return $this->response($this->service->getBalance());
+    public function getBalance()
+    {
+        return $this->service->getBalance();
     }
 
     public function fundWallet(FundWalletRequest $request){
@@ -37,8 +38,9 @@ class WalletController extends Controller
 
     }
 
-    public function getTransactions(){
-        return $this->response($this->service->getTransactions());
+    public function getTransactions()
+    {
+        return $this->service->getTransactions();
     }
 
     public function setTransactionPin(WalletSetTransactionPinRequest $request){
@@ -72,6 +74,11 @@ class WalletController extends Controller
     public function withdraw(DriverWithdrawRequest $request)
     {
         return $this->service->withdraw($request);
+    }
+
+    public function balanceWithdraw(DriverWithdrawRequest $request)
+    {
+        return $this->service->balanceWithdraw($request);
     }
 
     public function recentTransaction($userId)

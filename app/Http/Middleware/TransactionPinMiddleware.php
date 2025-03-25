@@ -22,12 +22,14 @@ class TransactionPinMiddleware
     {
         $userId = $request->user_id ?? $request->user()->id;
 
+        // Auth::guard('api')->user();
+
         $user = User::with('userPin')
             ->where('id', $userId)
             ->first();
 
         if($user) {
-            $pin = $user?->userPin?->pin;
+            $pin = $user->userPin?->pin;
 
             if(Hash::check($request->pin, $pin)) {
                 return $next($request);

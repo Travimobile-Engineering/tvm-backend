@@ -5,6 +5,8 @@ namespace App\Trait;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
+use App\Events\TripBooked;
+use App\Events\WalletFunded;
 use App\Models\Notification;
 use App\Models\PremiumHireBooking;
 use App\Models\Trip;
@@ -43,6 +45,8 @@ trait PaymentTrait
             ]);
 
             DB::commit();
+
+            broadcast(new WalletFunded($user, $formattedAmount));
             info("User with ID: {$user->id} topped up wallet with amount: {$formattedAmount}");
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -154,6 +158,7 @@ trait PaymentTrait
             ]);
 
             DB::commit();
+            broadcast(new TripBooked($trip, $user));
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;

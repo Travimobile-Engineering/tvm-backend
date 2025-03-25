@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enum\PaymentType;
+use App\Events\WalletFunded;
 use App\Models\Bank;
 use App\Models\User;
 use App\Models\Transaction;
@@ -29,8 +30,17 @@ class WalletService
         $this->user = JWTAuth::user();
     }
 
-    public function getBalance(){
-        return ['data' => $this->user->wallet];
+    public function getBalance()
+    {
+        $userId = request()->input('userId') ?? $this->user->id;
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            return $this->error("User not found", 404);
+        }
+
+        return $this->success(['data' => $user->wallet ?? []], "Wallet balance retrieved");
     }
 
     public function fundWallet($request){
@@ -52,6 +62,8 @@ class WalletService
                     'type' => 'CR',
                     'txn_reference' => $request->reference
                 ]);
+
+                broadcast(new WalletFunded($user, $request->amount));
 
                 return ['message' => 'Wallet funded successfully', 'data' => User::find($this->user->id)];
             }
@@ -91,8 +103,15 @@ class WalletService
     }
 
     public function getTransactions(){
-        $transactions = Transaction::where('user_id', $this->user->id)->get();
-        return ['data' => $transactions];
+        $userId = request()->input('userId') ?? $this->user->id;
+
+        $user = User::with('transactions')->find($userId);
+
+        if (!$user) {
+            return $this->error("User not found", 404);
+        }
+
+        return $this->success(['data' => $user->transactions ?? []], "Wallet transactions retrieved");
     }
 
     public function setTransactionPin($request){
@@ -298,11 +317,19 @@ class WalletService
         return PaystackService::transfer($user, $fields);
     }
 
+    public function balanceWithdraw($request)
+    {
+        $user = User::with(['userPin', 'userTransferReceipient', 'userWithdrawLogs'])
+            ->findOrFail($request->user_id);
+
+        $user->increment('wallet', $request->amount);
+
+        return $this->success(null, "Withdrawal successful");
+    }
+
     public function recentTransaction($userId)
     {
-        $user = authUser();
-
-        if ($user->id != $userId) {
+        if ($this->user->id != $userId) {
             return $this->error(null, "Unauthorized action.", 401);
         }
 
@@ -344,12 +371,9 @@ class WalletService
         return $this->success($allTransactions, "Recent transactions");
     }
 
-
     public function recentEarning($userId)
     {
-        $user = authUser();
-
-        if ($user->id != $userId) {
+        if ($this->user->id != $userId) {
             return $this->error(null, "Unauthorized action.", 401);
         }
 
@@ -372,7 +396,6 @@ class WalletService
 
         return $this->success($earnings, "Recent earnings");
     }
-
 
     public function walletTopUp($request)
     {

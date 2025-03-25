@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use App\Enum\MailingEnum;
 use App\Enum\UserType;
+use App\Mail\ConfirmationEmail;
 use App\Models\User;
 use App\Trait\HttpResponse;
 
@@ -86,6 +87,38 @@ class AuthService
         ]);
 
         return $this->success($user, "Account verified successfully");
+    }
+
+    public function resendCode($request)
+    {
+        $user = User::where('email', $request->email)
+            ->first();
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        if ($user->verification_code !== 0 || ($user->verification_code_expires_at !== null && $user->verification_code_expires_at >= now())) {
+            return $this->error(null, "A verification code has already been sent. Please check your email.", 400);
+        }
+
+        $code = generateUniqueNumber('users', 'verification_code', 5);
+
+        $user->update([
+            'verification_code' => $code,
+            'verification_code_expires_at' => now()->addMinutes(10),
+        ]);
+
+        $type = MailingEnum::RESEND_CODE;
+        $subject = "Resend code";
+        $mail_class = ConfirmationEmail::class;
+        $data = [
+            'name' => $user->first_name,
+            'verification_code' => $code
+        ];
+        mailSend($type, $user, $subject, $mail_class, $data);
+
+        return $this->success(null, 'Verification code sent successfully');
     }
 }
 

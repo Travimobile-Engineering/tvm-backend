@@ -8,6 +8,9 @@ use App\Enum\PaymentMethod;
 use App\Enum\TripStatus;
 use App\Enum\TripType;
 use App\Enum\UserType;
+use App\Events\TripCancelled;
+use App\Events\TripDepartureNotification;
+use App\Events\TripStart;
 use App\Http\Resources\AgentProfileResource;
 use App\Http\Resources\TripBookingResource;
 use App\Http\Resources\TripResource;
@@ -19,10 +22,12 @@ use App\Trait\DriverTrait;
 use App\Trait\HttpResponse;
 use App\Trait\TripBookingTrait;
 use Carbon\Carbon;
+use App\Notifications\PassengerTripNotification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Spatie\ResponseCache\Facades\ResponseCache;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AgentService
@@ -33,7 +38,8 @@ class AgentService
 
     public function profile()
     {
-        $userId = authUser()->id;
+        $auth = authUser();
+        $userId = $auth->id;
 
         $user = User::with([
                 'transitCompany',
@@ -54,7 +60,11 @@ class AgentService
 
     public function changePassword($request)
     {
-        $user = User::findOrFail($request->user_id);
+        $user = User::find($request->user_id);
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
 
         if (Hash::check($request->current_password, $user->password)) {
             $user->update([
@@ -177,9 +187,9 @@ class AgentService
 
     public function bookingHistory($userId)
     {
-        $status = request()->query('status');
+        $status = strtolower(request()->query('status', ''));
 
-        $bookingsQuery = TripBooking::with([
+        $bookings = TripBooking::with([
                 'user' => function ($query) {
                     $query->select('id', 'first_name', 'last_name', 'phone_number');
                 },
@@ -187,15 +197,18 @@ class AgentService
                     $query->select('id', 'departure', 'destination', 'departure_date', 'departure_time', 'trip_duration', 'status');
                 },
             ])
-            ->where('agent_id', $userId);
-
-        if (!empty($status)) {
-            $bookingsQuery->whereHas('trip', function ($query) use ($status) {
-                $query->where('status', $status);
-            });
-        }
-
-        $bookings = $bookingsQuery->get();
+            ->where('agent_id', $userId)
+            ->when($status, function ($query) use ($status) {
+                if ($status === 'upcoming') {
+                    $query->whereHas('trip', function ($tripQuery) {
+                        $tripQuery->whereDate('departure_date', '>', now())
+                                  ->orWhereDate('start_date', '>', now());
+                    });
+                } else {
+                    $query->whereHas('trip', fn($tripQuery) => $tripQuery->where('status', $status));
+                }
+            })
+            ->get();
 
         return $this->success($bookings, 'Booking History Fetched Successfully');
     }
@@ -205,6 +218,7 @@ class AgentService
         $booking = TripBooking::with([
                 'user:id,first_name,last_name,phone_number',
                 'trip:id,vehicle_id,departure,destination,departure_date,departure_time,trip_duration,reason,date_cancelled,status',
+                'trip.vehicle:id,user_id,name,year,model,color,type,capacity,plate_no,seats,seat_row,seat_column',
                 'trip.vehicle.user:id,first_name,last_name,email,phone_number,profile_photo',
             ])
             ->where('booking_id', $bookingId)
@@ -218,9 +232,13 @@ class AgentService
             'driver' => $booking->trip?->vehicle?->user ?? null
         ];
 
+        $vehicle = [
+            'vehicle' => $booking->trip?->vehicle ?? null
+        ];
+
         $bookingData = $booking->toArray();
         unset($bookingData['trip']['vehicle']);
-        $bookingData = array_merge($bookingData, $driver);
+        $bookingData = array_merge($bookingData, $driver, $vehicle);
 
         return $this->success($bookingData, 'Booking History Fetched Successfully');
     }
@@ -238,34 +256,56 @@ class AgentService
             'status' => TripStatus::CANCELLED,
         ]);
 
+        broadcast(new TripCancelled($trip));
+        ResponseCache::clear();
+
         return $this->success($trip, 'Trip cancelled successfully');
     }
 
     public function updateProfile($request)
     {
-        $user = User::findOrFail($request->user_id);
+        $user = User::find($request->user_id);
 
-        $photo = uploadFile($request, "profile_photo", "agent/profile");
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        $photo = [
+            'url' => $user->profile_photo,
+            'public_id' => $user->public_id,
+        ];
+
+        if ($request->hasFile('profile_photo')) {
+            $photo = uploadFile($request, "profile_photo", "agent/profile");
+        }
 
         $user->update([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'gender' => $request->gender,
-            'nin' => encryptData($request->nin),
+            'first_name' => $request->first_name ?? $user->first_name,
+            'last_name' => $request->last_name ?? $user->last_name,
+            'email' => $request->email ?? $user->email,
+            'phone_number' => $request->phone_number ?? $user->phone_number,
+            'gender' => $request->gender ?? $user->gender,
+            'nin' => encryptData($request->nin) ?? $user->nin,
             'profile_photo' => $photo['url'],
             'public_id' => $photo['public_id'],
-            'next_of_kin_full_name' => $request->next_of_kin_full_name,
-            'next_of_kin_relationship' => $request->next_of_kin_relationship,
-            'next_of_kin_phone_number' => $request->next_of_kin_phone_number,
+            'next_of_kin_full_name' => $request->next_of_kin_full_name ?? $user->next_of_kin_full_name,
+            'next_of_kin_relationship' => $request->next_of_kin_relationship ?? $user->next_of_kin_relationship,
+            'next_of_kin_phone_number' => $request->next_of_kin_phone_number ?? $user->next_of_kin_phone_number,
         ]);
 
         return $this->success($user, "Profile updated successfully");
     }
 
-    public function deleteProfile($user)
+    public function deleteProfile($request)
     {
+        $user = User::where('id', $request->user_id)
+            ->where('agent_id', $request->agent_id)
+            ->first();
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
         $user->delete();
         return $this->success(null, "Account deleted successfully");
     }
@@ -276,10 +316,6 @@ class AgentService
 
         if (! $user) {
             return $this->error(null, 'Email not found', 404);
-        }
-
-        if ($user->verification_code !== 0 || ($user->verification_code_expires_at !== null && $user->verification_code_expires_at >= now())) {
-            return $this->error(null, "Code has been sent to you", 400);
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
@@ -370,7 +406,7 @@ class AgentService
         $driverId = $request->user_id;
         $cacheKey = "impersonation_attempts:driver_{$driverId}";
 
-        $driver = User::where('id', $request->user_id)
+        $driver = User::with(['vehicle'])->where('id', $request->user_id)
                   ->where('user_category', UserType::DRIVER)
                   ->first();
 
@@ -393,7 +429,8 @@ class AgentService
 
         return $this->success([
             'token' => $token,
-            'driver' => $driver
+            'driver' => $driver,
+            'wallet_setup' => hasSetupWallet($driver->id),
         ], 'Logged in successfully');
     }
 
@@ -600,6 +637,8 @@ class AgentService
 
             DB::commit();
 
+            broadcast(new TripStart($trip));
+            ResponseCache::clear();
             return $this->success(null, "Trip Started Successfully", 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -619,7 +658,11 @@ class AgentService
 
     public function updateNotification($request)
     {
-        $user = User::findOrFail($request->user_id);
+        $user = User::find($request->user_id);
+
+        if (!$user) {
+            return $this->error(null, "User not found", 404);
+        }
 
         $user->update([
             'inbox_notifications' => $request->inbox_notifications,
@@ -627,6 +670,41 @@ class AgentService
         ]);
 
         return $this->success(null, "Notification settings updated successfully");
+    }
+
+    public function notifyPassengers($request)
+    {
+        $trip = Trip::with(['tripBookings'])->findOrFail($request->trip_id);
+
+        foreach ($trip->tripBookings as $passenger) {
+            $passenger->notify(new PassengerTripNotification($trip, $request));
+        }
+
+        broadcast(new TripDepartureNotification($trip));
+
+        return $this->success(null, "Notification sent successfully");
+    }
+
+    public function scanTicket($request, $bookingId)
+    {
+        $ticketId = $bookingId ?? $request->input('booking_id');
+
+        if (!$ticketId) {
+            return $this->error(null, "Ticket ID is required", 400);
+        }
+
+        $booking = TripBooking::where('booking_id', $ticketId)
+            ->first();
+
+        if (!$booking) {
+            return $this->error(null, "Booking not found", 404);
+        }
+
+        $booking->update([
+            'on_seat' => true,
+        ]);
+
+        return $this->success(null, "Ticket scanned successfully");
     }
 }
 

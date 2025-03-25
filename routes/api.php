@@ -18,10 +18,11 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SendTestMailController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\TransitCompanyController;
+use App\Http\Controllers\ManifestCheckerController;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
-
+use App\Http\Controllers\UserController;
 
 Route::get('/', fn() => response(null, 200)) ;
 Route::middleware('validate.header')
@@ -38,6 +39,7 @@ Route::middleware('validate.header')
             Route::post('/signup', [RegisterController::class, 'signup']);
             Route::post('/login', [AuthenticateController::class, 'login']);
             Route::post('/forgot-password-email', [ForgotPasswordController::class, 'send_password_reset_otp']);
+            Route::post('/resend-code', [RegisterController::class, 'resendCode']);
             Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verify_password_reset_otp']);
             Route::get('/reset-password', fn()=> "Oops! Please bear with us. We are currently working on this page")->name('password.reset');
             Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
@@ -95,12 +97,21 @@ Route::middleware('validate.header')
                 Route::get('/{vehicle}', [VehicleController::class, 'show']);
             });
 
+            // All user routes
+            Route::prefix('user')
+                ->controller(UserController::class)
+                ->group(function () {
+                    Route::post('/change-password', 'changePassword');
+                });
+
             Route::prefix('user/wallet')
                 ->controller(WalletController::class)
                 ->group(function () {
                     Route::post('/setup', 'walletSetup');
                     Route::post('/verify-pin', 'verifyPin');
                     Route::post('/withdraw', 'withdraw')
+                        ->middleware('transaction.pin');
+                    Route::post('/balance/withdraw', 'balanceWithdraw')
                         ->middleware('transaction.pin');
                     Route::post('/topup', 'walletTopUp');
                     Route::post('/change-bank', 'changeBank')
@@ -250,27 +261,56 @@ Route::middleware('validate.header')
             ->group(function(){
                 Route::get('/', 'all');
             });
+
+            Route::prefix('manifest-checker')
+                ->controller(ManifestCheckerController::class)
+                ->group(function(){
+                    
+                    Route::get('/check/{plate_no}', 'getManifestData');
+                    
+                    Route::prefix('incident')
+                        ->group(function(){
+                            Route::get('/get-categories', 'getIncidentCategories');
+                            Route::get('/get-types', 'getIncidentTypes');
+                            Route::get('/get-severity-levels', 'getIncidentSeverityLevels');
+                            Route::post('/add', 'addIncident');
+                        });
+                    
+                    Route::prefix('watch-list')
+                        ->group(function(){
+                            Route::post('/add', 'addRecordToWatchList');
+                            Route::post('/update/{id}', 'updateWatchListRecord');
+                            Route::get('/get/{id}', 'getWatchListRecord');
+                            Route::post('/search', 'searchWatchList');
+                        });
+                });
         });
 
         Route::prefix('agent')
             ->middleware('agent.auth')
             ->controller(AgentController::class)
             ->group(function(){
-                // Profile
+                // Profile & Account Management
                 Route::get('/get-profile', 'profile');
+                Route::put('/update-profile', 'updateProfile');
                 Route::post('/change-password', 'changePassword');
+                Route::delete('/delete-account', 'deleteProfile');
 
-                Route::post('/info', 'agentInfo');
+                // Ticket & Trip Management
                 Route::post('/bus-search', 'busSearch');
                 Route::post('/buy-ticket', 'buyTicket');
                 Route::post('/ticket/search', 'ticketSearch');
+                Route::match(['get', 'post'], '/scan-ticket/{booking_id?}', 'scanTicket');
+
+                // Passenger Management
                 Route::post('/search/passenger', 'searchPassenger');
-                Route::post('/add-user', 'addUser');
                 Route::get('/{user_id}/booking-history', 'bookingHistory');
                 Route::get('/booking-detail/{booking_id}', 'bookingDetail');
                 Route::put('/cancel-trip/{trip_id}', 'cancelTrip');
-                Route::put('update-profile', 'updateProfile');
-                Route::delete('delete-account/{user_id}', 'deleteProfile');
+
+                // Agent Information
+                Route::post('/info', 'agentInfo');
+                Route::post('/add-user', 'addUser');
 
                 // Reset Pin
                 Route::post('/pin/send-otp', 'sendOtp');
@@ -292,6 +332,8 @@ Route::middleware('validate.header')
                         Route::get('/detail/{id}', 'tripDetails');
                         Route::post('start', 'startTrip')
                             ->middleware('transaction.pin');
+                        Route::patch('complete/{id}', 'completeTrip');
+                        Route::post('/notify', 'notifyPassengers');
                     });
 
                 // Bus-stops
@@ -301,6 +343,7 @@ Route::middleware('validate.header')
 
                 //Notification
                 Route::patch('/notification', 'updateNotification');
+
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);
@@ -308,4 +351,6 @@ Route::middleware('validate.header')
 Route::fallback(function(){
     return response('page not found', 400);
 });
+
+// Test mail
 

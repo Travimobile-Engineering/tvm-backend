@@ -6,9 +6,9 @@ use App\Http\Requests\AgentBookingRequest;
 use App\Http\Requests\AgentInfoRequest;
 use App\Http\Requests\TransportOneTimeRequest;
 use App\Http\Requests\TransportRecurringRequest;
-use App\Models\User;
 use App\Services\AgentService;
 use App\Services\DriverService;
+use App\Services\Trip\TripService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
 
@@ -16,7 +16,8 @@ class AgentController extends Controller
 {
     public function __construct(
         protected AgentService $service,
-        protected DriverService $driverService
+        protected DriverService $driverService,
+        protected TripService $tripService,
     )
     {}
 
@@ -97,9 +98,9 @@ class AgentController extends Controller
         return $this->service->updateProfile($request);
     }
 
-    public function deleteProfile(User $user)
+    public function deleteProfile(Request $request)
     {
-        return $this->service->deleteProfile($user);
+        return $this->service->deleteProfile($request);
     }
 
     public function sendOtp(Request $request)
@@ -177,15 +178,25 @@ class AgentController extends Controller
         $request->validate([
             'user_id' => 'required|integer|exists:users,id',
             'trip_id' => 'required|integer|exists:trips,id',
-            'payment_method' => 'required|string|in:driver_wallet',
+            'payment_method' => 'required|string|in:wallet',
             'pin' => 'required|string',
         ]);
 
         return $this->service->startTrip($request);
     }
 
+    public function completeTrip($id)
+    {
+        return $this->tripService->completeTrip($id);
+    }
+
     public function addBusStop(Request $request)
     {
+        $request->validate([
+            'state_id' => 'required|integer|exists:states,id',
+            'stops' => 'required',
+        ]);
+
         return $this->driverService->addBusStop($request);
     }
 
@@ -208,5 +219,15 @@ class AgentController extends Controller
         ]);
 
         return $this->service->updateNotification($request);
+    }
+
+    public function notifyPassengers(Request $request)
+    {
+        return $this->service->notifyPassengers($request);
+    }
+
+    public function scanTicket(Request $request, $bookingId = null)
+    {
+        return $this->service->scanTicket($request, $bookingId);
     }
 }

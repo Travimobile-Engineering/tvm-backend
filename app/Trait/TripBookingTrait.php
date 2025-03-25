@@ -6,6 +6,7 @@ use App\Enum\PaymentMethod;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
 use App\Enum\UserType;
+use App\Events\TripBooked;
 use App\Models\Notification;
 use App\Models\Trip;
 use App\Models\TripBooking;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 trait TripBookingTrait
 {
@@ -38,8 +40,8 @@ trait TripBookingTrait
 
     protected function walletPayment($amount_paid, $request, $user)
     {
-        if(! $request->pin || $request->pin != $user->txn_pin){
-            return $this->error(null, "Invalid transaction pin",  400);
+        if ($response = $this->checkPin($request, $user)) {
+            return $response;
         }
 
         if($amount_paid > $user->wallet) {
@@ -104,14 +106,28 @@ trait TripBookingTrait
                 'type' => PaymentType::TRIP_BOOKING,
             ]);
 
-            TripBooking::create([
+            $selectedSeats = explode(',', str_replace(' ', '', $request->selected_seat));
+            $passengers = collect($request->travelling_with);
+
+            $passengers->prepend([
+                'name' => $user->first_name . ' ' . $user->last_name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'gender' => $user->gender ?? 'unknown',
+            ]);
+
+            if (count($selectedSeats) !== $passengers->count()) {
+                throw new \Exception('Number of seats must match the number of passengers.');
+            }
+
+            $tripBooking = TripBooking::create([
                 'booking_id' => $booking_id,
                 'payment_log_id' => $paymentLog->id,
                 'trip_id' => $trip->id,
                 'user_id' => $request->user_id ?? $user->id,
-                'agent_id' => $user->user_category == [UserType::AGENT] ? $user->id : null,
+                'agent_id' => $user->user_category == UserType::AGENT ? $user->id : null,
                 'third_party_booking' => $request->third_party_booking ?? 0,
-                'selected_seat' => ucfirst($request->selected_seat),
+                'selected_seat' => $selectedSeats,
                 'trip_type' => $request->trip_type,
                 'travelling_with' => $request->travelling_with,
                 'third_party_passenger_details' => $request->third_party_passenger_details,
@@ -120,6 +136,21 @@ trait TripBookingTrait
                 'payment_status' => 1,
                 'receive_sms' => $request->receive_sms ?? 0,
             ]);
+
+            foreach ($passengers as $index => $passenger) {
+                $tripBooking->tripBookingPassengers()->create([
+                    'trip_booking_id' => $tripBooking->id,
+                    'name' => $passenger['name'],
+                    'email' => $passenger['email'] ?? null,
+                    'phone_number' => $passenger['phone_number'],
+                    'next_of_kin' => $index === 0 ? ($user->next_of_kin ?? '') : ($request->third_party_passenger_details[$index - 1]['name'] ?? ''),
+                    'next_of_kin_phone_number' => $index === 0 ? ($user->next_of_kin_phone ?? '') : ($request->third_party_passenger_details[$index - 1]['phone_number'] ?? ''),
+
+                    'gender' => $passenger['gender'] ?? 'unknown',
+                    'selected_seat' => $selectedSeats[$index] ?? null,
+                    'on_seat' => false,
+                ]);
+            }
 
             Notification::create([
                 'user_id' => $user->id,
@@ -152,6 +183,8 @@ trait TripBookingTrait
             $data = (object) [
                 'reference' => $ref,
             ];
+
+            broadcast(new TripBooked($trip, $user));
 
             return $this->success($data, "Payment successful", 200);
         } catch (\Throwable $th) {
@@ -225,6 +258,20 @@ trait TripBookingTrait
 
         return $trip;
     }
+
+    private function checkPin($request, $user)
+    {
+        if (!in_array($user->user_category, [UserType::AGENT, UserType::DRIVER])) {
+            if (!$request->pin || $request->pin != $user->txn_pin) {
+                return $this->error(null, "Invalid transaction pin", 400);
+            }
+        } else {
+            if (!$user->userPin || !Hash::check($request->pin, $user->userPin->pin)) {
+                return $this->error(null, "Invalid transaction pin", 400);
+            }
+        }
+    }
+
 }
 
 

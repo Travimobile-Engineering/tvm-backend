@@ -23,6 +23,7 @@ class TransportOneTimeRequest extends FormRequest
     {
         return [
             'user_id' => ['required', 'integer', 'exists:users,id'],
+            'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
             'departure_id' => ['required', 'integer'],
             'destination_id' => ['required', 'integer'],
             'departure_date' => ['required', 'date'],

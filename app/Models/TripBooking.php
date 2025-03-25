@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
 
 class TripBooking extends Model
 {
+    use Notifiable;
+
     protected $fillable = [
         'payment_log_id',
         'booking_id',
@@ -23,6 +27,7 @@ class TripBooking extends Model
         'payment_method',
         'manifest_status',
         'receive_sms',
+        'on_seat',
     ];
 
     protected $hidden = ['id'];
@@ -33,6 +38,8 @@ class TripBooking extends Model
             'travelling_with' => 'array',
             'third_party_passenger_details' => 'array',
             'receive_sms' => 'boolean',
+            'on_seat' => 'boolean',
+            'selected_seat' => 'array',
         ];
     }
 
@@ -54,5 +61,18 @@ class TripBooking extends Model
     public function paymentLog()
     {
         return $this->belongsTo(PaymentLog::class, 'payment_log_id');
+    }
+
+    public function tripBookingPassengers()
+    {
+        return $this->hasMany(TripBookingPassenger::class);
+    }
+
+    // Attributes
+    protected function totalPassengers(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->tripBookingPassengers()->count() ?? 0,
+        );
     }
 }
