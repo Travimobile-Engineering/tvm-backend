@@ -17,9 +17,9 @@ use App\Services\Auth\AuthService;
 class RegisterController extends Controller
 {
     use HttpResponse;
-
-    public function __construct(protected AuthService $service)
-    {}
+    public function __construct(protected AuthService $service){
+        //
+    }
 
     //method to register a new user
     public function signup(RegisterRequest $request){
@@ -29,7 +29,6 @@ class RegisterController extends Controller
 
             $agent_id = strtoupper(generateUniqueRandomString('users', 'agent_id', 12));
             $category[] = "2";
-
 
             $request->validate([ 'address' => 'required', 'email' => 'required',
                 'phone_number' => 'required', 'nin' => 'required',
@@ -105,12 +104,9 @@ class RegisterController extends Controller
     public function send_verification_code( Request $request, bool $returnResponse = true, int $verification_code = null)
     {
         $email = $request->email;
-
         if(!empty($email)){
-
             $user = User::where('email', $email)->first();
             if($user){
-
                 if(empty($verification_code)){
 
                     $verification_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
@@ -118,22 +114,19 @@ class RegisterController extends Controller
                     $user->verification_code_expires_at = Carbon::now()->addMinutes(10);
                     $user->save();
                 }
-
+                //
                 $type = MailingEnum::SIGN_UP_OTP;
-                $subject = "Verify Account";`
+                $subject = "Verify Account";
                 $mail_class = "App\Mail\ConfirmationEmail";
                 $data = [
                     'name' => $request->full_name,
                     'verification_code' => $verification_code
                 ];
                 mailSend($type, $user, $subject, $mail_class, $data);
-
                 if($returnResponse) {
-                  return $this->success(null, "Verification code sent to your email address");
+                    return $this->success(null, "Verification code sent to your email address");
                 }
-
-            }
-            else {
+            }else{
                 return response()->json(['error' => 'User not found'], 400);
             }
         }
@@ -141,12 +134,10 @@ class RegisterController extends Controller
     }
 
     public function verify_account(Request $request){
-
         $request->validate([
             'contact' => 'required',
             'verification_code' => 'required|numeric|digits:5'
         ]);
-
         // $is_email = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
         // $email = $is_email == false ? "" : $is_email;
         // $phone_number = $is_email == false ? $request->contact : "";
@@ -167,7 +158,6 @@ class RegisterController extends Controller
             else return ['status' => false, 'error' => 'Verification code has expired'];
         }
         else return ['status' => false, 'error' => 'Invalid contact or verification code'];
-
     }
 
     public function agentSignUp(Request $request)
@@ -194,4 +184,6 @@ class RegisterController extends Controller
 
         return $this->service->resendCode($request);
     }
+
 }
+
