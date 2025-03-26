@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AgentBookingRequest;
 use App\Http\Requests\AgentInfoRequest;
+use App\Http\Requests\NotificationRequest;
 use App\Http\Requests\TransportOneTimeRequest;
 use App\Http\Requests\TransportRecurringRequest;
 use App\Services\AgentService;
@@ -210,14 +211,8 @@ class AgentController extends Controller
         return $this->driverService->getStop($userId, $stateId);
     }
 
-    public function updateNotification(Request $request)
+    public function updateNotification(NotificationRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'inbox_notifications' => 'boolean',
-            'email_notifications' => 'boolean',
-        ]);
-
         return $this->service->updateNotification($request);
     }
 

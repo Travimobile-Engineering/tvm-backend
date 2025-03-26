@@ -14,7 +14,8 @@ class Notification extends Model
         'additional_data'
     ];
 
-    public function casts(){
+    public function casts()
+    {
         return [
             'additional_data' => 'array'
         ];

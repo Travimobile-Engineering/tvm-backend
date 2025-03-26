@@ -7,11 +7,7 @@ use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use App\Http\Resources\DriverProfileResource;
-use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
@@ -19,7 +15,8 @@ class ProfileController extends Controller
 
     protected $user;
 
-    public function __construct(){
+    public function __construct()
+    {
         $this->user = JWTAuth::user();
     }
 
@@ -30,52 +27,45 @@ class ProfileController extends Controller
     }
 
     //Method to update user data
-    public function edit(Request $request){
+    public function edit(Request $request, $id)
+    {
+        $user = User::find($id);
 
-        $id = $request->route('id');
-
-        if($this->user->id == $id){
-
-            $updates = collect($request->all());
-
-            if($updates->has('full_name')){
-                $names = explode(' ', $updates['full_name'], 2);
-                $updates['first_name'] = $names[0];
-                $updates['last_name'] = $names[1] ?? '';
-            }
-
-            $updates = $updates->filter(function($value, $key){
-                return !empty($value) && $key != 'email' && Schema::hasColumn('users', $key);
-            });
-
-            if($updates->has('password')){
-
-                try{
-                    $request->validate([
-                        'password' => 'min:8',
-                    ]);
-                }catch(ValidationException $e){
-                    return response()->json(['error' => $e->errors()]);
-                }
-
-                $updates['password'] = Hash::make($updates['password']);
-            }
-
-            $uploadResult = uploadFile($request, 'profile_photo', 'profile_photos');
-            // dd($request);
-            $updates['profile_photo_url'] = $uploadResult['url'];
-
-
-            $user = User::where('id', $id)
-                ->update($updates->toArray());
-
-            return response()->json([
-                'message' => 'User data updated successfully',
-                'user' => User::find($id),
-            ]);
+        if (! $user){
+            return $this->error("User not found", 404);
         }
 
-        else return response()->json(['error' => 'Invalid user id']);
+        if ($request->has('full_name')){
+            $names = explode(' ', $request->full_name, 2);
+            $first_name = $names[0];
+            $last_name = $names[1] ?? '';
+        }
+
+        if ($request->has('profile_photo')) {
+            $uploadResult = uploadFile($request, 'profile_photo', 'profile_photos');
+        }
+
+        if ($request->has('password')) {
+            $request->validate([
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+            $password = bcrypt($request->password);
+        }
+
+        $user->update([
+            'first_name' => $first_name ?? $user->first_name,
+            'last_name' => $last_name ?? $user->last_name,
+            'phone_number' => $request->phone_number ?? $user->phone_number,
+            'gender' => $request->gender ?? $user->gender,
+            'next_of_kin_full_name' => $request->next_of_kin_full_name ?? $user->next_of_kin_full_name,
+            'next_of_kin_gender' => $request->next_of_kin_gender ?? $user->next_of_kin_gender,
+            'next_of_kin_phone_number' => $request->next_of_kin_phone_number ?? $user->next_of_kin_phone_number,
+            'profile_photo' => $uploadResult['url'] ?? $user->profile_photo,
+            'public_id' => $uploadResult['public_id'] ?? $user->public_id,
+            'password' => $password ?? $user->password,
+        ]);
+
+        return $this->success($user, 'User updated successfully');
     }
 
     public function getDriverProfile()

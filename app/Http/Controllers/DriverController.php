@@ -4,17 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\DriverInfoRequest;
 use App\Http\Requests\VehicleRequirementRequest;
+use App\Services\AgentService;
 use App\Services\DriverService;
 use Illuminate\Http\Request;
 
 class DriverController extends Controller
 {
-    protected $service;
-
-    public function __construct(DriverService $service)
-    {
-        $this->service = $service;
-    }
+    public function __construct(
+        protected DriverService $service,
+        protected AgentService $agentService
+    )
+    {}
 
     public function addDriverInfo(DriverInfoRequest $request)
     {
@@ -90,5 +90,10 @@ class DriverController extends Controller
         ]);
 
         return $this->service->setAvailability($request);
+    }
+
+    public function scanTicket(Request $request, $bookingId = null)
+    {
+        return $this->agentService->scanTicket($request, $bookingId);
     }
 }

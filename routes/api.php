@@ -102,6 +102,9 @@ Route::middleware('validate.header')
                 ->controller(UserController::class)
                 ->group(function () {
                     Route::post('/change-password', 'changePassword');
+                    Route::get('/{user_id}/notifications', 'getNotifications');
+                    Route::get('/{user_id}/notification/{id}', 'getNotification');
+                    Route::patch('/notification', 'updateNotification');
                 });
 
             Route::prefix('user/wallet')
@@ -163,6 +166,9 @@ Route::middleware('validate.header')
 
                             // Extend time
                             Route::put('/settings/extend-time', 'extendTime');
+
+                            // Notify Passengers
+                            Route::post('/notify', 'notifyPassengers');
                         });
 
                     Route::prefix('/passenger')
@@ -190,6 +196,8 @@ Route::middleware('validate.header')
                     Route::post('/vehicle-requirements', 'vehicleReq');
                     Route::put('/edit-description', 'editDescription');
                     Route::post('/set-availability', 'setAvailability');
+
+                    Route::match(['get', 'post'], '/scan-ticket/{booking_id?}', 'scanTicket');
                 });
 
             Route::prefix('premium')
@@ -292,7 +300,7 @@ Route::middleware('validate.header')
             ->group(function(){
                 // Profile & Account Management
                 Route::get('/get-profile', 'profile');
-                Route::put('/update-profile', 'updateProfile');
+                Route::post('/update-profile', 'updateProfile');
                 Route::post('/change-password', 'changePassword');
                 Route::delete('/delete-account', 'deleteProfile');
 
