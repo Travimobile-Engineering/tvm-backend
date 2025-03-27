@@ -3,7 +3,6 @@
 namespace App\Services\Auth;
 
 use App\Enum\MailingEnum;
-use App\Enum\UserType;
 use App\Mail\ConfirmationEmail;
 use App\Models\User;
 use App\Trait\HttpResponse;
@@ -12,31 +11,23 @@ class AuthService
 {
     use HttpResponse;
 
-    public function agentSignUp($request)
+    public function accountSignUp($request)
     {
-        $fullName = trim($request->input('name'));
+        $fullName = trim($request->input('full_name'));
         $nameParts = explode(' ', $fullName, 2);
 
         $firstName = $nameParts[0] ?? null;
         $lastName = $nameParts[1] ?? null;
 
-        $contact = trim($request->input('contact'));
-        $isEmail = filter_var($contact, FILTER_VALIDATE_EMAIL);
-
-        $email = $isEmail ? $contact : null;
-        $phone = !$isEmail ? $contact : null;
-
-        $existingUser = User::where(function ($query) use ($email, $phone) {
-                if ($email) {
-                    $query->where('email', $email);
-                }
-                if ($phone) {
-                    $query->orWhere('phone_number', $phone);
-                }
-            })->first();
+        $existingUser = $this->findUserByEmailOrPhone($request);
 
         if ($existingUser) {
-            return $this->error(null, "Email or phone number already in use.", 400);
+            if ($existingUser->email_verified) {
+                return $this->error(null, "Email or phone number already in use.", 400);
+            }
+
+            $this->resendAccountCode($request, $existingUser);
+            return $this->success(null, "OTP has been resent to your email.");
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
@@ -44,15 +35,15 @@ class AuthService
         $user = User::create([
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'email' => $email,
-            'phone_number' => $phone,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
             'verification_code' => $code,
             'verification_code_expires_at' => now()->addMinutes(10),
-            'user_category' => UserType::AGENT,
+            'user_category' => $request->user_category,
             'password' => bcrypt($request->password),
         ]);
 
-        if ($email) {
+        if ($request->email) {
             $data = [
                 'name' => $user->first_name,
                 'verification_code' => $code
@@ -61,7 +52,7 @@ class AuthService
                 MailingEnum::SIGN_UP_OTP,
                 $user,
                 "Verify Account",
-                "App\Mail\ConfirmationEmail",
+                ConfirmationEmail::class,
                 $data
             );
         }
@@ -119,6 +110,44 @@ class AuthService
         mailSend($type, $user, $subject, $mail_class, $data);
 
         return $this->success(null, 'Verification code sent successfully');
+    }
+
+    private function findUserByEmailOrPhone($request)
+    {
+        return User::where(function ($query) use ($request) {
+            if ($request->filled('email')) {
+                $query->where('email', $request->email);
+            }
+
+            if ($request->filled('phone_number')) {
+                $query->orWhere('phone_number', $request->phone_number);
+            }
+        })->first();
+    }
+
+    private function resendAccountCode($request, $user)
+    {
+        $code = generateUniqueNumber('users', 'verification_code', 5);
+
+        if ($request->filled('email')) {
+            $user->update([
+                'verification_code' => $code,
+                'verification_code_expires_at' => now()->addMinutes(10),
+            ]);
+
+            $data = [
+                'name' => $user->first_name,
+                'verification_code' => $code
+            ];
+            mailSend(
+                MailingEnum::SIGN_UP_OTP,
+                $user,
+                "Verify Account",
+                "App\Mail\ConfirmationEmail",
+                $data
+            );
+        }
+
     }
 }
 

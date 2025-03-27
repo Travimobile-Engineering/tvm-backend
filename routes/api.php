@@ -36,7 +36,7 @@ Route::middleware('validate.header')
 
         Route::prefix('auth')
         ->group(function(){
-            Route::post('/signup', [RegisterController::class, 'signup']);
+            Route::post('/signup', [RegisterController::class, 'accountSignUp']);
             Route::post('/login', [AuthenticateController::class, 'login']);
             Route::post('/forgot-password-email', [ForgotPasswordController::class, 'send_password_reset_otp']);
             Route::post('/resend-code', [RegisterController::class, 'resendCode']);
@@ -46,8 +46,8 @@ Route::middleware('validate.header')
             // Route::post('/verify', [RegisterController::class, 'verify_account']);
             Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
 
-            // Agent
-            Route::post('/agent/signup', [RegisterController::class, 'agentSignup']);
+            // Agent signup Deprecated
+            Route::post('/agent/signup', [RegisterController::class, 'accountSignUp']);
             Route::post('/verify/account', [RegisterController::class, 'verifyAcount']);
         });
 

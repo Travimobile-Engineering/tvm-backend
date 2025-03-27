@@ -22,7 +22,8 @@ class RegisterController extends Controller
     }
 
     //method to register a new user
-    public function signup(RegisterRequest $request){
+    public function signup(RegisterRequest $request)
+    {
 
         $category = ["1"];
         if(isset($request->user_category) && $request->user_category == 2){
@@ -69,7 +70,6 @@ class RegisterController extends Controller
             if($response['status'] == false) return response()->json(['error' => $response['error']], 400);
             // Get the first name and last name
             $names = explode(' ', $request->full_name, 2);
-
 
             $user = User::where('email', $request->email)
             ->where('phone_number', $request->phone_number)
@@ -153,6 +153,9 @@ class RegisterController extends Controller
                 $user->email_verified = 1;
                 $user->email_verified_at = Carbon::now();
                 $user->save();
+
+                return true;
+
                 return ['status' => true, 'message' => 'User account verified successfully'];
             }
             else return ['status' => false, 'error' => 'Verification code has expired'];
@@ -160,15 +163,17 @@ class RegisterController extends Controller
         else return ['status' => false, 'error' => 'Invalid contact or verification code'];
     }
 
-    public function agentSignUp(Request $request)
+    public function accountSignUp(Request $request)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:200'],
-            'contact' => ['required', 'string'],
+            'full_name' => ['required', 'string', 'max:200'],
+            'email' => ['required', 'string'],
+            'phone_number' => ['required_if:email,null'],
+            'user_category' => ['required', 'string', 'in:passenger,driver,agent'],
             'password' => ['required', 'string', 'confirmed', 'min:8']
         ]);
 
-        return $this->service->agentSignUp($request);
+        return $this->service->accountSignUp($request);
     }
 
     public function verifyAcount(Request $request)
