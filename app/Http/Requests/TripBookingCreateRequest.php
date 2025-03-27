@@ -26,7 +26,7 @@ class TripBookingCreateRequest extends FormRequest
             'third_party_booking' => 'nullable|int',
             'selected_seat' => 'required|string',
             'trip_type' => 'required|int',
-            'travelling_with' => 'nullable|string',
+            'travelling_with' => 'nullable',
             'third_party_passenger_details' => 'nullable|string',
             'amount_paid' => 'nullable|int',
             //'payment_method' => 'required_if:amount_paid,>0|in:wallet,paystack,transfer',

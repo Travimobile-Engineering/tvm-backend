@@ -561,7 +561,7 @@ class AgentService
 
         $data = TripResource::collection($trips);
 
-        return $this->success($data, "Trips trips", 200);
+        return $this->success($data, "Trips", 200);
     }
 
     public function tripDetails($tripId)

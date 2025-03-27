@@ -117,7 +117,7 @@ trait TripBookingTrait
             ]);
 
             if (count($selectedSeats) !== $passengers->count()) {
-                throw new \Exception('Number of seats must match the number of passengers.');
+                return $this->error(null, 'Number of seats must match the number of passengers.', 400);
             }
 
             $tripBooking = TripBooking::create([
@@ -156,11 +156,11 @@ trait TripBookingTrait
                 'user_id' => $user->id,
                 'title' => 'Booking Successful',
                 'description' => 'Your bus ticket to '.$destination.' on '.date("M jS Y h:iA",strtotime($trip->departure_at)).' has been successfully booked',
-                'additional_data' => json_encode([
+                'additional_data' => [
                     'booking_id' => $booking_id,
                     'note' => 'Please arrive atleast 30 minutes early to ensure a smooth boarding experience.',
                     'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
-                ])
+                ]
             ]);
 
             $user->driverTripPayments()->create([
@@ -237,11 +237,11 @@ trait TripBookingTrait
         $selected_seats = $bookings->pluck('selected_seat')->toArray();
 
         $already_taken_seats = array_map('ucfirst', array_merge(...array_map(function ($seats) {
-            return explode(', ', $seats);
+            return $seats;
         }, $selected_seats)));
 
         if($bookings->count() >= $total_seats) {
-            throw new \Exception("Number of passengers for this trip already complete", 400);
+            return $this->error(null, "Number of passengers for this trip already complete", 400);
         }
 
         $request_seats = array_map('ucfirst', array_map('trim', explode(',', $request->selected_seat)));
