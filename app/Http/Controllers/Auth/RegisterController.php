@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enum\UserType;
 use App\Models\User;
 use App\Enum\MailingEnum;
 use App\Trait\HttpResponse;
@@ -12,7 +13,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\RegisterRequest;
+use App\Jobs\SampleEmailJob;
 use App\Services\Auth\AuthService;
+use App\Services\EmailService;
 
 class RegisterController extends Controller
 {
@@ -22,16 +25,18 @@ class RegisterController extends Controller
     }
 
     //method to register a new user
-    public function signup(RegisterRequest $request){
-
+    public function signup(RegisterRequest $request, EmailService $emailService){
         $category = ["1"];
         if(isset($request->user_category) && $request->user_category == 2){
 
             $agent_id = strtoupper(generateUniqueRandomString('users', 'agent_id', 12));
             $category[] = "2";
 
-            $request->validate([ 'address' => 'required', 'email' => 'required',
-                'phone_number' => 'required', 'nin' => 'required',
+            $request->validate([
+                'address' => 'required',
+                'email' => 'required',
+                'phone_number' => 'required',
+                'nin' => 'required',
             ]);
         }
 
@@ -55,7 +60,6 @@ class RegisterController extends Controller
         $user = User::where('email', $request->email)
         ->where('phone_number', $request->phone_number)->first();
         if($user && (!isset($request->verification_code) || empty($request->verification_code))){
-
             $user->verification_code = $verification_code;
             $user->verification_code_expires_at = Carbon::now()->addMinutes(10);
             $user->save();
@@ -101,7 +105,7 @@ class RegisterController extends Controller
         else return response()->json(['error' => 'Failed to create user'], 400);
     }
 
-    public function send_verification_code( Request $request, bool $returnResponse = true, int $verification_code = null)
+    public function send_verification_code( Request $request, bool $returnResponse = true, ?int $verification_code = null)
     {
         $email = $request->email;
         if(!empty($email)){
