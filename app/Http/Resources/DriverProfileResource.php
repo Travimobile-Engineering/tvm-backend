@@ -23,7 +23,6 @@ class DriverProfileResource extends JsonResource
             'last_name' => $this->last_name,
             'email' => $this->email,
             'phone_number' => $this->phone_number,
-            'profile_picture' => $this->profile_picture,
             'wallet' => $this->wallet,
             'address' => $this->address,
             'gender' => $this->gender,
@@ -40,6 +39,7 @@ class DriverProfileResource extends JsonResource
             'is_available' => $this->is_available,
             'lng' => (float)$this->lng,
             'lat' => (float)$this->lat,
+            'trip_extended_time' => $this->trip_extended_time,
             'transit_company' => (object)[
                 'id' => $this->transitCompany?->id,
                 'name' => $this->transitCompany?->name,

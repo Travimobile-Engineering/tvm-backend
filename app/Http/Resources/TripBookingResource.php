@@ -25,6 +25,7 @@ class TripBookingResource extends JsonResource
             'travelling_with' => $this->travelling_with,
             'third_party_passenger_details' => $this->third_party_passenger_details,
             'amount_paid' => $this->amount_paid,
+            'on_seat' => $this->on_seat,
             'status' => $this->status,
             'payment_status' => $this->payment_status,
             'payment_method' => $this->payment_method,
@@ -39,6 +40,8 @@ class TripBookingResource extends JsonResource
                 'departure_time' => $this->trip?->departure_time,
                 'trip_duration' => $this->trip?->trip_duration,
                 'estimated_arrival_time' => $this->trip?->trip_duration,
+                'bus_stops' => $this->trip?->bus_stops,
+                'status' => $this->trip?->status,
             ],
             'user_detail' => (object)[
                 'first_name' => $this->user?->first_name,

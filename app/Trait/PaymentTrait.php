@@ -5,7 +5,8 @@ namespace App\Trait;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
-use App\Models\Charter;
+use App\Events\TripBooked;
+use App\Events\WalletFunded;
 use App\Models\Notification;
 use App\Models\PremiumHireBooking;
 use App\Models\Trip;
@@ -13,6 +14,7 @@ use App\Models\TripBooking;
 use App\Models\User;
 use App\Models\Vehicle\Vehicle;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 trait PaymentTrait
 {
@@ -43,6 +45,8 @@ trait PaymentTrait
             ]);
 
             DB::commit();
+
+            broadcast(new WalletFunded($user, $formattedAmount));
             info("User with ID: {$user->id} topped up wallet with amount: {$formattedAmount}");
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -123,6 +127,7 @@ trait PaymentTrait
                 'amount_paid' => $formattedAmount ?? 0,
                 'payment_method' => $paymentMethod ?? '',
                 'payment_status' => $payStatus ?? 0,
+                'receive_sms' => 0,
             ]);
 
             Notification::create([
@@ -153,6 +158,7 @@ trait PaymentTrait
             ]);
 
             DB::commit();
+            broadcast(new TripBooked($trip, $user));
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
@@ -161,21 +167,22 @@ trait PaymentTrait
 
     protected function handlePremiumHire($event)
     {
-        $paymentData = $event['data'];
-        $vehicleId = $paymentData['metadata']['vehicle_id'];
-        $userId = $paymentData['metadata']['user_id'];
-        $vehicle =  Vehicle::with('user')->find($vehicleId);
-        $type = PaymentType::PREMIUM_HIRE;
-        $user = User::with([
-                'transactions',
-                'paymentLogs',
-                'premiumHireBookings'
-            ])
-            ->find($userId);
-
-        $paymentLog = $this->logPayment($user, $event, $type);
-
         try {
+
+            $paymentData = $event['data'];
+            $vehicleId = $paymentData['metadata']['vehicle_id'];
+            $userId = $paymentData['metadata']['user_id'];
+            $vehicle =  Vehicle::with('user')->find($vehicleId);
+            $type = PaymentType::PREMIUM_HIRE;
+            $user = User::with([
+                    'transactions',
+                    'paymentLogs',
+                    'premiumHireBookings'
+                ])
+                ->find($userId);
+
+            $paymentLog = $this->logPayment($user, $event, $type);
+
             DB::beginTransaction();
 
             $ticketType = $paymentData['metadata']['ticket_type'];
@@ -216,7 +223,7 @@ trait PaymentTrait
                 'payment_method' => PaymentMethod::PAYSTACK,
                 'time' => $time,
                 'date' => $date,
-                'status' => TripStatus::UPCOMING,
+                'status' => TripStatus::REQUEST,
             ]);
 
             Notification::create([
@@ -238,12 +245,11 @@ trait PaymentTrait
                 'txn_reference' => $ref
             ]);
 
-            Charter::where('user_id', $userId)->delete();
-
             DB::commit();
-        } catch (\Throwable $th) {
+        } catch (\Exception $e) {
             DB::rollBack();
-            throw $th;
+            Log::info("message: " . $e->getMessage());
+            return $e->getMessage();
         }
     }
 }

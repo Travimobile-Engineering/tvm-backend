@@ -2,17 +2,227 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Http\Requests\AgentBookingRequest;
+use App\Http\Requests\AgentInfoRequest;
+use App\Http\Requests\NotificationRequest;
+use App\Http\Requests\TransportOneTimeRequest;
+use App\Http\Requests\TransportRecurringRequest;
+use App\Services\AgentService;
+use App\Services\DriverService;
+use App\Services\Trip\TripService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rules\Password;
 
 class AgentController extends Controller
 {
-    public function show(Request $request){
+    public function __construct(
+        protected AgentService $service,
+        protected DriverService $driverService,
+        protected TripService $tripService,
+    )
+    {}
 
-        $agent = User::where('agent_id', $request->agent_id);
-        if(!$agent->exists()) return response()->json(['error' => 'Invalid agent ID']);
+    public function profile()
+    {
+        return $this->service->profile();
+    }
 
-        return response()->json(['data' => $agent->get(['first_name', 'last_name', 'email', 'agent_id', 'profile_photo_url'])->first()]);
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', Password::defaults()],
+            'confirm_password' => ['required', 'same:new_password']
+        ]);
+
+        return $this->service->changePassword($request);
+    }
+
+    public function agentInfo(AgentInfoRequest $request)
+    {
+        return $this->service->agentInfo($request);
+    }
+
+    public function busSearch(Request $request)
+    {
+        return $this->service->busSearch($request);
+    }
+
+    public function buyTicket(AgentBookingRequest $request)
+    {
+        return $this->service->buyTicket($request);
+    }
+
+    public function ticketSearch(Request $request)
+    {
+        return $this->service->ticketSearch($request);
+    }
+
+    public function searchPassenger(Request $request)
+    {
+        return $this->service->searchPassenger($request);
+    }
+
+    public function addUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'phone_number' => 'required|string|unique:users,phone_number',
+            'gender' => 'required|string',
+            'nin' => 'nullable|string',
+        ]);
+
+        return $this->service->addUser($request);
+    }
+
+    public function bookingHistory($userId)
+    {
+        return $this->service->bookingHistory($userId);
+    }
+
+    public function bookingDetail($bookingId)
+    {
+        return $this->service->bookingDetail($bookingId);
+    }
+
+    public function cancelTrip(Request $request, $tripId)
+    {
+        $request->validate([
+            'reason' => 'required|string',
+        ]);
+
+        return $this->service->cancelTrip($request, $tripId);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        return $this->service->updateProfile($request);
+    }
+
+    public function deleteProfile(Request $request)
+    {
+        return $this->service->deleteProfile($request);
+    }
+
+    public function sendOtp(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'method' => 'required|string|in:email,sms',
+            'email' => 'required|email',
+        ]);
+
+        return $this->service->sendOtp($request);
+    }
+
+    public function verifyPin(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'code' => ['required', 'string'],
+        ]);
+
+        return $this->service->verifyPin($request);
+    }
+
+    public function changePin(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'pin' => 'required|numeric|digits:4|confirmed'
+        ]);
+
+        return $this->service->changePin($request);
+    }
+
+    public function searchDriver(Request $request)
+    {
+        $request->validate([
+            'search' => 'required|string',
+        ]);
+
+        return $this->service->searchDriver($request);
+    }
+
+    public function impersonateDriver(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'password' => 'required|string',
+        ]);
+
+        return $this->service->impersonateDriver($request);
+    }
+
+    public function createOneTimeTrip(TransportOneTimeRequest $request)
+    {
+        return $this->service->createOneTimeTrip($request);
+    }
+
+    public function createRecurringTrip(TransportRecurringRequest $request)
+    {
+        return $this->service->createRecurringTrip($request);
+    }
+
+    public function getTrips($userId)
+    {
+        return $this->service->getTrips($userId);
+    }
+
+    public function tripDetails($tripId)
+    {
+        return $this->service->tripDetails($tripId);
+    }
+
+    public function startTrip(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'trip_id' => 'required|integer|exists:trips,id',
+            'payment_method' => 'required|string|in:wallet',
+            'pin' => 'required|string',
+        ]);
+
+        return $this->service->startTrip($request);
+    }
+
+    public function completeTrip($id)
+    {
+        return $this->tripService->completeTrip($id);
+    }
+
+    public function addBusStop(Request $request)
+    {
+        $request->validate([
+            'state_id' => 'required|integer|exists:states,id',
+            'stops' => 'required',
+        ]);
+
+        return $this->driverService->addBusStop($request);
+    }
+
+    public function getAllBusStops($userId)
+    {
+        return $this->driverService->getAllBusStops($userId);
+    }
+
+    public function getStop($userId, $stateId)
+    {
+        return $this->driverService->getStop($userId, $stateId);
+    }
+
+    public function updateNotification(NotificationRequest $request)
+    {
+        return $this->service->updateNotification($request);
+    }
+
+    public function notifyPassengers(Request $request)
+    {
+        return $this->service->notifyPassengers($request);
+    }
+
+    public function scanTicket(Request $request, $bookingId = null)
+    {
+        return $this->service->scanTicket($request, $bookingId);
     }
 }

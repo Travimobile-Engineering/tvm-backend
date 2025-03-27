@@ -2,7 +2,6 @@
 
 namespace App\Models\Vehicle;
 
-use App\Models\PreferredLocation;
 use App\Models\PremiumHireBooking;
 use App\Models\PremiumHireRating;
 use App\Models\PremiumUpgrade;

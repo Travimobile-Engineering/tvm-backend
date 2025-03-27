@@ -10,6 +10,7 @@ enum MailingEnum: string
     const ORDER_EMAIL = "order_email";
     const RESEND_CODE = "resend_code";
     const EMAIL_VERIFICATION = "email_verification";
+    const VERIFY_OTP = "verify_otp";
 
 
     // Status

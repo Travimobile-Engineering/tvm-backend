@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class DriverPin extends Model
+class UserPin extends Model
 {
     protected $fillable = [
         'user_id',

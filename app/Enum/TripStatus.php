@@ -10,4 +10,5 @@ enum TripStatus: string
     const INPROGRESS = "in-progress";
     const CANCELLED = "cancelled";
     const UPCOMING = "upcoming";
+    const REQUEST = "request";
 }

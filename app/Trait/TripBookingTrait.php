@@ -5,6 +5,8 @@ namespace App\Trait;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
+use App\Enum\UserType;
+use App\Events\TripBooked;
 use App\Models\Notification;
 use App\Models\Trip;
 use App\Models\TripBooking;
@@ -12,12 +14,13 @@ use App\Models\User;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 trait TripBookingTrait
 {
     use HttpResponse;
 
-    public function processPayment($request, $result, $paymentProcessor)
+    public function processPayment($request, $result, $paymentProcessor = null)
     {
         if (! isset($paymentProcessor)) {
             return $result;
@@ -37,8 +40,8 @@ trait TripBookingTrait
 
     protected function walletPayment($amount_paid, $request, $user)
     {
-        if(! $request->pin || $request->pin != $user->txn_pin){
-            return $this->error(null, "Invalid transaction pin",  400);
+        if ($response = $this->checkPin($request, $user)) {
+            return $response;
         }
 
         if($amount_paid > $user->wallet) {
@@ -103,30 +106,61 @@ trait TripBookingTrait
                 'type' => PaymentType::TRIP_BOOKING,
             ]);
 
-            TripBooking::create([
+            $selectedSeats = explode(',', str_replace(' ', '', $request->selected_seat));
+            $passengers = collect($request->travelling_with);
+
+            $passengers->prepend([
+                'name' => $user->first_name . ' ' . $user->last_name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'gender' => $user->gender ?? 'unknown',
+            ]);
+
+            if (count($selectedSeats) !== $passengers->count()) {
+                return $this->error(null, 'Number of seats must match the number of passengers.', 400);
+            }
+
+            $tripBooking = TripBooking::create([
                 'booking_id' => $booking_id,
                 'payment_log_id' => $paymentLog->id,
                 'trip_id' => $trip->id,
-                'user_id' => $user->id,
+                'user_id' => $request->user_id ?? $user->id,
+                'agent_id' => $user->user_category == UserType::AGENT ? $user->id : null,
                 'third_party_booking' => $request->third_party_booking ?? 0,
-                'selected_seat' => ucfirst($request->selected_seat),
+                'selected_seat' => $selectedSeats,
                 'trip_type' => $request->trip_type,
-                'travelling_with' => $request->travelling_with ?? null,
-                'third_party_passenger_details' => $request->third_party_passenger_details ?? null,
+                'travelling_with' => $request->travelling_with,
+                'third_party_passenger_details' => $request->third_party_passenger_details,
                 'amount_paid' => $amount_paid ?? 0,
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => 1,
+                'receive_sms' => $request->receive_sms ?? 0,
             ]);
+
+            foreach ($passengers as $index => $passenger) {
+                $tripBooking->tripBookingPassengers()->create([
+                    'trip_booking_id' => $tripBooking->id,
+                    'name' => $passenger['name'],
+                    'email' => $passenger['email'] ?? null,
+                    'phone_number' => $passenger['phone_number'],
+                    'next_of_kin' => $index === 0 ? ($user->next_of_kin ?? '') : ($request->third_party_passenger_details[$index - 1]['name'] ?? ''),
+                    'next_of_kin_phone_number' => $index === 0 ? ($user->next_of_kin_phone ?? '') : ($request->third_party_passenger_details[$index - 1]['phone_number'] ?? ''),
+
+                    'gender' => $passenger['gender'] ?? 'unknown',
+                    'selected_seat' => $selectedSeats[$index] ?? null,
+                    'on_seat' => false,
+                ]);
+            }
 
             Notification::create([
                 'user_id' => $user->id,
                 'title' => 'Booking Successful',
                 'description' => 'Your bus ticket to '.$destination.' on '.date("M jS Y h:iA",strtotime($trip->departure_at)).' has been successfully booked',
-                'additional_data' => json_encode([
+                'additional_data' => [
                     'booking_id' => $booking_id,
                     'note' => 'Please arrive atleast 30 minutes early to ensure a smooth boarding experience.',
                     'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
-                ])
+                ]
             ]);
 
             $user->driverTripPayments()->create([
@@ -149,6 +183,8 @@ trait TripBookingTrait
             $data = (object) [
                 'reference' => $ref,
             ];
+
+            broadcast(new TripBooked($trip, $user));
 
             return $this->success($data, "Payment successful", 200);
         } catch (\Throwable $th) {
@@ -201,11 +237,11 @@ trait TripBookingTrait
         $selected_seats = $bookings->pluck('selected_seat')->toArray();
 
         $already_taken_seats = array_map('ucfirst', array_merge(...array_map(function ($seats) {
-            return explode(', ', $seats);
+            return $seats;
         }, $selected_seats)));
 
         if($bookings->count() >= $total_seats) {
-            throw new \Exception("Number of passengers for this trip already complete", 400);
+            return $this->error(null, "Number of passengers for this trip already complete", 400);
         }
 
         $request_seats = array_map('ucfirst', array_map('trim', explode(',', $request->selected_seat)));
@@ -222,6 +258,20 @@ trait TripBookingTrait
 
         return $trip;
     }
+
+    private function checkPin($request, $user)
+    {
+        if (!in_array($user->user_category, [UserType::AGENT, UserType::DRIVER])) {
+            if (!$request->pin || $request->pin != $user->txn_pin) {
+                return $this->error(null, "Invalid transaction pin", 400);
+            }
+        } else {
+            if (!$user->userPin || !Hash::check($request->pin, $user->userPin->pin)) {
+                return $this->error(null, "Invalid transaction pin", 400);
+            }
+        }
+    }
+
 }
 
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\auth;
+namespace App\Http\Controllers\Auth;
 
 use Carbon\Carbon;
 use App\Models\User;
@@ -24,14 +24,14 @@ class ForgotPasswordController extends Controller
         $this->otp = $request->otp ?? str_pad(mt_rand(11111, 99999), 5, 0);
         $this->password = $request->password;
     }
-    
-    
+
+
     public function store_otp(){
         $this->user->verification_code = $this->otp;
         $this->user->verification_code_expires_at = Carbon::now()->addMinutes(10);
         $this->user->save();
     }
-    
+
     public function send_password_reset_otp(){
         $this->store_otp();
         $name = $this->user->first_name.' '.$this->user->last_name;
@@ -63,27 +63,27 @@ class ForgotPasswordController extends Controller
     }
 
     // public function resetPassword(Request $request){
-        
+
     //     $validation = $request->validate([
         //         'email' => 'required|email|exists:users,email',
     //         'password' => 'required|min:8|confirmed',
     //         'otp' => 'required',
     //     ]);
-    
+
     //     $response = Password::broker()->reset($validation, function($user, $password){
     //         $user->password = Hash::make($password);
     //         $user->save();
     //     });
-    
+
     //     if($response === Password::PASSWORD_RESET) return $this->success(null, 'User password updated successfully');
     //     return response()->json(['error' => trans($response)]);
-    
+
     // }
 
     // public function send_password_reset_link(Request $request){
-    
+
     //     $response = Password::sendResetLink($request->only('email'));
-    
+
     //     if ($response == Password::RESET_LINK_SENT) {
     //         return response()->json(['message' => 'Password reset link sent to your email.'], 200);
     //     } elseif ($response == Password::INVALID_USER) {

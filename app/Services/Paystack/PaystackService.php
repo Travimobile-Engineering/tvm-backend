@@ -4,6 +4,7 @@ namespace App\Services\Paystack;
 
 use App\Services\Curl\PostCurlService;
 use App\Trait\HttpResponse;
+use Illuminate\Support\Facades\Log;
 
 class PaystackService
 {
@@ -36,10 +37,20 @@ class PaystackService
 
         $data = (new PostCurlService($url, $headers, $fields))->execute();
 
-        if($data['status'] === false) {
+        if (!is_array($data)) {
             return response()->json([
-                'status' => $data['status'],
-                'message' => $data['message'],
+                'status' => false,
+                'message' => 'Invalid response from Paystack',
+                'data' => null
+            ], 500);
+        }
+
+        Log::error('Paystack Transfer Response:', $data);
+
+        if (!isset($data['status']) || $data['status'] === false) {
+            return response()->json([
+                'status' => $data['status'] ?? false,
+                'message' => $data['message'] ?? 'An unknown error occurred',
                 'data' => null
             ], 400);
         }
@@ -48,18 +59,23 @@ class PaystackService
 
         return response()->json([
             'status' => $data['status'],
-            'message' => $data['message'],
+            'message' => $data['message'] ?? 'Transfer successful',
             'data' => null
         ], 200);
     }
 
     private static function logTransfer($user, $data)
     {
-        $user->userTransferReceipient()->create([
-            'name' => $data['name'],
-            'recipient_code' => $data['recipient_code'],
-            'data' => $data,
-        ]);
+        $user->userTransferReceipient()->updateOrCreate(
+            [
+                'user_id' => $user->id,
+            ],
+            [
+                'name' => $data['name'],
+                'recipient_code' => $data['recipient_code'],
+                'data' => $data,
+            ]
+        );
     }
 
     private static function logWithdraw($user, $data)

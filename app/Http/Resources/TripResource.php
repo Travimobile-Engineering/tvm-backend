@@ -15,17 +15,16 @@ class TripResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $filteredBookings = $this->tripBookings->where('payment_status', 1)
-                            ->where('manifest_status', ManifestStatus::COMPLETED);
+        $filteredBookings = $this->tripBookings->where('payment_status', 1);
 
         $seats = $this->vehicle?->seats;
         $totalSeats = is_array($seats) ? count($seats) : 0;
-        $totalSelectedSeats = $filteredBookings ? $filteredBookings->count() : 0;
+        $totalSelectedSeats = $this->tripBookings->sum(fn($passenger) => $passenger->total_passengers);
         $availableSeats = $totalSeats - $totalSelectedSeats;
 
-        $selected_seats = $filteredBookings ? explode(",",implode(",", $this->tripBookings->map(function ($passenger) {
-            return str_replace(["[", "]", "\""], "", $passenger->selected_seat);
-        })->toArray())) : [];
+        $selected_seats = $filteredBookings ? $this->tripBookings->flatMap(function ($passenger) {
+            return $passenger->selected_seat;
+        })->toArray() : [];
 
         return [
             'id' => $this->id,
@@ -71,20 +70,25 @@ class TripResource extends JsonResource
             'reason' => $this->reason,
             'date_cancelled' => $this->date_cancelled,
             'created_at' => $this->created_at,
-            'passengers' => $filteredBookings ? $filteredBookings->map(function ($passenger) {
-                return [
-                    'id' => $passenger?->user?->id,
-                    'first_name' => $passenger?->user?->first_name,
-                    'booking_id' => $passenger?->booking_id,
-                    'seat' => $passenger?->selected_seat,
-                ];
-            })->toArray() : [],
+            'passengers' => $this->tripBookings->flatMap(fn($passenger) =>
+                $passenger->tripBookingPassengers->map(fn($p) => [
+                    'id' => $p->id,
+                    'booking_id' => $passenger->booking_id,
+                    'first_name' => $p->name,
+                    'phone_number' => $p->phone_number,
+                    'next_of_kin' => $p->next_of_kin,
+                    'next_of_kin_phone' => $p->next_of_kin_phone_number,
+                    'gender' => $p->gender,
+                    'seat' => $p->selected_seat,
+                    'on_seat' => $p->on_seat,
+                ])
+            )->values()->toArray(),
             'selected_seats' => $filteredBookings ? $filteredBookings->map(function ($passenger) {
                 return $passenger?->selected_seat;
             })->flatMap(function ($seat) {
-                return explode(',', str_replace('"', '', $seat));
+                return $seat;
             })->unique()->values()->toArray() : [],
-            'total_selected_seats' => $filteredBookings ? $filteredBookings->count() : 0,
+            'total_selected_seats' => $this->tripBookings->sum(fn($passenger) => $passenger->total_passengers),
             'total_seat' => is_array($seats = $this->vehicle?->seats) ? count($seats) : 0,
             'available_seat_count' => $availableSeats,
             'available_seats' => collect($this->vehicle?->seats)->filter(fn($seat) => !in_array($seat, $selected_seats))->values(),

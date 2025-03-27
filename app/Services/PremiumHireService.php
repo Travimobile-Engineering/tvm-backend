@@ -251,7 +251,7 @@ class PremiumHireService
 
     public function getPassengers($userId, $bookingId)
     {
-        $user = User::with('premiumHireBookingPassengers')
+        $user = User::with(['premiumHireBookingPassengers', 'vehicle'])
             ->findOrFail($userId);
 
 
@@ -259,7 +259,7 @@ class PremiumHireService
             ->where('premium_hire_booking_id', $bookingId)
             ->get();
 
-        $data = $passengers->map(function ($passenger) {
+        $pass = $passengers->map(function ($passenger) {
             return [
                 'id' => $passenger->id,
                 'user_id' => $passenger->user_id,
@@ -272,6 +272,11 @@ class PremiumHireService
                 'next_of_kin_phone_number' => $passenger->next_of_kin_phone_number,
             ];
         });
+
+        $data = [
+            'passengers' => $pass->toArray(),
+            'vehicle_capacity' => (int)$user->vehicle?->capacity,
+        ];
 
         return $this->success($data, "Passengers");
     }
@@ -455,7 +460,7 @@ class PremiumHireService
             ];
         });
 
-        return $this->success($data, "Completed Bookings");
+        return $this->success($data, ucfirst($query) . " Bookings");
     }
 
     public function bookingDetails($id)
@@ -524,7 +529,7 @@ class PremiumHireService
     {
         $booking = PremiumHireBooking::findOrFail($id);
         $booking->update([
-            'status' => TripStatus::ACCEPTED
+            'status' => TripStatus::UPCOMING
         ]);
 
         return $this->success(null, "Trip accepted successfully");
@@ -533,6 +538,11 @@ class PremiumHireService
     public function startTrip($id)
     {
         $booking = PremiumHireBooking::findOrFail($id);
+
+        if($booking->status == TripStatus::COMPLETED) {
+            return $this->error(null, "Trip already completed", 400);
+        }
+
         $booking->update([
             'status' => TripStatus::INPROGRESS,
             'start_trip_date' => now(),

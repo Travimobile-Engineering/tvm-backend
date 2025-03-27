@@ -4,12 +4,14 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enum\TripStatus;
+use Illuminate\Support\Str;
 use App\Trait\UserRelationships;
+use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Tymon\JWTAuth\Contracts\JWTSubject;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -39,11 +41,13 @@ class User extends Authenticatable implements JWTSubject
         'next_of_kin_relationship',
         'verification_code',
         'verification_code_expires_at',
+        'email_verified_at',
         'custom_fields',
         'avatar_url',
         'uuid',
         'phone_number',
         'email',
+        'email_verified',
         'password',
         'transit_company_union_id',
         'profile_photo',
@@ -54,6 +58,8 @@ class User extends Authenticatable implements JWTSubject
         'lng',
         'lat',
         'trip_extended_time',
+        'inbox_notifications',
+        'email_notifications',
     ];
 
     protected $guarded = [
@@ -79,7 +85,9 @@ class User extends Authenticatable implements JWTSubject
         'email_verified_at',
         'is_admin',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'inbox_notifications',
+        'email_notifications',
     ];
 
     // The JWT Identifier method required by the JWT package
@@ -103,11 +111,24 @@ class User extends Authenticatable implements JWTSubject
             'password' => 'hashed',
             'driver_verified' => 'boolean',
             'is_available' => 'boolean',
+            'inbox_notifications' => 'boolean',
+            'email_notifications' => 'boolean',
         ];
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($trip) {
+            $trip->uuid = Str::uuid();
+        });
     }
 
     public function totalTrips(): Attribute
     {
-        return Attribute::get(fn () => $this->trips()->count());
+        return Attribute::get(fn () => $this->trips()
+            ->whereStatus(TripStatus::COMPLETED)
+            ->count()
+        );
     }
 }

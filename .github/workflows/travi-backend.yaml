@@ -3,12 +3,12 @@ name: Build and Push Travi Backend Image to Registry
 
 on:
   push:
-    branches: [ master, dev ]
+    branches: [ master, staging, dev ]
   pull_request:
-    branches: [ master, dev ]
+    branches: [ master, staging, dev ]
 
 env:
-  PROJECT_ID: "travi-mobile-mvp"
+  IMAGE_URI: "820242924853.dkr.ecr.eu-west-2.amazonaws.com/backend"
 
 jobs:
   build-image:
@@ -19,16 +19,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Authenticate to Google Cloud
-      uses: 'google-github-actions/auth@v2'
+    - name: "Export AWS Credentials"
+      uses: aws-actions/configure-aws-credentials@v2
       with:
-        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
 
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v2'
-
-    - name: Configure Docker to use gcloud as a credential helper
-      run: gcloud auth configure-docker europe-west2-docker.pkg.dev
+    - name: 'Authenticate to AWS ECR'
+      run:  aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $IMAGE_URI
 
     - name: Extract short commit SHA
       id: vars
@@ -39,14 +38,16 @@ jobs:
       run: |
         if [[ $GITHUB_REF == refs/heads/master ]]; then
           echo "tag=${{ env.short_commit_sha }}-prod" >> $GITHUB_ENV
+        elif [[ $GITHUB_REF == refs/heads/staging ]]; then
+          echo "tag=${{ env.short_commit_sha }}-stg" >> $GITHUB_ENV
         elif [[ $GITHUB_REF == refs/heads/dev ]]; then
           echo "tag=${{ env.short_commit_sha }}-dev" >> $GITHUB_ENV
         fi
 
     - name: Build Docker image
-      run: docker build -t europe-west2-docker.pkg.dev/travi-mobile-manifest-project/travi-mobile-registry/travi-backend:${{ env.tag }} .
+      run: docker build -t $IMAGE_URI:${{ env.tag }} .
 
     - name: Push Docker image to Artifact Registry
-      run: docker push europe-west2-docker.pkg.dev/travi-mobile-manifest-project/travi-mobile-registry/travi-backend:${{ env.tag }}
+      run: docker push $IMAGE_URI:${{ env.tag }}
 
 

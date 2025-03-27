@@ -4,8 +4,7 @@ namespace App\Trait;
 
 use App\Models\BusStop;
 use App\Models\Document;
-use App\Models\DriverBank;
-use App\Models\DriverPin;
+use App\Models\Notification;
 use App\Models\PaymentLog;
 use App\Models\PremiumHireBooking;
 use App\Models\PremiumHireBookingPassenger;
@@ -18,6 +17,8 @@ use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\TripPayment;
 use App\Models\UnavailableDate;
+use App\Models\UserBank;
+use App\Models\UserPin;
 use App\Models\UserTransferReceipient;
 use App\Models\UserWithdrawLog;
 use App\Models\Vehicle\Vehicle;
@@ -32,6 +33,11 @@ trait UserRelationships
     public function tripBookings()
     {
         return $this->hasMany(TripBooking::class, 'user_id');
+    }
+
+    public function agentTripBookings()
+    {
+        return $this->hasMany(TripBooking::class, 'user_id', 'agent_id');
     }
 
     public function transitCompany()
@@ -54,14 +60,14 @@ trait UserRelationships
         return $this->hasMany(BusStop::class, 'user_id');
     }
 
-    public function driverBank()
+    public function userBank()
     {
-        return $this->hasOne(DriverBank::class, 'user_id');
+        return $this->hasOne(UserBank::class, 'user_id');
     }
 
-    public function driverPin()
+    public function userPin()
     {
-        return $this->hasOne(DriverPin::class, 'user_id');
+        return $this->hasOne(UserPin::class, 'user_id');
     }
 
     public function userTransferReceipient()
@@ -127,6 +133,11 @@ trait UserRelationships
     public function premiumHireRatings()
     {
         return $this->hasMany(PremiumHireRating::class, 'user_id');
+    }
+
+    public function userNotifications()
+    {
+        return $this->hasMany(Notification::class, 'user_id');
     }
 }
 
