@@ -54,4 +54,10 @@ return [
         'url' => "https://api.africastalking.com/version1/messaging/bulk",
     ],
 
+    'termii' => [
+        'api_key' => env('TERMII_API_KEY'),
+        'sender_id' => env('TERMII_SENDER_ID'),
+        'sender_id_default' => env('TERMII_DEFAULT_SENDER_ID'),
+    ]
+
 ];
