@@ -57,6 +57,7 @@ class ProfileController extends Controller
             'last_name' => $last_name ?? $user->last_name,
             'phone_number' => $request->phone_number ?? $user->phone_number,
             'gender' => $request->gender ?? $user->gender,
+            'nin' => encryptData($request->nin) ?? $user->nin,
             'next_of_kin_full_name' => $request->next_of_kin_full_name ?? $user->next_of_kin_full_name,
             'next_of_kin_gender' => $request->next_of_kin_gender ?? $user->next_of_kin_gender,
             'next_of_kin_phone_number' => $request->next_of_kin_phone_number ?? $user->next_of_kin_phone_number,
