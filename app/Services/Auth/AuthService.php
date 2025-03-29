@@ -37,6 +37,7 @@ class AuthService
             }
 
             $this->sendCode($request, $existingUser);
+
             return $this->success(null, "OTP has been resent to your email or phone number.");
         }
 
