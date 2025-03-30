@@ -103,6 +103,12 @@ class DriverProfileResource extends JsonResource
                 'available_balance' => $this->wallet,
                 'pending_balance' => $pendingBalance,
             ],
+            'bank' => (object)[
+                'id' => $this->userBank?->id,
+                'account_name' => $this->userBank?->account_name,
+                'account_number' => $this->userBank?->account_number,
+                'bank_name' => $this->userBank?->bank_name,
+            ],
         ];
     }
 }

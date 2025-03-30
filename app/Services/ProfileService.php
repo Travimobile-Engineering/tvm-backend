@@ -67,6 +67,7 @@ class ProfileService
                 'trips',
                 'premiumUpgrades.vehicle',
                 'unavailableDates',
+                'userBank',
             ])
             ->findOrFail($auth->id);
 
