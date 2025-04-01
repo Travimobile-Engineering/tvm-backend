@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Contracts\SMS;
 use App\Enum\MailingEnum;
 use App\Mail\ConfirmationEmail;
 use App\Models\User;
@@ -10,6 +11,11 @@ use App\Trait\HttpResponse;
 class AuthService
 {
     use HttpResponse;
+
+    public function __construct(
+        protected SMS $smsService
+    )
+    {}
 
     public function accountSignUp($request)
     {
@@ -22,12 +28,17 @@ class AuthService
         $existingUser = $this->findUserByEmailOrPhone($request);
 
         if ($existingUser) {
+            if ($this->hasActiveCode($existingUser)) {
+                return $this->error(null, "A verification code has already been sent. Please check your email or phone.", 400);
+            }
+
             if ($existingUser->email_verified) {
                 return $this->error(null, "Email or phone number already in use.", 400);
             }
 
-            $this->resendAccountCode($request, $existingUser);
-            return $this->success(null, "OTP has been resent to your email.");
+            $this->sendCode($request, $existingUser);
+
+            return $this->success(null, "OTP has been resent to your email or phone number.");
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
@@ -43,19 +54,7 @@ class AuthService
             'password' => bcrypt($request->password),
         ]);
 
-        if ($request->email) {
-            $data = [
-                'name' => $user->first_name,
-                'verification_code' => $code
-            ];
-            mailSend(
-                MailingEnum::SIGN_UP_OTP,
-                $user,
-                "Verify Account",
-                ConfirmationEmail::class,
-                $data
-            );
-        }
+        $this->sendCode($request, $user);
 
         return $this->success(null, "User created successfully", 201);
     }
@@ -125,16 +124,16 @@ class AuthService
         })->first();
     }
 
-    private function resendAccountCode($request, $user)
+    private function sendCode($request, $user)
     {
         $code = generateUniqueNumber('users', 'verification_code', 5);
 
-        if ($request->filled('email')) {
-            $user->update([
-                'verification_code' => $code,
-                'verification_code_expires_at' => now()->addMinutes(10),
-            ]);
+        $user->update([
+            'verification_code' => $code,
+            'verification_code_expires_at' => now()->addMinutes(10),
+        ]);
 
+        if ($request->filled('email')) {
             $data = [
                 'name' => $user->first_name,
                 'verification_code' => $code
@@ -148,6 +147,16 @@ class AuthService
             );
         }
 
+        if ($request->filled('phone_number')) {
+            $this->smsService->sendSms(formatPhoneNumber($request->phone_number), "Your verification code is: $code");
+        }
+    }
+
+    private function hasActiveCode(User $user): bool
+    {
+        return $user->verification_code_expires_at &&
+            !$user->email_verified &&
+            $user->verification_code_expires_at >= now();
     }
 }
 

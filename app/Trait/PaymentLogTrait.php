@@ -37,6 +37,27 @@ trait PaymentLogTrait
             'type' => $type,
         ]);
     }
+
+    public function walletPaymentLog($user, $request, $amount_paid, $ref, $type)
+    {
+        return $user->paymentLogs()->create([
+            'trip_id' => $request->trip_id,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'email' => $user->email,
+            'phone_number' => $user->phone_number,
+            'amount' => $amount_paid,
+            'reference' => $ref,
+            'channel' => "wallet",
+            'currency' => "NGN",
+            'ip_address' => $request->ip(),
+            'paid_at' => now(),
+            'createdAt' => now(),
+            'transaction_date' => now(),
+            'status' => "success",
+            'type' => $type,
+        ]);
+    }
 }
 
 

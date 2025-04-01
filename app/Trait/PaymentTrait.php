@@ -114,13 +114,31 @@ trait PaymentTrait
 
             $payStatus = $status === "success" ? 1 : 0;
 
-            TripBooking::create([
+            $selectedSeats = explode(',', str_replace(' ', '', $selectedSeat));
+            $travellingWith = collect($travellingWith)->filter(function ($passenger) {
+                return !empty($passenger['name']) || !empty($passenger['email']) || !empty($passenger['phone_number']) || !empty($passenger['gender']);
+            })->values();
+
+            if ($travellingWith->isEmpty()) {
+                $travellingWith = null;
+            }
+
+            $passengers = collect($travellingWith ?? []);
+
+            $passengers->prepend([
+                'name' => $user->first_name . ' ' . $user->last_name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'gender' => $user->gender ?? 'unknown',
+            ]);
+
+            $tripBooking = TripBooking::create([
                 'booking_id' => $booking_id,
                 'payment_log_id' => $paymentLog->id,
                 'trip_id' => $tripId,
                 'user_id' => $user->id,
                 'third_party_booking' => $thirdPartyBooking ?? 0,
-                'selected_seat' => ucfirst($selectedSeat),
+                'selected_seat' => $selectedSeats,
                 'trip_type' => $tripType,
                 'travelling_with' => $travellingWith ?? null,
                 'third_party_passenger_details' => $thirdPartyPassenger ?? null,
@@ -129,6 +147,21 @@ trait PaymentTrait
                 'payment_status' => $payStatus ?? 0,
                 'receive_sms' => 0,
             ]);
+
+            foreach ($passengers as $index => $passenger) {
+                $tripBooking->tripBookingPassengers()->create([
+                    'trip_booking_id' => $tripBooking->id,
+                    'name' => $passenger['name'],
+                    'email' => $passenger['email'] ?? null,
+                    'phone_number' => $passenger['phone_number'],
+                    'next_of_kin' => $index === 0 ? ($user->next_of_kin ?? '') : ($thirdPartyPassenger[$index - 1]['name'] ?? ''),
+                    'next_of_kin_phone_number' => $index === 0 ? ($user->next_of_kin_phone ?? '') : ($thirdPartyPassenger[$index - 1]['phone_number'] ?? ''),
+
+                    'gender' => $passenger['gender'] ?? 'unknown',
+                    'selected_seat' => $selectedSeats[$index] ?? null,
+                    'on_seat' => false,
+                ]);
+            }
 
             Notification::create([
                 'user_id' => $user->id,
