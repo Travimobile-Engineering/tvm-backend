@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enum\TripStatus;
 use Illuminate\Support\Str;
 use App\Trait\UserRelationships;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -125,6 +126,9 @@ class User extends Authenticatable implements JWTSubject
 
     public function totalTrips(): Attribute
     {
-        return Attribute::get(fn () => $this->trips()->count());
+        return Attribute::get(fn () => $this->trips()
+            ->whereStatus(TripStatus::COMPLETED)
+            ->count()
+        );
     }
 }

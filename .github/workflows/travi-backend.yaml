@@ -41,7 +41,7 @@ jobs:
         elif [[ $GITHUB_REF == refs/heads/staging ]]; then
           echo "tag=${{ env.short_commit_sha }}-stg" >> $GITHUB_ENV
         elif [[ $GITHUB_REF == refs/heads/dev ]]; then
-          echo "tag=dev" >> $GITHUB_ENV
+          echo "tag=${{ env.short_commit_sha }}-dev" >> $GITHUB_ENV
         fi
 
     - name: Build Docker image
