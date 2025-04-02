@@ -8,16 +8,17 @@ use Illuminate\Http\Request;
 use App\Services\Trip\TripService;
 use App\Http\Requests\TransportOneTimeRequest;
 use App\Http\Requests\TransportRecurringRequest;
+use App\Services\AgentService;
 
 class TripController extends Controller
 {
     use HttpResponse;
-    protected $service;
 
-    public function __construct(TripService $service)
-    {
-        $this->service = $service;
-    }
+    public function __construct(
+        protected TripService $service,
+        protected AgentService $agentService,
+    )
+    {}
 
     public function createOneTime(TransportOneTimeRequest $request)
     {
@@ -149,6 +150,11 @@ class TripController extends Controller
         ]);
 
         return $this->service->extendTime($request);
+    }
+
+    public function notifyPassengers(Request $request)
+    {
+        return $this->agentService->notifyPassengers($request);
     }
 
 }

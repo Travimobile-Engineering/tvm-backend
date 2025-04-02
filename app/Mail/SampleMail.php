@@ -10,15 +10,21 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Queue\SerializesModels;
 
-class VerifyPinMail extends Mailable
+class SampleMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(protected string $name, protected string $code)
-    {}
+
+    protected $name;
+    protected $code;
+    public function __construct($name, $code)
+    {
+        $this->name = $name;
+        $this->code = $code;
+    }
 
     /**
      * Get the message envelope.
@@ -27,7 +33,7 @@ class VerifyPinMail extends Mailable
     {
         return new Envelope(
             from: new Address('noreply@travimobile.com','Travi Mobile'),
-            subject: 'Verify Pin Mail',
+            subject: 'Sample Mail',
         );
     }
 
@@ -37,11 +43,11 @@ class VerifyPinMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.verify-pin-mail',
-            with: [
-                'name' => $this->name,
+            view: 'email.sample',
+            with:[
+                'newName' => $this->name,
                 'code' => $this->code
-            ]
+            ],
         );
     }
 

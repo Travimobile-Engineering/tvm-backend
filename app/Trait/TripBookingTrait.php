@@ -18,15 +18,15 @@ use Illuminate\Support\Facades\Hash;
 
 trait TripBookingTrait
 {
-    use HttpResponse;
+    use HttpResponse, PaymentLogTrait;
 
-    public function processPayment($request, $result, $paymentProcessor = null)
+    public function processPayment($request, $result, $paymentProcessor = null, $user = null)
     {
         if (! isset($paymentProcessor)) {
             return $result;
         }
 
-        $trip = $this->handleTripCheck($request);
+        $trip = $this->handleTripCheck($request, $user);
 
         if ($trip instanceof \Illuminate\Http\JsonResponse && $trip->getStatusCode() !== 200) {
             return $trip;
@@ -56,7 +56,7 @@ trait TripBookingTrait
             return $this->error(null, "Amount cannot be lesser than 0",  400);
         }
 
-        $trip = $this->handleTripCheck($request);
+        $trip = $this->handleTripCheck($request, $user);
 
         if ($trip instanceof \Illuminate\Http\JsonResponse && $trip->getStatusCode() !== 200) {
             return $trip;
@@ -88,26 +88,18 @@ trait TripBookingTrait
 
             $ref = getRandomString();
 
-            $paymentLog = $user->paymentLogs()->create([
-                'trip_id' => $request->trip_id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'email' => $user->email,
-                'phone_number' => $user->phone_number,
-                'amount' => $amount_paid,
-                'reference' => $ref,
-                'channel' => "wallet",
-                'currency' => "NGN",
-                'ip_address' => $request->ip(),
-                'paid_at' => now(),
-                'createdAt' => now(),
-                'transaction_date' => now(),
-                'status' => "success",
-                'type' => PaymentType::TRIP_BOOKING,
-            ]);
+            $paymentLog = $this->walletPaymentLog($user, $request, $amount_paid, $ref, PaymentType::TRIP_BOOKING);
 
             $selectedSeats = explode(',', str_replace(' ', '', $request->selected_seat));
-            $passengers = collect($request->travelling_with);
+            $travellingWith = collect($request->travelling_with)->filter(function ($passenger) {
+                return !empty($passenger['name']) || !empty($passenger['email']) || !empty($passenger['phone_number']) || !empty($passenger['gender']);
+            })->values();
+
+            if ($travellingWith->isEmpty()) {
+                $travellingWith = null;
+            }
+
+            $passengers = collect($travellingWith ?? []);
 
             $passengers->prepend([
                 'name' => $user->first_name . ' ' . $user->last_name,
@@ -116,11 +108,7 @@ trait TripBookingTrait
                 'gender' => $user->gender ?? 'unknown',
             ]);
 
-            if (count($selectedSeats) !== $passengers->count()) {
-                throw new \Exception('Number of seats must match the number of passengers.');
-            }
-
-            $tripBooking = TripBooking::create([
+            $data = [
                 'booking_id' => $booking_id,
                 'payment_log_id' => $paymentLog->id,
                 'trip_id' => $trip->id,
@@ -135,32 +123,22 @@ trait TripBookingTrait
                 'payment_method' => $request->payment_method ?? '',
                 'payment_status' => 1,
                 'receive_sms' => $request->receive_sms ?? 0,
-            ]);
+                'passengers' => $passengers,
+                'user' => $user,
+                'request' => $request,
+            ];
 
-            foreach ($passengers as $index => $passenger) {
-                $tripBooking->tripBookingPassengers()->create([
-                    'trip_booking_id' => $tripBooking->id,
-                    'name' => $passenger['name'],
-                    'email' => $passenger['email'] ?? null,
-                    'phone_number' => $passenger['phone_number'],
-                    'next_of_kin' => $index === 0 ? ($user->next_of_kin ?? '') : ($request->third_party_passenger_details[$index - 1]['name'] ?? ''),
-                    'next_of_kin_phone_number' => $index === 0 ? ($user->next_of_kin_phone ?? '') : ($request->third_party_passenger_details[$index - 1]['phone_number'] ?? ''),
-
-                    'gender' => $passenger['gender'] ?? 'unknown',
-                    'selected_seat' => $selectedSeats[$index] ?? null,
-                    'on_seat' => false,
-                ]);
-            }
+            $this->createBooking($data);
 
             Notification::create([
                 'user_id' => $user->id,
                 'title' => 'Booking Successful',
                 'description' => 'Your bus ticket to '.$destination.' on '.date("M jS Y h:iA",strtotime($trip->departure_at)).' has been successfully booked',
-                'additional_data' => json_encode([
+                'additional_data' => [
                     'booking_id' => $booking_id,
                     'note' => 'Please arrive atleast 30 minutes early to ensure a smooth boarding experience.',
                     'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
-                ])
+                ]
             ]);
 
             $user->driverTripPayments()->create([
@@ -193,20 +171,20 @@ trait TripBookingTrait
         }
     }
 
-    protected function handleTripCheck($request)
+    protected function handleTripCheck($request, $user)
     {
         if ($request->payment_method === PaymentMethod::PAYSTACK) {
-            return $this->tripCheck($request);
+            return $this->tripCheck($request, $user);
         }
 
         if ($request->payment_method === PaymentMethod::WALLET) {
-            return $this->tripCheck($request);
+            return $this->tripCheck($request, $user);
         }
 
         return null;
     }
 
-    protected function tripCheck($request)
+    protected function tripCheck($request, $user)
     {
         $trip = Trip::with(
             [
@@ -218,7 +196,7 @@ trait TripBookingTrait
                 'manifest'
             ]
         )
-        ->where('status', TripStatus::ACTIVE)
+        ->where('status', TripStatus::UPCOMING)
         ->find($request->trip_id);
 
         if(! $trip) {
@@ -237,11 +215,34 @@ trait TripBookingTrait
         $selected_seats = $bookings->pluck('selected_seat')->toArray();
 
         $already_taken_seats = array_map('ucfirst', array_merge(...array_map(function ($seats) {
-            return explode(', ', $seats);
+            return $seats;
         }, $selected_seats)));
 
         if($bookings->count() >= $total_seats) {
-            throw new \Exception("Number of passengers for this trip already complete", 400);
+            return $this->error(null, "Number of passengers for this trip already complete", 400);
+        }
+
+        $selectedSeats = explode(',', str_replace(' ', '', $request->selected_seat));
+
+        $travellingWith = collect($request->travelling_with)->filter(function ($passenger) {
+            return !empty($passenger['name']) || !empty($passenger['email']) || !empty($passenger['phone_number']) || !empty($passenger['gender']);
+        })->values();
+
+        if ($travellingWith->isEmpty()) {
+            $travellingWith = null;
+        }
+
+        $passengers = collect($travellingWith ?? []);
+
+        $passengers->prepend([
+            'name' => $user->first_name . ' ' . $user->last_name,
+            'email' => $user->email,
+            'phone_number' => $user->phone_number,
+            'gender' => $user->gender ?? 'unknown',
+        ]);
+
+        if (count($selectedSeats) !== $passengers->count()) {
+            return $this->error(null, 'Number of seats must match the number of passengers.', 400);
         }
 
         $request_seats = array_map('ucfirst', array_map('trim', explode(',', $request->selected_seat)));
@@ -269,6 +270,41 @@ trait TripBookingTrait
             if (!$user->userPin || !Hash::check($request->pin, $user->userPin->pin)) {
                 return $this->error(null, "Invalid transaction pin", 400);
             }
+        }
+    }
+
+    private function createBooking($data)
+    {
+        $tripBooking = TripBooking::create([
+            'booking_id' => $data['booking_id'],
+            'payment_log_id' => $data['payment_log_id'],
+            'trip_id' => $data['trip_id'],
+            'user_id' => $data['user_id'],
+            'agent_id' => $data['agent_id'],
+            'third_party_booking' => $data['third_party_booking'],
+            'selected_seat' => $data['selected_seat'],
+            'trip_type' => $data['trip_type'],
+            'travelling_with' => $data['travelling_with'],
+            'third_party_passenger_details' => $data['third_party_passenger_details'],
+            'amount_paid' => $data['amount_paid'],
+            'payment_method' => $data['payment_method'],
+            'payment_status' => $data['payment_status'],
+            'receive_sms' => $data['receive_sms'],
+        ]);
+
+        foreach ($data['passengers'] as $index => $passenger) {
+            $tripBooking->tripBookingPassengers()->create([
+                'trip_booking_id' => $tripBooking->id,
+                'name' => $passenger['name'],
+                'email' => $passenger['email'] ?? null,
+                'phone_number' => $passenger['phone_number'],
+                'next_of_kin' => $index === 0 ? ($data['user']['next_of_kin'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['name'] ?? ''),
+                'next_of_kin_phone_number' => $index === 0 ? ($data['user']['next_of_kin_phone'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['phone_number'] ?? 00000000000),
+
+                'gender' => $passenger['gender'] ?? 'male',
+                'selected_seat' => $data['selected_seat'][$index] ?? null,
+                'on_seat' => false,
+            ]);
         }
     }
 

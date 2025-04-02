@@ -26,7 +26,7 @@ class TripBookService
             default => throw new \Exception('Invalid payment method'),
         };
 
-        return $this->processPayment($request, $result, $paymentProcessor);
+        return $this->processPayment($request, $result, $paymentProcessor, $user);
     }
 
     public function getPaymentRef($reference)

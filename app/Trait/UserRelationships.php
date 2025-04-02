@@ -4,6 +4,7 @@ namespace App\Trait;
 
 use App\Models\BusStop;
 use App\Models\Document;
+use App\Models\Notification;
 use App\Models\PaymentLog;
 use App\Models\PremiumHireBooking;
 use App\Models\PremiumHireBookingPassenger;
@@ -132,6 +133,11 @@ trait UserRelationships
     public function premiumHireRatings()
     {
         return $this->hasMany(PremiumHireRating::class, 'user_id');
+    }
+
+    public function userNotifications()
+    {
+        return $this->hasMany(Notification::class, 'user_id');
     }
 }
 
