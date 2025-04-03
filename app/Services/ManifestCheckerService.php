@@ -120,6 +120,11 @@ class ManifestCheckerService
         return $this->success($severities, "Incident severities retrieved successfully");
     }
 
+    public function getIncidents(){
+        $incidents = Incident::all();
+        return $this->success($incidents, 'Incidents retrieved successfully');
+    }
+
     public function addUpdateWatchList($request, $action = 'create'){
         
         $photo_url = "";
