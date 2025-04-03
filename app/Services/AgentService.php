@@ -106,7 +106,7 @@ class AgentService
             ->where('destination', $request->destination)
             ->where('departure_date', $request->departure_date)
             ->where('departure_time', $request->departure_time)
-            ->where('status', TripStatus::ACTIVE)
+            ->where('status', TripStatus::UPCOMING)
             ->get();
 
         $data = TripResource::collection($trips);
@@ -458,7 +458,7 @@ class AgentService
                 'bus_stops' => $request->bus_stops ?? [],
                 'means' => $request->means ?? 1,
                 'type' => TripType::ONETIME,
-                'status' => TripStatus::ACTIVE,
+                'status' => TripStatus::UPCOMING,
             ]);
 
             return $this->success($trip, "Created successfully", 201);
@@ -512,7 +512,7 @@ class AgentService
                         'bus_stops' => $request->bus_stops ?? [],
                         'means' => $request->means ?? 1,
                         'type' => TripType::RECURRING,
-                        'status' => TripStatus::ACTIVE,
+                        'status' => TripStatus::UPCOMING,
                     ]);
 
                     $currentDate->addWeek();

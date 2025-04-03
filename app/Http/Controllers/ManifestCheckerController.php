@@ -42,6 +42,14 @@ class ManifestCheckerController extends Controller
         return $this->service->getIncidentSeverityLevels();
     }
 
+    public function getIncidents(){
+        return $this->service->getIncidents();
+    }
+
+    public function getIncident(Request $request){
+        return $this->service->getIncident($request);
+    }
+
     public function addRecordToWatchList(WatchListRequest $request){
         return $this->service->addUpdateWatchList($request);
     }
