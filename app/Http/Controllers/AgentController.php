@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\AgentBookingRequest;
-use App\Http\Requests\AgentInfoRequest;
-use App\Http\Requests\NotificationRequest;
-use App\Http\Requests\TransportOneTimeRequest;
-use App\Http\Requests\TransportRecurringRequest;
+use Illuminate\Http\Request;
 use App\Services\AgentService;
 use App\Services\DriverService;
 use App\Services\Trip\TripService;
-use Illuminate\Http\Request;
+use App\Http\Requests\AgentInfoRequest;
+use App\Http\Requests\StartTripRequest;
 use Illuminate\Validation\Rules\Password;
+use App\Http\Requests\AgentBookingRequest;
+use App\Http\Requests\NotificationRequest;
+use App\Http\Requests\TransportOneTimeRequest;
+use App\Http\Requests\ImpersonateDriverRequest;
+use App\Http\Requests\TransportRecurringRequest;
 
 class AgentController extends Controller
 {
@@ -144,13 +146,8 @@ class AgentController extends Controller
         return $this->service->searchDriver($request);
     }
 
-    public function impersonateDriver(Request $request)
+    public function impersonateDriver(ImpersonateDriverRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'password' => 'required|string',
-        ]);
-
         return $this->service->impersonateDriver($request);
     }
 
@@ -174,15 +171,8 @@ class AgentController extends Controller
         return $this->service->tripDetails($tripId);
     }
 
-    public function startTrip(Request $request)
+    public function startTrip(StartTripRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'trip_id' => 'required|integer|exists:trips,id',
-            'payment_method' => 'required|string|in:wallet',
-            'pin' => 'required|string',
-        ]);
-
         return $this->service->startTrip($request);
     }
 

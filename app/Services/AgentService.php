@@ -535,29 +535,23 @@ class AgentService
         }
 
         $trips = Trip::with([
-            'user.transitCompany',
-            'tripBookings.user',
-            'departureRegion.state',
-            'destinationRegion.state',
-            'manifest',
-            'vehicle',
-            'departureRegion.parks',
-            'destinationRegion.parks',
-        ])
-        ->where('user_id', $userId)
-        ->when($status === TripStatus::UPCOMING, function ($query) {
-            $query->where(function ($q) {
-                $q->whereDate('departure_date', '>', now())
-                  ->orWhereDate('start_date', '>', now());
-            });
-        })
-        ->when($status && $status !== TripStatus::UPCOMING, function ($query) use ($status) {
-            $query->where('status', $status);
-        })
-        ->when($date, function ($query, $date) {
-            $query->whereDate('created_at', $date);
-        })
-        ->get();
+                'user.transitCompany',
+                'tripBookings.user',
+                'departureRegion.state',
+                'destinationRegion.state',
+                'manifest',
+                'vehicle',
+                'departureRegion.parks',
+                'destinationRegion.parks',
+            ])
+            ->where('user_id', $userId)
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->when($date, function ($query, $date) {
+                $query->whereDate('created_at', $date);
+            })
+            ->get();
 
         $data = TripResource::collection($trips);
 
@@ -595,7 +589,7 @@ class AgentService
             return $this->error(null, "Trip not found!", 404);
         }
 
-        if ($trip->status !== TripStatus::ACTIVE) {
+        if ($trip->status !== TripStatus::UPCOMING) {
             return $this->error(null, "Sorry " . $trip->status, 400);
         }
 
@@ -620,7 +614,7 @@ class AgentService
 
             $this->topUpWallet($user);
 
-            if ($request->payment_method === 'driver_wallet') {
+            if ($request->payment_method === PaymentMethod::DRIVERWALLET) {
                 $this->chargeWallet($user, $request->amount);
             }
 
