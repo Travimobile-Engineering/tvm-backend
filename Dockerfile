@@ -55,5 +55,6 @@ RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
 
 EXPOSE 9000
 
+
 CMD ["php-fpm"]
 
