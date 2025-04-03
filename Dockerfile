@@ -56,5 +56,7 @@ RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
 EXPOSE 9000
 
 
-CMD ["php-fpm"]
+ENTRYPOINT ["entrypoint.sh"]
+
+CMD ["php", "artisan", "queue:work", "--tries=3"]
 
