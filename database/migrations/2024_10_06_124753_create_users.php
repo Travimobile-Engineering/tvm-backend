@@ -1,8 +1,9 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+use App\Enum\UserType;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -18,7 +19,7 @@ return new class extends Migration
             $table->string('last_name')->nullable();
             $table->string('phone_number')->nullable();
             $table->string('email')->nullable();
-            $table->string('user_category')->default('[1]');
+            $table->string('user_category')->default(UserType::PASSENGER);
             $table->string('agent_id')->nullable();
             $table->string('password')->nullable();
             $table->double('wallet')->default(0.00);
