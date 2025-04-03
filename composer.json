@@ -12,6 +12,7 @@
         "laravel/reverb": "^1.0",
         "laravel/socialite": "^5.18",
         "laravel/tinker": "^2.10.1",
+        "php-amqplib/php-amqplib": "^3.7",
         "spatie/laravel-responsecache": "^7.6",
         "tymon/jwt-auth": "^2.1",
         "unicodeveloper/laravel-paystack": "^1.2",

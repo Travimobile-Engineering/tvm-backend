@@ -131,7 +131,7 @@ class ManifestCheckerService
     }
 
     public function addUpdateWatchList($request, $action = 'create'){
-        
+
         $photo_url = "";
         $document_links = [];
 
@@ -141,7 +141,7 @@ class ManifestCheckerService
         }
 
         if($request->hasFile('documents')){
-            
+
             $documents = $request->documents;
             if(is_array($documents)){
                 foreach($documents as $doc){

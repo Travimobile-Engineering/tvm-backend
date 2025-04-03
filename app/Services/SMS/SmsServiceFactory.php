@@ -11,6 +11,7 @@ class SmsServiceFactory
     {
         return match ($provider) {
             'africastalking' => new AfricasTalkingSmsService(),
+            'termii' => new TermiiSmsService(),
             default => throw new InvalidArgumentException("Unsupported SMS provider: $provider"),
         };
     }
