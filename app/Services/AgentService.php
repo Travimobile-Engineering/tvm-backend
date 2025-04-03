@@ -458,7 +458,7 @@ class AgentService
                 'bus_stops' => $request->bus_stops ?? [],
                 'means' => $request->means ?? 1,
                 'type' => TripType::ONETIME,
-                'status' => TripStatus::ACTIVE,
+                'status' => TripStatus::UPCOMING,
             ]);
 
             return $this->success($trip, "Created successfully", 201);
