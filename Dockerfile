@@ -55,11 +55,5 @@ RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
 
 EXPOSE 9000
 
-COPY ./entrypoint.sh ./entrypoint.sh
-
-RUN chmod +x ./entrypoint.sh 
-
-ENTRYPOINT ["entrypoint.sh"]
-
-CMD ["php", "artisan", "queue:work", "--tries=3"]
+CMD bash -c "php-fpm -F & sleep 60 && php artisan queue:work --tries=3"
 
