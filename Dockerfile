@@ -57,5 +57,5 @@ RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
 EXPOSE 9000
 
 
-CMD ["php-fpm"]
+CMD bash -c "php-fpm -F & sleep 60 && php artisan queue:work --tries=3"
 
