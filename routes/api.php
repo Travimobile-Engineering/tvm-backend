@@ -274,6 +274,7 @@ Route::middleware('validate.header')
                             Route::get('/get-types', 'getIncidentTypes');
                             Route::get('/get-severity-levels', 'getIncidentSeverityLevels');
                             Route::get('/get-incidents', 'getIncidents');
+                            Route::get('/get-incidents/{id}', 'getIncident');
                             Route::post('/add', 'addIncident');
                         });
                     
