@@ -50,7 +50,7 @@ class AgentService
             return $this->error(null, "Agent not found", 404);
         }
 
-        $data = new AgentProfileResource($user);
+        $data = new AgentProfileResource($agent);
 
         return $this->success($data, "Agent profile");
     }
