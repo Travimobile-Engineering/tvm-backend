@@ -24,6 +24,11 @@ class AgentController extends Controller
     )
     {}
 
+    public function getAgent($agentId)
+    {
+        return $this->service->getAgent($agentId);
+    }
+
     public function profile()
     {
         return $this->service->profile();
