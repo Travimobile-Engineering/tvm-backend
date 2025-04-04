@@ -790,4 +790,24 @@ class TripService
 
         return $this->success(null, "Settings saved successfully");
     }
+
+    public function tripExtendTime($request)
+    {
+        $trip = Trip::findOrFail($request->trip_id);
+
+        $tripExtendTime = $request->trip_extended_time;
+        if (!$tripExtendTime || !preg_match('/^\d{1,2}:\d{2}$/', $tripExtendTime)) {
+            return $this->error(null, "Invalid time format. Please use HH:MM format.", 400);
+        }
+
+        $departureTime = Carbon::parse($trip->departure_time);
+        list($hours, $minutes) = explode(':', $tripExtendTime);
+
+        $totalMinutes = ((int) $hours * 60) + (int) $minutes;
+        $newDepartureTime = $departureTime->addMinutes($totalMinutes);
+
+        $trip->update(['departure_time' => $newDepartureTime->format('H:i')]);
+
+        return $this->success(null, "Trip extended successfully");
+    }
 }

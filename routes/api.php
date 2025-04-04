@@ -134,6 +134,7 @@ Route::middleware('validate.header')
                     Route::post('/edit/{trip}', 'update');
                     Route::get('/get-trips', 'getTrips')->middleware('cacheResponse:300');
                     Route::get('/{trip}', 'getTrip')->middleware('doNotCacheResponse');
+                    Route::post('/extend-time', 'tripExtendTime');
 
                     // Get Bus Stops
                     Route::get('/bus-stops/{state_id}', 'getBusStops');
