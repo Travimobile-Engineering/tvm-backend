@@ -687,16 +687,17 @@ class AgentService
             return $this->error(null, "Ticket ID is required", 400);
         }
 
-        $booking = TripBooking::where('booking_id', $ticketId)
+        $booking = TripBooking::with('tripBookingPassengers')
+            ->where('booking_id', $ticketId)
             ->first();
 
         if (!$booking) {
             return $this->error(null, "Booking not found", 404);
         }
 
-        $booking->update([
-            'on_seat' => true,
-        ]);
+        $booking->tripBookingPassengers()->each(function ($passenger) {
+            $passenger->update(['onseat' => true]);
+        });
 
         return $this->success(null, "Ticket scanned successfully");
     }
