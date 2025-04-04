@@ -52,7 +52,7 @@ class AgentService
 
         $data = new AgentProfileResource($agent);
 
-        return $this->success($data, "Agent profile");
+        return $this->success($data, "Agent details");
     }
 
     public function profile()
