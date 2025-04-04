@@ -43,6 +43,8 @@ COPY ./ ./
 
 COPY ./database ./database
 
+COPY ./database/migrations  ./database/migrations
+
 RUN composer install --no-dev --optimize-autoloader
 
 RUN chown -R www-data:www-data /var/www
