@@ -55,5 +55,5 @@ RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
 
 EXPOSE 9000
 
-CMD bash -c "php-fpm -F & sleep 60 && php artisan queue:work --tries=3 && php artisan migrate --force && php artisan cache:clear"
+CMD bash -c "php-fpm -F & sleep 60; php artisan queue:work --tries=3; php artisan migrate --force; php artisan cache:clear"
 
