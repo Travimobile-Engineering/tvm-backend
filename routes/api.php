@@ -302,11 +302,11 @@ Route::middleware('validate.header')
             ->controller(AgentController::class)
             ->group(function(){
                 // Profile & Account Management
-                Route::get('{agent_id}', 'getAgent');
                 Route::get('/get-profile', 'profile');
                 Route::post('/update-profile', 'updateProfile');
                 Route::post('/change-password', 'changePassword');
                 Route::delete('/delete-account', 'deleteProfile');
+                Route::get('/{agent_id}', 'getAgent');
 
                 // Ticket & Trip Management
                 Route::post('/bus-search', 'busSearch');

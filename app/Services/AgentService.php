@@ -36,25 +36,6 @@ class AgentService
 
     const TRIP_CHARGE_AMOUNT = 1000;
 
-    public function getAgent($agentId)
-    {
-        $agent = User::with([
-                'transitCompany',
-                'busStops.state',
-                'userBank',
-            ])
-            ->where('agent_id', $agentId)
-            ->first();
-
-        if (!$agent) {
-            return $this->error(null, "Agent not found", 404);
-        }
-
-        $data = new AgentProfileResource($agent);
-
-        return $this->success($data, "Agent details");
-    }
-
     public function profile()
     {
         $auth = authUser();
@@ -75,6 +56,25 @@ class AgentService
         $data = new AgentProfileResource($user);
 
         return $this->success($data, "Agent profile");
+    }
+
+    public function getAgent($agentId)
+    {
+        $agent = User::with([
+                'transitCompany',
+                'busStops.state',
+                'userBank',
+            ])
+            ->where('agent_id', $agentId)
+            ->first();
+
+        if (!$agent) {
+            return $this->error(null, "Agent not found", 404);
+        }
+
+        $data = new AgentProfileResource($agent);
+
+        return $this->success($data, "Agent details");
     }
 
     public function changePassword($request)
