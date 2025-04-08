@@ -731,7 +731,7 @@ class AgentService
             return $this->error(null, "Passenger not found", 404);
         }
 
-        $passenger->update(['onseat' => true]);
+        $passenger->update(['on_seat' => true]);
 
         return $this->success(null, "Ticket scanned successfully");
     }
