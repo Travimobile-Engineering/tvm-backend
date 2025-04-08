@@ -297,7 +297,7 @@ trait TripBookingTrait
                 'trip_booking_id' => $tripBooking->id,
                 'name' => $passenger['name'],
                 'email' => $passenger['email'] ?? null,
-                'phone_number' => $passenger['phone_number'],
+                'phone_number' => $passenger['phone_number'] ?? "nil",
                 'next_of_kin' => $index === 0 ? ($data['user']['next_of_kin'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['name'] ?? ''),
                 'next_of_kin_phone_number' => $index === 0 ? ($data['user']['next_of_kin_phone'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['phone_number'] ?? 00000000000),
 
