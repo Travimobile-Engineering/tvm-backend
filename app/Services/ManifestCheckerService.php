@@ -83,7 +83,7 @@ class ManifestCheckerService
 
         if (count($types) > 0) {
             return $this->success($types, "Incident types retrieved successfully");
-        }
+        }//
 
         $types = [
             'Trespassing',
