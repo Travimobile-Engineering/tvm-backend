@@ -81,7 +81,7 @@ class ManifestCheckerService
     {
         $types = DB::table('incident_types')->pluck('name');
 
-        if (!empty($types)) {
+        if (count($types) > 0) {
             return $this->success($types, "Incident types retrieved successfully");
         }
 
@@ -104,7 +104,7 @@ class ManifestCheckerService
     public function getIncidentSeverityLevels(){
         $severities = DB::table('incident_categories')->pluck('name');
 
-        if (!empty($severities)) {
+        if (count($severities) > 0) {
             return $this->success($severities, "Incident severities retrieved successfully");
         }
 
