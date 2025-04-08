@@ -704,12 +704,17 @@ class AgentService
         return $this->success(null, "Notification sent successfully");
     }
 
-    public function scanTicket($request, $bookingId)
+    public function scanTicket($request, $bookingId, $passengerId)
     {
         $ticketId = $bookingId ?? $request->input('booking_id');
+        $passengerId = $passengerId ?? $request->input('passenger_id');
 
         if (!$ticketId) {
             return $this->error(null, "Ticket ID is required", 400);
+        }
+
+        if (!$passengerId) {
+            return $this->error(null, "Passenger ID is required", 400);
         }
 
         $booking = TripBooking::with('tripBookingPassengers')
@@ -720,9 +725,13 @@ class AgentService
             return $this->error(null, "Booking not found", 404);
         }
 
-        $booking->tripBookingPassengers()->each(function ($passenger) {
-            $passenger->update(['onseat' => true]);
-        });
+        $passenger = $booking->tripBookingPassengers()->find($passengerId);
+
+        if (!$passenger) {
+            return $this->error(null, "Passenger not found", 404);
+        }
+
+        $passenger->update(['onseat' => true]);
 
         return $this->success(null, "Ticket scanned successfully");
     }
