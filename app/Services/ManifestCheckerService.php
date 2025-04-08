@@ -67,12 +67,12 @@ class ManifestCheckerService
 
     public function getIncidentTypes()
     {
-        $types = DB::table('incident_types')->pluck('name');
+        $types = DB::table('incident_types')->pluck('name')->toArray();
         return $this->success($types, "Incident types retrieved successfully");
     }
 
     public function getIncidentSeverityLevels(){
-        $severities = DB::table('incident_categories')->pluck('name');
+        $severities = DB::table('incident_severity_levels')->pluck('name')->toArray();
         return $this->success($severities, "Incident severities retrieved successfully");
     }
 
