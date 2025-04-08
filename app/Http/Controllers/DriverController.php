@@ -85,7 +85,7 @@ class DriverController extends Controller
         return $this->service->setAvailability($request);
     }
 
-    public function scanTicket(Request $request, $bookingId, $passengerId)
+    public function scanTicket(Request $request, $bookingId = null, $passengerId = null)
     {
         return $this->agentService->scanTicket($request, $bookingId, $passengerId);
     }

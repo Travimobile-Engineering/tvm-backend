@@ -216,7 +216,7 @@ class AgentController extends Controller
         return $this->service->notifyPassengers($request);
     }
 
-    public function scanTicket(Request $request, $bookingId, $passengerId)
+    public function scanTicket(Request $request, $bookingId = null, $passengerId = null)
     {
         return $this->service->scanTicket($request, $bookingId, $passengerId);
     }
