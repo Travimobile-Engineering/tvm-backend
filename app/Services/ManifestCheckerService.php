@@ -62,61 +62,17 @@ class ManifestCheckerService
     public function getIncidentCategories()
     {
         $categories = DB::table('incident_categories')->pluck('name')->toArray();
-
-        if (!empty($categories)) {
-            return $this->success($categories, "Incident categories retrieved successfully");
-        }
-
-        $defaultCategories = [
-            'General Security Incident',
-            'Safety Incidents',
-            'Transportation Specific Incidents',
-            'Emergency Situations'
-        ];
-
-        return $this->success($defaultCategories, "Incident categories retrieved successfully");
+        return $this->success($categories, "Incident categories retrieved successfully");
     }
 
     public function getIncidentTypes()
     {
         $types = DB::table('incident_types')->pluck('name');
-
-        if (count($types) > 0) {
-            return $this->success($types, "Incident types retrieved successfully");
-        }//
-
-        $types = [
-            'Trespassing',
-            'Vandalism',
-            'Accidents',
-            'Injury',
-            'Medical Emergency',
-            'Traffic Accident',
-            'Vehicle Breakdown',
-            'Kidnapping',
-            'Bomb Threat',
-            'Natural Disaster'
-        ];
-
         return $this->success($types, "Incident types retrieved successfully");
     }
 
     public function getIncidentSeverityLevels(){
         $severities = DB::table('incident_categories')->pluck('name');
-
-        if (count($severities) > 0) {
-            return $this->success($severities, "Incident severities retrieved successfully");
-        }
-
-        $severities = [
-            'Informational',
-            'Low Priority',
-            'Medium Priority',
-            'High Prority',
-            'Critical Priority',
-            'Catastrophic'
-        ];
-
         return $this->success($severities, "Incident severities retrieved successfully");
     }
 
