@@ -549,7 +549,13 @@ class AgentService
         $date = request()->query('date');
         $status = request()->query('status', TripStatus::UPCOMING);
 
-        if (!in_array($status, [TripStatus::UPCOMING, TripStatus::COMPLETED, TripStatus::CANCELLED])) {
+        if (!in_array($status, [
+                TripStatus::UPCOMING,
+                TripStatus::COMPLETED,
+                TripStatus::CANCELLED,
+                TripStatus::INPROGRESS,
+            ]
+        )) {
             return $this->error("Invalid status", 400);
         }
 
