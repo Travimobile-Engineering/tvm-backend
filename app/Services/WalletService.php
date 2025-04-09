@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Services\Paystack\PaystackService;
+use Illuminate\Support\Facades\Log;
 use Unicodeveloper\Paystack\Facades\Paystack;
 
 class WalletService
@@ -418,11 +419,12 @@ class WalletService
 
     public function stats($userId)
     {
-        $startDate = Carbon::parse(request()->input('start_date') ?: now()->startOfWeek());
-        $endDate = Carbon::parse(request()->input('end_date') ?: now()->endOfWeek());
+        $startDate = Carbon::parse(request()->input('start_date') ?: now()->startOfWeek())->startOfDay();
+        $endDate = Carbon::parse(request()->input('end_date') ?: now()->endOfWeek())->endOfDay();
 
         $transactions = Transaction::where('user_id', $userId)
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
             ->selectRaw("
                 DATE(created_at) as transaction_date,
                 SUM(CASE WHEN type = 'CR' THEN amount ELSE 0 END) as inflow,
@@ -434,18 +436,22 @@ class WalletService
                 return Carbon::parse($transaction->transaction_date)->format('Y-m-d');
             });
 
-        $statistics = collect()
-            ->push(...range(0, $endDate->diffInDays($startDate)))
-            ->map(function ($index) use ($transactions, $startDate) {
-                $date = $startDate->copy()->addDays($index)->format('Y-m-d');
-                return [
-                    'date' => $date,
-                    'inflow' => (int) ($transactions[$date]->inflow ?? 0),
-                    'outflow' => (int) ($transactions[$date]->outflow ?? 0),
-                ];
-            });
+        $allDates = collect();
+        $currentDate = $startDate->copy();
+
+        while ($currentDate <= $endDate) {
+            $allDates->push($currentDate->format('Y-m-d'));
+            $currentDate->addDay();
+        }
+
+        $statistics = $allDates->map(function ($date) use ($transactions) {
+            return [
+                'date' => $date,
+                'inflow' => (int) ($transactions[$date]->inflow ?? 0),
+                'outflow' => (int) ($transactions[$date]->outflow ?? 0),
+            ];
+        });
 
         return $this->success($statistics, "Transaction statistics retrieved successfully.");
     }
-
 }
