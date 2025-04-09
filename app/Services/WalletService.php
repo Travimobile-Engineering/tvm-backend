@@ -2,23 +2,20 @@
 
 namespace App\Services;
 
-use App\Enum\PaymentType;
-use App\Events\WalletFunded;
 use App\Models\Bank;
 use App\Models\User;
+use App\Enum\PaymentType;
+use App\Mail\VerifyPinMail;
 use App\Models\Transaction;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use App\Mail\ConfirmationEmail;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Services\Paystack\PaystackService;
-use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Mail\VerifyPinMail;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
-use Unicodeveloper\Paystack\Facades\Paystack;
+use App\Http\Controllers\Payment\PaystackPaymentController;
 
 class WalletService
 {

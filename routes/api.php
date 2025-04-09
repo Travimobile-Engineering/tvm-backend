@@ -138,6 +138,7 @@ Route::middleware('validate.header')
 
                     // Get Bus Stops
                     Route::get('/bus-stops/{state_id}', 'getBusStops');
+                    Route::get('/bus-stops/{destination_id}', 'getDestinationBusStops');
 
                     Route::prefix('/driver')
                         ->group(function () {
