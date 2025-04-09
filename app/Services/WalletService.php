@@ -389,8 +389,8 @@ class WalletService
 
     public function stats($userId)
     {
-        $startDate = request()->input('start_date') ?: now()->startOfWeek();
-        $endDate = request()->input('end_date') ?: now()->endOfWeek();
+        $startDate = Carbon::parse(request()->input('start_date') ?: now()->startOfWeek());
+        $endDate = Carbon::parse(request()->input('end_date') ?: now()->endOfWeek());
 
         $transactions = Transaction::where('user_id', $userId)
             ->whereBetween('created_at', [$startDate, $endDate])
