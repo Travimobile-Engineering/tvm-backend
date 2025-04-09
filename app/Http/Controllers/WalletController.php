@@ -67,7 +67,7 @@ class WalletController extends Controller
     {
         $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'pin' => ['required', 'string', 'min:4', 'max:4'],
+            'pin' => ['required', 'string', 'confirmed', 'min:4', 'max:4'],
         ]);
 
         return $this->service->setTransactionPin($request);
