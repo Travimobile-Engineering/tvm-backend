@@ -53,11 +53,10 @@ class TermiiSmsService implements SMS
 
     protected function getData($to, $message): array
     {
-        $channel = $this->determineSmsChannel($to);
+        $channel = $this->determineSmsChannel();
         return [
             'to' => $to,
-            'from' => $channel === 'dnd' ? config('services.termii.sender_id_default')
-                : config('services.termii.sender_id'),
+            'from' => config('services.termii.sender_id_default'),
             'sms' => $message,
             'type' => 'plain',
             'channel' => $channel,
@@ -65,20 +64,9 @@ class TermiiSmsService implements SMS
         ];
     }
 
-    protected function determineSmsChannel($to): string
+    protected function determineSmsChannel(): string
     {
-        if (is_array($to)) {
-            return 'generic';
-        } else {
-            $phone_check = (new PhoneNumberCheckService($to))->run();
-            if (isset($phone_check['status']) && $phone_check['status'] === 'DND blacklisted') {
-                return 'dnd';
-            } elseif ($phone_check['message'] && $phone_check['message'] === self::NO_RECORD) {
-                return 'dnd';
-            } else {
-                return 'generic';
-            }
-        }
+        return 'dnd';
     }
 
     protected function logResponse($to, $message, $response, $status)

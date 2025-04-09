@@ -611,13 +611,7 @@ class TripService
 
         $trips = $query->get();
 
-        if ($type === TripType::RECURRING) {
-            $data = RecurringTripResource::collection($trips);
-        } elseif ($type === TripType::ONETIME) {
-            $data = OneTimeTripResource::collection($trips);
-        } else {
-            $data = TripResource::collection($trips);
-        }
+        $data = TripResource::collection($trips);
 
         return $this->success($data, "All trips", 200);
     }
