@@ -725,7 +725,10 @@ class TripService
 
     public function getBusStops($stateId)
     {
-        $stops = BusStop::where('state_id', $stateId)->get();
+        $auth = authUser();
+        $stops = BusStop::where('user_id', $auth->id)
+            ->where('state_id', $stateId)
+            ->get();
 
         $data = $stops->map(function ($stop) {
             return $stop->stops;

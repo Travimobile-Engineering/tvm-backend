@@ -112,6 +112,7 @@ Route::middleware('validate.header')
                 ->group(function () {
                     Route::post('/setup', 'walletSetup');
                     Route::post('/verify-pin', 'verifyPin');
+                    Route::post('/set-transaction-pin', 'setTransactionPin');
                     Route::post('/withdraw', 'withdraw')
                         ->middleware('transaction.pin');
                     Route::post('/balance/withdraw', 'balanceWithdraw')
@@ -138,7 +139,6 @@ Route::middleware('validate.header')
 
                     // Get Bus Stops
                     Route::get('/bus-stops/{state_id}', 'getBusStops');
-                    Route::get('/bus-stops/{destination_id}', 'getDestinationBusStops');
 
                     Route::prefix('/driver')
                         ->group(function () {

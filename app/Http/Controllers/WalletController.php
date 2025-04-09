@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\DriverWalletSetupequest;
-use App\Http\Requests\DriverWithdrawRequest;
 use App\Trait\HttpResponse;
+use Illuminate\Http\Request;
 use App\Services\WalletService;
 use App\Http\Requests\FundWalletRequest;
-use App\Http\Requests\WalletTransferRequest;
-use App\Http\Requests\WalletSetTransactionPinRequest;
 use App\Http\Requests\WalletTopUpRequest;
-use App\Models\User;
-use Illuminate\Http\Request;
+use App\Http\Requests\DriverWithdrawRequest;
+use App\Http\Requests\WalletTransferRequest;
+use App\Http\Requests\DriverWalletSetupequest;
+use App\Http\Requests\SetTransactionPinRequest;
 
 class WalletController extends Controller
 {
@@ -62,6 +61,16 @@ class WalletController extends Controller
         ]);
 
         return $this->service->verifyPin($request);
+    }
+
+    public function setTransactionPin(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'pin' => ['required', 'string', 'min:4', 'max:4'],
+        ]);
+
+        return $this->service->setTransactionPin($request);
     }
 
     public function withdraw(DriverWithdrawRequest $request)

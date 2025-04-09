@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Bank;
 use App\Models\User;
 use App\Enum\PaymentType;
+use App\Events\WalletFunded;
 use App\Mail\VerifyPinMail;
 use App\Models\Transaction;
 use App\Trait\HttpResponse;
@@ -16,6 +17,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Services\Paystack\PaystackService;
+use Unicodeveloper\Paystack\Facades\Paystack;
 
 class WalletService
 {
@@ -245,6 +248,25 @@ class WalletService
         ]);
 
         return $this->success(null, "Setup successfully");
+    }
+
+    public function setTransactionPin($request)
+    {
+        $user = User::with(['userPin'])
+            ->findOrFail($request->user_id);
+
+        if ($user->userPin) {
+            return $this->error(null, "You have already set a transaction pin", 403);
+        }
+
+        $user->userPin()->create([
+            'pin' => bcrypt($request->pin),
+            'ip_address' => $request->ip(),
+            'device_info' => $request->header('User-Agent'),
+            'attempts' => 0
+        ]);
+
+        return $this->success(null, "Transaction pin set successfully");
     }
 
     public function withdraw($request)
