@@ -261,7 +261,8 @@ Route::middleware('validate.header')
             ->group(function(){
                 Route::get('/get-balance', [WalletController::class, 'getBalance']);
                 Route::post('/fund-wallet', [WalletController::class, 'fundWallet']);
-                Route::post('/transfer', [WalletController::class, 'transfer']);
+                Route::post('/transfer', [WalletController::class, 'transfer'])
+                    ->middleware('transaction.pin');
                 Route::get('/transactions', [WalletController::class, 'getTransactions']);
             });
 

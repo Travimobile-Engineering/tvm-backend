@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Bank;
 use App\Models\User;
 use App\Enum\PaymentType;
+use App\Enum\UserType;
 use App\Events\WalletFunded;
 use App\Mail\VerifyPinMail;
 use App\Models\Transaction;
@@ -74,16 +75,24 @@ class WalletService
 
     public function transfer($request){
 
-        if(!in_array(2, json_decode($this->user->user_category)))
-        return ['message'=>'You can only make transfers to agents', 'code' => 400];
+        if(!in_array(UserType::AGENT, json_decode($this->user->user_category))) {
+            return $this->error(null, "You are not authorized to perform this action", 403);
+        }
 
+        if($this->user->wallet < $request->amount) {
+            return $this->error(null, "Insufficient wallet balance", 400);
+        }
 
-        if($this->user->txn_pin != $request->pin) return ['message' => 'Incorrect transaction pin', 'code' => 400];
-        if($this->user->wallet < $request->amount) return ['message' => 'Your balance is insufficient to complete this transaction. Please fund your wallet first', 'code' =>400];
-        if(!User::where('agent_id', $request->agent_id)->exists() || $request->agent_id == $this->user->agent_id) return ['message' => 'Invalid agent ID', 'code' => 400];
+        $user = User::where('agent_id', $request->agent_id)
+            ->exists();
+
+        if(!$user || $request->agent_id == $this->user->agent_id) {
+            return $this->error(null, "Invalid agent ID", 400);
+        }
 
         $this->user->update(['wallet' => $this->user->wallet - $request->amount]);
-        $receiver = User::where('agent_id', $request->agent_id)->first();
+        $receiver = User::where('agent_id', $request->agent_id)->firstOrFail();
+
         $status = $receiver->update(['wallet' => $receiver->wallet + $request->amount]);
 
         if($status)
@@ -96,9 +105,10 @@ class WalletService
                 'receiver_id' => $receiver->id
             ]);
 
-            return ['message' => 'Funds tranfered successfully'];
+            return $this->success(null, "Funds tranfered successfully");
         }
-        return ['message' => 'Please try again. Something went wrong', 'code' => 400];
+
+        return $this->error(null, "Funds transfer failed", 400);
 
     }
 
@@ -420,7 +430,9 @@ class WalletService
             ")
             ->groupBy('transaction_date')
             ->get()
-            ->keyBy('transaction_date');
+            ->keyBy(function ($transaction) {
+                return Carbon::parse($transaction->transaction_date)->format('Y-m-d');
+            });
 
         $statistics = collect()
             ->push(...range(0, $endDate->diffInDays($startDate)))
