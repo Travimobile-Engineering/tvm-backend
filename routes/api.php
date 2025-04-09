@@ -262,7 +262,6 @@ Route::middleware('validate.header')
                 Route::post('/fund-wallet', [WalletController::class, 'fundWallet']);
                 Route::post('/transfer', [WalletController::class, 'transfer']);
                 Route::get('/transactions', [WalletController::class, 'getTransactions']);
-                Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
             });
 
             Route::prefix('notification')
@@ -274,7 +273,6 @@ Route::middleware('validate.header')
             Route::prefix('manifest-checker')
                 ->controller(ManifestCheckerController::class)
                 ->group(function(){
-
                     Route::get('/check/{plate_no}', 'getManifestData');
 
                     Route::prefix('incident')
@@ -355,7 +353,6 @@ Route::middleware('validate.header')
 
                 //Notification
                 Route::patch('/notification', 'updateNotification');
-
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

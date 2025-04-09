@@ -29,26 +29,19 @@ class WalletController extends Controller
         return $this->service->getBalance();
     }
 
-    public function fundWallet(FundWalletRequest $request){
+    public function fundWallet(FundWalletRequest $request)
+    {
         return $this->response($this->service->fundWallet($request));
     }
 
-    public function transfer(WalletTransferRequest $request){
+    public function transfer(WalletTransferRequest $request)
+    {
         return $this->response($this->service->transfer($request));
-
     }
 
     public function getTransactions()
     {
         return $this->service->getTransactions();
-    }
-
-    public function setTransactionPin(WalletSetTransactionPinRequest $request){
-        return $this->response($this->service->setTransactionPin($request));
-    }
-
-    public function getTransactionPin(){
-        return $this->response($this->service->getTransactionPin());
     }
 
     public function walletSetup(DriverWalletSetupequest $request)

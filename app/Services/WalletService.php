@@ -114,45 +114,6 @@ class WalletService
         return $this->success(['data' => $user->transactions ?? []], "Wallet transactions retrieved");
     }
 
-    public function setTransactionPin($request){
-
-        if($this->user->txn_pin > 0){
-
-            if(!isset($request->verification_code)){
-
-            //Pin has already been set. Send OTP
-            $verification_code = generateVerificationCode();
-            $now = Carbon::now();
-            $verification_code_expires_at = $now->addMinutes(10);
-
-            User::where('id', Auth::id())
-            ->update([
-                'verification_code' => $verification_code,
-                'verification_code_expires_at' => $verification_code_expires_at
-            ]);
-
-            Mail::to($this->user->email)->send(new ConfirmationEmail($this->user->first_name." ".$this->user->last_name, $verification_code, 'email.change_transaction_pin_otp'));
-            return ['message' => 'Verification OTP has been sent to your email address'];
-            }
-
-            elseif(
-                $request->verification_code != $this->user->verification_code
-                || Carbon::now() > $this->user->verification_code_expires_at
-            ) return ['message' => 'Invalid or expired verification code'];
-        }
-
-        $user = User::where('id', $this->user->id)->update([
-            'txn_pin' => $request->pin,
-            'verification_code' => ''
-        ]);
-        if($user) return ['message' => 'Transaction pin updated successfully'];
-    }
-
-    public function getTransactionPin(){
-        $pin = User::where('id', $this->user->id)->pluck('txn_pin')->first();
-        return ['data' => $pin];
-    }
-
     public function walletSetup($request)
     {
         $user = User::with(['userBank', 'userPin', 'userTransferReceipient'])
@@ -431,29 +392,29 @@ class WalletService
         $startDate = request()->input('start_date') ?: now()->startOfWeek();
         $endDate = request()->input('end_date') ?: now()->endOfWeek();
 
-        $allDays = [
-            'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-        ];
-
         $transactions = Transaction::where('user_id', $userId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->selectRaw("
-                DAYNAME(created_at) as day_of_week,
+                DATE(created_at) as transaction_date,
                 SUM(CASE WHEN type = 'CR' THEN amount ELSE 0 END) as inflow,
                 SUM(CASE WHEN type = 'DR' THEN amount ELSE 0 END) as outflow
             ")
-            ->groupBy('day_of_week')
+            ->groupBy('transaction_date')
             ->get()
-            ->keyBy('day_of_week');
+            ->keyBy('transaction_date');
 
-        $statistics = collect($allDays)->map(function ($day) use ($transactions) {
-            return [
-                'day' => $day,
-                'inflow' => (int) ($transactions[$day]->inflow ?? 0),
-                'outflow' => (int) ($transactions[$day]->outflow ?? 0),
-            ];
-        });
+        $statistics = collect()
+            ->push(...range(0, $endDate->diffInDays($startDate)))
+            ->map(function ($index) use ($transactions, $startDate) {
+                $date = $startDate->copy()->addDays($index)->format('Y-m-d');
+                return [
+                    'date' => $date,
+                    'inflow' => (int) ($transactions[$date]->inflow ?? 0),
+                    'outflow' => (int) ($transactions[$date]->outflow ?? 0),
+                ];
+            });
 
         return $this->success($statistics, "Transaction statistics retrieved successfully.");
     }
+
 }
