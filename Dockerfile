@@ -49,9 +49,14 @@ RUN composer install --no-dev --optimize-autoloader
 
 RUN chown -R www-data:www-data /var/www
 
+RUN chmod -R 775 /var/www/
+
 RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
     && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
     && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+RUN echo "user = www-data" >> /usr/local/etc/php-fpm.d/www.conf \
+    && echo "group = www-data" >> /usr/local/etc/php-fpm.d/www.conf
 
 USER www-data
 
