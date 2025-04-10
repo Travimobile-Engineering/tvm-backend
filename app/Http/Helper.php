@@ -1,5 +1,6 @@
 <?php
 
+use App\Enum\General;
 use App\Jobs\ProcessMail;
 use App\Libraries\Utility;
 use App\Models\User;
@@ -163,10 +164,25 @@ if (!function_exists('hasSetupWallet')) {
         $hasBankDetails = $user->userBank()->exists();
 
         $hasPin = $user->userPin()
-            ->where('status', 'active')
+            ->where('status', General::ACTIVE)
             ->exists();
 
         return $hasBankDetails && $hasPin;
+    }
+}
+
+if (!function_exists('hasSetupPin')) {
+    function hasSetupPin(int $userId): bool
+    {
+        $user = User::with(['userPin'])->find($userId);
+
+        if (!$user) {
+            return false;
+        }
+
+        return $user->userPin()
+            ->where('status', General::ACTIVE)
+            ->exists();
     }
 }
 

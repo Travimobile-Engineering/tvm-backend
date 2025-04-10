@@ -6,6 +6,7 @@ use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PassengerProfileResource;
 use App\Services\ProfileService;
 
 class ProfileController extends Controller
@@ -24,7 +25,8 @@ class ProfileController extends Controller
     //method to get the authenticated user
     public function index()
     {
-        return response()->json($this->user);
+        $user = new PassengerProfileResource($this->user);
+        return $this->success($user, "Passenger profile");
     }
 
     //Method to update user data

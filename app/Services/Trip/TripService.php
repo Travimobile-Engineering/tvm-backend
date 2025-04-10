@@ -417,6 +417,15 @@ class TripService
     public function startTrip($request)
     {
         $user = User::with(['transactions', 'driverTripPayments'])->findOrFail($request->user_id);
+
+        $existingTrip = Trip::where('user_id', $user->id)
+            ->where('status', TripStatus::INPROGRESS)
+            ->first();
+
+        if ($existingTrip) {
+            return $this->error(null, "You have an ongoing trip. Complete it before starting a new one.", 400);
+        }
+
         $trip = Trip::with([
                 'tripBookings' => function ($query) {
                     $query->where('payment_status', 1)
@@ -528,7 +537,7 @@ class TripService
 
         $data = TripResource::collection($trips);
 
-        return $this->success($data, "Upcoming trips", 200);
+        return $this->success($data, "Upcoming trips");
     }
 
     public function getCompletedTrips($userId)
@@ -608,7 +617,9 @@ class TripService
             ->when($date && !$time, fn($q) => $q->whereDate('departure_date', $date))
             ->get();
 
-        return $this->success(TripResource::collection($trips), "All trips", 200);
+        $data = TripResource::collection($trips);
+
+        return $this->success($data, "All trips");
     }
 
     public function getAll()

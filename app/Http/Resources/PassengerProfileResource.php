@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class AgentProfileResource extends JsonResource
+class PassengerProfileResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -14,7 +14,7 @@ class AgentProfileResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
+        return[
             'id' => (int)$this->id,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
@@ -23,7 +23,7 @@ class AgentProfileResource extends JsonResource
             'wallet' => $this->wallet,
             'address' => $this->address,
             'gender' => $this->gender,
-            'agent_id' => $this->agent_id,
+            'is_admin' => $this->is_admin,
             'nin' => decryptData($this->nin),
             'next_of_kin_full_name' => $this->next_of_kin_full_name,
             'next_of_kin_phone_number' => $this->next_of_kin_phone_number,
@@ -31,17 +31,13 @@ class AgentProfileResource extends JsonResource
             'next_of_kin_relationship' => $this->next_of_kin_relationship,
             'avatar_url' => $this->avatar_url,
             'profile_photo' => $this->profile_photo,
-            'user_category' => $this->user_category,
             'status' => ($this->email_verified || $this->sms_verified) ? 'verified' : 'pending',
-            'rating' => 3.5,
-            'lng' => (float)$this->lng,
-            'lat' => (float)$this->lat,
-            'transit_company' => (object)[
-                'id' => $this->transitCompany?->id,
-                'name' => $this->transitCompany?->name,
-                'email' => $this->transitCompany?->email,
-                'address' => $this->transitCompany?->address,
-                'park' => $this->transitCompany?->park,
+            'sms_notification' => $this->inbox_notifications,
+            'email_notification' => $this->email_notifications,
+            'wallet_setup' => hasSetupWallet($this->id),
+            'pin_setup' => hasSetupPin($this->id),
+            'wallet_info' => (object)[
+                'available_balance' => $this->wallet,
             ],
             'bank' => (object)[
                 'id' => $this->userBank?->id,
@@ -49,13 +45,6 @@ class AgentProfileResource extends JsonResource
                 'account_number' => $this->userBank?->account_number,
                 'bank_name' => $this->userBank?->bank_name,
             ],
-            'busstops' => BusStopResource::collection($this->busStops),
-            'wallet_setup' => hasSetupWallet($this->id),
-            'wallet_info' => (object)[
-                'available_balance' => $this->wallet,
-            ],
-            'sms_notification' => $this->inbox_notifications,
-            'email_notification' => $this->email_notifications,
         ];
     }
 }
