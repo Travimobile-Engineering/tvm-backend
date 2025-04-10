@@ -22,8 +22,8 @@ class AgentBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|int|exists:users,id',
-            'trip_id' => 'required',
+            'user_id' => 'required|integer|exists:users,id',
+            'trip_id' => 'required|integer|exists:trips,id',
             'third_party_booking' => 'nullable|int',
             'selected_seat' => 'required|string',
             'trip_type' => 'required|int',

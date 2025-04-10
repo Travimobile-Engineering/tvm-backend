@@ -148,7 +148,10 @@ class AuthService
         }
 
         if ($request->filled('phone_number')) {
-            $this->smsService->sendSms(formatPhoneNumber($request->phone_number), "Your verification code is: $code");
+            $this->smsService->sendSms(
+                formatPhoneNumber($request->phone_number),
+                "Your Travi Verification Pin is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi"
+            );
         }
     }
 

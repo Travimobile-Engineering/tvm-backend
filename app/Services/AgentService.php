@@ -549,7 +549,13 @@ class AgentService
         $date = request()->query('date');
         $status = request()->query('status', TripStatus::UPCOMING);
 
-        if (!in_array($status, [TripStatus::UPCOMING, TripStatus::COMPLETED, TripStatus::CANCELLED])) {
+        if (!in_array($status, [
+                TripStatus::UPCOMING,
+                TripStatus::COMPLETED,
+                TripStatus::CANCELLED,
+                TripStatus::INPROGRESS,
+            ]
+        )) {
             return $this->error("Invalid status", 400);
         }
 
@@ -698,12 +704,17 @@ class AgentService
         return $this->success(null, "Notification sent successfully");
     }
 
-    public function scanTicket($request, $bookingId)
+    public function scanTicket($request, $bookingId, $passengerId)
     {
         $ticketId = $bookingId ?? $request->input('booking_id');
+        $passengerId = $passengerId ?? $request->input('passenger_id');
 
         if (!$ticketId) {
             return $this->error(null, "Ticket ID is required", 400);
+        }
+
+        if (!$passengerId) {
+            return $this->error(null, "Passenger ID is required", 400);
         }
 
         $booking = TripBooking::with('tripBookingPassengers')
@@ -714,11 +725,34 @@ class AgentService
             return $this->error(null, "Booking not found", 404);
         }
 
-        $booking->tripBookingPassengers()->each(function ($passenger) {
-            $passenger->update(['onseat' => true]);
-        });
+        $passenger = $booking->tripBookingPassengers()->find($passengerId);
+
+        if (!$passenger) {
+            return $this->error(null, "Passenger not found", 404);
+        }
+
+        $passenger->update(['on_seat' => true]);
 
         return $this->success(null, "Ticket scanned successfully");
+    }
+
+    public function validateDriverPin($request)
+    {
+        $user = User::with('userPin')->find($request->user_id);
+
+        if (!$user) {
+            return $this->error(null, "User not found", 404);
+        }
+
+        if (!$user->userPin) {
+            return $this->error(null, "User pin not found", 404);
+        }
+
+        if(Hash::check($request->pin, $user->userPin->pin)) {
+            return $this->success(null, "Pin is valid");
+        }
+
+        return $this->error(null, "Invalid pin", 400);
     }
 }
 

@@ -178,6 +178,7 @@ trait PaymentTrait
                 'user_id' => $user->id,
                 'trip_id' => $tripId,
                 'driver_id' => $trip->user_id,
+                'title' => PaymentType::TRIP_BOOKING,
                 'amount' => $formattedAmount,
                 'status' => 'pending'
             ]);

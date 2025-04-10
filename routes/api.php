@@ -112,6 +112,7 @@ Route::middleware('validate.header')
                 ->group(function () {
                     Route::post('/setup', 'walletSetup');
                     Route::post('/verify-pin', 'verifyPin');
+                    Route::post('/set-transaction-pin', 'setTransactionPin');
                     Route::post('/withdraw', 'withdraw')
                         ->middleware('transaction.pin');
                     Route::post('/balance/withdraw', 'balanceWithdraw')
@@ -119,6 +120,12 @@ Route::middleware('validate.header')
                     Route::post('/topup', 'walletTopUp');
                     Route::post('/change-bank', 'changeBank')
                         ->middleware('transaction.pin');
+
+                    // Change Pin
+                    Route::post('/pin/send-otp', 'sendOtp');
+                    Route::post('/pin/verify', 'verifyWalletPin');
+                    Route::post('/pin/change', 'changePin')
+                    ->middleware('verify.pin');
 
                     // Transaction
                     Route::get('/recent-transaction/{user_id}', 'recentTransaction');
@@ -198,7 +205,7 @@ Route::middleware('validate.header')
                     Route::put('/edit-description', 'editDescription');
                     Route::post('/set-availability', 'setAvailability');
 
-                    Route::match(['get', 'post'], '/scan-ticket/{booking_id?}', 'scanTicket');
+                    Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{passenger_id?}', 'scanTicket');
                 });
 
             Route::prefix('premium')
@@ -260,21 +267,20 @@ Route::middleware('validate.header')
             ->group(function(){
                 Route::get('/get-balance', [WalletController::class, 'getBalance']);
                 Route::post('/fund-wallet', [WalletController::class, 'fundWallet']);
-                Route::post('/transfer', [WalletController::class, 'transfer']);
+                Route::post('/transfer', [WalletController::class, 'transfer'])
+                    ->middleware('transaction.pin');
                 Route::get('/transactions', [WalletController::class, 'getTransactions']);
-                Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
             });
 
             Route::prefix('notification')
-            ->controller(NotificationController::class)
-            ->group(function(){
-                Route::get('/', 'all');
-            });
+                ->controller(NotificationController::class)
+                ->group(function(){
+                    Route::get('/', 'all');
+                });
 
             Route::prefix('manifest-checker')
                 ->controller(ManifestCheckerController::class)
                 ->group(function(){
-
                     Route::get('/check/{plate_no}', 'getManifestData');
 
                     Route::prefix('incident')
@@ -312,7 +318,7 @@ Route::middleware('validate.header')
                 Route::post('/bus-search', 'busSearch');
                 Route::post('/buy-ticket', 'buyTicket');
                 Route::post('/ticket/search', 'ticketSearch');
-                Route::match(['get', 'post'], '/scan-ticket/{booking_id?}', 'scanTicket');
+                Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{passenger_id?}', 'scanTicket');
 
                 // Passenger Management
                 Route::post('/search/passenger', 'searchPassenger');
@@ -334,6 +340,7 @@ Route::middleware('validate.header')
                 Route::post('/search-driver', 'searchDriver');
                 Route::post('/impersonate-driver', 'impersonateDriver')
                     ->middleware('impersonation.throttle');
+                Route::post('/driver/validate-pin', 'validateDriverPin');
 
                 // Trip
                 Route::prefix('trip')
@@ -355,7 +362,6 @@ Route::middleware('validate.header')
 
                 //Notification
                 Route::patch('/notification', 'updateNotification');
-
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

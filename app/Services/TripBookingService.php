@@ -242,10 +242,6 @@ class TripBookingService
      */
     public function show($tripBooking)
     {
-        if($tripBooking->user_id != $this->user->id) {
-            return $this->error(null, 'You do not have the permission to complete this request', 400);
-        }
-
         $booking = TripBooking::with([
                 'trip.user',
                 'user.transitCompany',
@@ -305,7 +301,11 @@ class TripBookingService
             return $this->error(null, 'You do not have the permission to complete this request', 400);
         }
 
-        $booking->update(['status' => 0]);
+        $booking->update([
+            'reason' => $request->reason,
+            'date_canceled' => now(),
+            'status' => 0
+        ]);
 
         broadcast(new BookingCancelled($booking, $this->user));
 
@@ -351,10 +351,10 @@ class TripBookingService
     {
         $user = User::findOrFail($request->user);
         $history = TripBooking::with([
-            'trip' => function ($query) {
-                $query->select('id', 'departure', 'destination', 'departure_date', 'trip_duration');
-            },
-        ])
+                'trip' => function ($query) {
+                    $query->select('id', 'departure', 'destination', 'departure_date', 'trip_duration');
+                },
+            ])
             ->where('user_id', $user->id)
             ->get();
 
@@ -366,7 +366,7 @@ class TripBookingService
      */
     public function destroy(TripBooking $tripBooking)
     {
-        //
-        //
+        $tripBooking->delete();
+        return $this->success(null, 'Booking deleted successfully');
     }
 }
