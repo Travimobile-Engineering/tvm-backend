@@ -580,52 +580,35 @@ class TripService
     public function getAllTrips($userId)
     {
         $type = request()->query('type');
-        $date = request()->query('date');
-        $time = request()->query('time');
+        $status = request()->query('status', TripStatus::UPCOMING);
+        $date = request()->query('departure_date');
+        $time = request()->query('departure_time');
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
-        $query = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'tripBookings.user',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifest',
-                    'departureRegion.parks',
-                    'destinationRegion.parks',
-                ]
-            )
+        $trips = Trip::with([
+                'user.transitCompany',
+                'vehicle',
+                'tripBookings.user',
+                'departureRegion.state',
+                'destinationRegion.state',
+                'manifest',
+                'departureRegion.parks',
+                'destinationRegion.parks',
+            ])
             ->where('user_id', $userId)
-            ->where('status', TripStatus::UPCOMING);
-
-        if ($type) {
-            $query->where('type', $type);
-        }
-
-        if ($departure) {
-            $query->where('departure', $departure);
-        }
-
-        if ($destination) {
-            $query->where('destination', $destination);
-        }
-
-        if ($date && $time) {
-            $query->where(function ($q) use ($date, $time) {
+            ->where('status', $status)
+            ->when($type, fn($q) => $q->where('type', $type))
+            ->when($departure, fn($q) => $q->where('departure', $departure))
+            ->when($destination, fn($q) => $q->where('destination', $destination))
+            ->when($date && $time, function ($q) use ($date, $time) {
                 $q->whereDate('departure_date', '>=', $date)
                 ->whereTime('departure_time', '=', $time);
-            });
-        } elseif ($date) {
-            $query->whereDate('departure_date', $date);
-        }
+            })
+            ->when($date && !$time, fn($q) => $q->whereDate('departure_date', $date))
+            ->get();
 
-        $trips = $query->get();
-
-        $data = TripResource::collection($trips);
-
-        return $this->success($data, "All trips", 200);
+        return $this->success(TripResource::collection($trips), "All trips", 200);
     }
 
     public function getAll()
