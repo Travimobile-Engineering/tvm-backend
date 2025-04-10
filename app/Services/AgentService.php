@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTO\SendCodeData;
 use App\Enum\MailingEnum;
 use App\Enum\ManifestStatus;
 use App\Enum\PaymentMethod;
@@ -14,6 +15,7 @@ use App\Events\TripStart;
 use App\Http\Resources\AgentProfileResource;
 use App\Http\Resources\TripBookingResource;
 use App\Http\Resources\TripResource;
+use App\Mail\VerifyPinMail;
 use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\TripLog;
@@ -331,10 +333,10 @@ class AgentService
 
     public function sendOtp($request)
     {
-        $user = User::where('email', $request->email)->first();
+        $user = User::find($request->user_id);
 
         if (! $user) {
-            return $this->error(null, 'Email not found', 404);
+            return $this->error(null, 'User not found', 404);
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
@@ -345,19 +347,20 @@ class AgentService
             'verification_code_expires_at' => now()->addMinutes(10),
         ]);
 
-        if ($request->method === 'email') {
-            $data = [
-                'name' => $user->first_name,
-                'code' => $code
-            ];
-            mailSend(
-                MailingEnum::VERIFY_OTP,
-                $user,
-                "Verify Pin",
-                "App\Mail\VerifyPinMail",
-                $data
-            );
-        }
+        $data = [
+            'name' => $user->first_name,
+            'code' => $code
+        ];
+
+        sendCode($request, new SendCodeData(
+            type: MailingEnum::VERIFY_OTP,
+            user: $user,
+            data: $data,
+            phone: formatPhoneNumber($user->phone_number),
+            message: "Your Travi Verification Pin is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi",
+            subject: 'Verify OTP',
+            mailable: VerifyPinMail::class,
+        ));
 
         return $this->success(null, 'Verification code sent successfully');
     }
