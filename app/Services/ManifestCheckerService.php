@@ -7,6 +7,7 @@ use App\Models\Manifest;
 use App\Models\WatchList;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class ManifestCheckerService
 {
@@ -44,7 +45,7 @@ class ManifestCheckerService
         }
 
         $incident = Incident::create([
-            'user_id' => authUser()->id,
+            'user_id' => Auth::user()->id,
             'category' => $request->category,
             'type' => $request->type,
             'date' => $request->date,
