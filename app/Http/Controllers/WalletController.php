@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ChangePinRequest;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
 use App\Services\WalletService;
@@ -10,18 +11,21 @@ use App\Http\Requests\WalletTopUpRequest;
 use App\Http\Requests\DriverWithdrawRequest;
 use App\Http\Requests\WalletTransferRequest;
 use App\Http\Requests\DriverWalletSetupequest;
+use App\Http\Requests\SendPinOtpRequest;
 use App\Http\Requests\SetTransactionPinRequest;
+use App\Http\Requests\VerifyPinRequest;
+use App\Services\AgentService;
 
 class WalletController extends Controller
 {
 
     use HttpResponse;
 
-    protected $service;
-
-    public function __construct(WalletService $service){
-        $this->service = $service;
-    }
+    public function __construct(
+        protected WalletService $service,
+        protected AgentService $agentService,
+    )
+    {}
 
     public function getBalance()
     {
@@ -101,5 +105,20 @@ class WalletController extends Controller
     public function stats($userId)
     {
         return $this->service->stats($userId);
+    }
+
+    public function sendOtp(SendPinOtpRequest $request)
+    {
+        return $this->agentService->sendOtp($request);
+    }
+
+    public function verifyWalletPin(VerifyPinRequest $request)
+    {
+        return $this->agentService->verifyPin($request);
+    }
+
+    public function changePin(ChangePinRequest $request)
+    {
+        return $this->agentService->changePin($request);
     }
 }

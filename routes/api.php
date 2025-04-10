@@ -121,6 +121,12 @@ Route::middleware('validate.header')
                     Route::post('/change-bank', 'changeBank')
                         ->middleware('transaction.pin');
 
+                    // Change Pin
+                    Route::post('/pin/send-otp', 'sendOtp');
+                    Route::post('/pin/verify', 'verifyWalletPin');
+                    Route::post('/pin/change', 'changePin')
+                    ->middleware('verify.pin');
+
                     // Transaction
                     Route::get('/recent-transaction/{user_id}', 'recentTransaction');
                     Route::get('/recent-earning/{user_id}', 'recentEarning');

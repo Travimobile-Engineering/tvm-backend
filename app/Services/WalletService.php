@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enum\General;
 use App\Models\Bank;
 use App\Models\User;
 use App\Enum\PaymentType;
@@ -278,7 +279,8 @@ class WalletService
             'pin' => bcrypt($request->pin),
             'ip_address' => $request->ip(),
             'device_info' => $request->header('User-Agent'),
-            'attempts' => 0
+            'attempts' => 0,
+            'status' => General::ACTIVE,
         ]);
 
         return $this->success(null, "Transaction pin set successfully");
