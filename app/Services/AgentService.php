@@ -735,6 +735,25 @@ class AgentService
 
         return $this->success(null, "Ticket scanned successfully");
     }
+
+    public function validateDriverPin($request)
+    {
+        $user = User::with('userPin')->find($request->user_id);
+
+        if (!$user) {
+            return $this->error(null, "User not found", 404);
+        }
+
+        if (!$user->userPin) {
+            return $this->error(null, "User pin not found", 404);
+        }
+
+        if(Hash::check($request->pin, $user->userPin->pin)) {
+            return $this->success(null, "Pin is valid");
+        }
+
+        return $this->error(null, "Invalid pin", 400);
+    }
 }
 
 

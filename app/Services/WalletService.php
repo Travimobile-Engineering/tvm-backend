@@ -42,7 +42,9 @@ class WalletService
             return $this->error("User not found", 404);
         }
 
-        return $this->success(['data' => $user->wallet ?? []], "Wallet balance retrieved");
+        $data = $user->wallet ?? [];
+
+        return $this->success($data, "Wallet balance retrieved");
     }
 
     public function fundWallet($request){
@@ -122,7 +124,9 @@ class WalletService
             return $this->error("User not found", 404);
         }
 
-        return $this->success(['data' => $user->transactions ?? []], "Wallet transactions retrieved");
+        $data = $user->transactions ?? [];
+
+        return $this->success($data, "Wallet transactions retrieved");
     }
 
     public function walletSetup($request)
@@ -370,11 +374,10 @@ class WalletService
 
         $date = request()->input('date');
 
-        $user = User::with(['driverTripPayments' => function ($query) use ($date) {
-            if ($date) {
-                $query->whereDate('created_at', $date);
-            }
-        }])->findOrFail($userId);
+        $user = User::with([
+            'driverTripPayments' => fn($query) =>
+                $query->when($date, fn($q) => $q->whereDate('created_at', $date))
+        ])->findOrFail($userId);
 
         $earnings = $user->driverTripPayments->map(function ($payment) {
             return [

@@ -417,9 +417,13 @@ class TripService
     public function startTrip($request)
     {
         $user = User::with(['transactions', 'driverTripPayments'])->findOrFail($request->user_id);
-        $trip = Trip::with(['tripBookings' => function ($query) {
-            $query->where('payment_status', 1);
-        }, 'manifest'])->find($request->trip_id);
+        $trip = Trip::with([
+                'tripBookings' => function ($query) {
+                    $query->where('payment_status', 1)
+                        ->with('tripBookingPassengers');
+                },
+                'manifest'
+            ])->find($request->trip_id);
 
         if (!$trip) {
             return $this->error(null, "Trip not found!", 404);
@@ -445,6 +449,14 @@ class TripService
 
             if ($trip->tripBookings->isEmpty()) {
                 return $this->error(null, "No bookings available!", 400);
+            }
+
+            $notSeatedPassengers = $trip->tripBookings
+                ->flatMap->tripBookingPassengers
+                ->filter(fn($passenger) => !$passenger->on_seat);
+
+            if ($notSeatedPassengers->isNotEmpty()) {
+                return $this->error(null, "Cannot start trip. All passengers must be seated.", 400);
             }
 
             foreach ($trip->tripBookings as $booking) {

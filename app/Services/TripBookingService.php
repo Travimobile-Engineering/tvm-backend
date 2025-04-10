@@ -301,7 +301,11 @@ class TripBookingService
             return $this->error(null, 'You do not have the permission to complete this request', 400);
         }
 
-        $booking->update(['status' => 0]);
+        $booking->update([
+            'reason' => $request->reason,
+            'date_canceled' => now(),
+            'status' => 0
+        ]);
 
         broadcast(new BookingCancelled($booking, $this->user));
 

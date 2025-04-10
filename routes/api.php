@@ -267,10 +267,10 @@ Route::middleware('validate.header')
             });
 
             Route::prefix('notification')
-            ->controller(NotificationController::class)
-            ->group(function(){
-                Route::get('/', 'all');
-            });
+                ->controller(NotificationController::class)
+                ->group(function(){
+                    Route::get('/', 'all');
+                });
 
             Route::prefix('manifest-checker')
                 ->controller(ManifestCheckerController::class)
@@ -334,6 +334,7 @@ Route::middleware('validate.header')
                 Route::post('/search-driver', 'searchDriver');
                 Route::post('/impersonate-driver', 'impersonateDriver')
                     ->middleware('impersonation.throttle');
+                Route::post('/driver/validate-pin', 'validateDriverPin');
 
                 // Trip
                 Route::prefix('trip')

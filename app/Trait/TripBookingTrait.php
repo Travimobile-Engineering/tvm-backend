@@ -187,20 +187,24 @@ trait TripBookingTrait
     protected function tripCheck($request, $user)
     {
         $trip = Trip::with(
-            [
-                'user.transitCompany',
-                'vehicle',
-                'tripBookings.user',
-                'departureRegion.state',
-                'destinationRegion.state',
-                'manifest'
-            ]
-        )
-        ->where('status', TripStatus::UPCOMING)
-        ->find($request->trip_id);
+                [
+                    'user.transitCompany',
+                    'vehicle',
+                    'tripBookings.user',
+                    'departureRegion.state',
+                    'destinationRegion.state',
+                    'manifest'
+                ]
+            )
+            ->where('status', TripStatus::UPCOMING)
+            ->find($request->trip_id);
 
         if(! $trip) {
             return $this->error(null, "Invalid trip ID or trip is no longer available", 400);
+        }
+
+        if ($trip->user_id === $user->id) {
+            return $this->error(null, 'Drivers cannot book tickets for their own trip.');
         }
 
         $seats = $trip->vehicle?->seats;

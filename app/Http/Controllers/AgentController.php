@@ -220,4 +220,9 @@ class AgentController extends Controller
     {
         return $this->service->scanTicket($request, $bookingId, $passengerId);
     }
+
+    public function validateDriverPin(Request $request)
+    {
+        return $this->service->validateDriverPin($request);
+    }
 }
