@@ -77,9 +77,12 @@ class WalletService
         else return ['message' => $response, 'code' => 400];
     }
 
-    public function transfer($request){
+    public function transfer($request)
+    {
+        $user = User::where('agent_id', $request->agent_id)
+            ->first();
 
-        if(!in_array(UserType::AGENT, json_decode($this->user->user_category))) {
+        if(!$user) {
             return $this->error(null, "You are not authorized to perform this action", 403);
         }
 
