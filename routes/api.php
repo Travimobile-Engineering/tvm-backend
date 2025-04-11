@@ -252,7 +252,7 @@ Route::middleware('validate.header')
                 ->group(function(){
                     Route::post('/create', 'booking');
                     Route::post('/edit/{tripBooking}', 'update');
-                    Route::get('/cancel/{booking_id}', 'cancelTripBooking');
+                    Route::post('/cancel', 'cancelTripBooking');
                     Route::get('/history/{user}', 'getUserTripBookingHistory')->middleware('cacheResponse:300');
                     Route::get('/{tripBooking}', 'show')->middleware('doNotCacheResponse');
                     Route::get('/payment/{reference}', 'getPaymentRef');
