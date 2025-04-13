@@ -133,6 +133,11 @@ class ManifestCheckerService
         return $this->error(null, "Failed to add record to watch list");
     }
 
+    public function getWatchListRecords(){
+        $record = WatchList::all();
+        return $this->success($record, null);
+    }
+
     public function getWatchListRecord($request){
         $record = WatchList::find($request->id);
         if($record){
