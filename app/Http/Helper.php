@@ -1,5 +1,7 @@
 <?php
 
+use App\Contracts\SMS;
+use App\DTO\SendCodeData;
 use App\Enum\General;
 use App\Jobs\ProcessMail;
 use App\Libraries\Utility;
@@ -254,4 +256,33 @@ if (! function_exists('formatPhoneNumber')) {
     }
 }
 
+if (! function_exists('sendCode')) {
+    function sendCode($request, SendCodeData $payload) {
+        $channels = [
+            'email' => function () use ($payload) {
+                mailSend(
+                    $payload->type,
+                    $payload->user,
+                    $payload->subject,
+                    $payload->mailable,
+                    $payload->data
+                );
+            },
+            'sms' => function () use ($payload) {
+                app(SMS::class)->sendSms(
+                    $payload->phone,
+                    $payload->message
+                );
+            },
+        ];
+
+        $method = $request->method ?? null;
+
+        if (isset($channels[$method])) {
+            $channels[$method]();
+        } else {
+            throw new \InvalidArgumentException("Unsupported method: {$method}");
+        }
+    }
+}
 
