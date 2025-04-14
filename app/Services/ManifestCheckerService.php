@@ -7,6 +7,7 @@ use App\Models\Manifest;
 use App\Models\WatchList;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class ManifestCheckerService
 {
@@ -44,7 +45,7 @@ class ManifestCheckerService
         }
 
         $incident = Incident::create([
-            'user_id' => authUser()->id,
+            'user_id' => Auth::user()->id,
             'category' => $request->category,
             'type' => $request->type,
             'date' => $request->date,
@@ -62,61 +63,17 @@ class ManifestCheckerService
     public function getIncidentCategories()
     {
         $categories = DB::table('incident_categories')->pluck('name')->toArray();
-
-        if (!empty($categories)) {
-            return $this->success($categories, "Incident categories retrieved successfully");
-        }
-
-        $defaultCategories = [
-            'General Security Incident',
-            'Safety Incidents',
-            'Transportation Specific Incidents',
-            'Emergency Situations'
-        ];
-
-        return $this->success($defaultCategories, "Incident categories retrieved successfully");
+        return $this->success($categories, "Incident categories retrieved successfully");
     }
 
     public function getIncidentTypes()
     {
-        $types = DB::table('incident_types')->pluck('name');
-
-        if (!empty($types)) {
-            return $this->success($types, "Incident types retrieved successfully");
-        }
-
-        $types = [
-            'Trespassing',
-            'Vandalism',
-            'Accidents',
-            'Injury',
-            'Medical Emergency',
-            'Traffic Accident',
-            'Vehicle Breakdown',
-            'Kidnapping',
-            'Bomb Threat',
-            'Natural Disaster'
-        ];
-
+        $types = DB::table('incident_types')->pluck('name')->toArray();
         return $this->success($types, "Incident types retrieved successfully");
     }
 
     public function getIncidentSeverityLevels(){
-        $severities = DB::table('incident_categories')->pluck('name');
-
-        if (!empty($severities)) {
-            return $this->success($severities, "Incident severities retrieved successfully");
-        }
-
-        $severities = [
-            'Informational',
-            'Low Priority',
-            'Medium Priority',
-            'High Prority',
-            'Critical Priority',
-            'Catastrophic'
-        ];
-
+        $severities = DB::table('incident_severity_levels')->pluck('name')->toArray();
         return $this->success($severities, "Incident severities retrieved successfully");
     }
 
@@ -174,6 +131,11 @@ class ManifestCheckerService
         $record = WatchList::create($data);
         if($record) return $this->success(null, "Record successfully added to watch list");
         return $this->error(null, "Failed to add record to watch list");
+    }
+
+    public function getWatchListRecords(){
+        $record = WatchList::all();
+        return $this->success($record, null);
     }
 
     public function getWatchListRecord($request){

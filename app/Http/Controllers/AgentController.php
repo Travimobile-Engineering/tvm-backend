@@ -2,16 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\AgentBookingRequest;
-use App\Http\Requests\AgentInfoRequest;
-use App\Http\Requests\NotificationRequest;
-use App\Http\Requests\TransportOneTimeRequest;
-use App\Http\Requests\TransportRecurringRequest;
+use Illuminate\Http\Request;
 use App\Services\AgentService;
 use App\Services\DriverService;
 use App\Services\Trip\TripService;
-use Illuminate\Http\Request;
+use App\Http\Requests\AgentInfoRequest;
+use App\Http\Requests\StartTripRequest;
 use Illuminate\Validation\Rules\Password;
+use App\Http\Requests\AgentBookingRequest;
+use App\Http\Requests\ChangePinRequest;
+use App\Http\Requests\NotificationRequest;
+use App\Http\Requests\TransportOneTimeRequest;
+use App\Http\Requests\ImpersonateDriverRequest;
+use App\Http\Requests\SendPinOtpRequest;
+use App\Http\Requests\TransportRecurringRequest;
+use App\Http\Requests\VerifyPinRequest;
 
 class AgentController extends Controller
 {
@@ -25,6 +30,11 @@ class AgentController extends Controller
     public function profile()
     {
         return $this->service->profile();
+    }
+
+    public function getAgent($agentId)
+    {
+        return $this->service->getAgent($agentId);
     }
 
     public function changePassword(Request $request)
@@ -104,34 +114,18 @@ class AgentController extends Controller
         return $this->service->deleteProfile($request);
     }
 
-    public function sendOtp(Request $request)
+    public function sendOtp(SendPinOtpRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'method' => 'required|string|in:email,sms',
-            'email' => 'required|email',
-        ]);
-
         return $this->service->sendOtp($request);
     }
 
-    public function verifyPin(Request $request)
+    public function verifyPin(VerifyPinRequest $request)
     {
-        $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
-            'code' => ['required', 'string'],
-        ]);
-
         return $this->service->verifyPin($request);
     }
 
-    public function changePin(Request $request)
+    public function changePin(ChangePinRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'pin' => 'required|numeric|digits:4|confirmed'
-        ]);
-
         return $this->service->changePin($request);
     }
 
@@ -144,13 +138,8 @@ class AgentController extends Controller
         return $this->service->searchDriver($request);
     }
 
-    public function impersonateDriver(Request $request)
+    public function impersonateDriver(ImpersonateDriverRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'password' => 'required|string',
-        ]);
-
         return $this->service->impersonateDriver($request);
     }
 
@@ -174,15 +163,8 @@ class AgentController extends Controller
         return $this->service->tripDetails($tripId);
     }
 
-    public function startTrip(Request $request)
+    public function startTrip(StartTripRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'trip_id' => 'required|integer|exists:trips,id',
-            'payment_method' => 'required|string|in:wallet',
-            'pin' => 'required|string',
-        ]);
-
         return $this->service->startTrip($request);
     }
 
@@ -221,8 +203,13 @@ class AgentController extends Controller
         return $this->service->notifyPassengers($request);
     }
 
-    public function scanTicket(Request $request, $bookingId = null)
+    public function scanTicket(Request $request, $bookingId = null, $seatNo = null)
     {
-        return $this->service->scanTicket($request, $bookingId);
+        return $this->service->scanTicket($request, $bookingId, $seatNo);
+    }
+
+    public function validateDriverPin(Request $request)
+    {
+        return $this->service->validateDriverPin($request);
     }
 }

@@ -145,6 +145,7 @@ trait TripBookingTrait
                 'user_id' => $user->id,
                 'trip_id' => $request->trip_id,
                 'driver_id' => $trip->user_id,
+                'title' => 'Bus ticket purchase',
                 'amount' => $amount_paid,
                 'status' => 'pending'
             ]);
@@ -187,20 +188,24 @@ trait TripBookingTrait
     protected function tripCheck($request, $user)
     {
         $trip = Trip::with(
-            [
-                'user.transitCompany',
-                'vehicle',
-                'tripBookings.user',
-                'departureRegion.state',
-                'destinationRegion.state',
-                'manifest'
-            ]
-        )
-        ->where('status', TripStatus::UPCOMING)
-        ->find($request->trip_id);
+                [
+                    'user.transitCompany',
+                    'vehicle',
+                    'tripBookings.user',
+                    'departureRegion.state',
+                    'destinationRegion.state',
+                    'manifest'
+                ]
+            )
+            ->where('status', TripStatus::UPCOMING)
+            ->find($request->trip_id);
 
         if(! $trip) {
             return $this->error(null, "Invalid trip ID or trip is no longer available", 400);
+        }
+
+        if ($trip->user_id === $user->id) {
+            return $this->error(null, 'Drivers cannot book tickets for their own trip.');
         }
 
         $seats = $trip->vehicle?->seats;
@@ -297,7 +302,7 @@ trait TripBookingTrait
                 'trip_booking_id' => $tripBooking->id,
                 'name' => $passenger['name'],
                 'email' => $passenger['email'] ?? null,
-                'phone_number' => $passenger['phone_number'],
+                'phone_number' => $passenger['phone_number'] ?? "nil",
                 'next_of_kin' => $index === 0 ? ($data['user']['next_of_kin'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['name'] ?? ''),
                 'next_of_kin_phone_number' => $index === 0 ? ($data['user']['next_of_kin_phone'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['phone_number'] ?? 00000000000),
 

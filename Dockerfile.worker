@@ -39,6 +39,8 @@ COPY ./ ./
 
 COPY ./database ./database
 
+COPY ./database/migrations  ./database/migrations
+
 RUN composer install --no-dev --optimize-autoloader
 
 RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \

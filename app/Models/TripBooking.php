@@ -28,6 +28,8 @@ class TripBooking extends Model
         'manifest_status',
         'receive_sms',
         'on_seat',
+        'reason',
+        'date_canceled',
     ];
 
     protected $hidden = ['id'];
