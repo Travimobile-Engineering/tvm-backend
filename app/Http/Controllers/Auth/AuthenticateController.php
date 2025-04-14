@@ -28,7 +28,6 @@ class AuthenticateController extends Controller
         }
 
         $user = JWTAuth::user();
-
         return response()->json(compact('token', 'user'));
     }
 
