@@ -297,6 +297,7 @@ Route::middleware('validate.header')
                         ->group(function(){
                             Route::post('/add', 'addRecordToWatchList');
                             Route::post('/update/{id}', 'updateWatchListRecord');
+                            Route::get('/get-watchlists', 'getWatchListRecords');
                             Route::get('/get/{id}', 'getWatchListRecord');
                             Route::post('/search', 'searchWatchList');
                         });

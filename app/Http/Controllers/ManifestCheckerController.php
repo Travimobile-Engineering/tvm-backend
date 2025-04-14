@@ -59,6 +59,10 @@ class ManifestCheckerController extends Controller
         return $this->service->addUpdateWatchList($request, 'update');
     }
 
+    public function getWatchListRecords(){
+        return $this->service->getWatchListRecords();
+    }
+
     public function getWatchListRecord(Request $request){
         return $this->service->getWatchListRecord($request);
     }
