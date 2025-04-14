@@ -707,16 +707,16 @@ class AgentService
         return $this->success(null, "Notification sent successfully");
     }
 
-    public function scanTicket($request, $bookingId, $passengerId)
+    public function scanTicket($request, $bookingId, $seatNo)
     {
         $ticketId = $bookingId ?? $request->input('booking_id');
-        $passengerId = $passengerId ?? $request->input('passenger_id');
+        $seatNo = $seatNo ?? $request->input('seat_no');
 
         if (!$ticketId) {
             return $this->error(null, "Ticket ID is required", 400);
         }
 
-        if (!$passengerId) {
+        if (!$seatNo) {
             return $this->error(null, "Passenger ID is required", 400);
         }
 
@@ -728,7 +728,8 @@ class AgentService
             return $this->error(null, "Booking not found", 404);
         }
 
-        $passenger = $booking->tripBookingPassengers()->find($passengerId);
+        $passenger = $booking->tripBookingPassengers()->where('selected_seat', $seatNo)
+            ->first();
 
         if (!$passenger) {
             return $this->error(null, "Passenger not found", 404);

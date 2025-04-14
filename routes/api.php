@@ -205,7 +205,7 @@ Route::middleware('validate.header')
                     Route::put('/edit-description', 'editDescription');
                     Route::post('/set-availability', 'setAvailability');
 
-                    Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{passenger_id?}', 'scanTicket');
+                    Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{seat_no?}', 'scanTicket');
                 });
 
             Route::prefix('premium')
@@ -318,7 +318,7 @@ Route::middleware('validate.header')
                 Route::post('/bus-search', 'busSearch');
                 Route::post('/buy-ticket', 'buyTicket');
                 Route::post('/ticket/search', 'ticketSearch');
-                Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{passenger_id?}', 'scanTicket');
+                Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{seat_no?}', 'scanTicket');
 
                 // Passenger Management
                 Route::post('/search/passenger', 'searchPassenger');

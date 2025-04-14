@@ -297,7 +297,7 @@ class TripBookingService
     {
         $booking = TripBooking::where('booking_id', $request->booking_id)->firstOrFail();
 
-        if($this->user->id != $booking->user_id) {
+        if(!in_array($this->user->id, [$booking->user_id, $booking->agent_id])) {
             return $this->error(null, 'You do not have the permission to complete this request', 400);
         }
 
