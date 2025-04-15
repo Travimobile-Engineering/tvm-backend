@@ -32,8 +32,8 @@ class WatchListRequest extends FormRequest
             "io_contact_number" => 'required',
             "alert_location" => 'required',
             "photo" => ['nullable', 'mimes:jpg,jpeg,png'],
-            "documents" => ['required', 'array'],
-            "status" => ["in:active,in custody,closed", "nullable"]
+            "documents" => ['nullable', 'array'],
+            "status" => ["nullable", "in:active,in custody,closed"]
         ];
     }
 }

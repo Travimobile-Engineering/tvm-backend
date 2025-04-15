@@ -2,11 +2,11 @@
 
 namespace App\Services\Auth;
 
+use App\Models\User;
 use App\Contracts\SMS;
 use App\Enum\MailingEnum;
-use App\Mail\ConfirmationEmail;
-use App\Models\User;
 use App\Trait\HttpResponse;
+use App\Mail\ConfirmationEmail;
 
 class AuthService
 {
@@ -161,5 +161,6 @@ class AuthService
             !$user->email_verified &&
             $user->verification_code_expires_at >= now();
     }
+
 }
 
