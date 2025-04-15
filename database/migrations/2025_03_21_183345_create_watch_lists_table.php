@@ -36,6 +36,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('watch_list');
+        if(Schema::hasTable('watch_lists')){
+            Schema::dropIfExists('watch_lists');
+        }
     }
 };
