@@ -282,7 +282,7 @@ Route::middleware('validate.header')
             Route::prefix('manifest-checker')
                 ->controller(ManifestCheckerController::class)
                 ->group(function(){
-                    
+
                     Route::post('/login', [AuthenticateController::class, 'securityAgentLogin']);
                     Route::controller(ManifestCheckerController::class)
                     ->group(function(){
@@ -298,7 +298,7 @@ Route::middleware('validate.header')
                                 Route::get('/get-incident/{id}', 'getIncident');
                                 Route::post('/add', 'addIncident');
                             });
-    
+
                         Route::prefix('watch-list')
                             ->group(function(){
                                 Route::post('/add', 'addRecordToWatchList');
