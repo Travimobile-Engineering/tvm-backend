@@ -1,17 +1,18 @@
 <?php
 
-use App\Contracts\SMS;
-use App\DTO\SendCodeData;
+use App\Models\User;
 use App\Enum\General;
+use App\Contracts\SMS;
+use App\Models\Mailing;
+use App\DTO\SendCodeData;
 use App\Jobs\ProcessMail;
 use App\Libraries\Utility;
-use App\Models\User;
-use App\Models\Mailing;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Database\Eloquent\Model;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 if (!function_exists('authUser')) {
     function authUser() {
@@ -283,6 +284,15 @@ if (! function_exists('sendCode')) {
         } else {
             throw new \InvalidArgumentException("Unsupported method: {$method}");
         }
+    }
+}
+
+if(!function_exists('getUserTypes')){
+    function getUserTypes(?Model $user = null){
+        if(!$user){
+            $user = Auth::user();
+        }
+        return explode(',', $user->user_category);
     }
 }
 

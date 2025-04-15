@@ -281,26 +281,32 @@ Route::middleware('validate.header')
             Route::prefix('manifest-checker')
                 ->controller(ManifestCheckerController::class)
                 ->group(function(){
-                    Route::get('/check/{plate_no}', 'getManifestData');
+                    
+                    Route::post('/login', [AuthenticateController::class, 'securityAgentLogin']);
+                    Route::controller(ManifestCheckerController::class)
+                    ->group(function(){
 
-                    Route::prefix('incident')
-                        ->group(function(){
-                            Route::get('/get-categories', 'getIncidentCategories');
-                            Route::get('/get-types', 'getIncidentTypes');
-                            Route::get('/get-severity-levels', 'getIncidentSeverityLevels');
-                            Route::get('/get-incidents', 'getIncidents');
-                            Route::get('/get-incident/{id}', 'getIncident');
-                            Route::post('/add', 'addIncident');
-                        });
+                        Route::get('/check/{plate_no}', 'getManifestData');
 
-                    Route::prefix('watch-list')
-                        ->group(function(){
-                            Route::post('/add', 'addRecordToWatchList');
-                            Route::post('/update/{id}', 'updateWatchListRecord');
-                            Route::get('/get-watchlists', 'getWatchListRecords');
-                            Route::get('/get/{id}', 'getWatchListRecord');
-                            Route::post('/search', 'searchWatchList');
-                        });
+                        Route::prefix('incident')
+                            ->group(function(){
+                                Route::get('/get-categories', 'getIncidentCategories');
+                                Route::get('/get-types', 'getIncidentTypes');
+                                Route::get('/get-severity-levels', 'getIncidentSeverityLevels');
+                                Route::get('/get-incidents', 'getIncidents');
+                                Route::get('/get-incident/{id}', 'getIncident');
+                                Route::post('/add', 'addIncident');
+                            });
+    
+                        Route::prefix('watch-list')
+                            ->group(function(){
+                                Route::post('/add', 'addRecordToWatchList');
+                                Route::post('/update/{id}', 'updateWatchListRecord');
+                                Route::get('/get-watchlists', 'getWatchListRecords');
+                                Route::get('/get/{id}', 'getWatchListRecord');
+                                Route::post('/search', 'searchWatchList');
+                            });
+                    });
                 });
         });
 

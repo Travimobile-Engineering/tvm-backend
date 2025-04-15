@@ -2,48 +2,35 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\LoginRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Tymon\JWTAuth\Exceptions\JWTException;
+use App\Services\Auth\AuthService;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Http\Requests\LoginRequest;
+use App\Services\Auth\LoginService;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Tymon\JWTAuth\Exceptions\JWTException;
 
 class AuthenticateController extends Controller
 {
+
+    public function __construct(
+        protected LoginService $service,
+    ){}
+    
     //login method to authenticate user and issue JWT
     public function login(LoginRequest $request){
+        $result = $this->service->login($request);
+        return response()->json($result);
+    }
 
-        $emailOrPhone = filter_var($request->email, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
-        $credentials = $request->only('email', 'password');
-
-        //Attempt to verify the credentials and create a token for the user
-        try{
-            if(! $token = JWTAuth::attempt([$emailOrPhone => $request->email, 'password' => $request->password])){
-                return response()->json([ 'Error' => 'Incorrect login credentials'], 400);
-            }
-        }catch(JWTException $e){
-            Log::error($e->getMessage());
-            return response()->json(['Error' => 'Could not create token'], 500);
-        }
-
-        $user = JWTAuth::user();
-        return response()->json(compact('token', 'user'));
+    public function securityAgentLogin(LoginRequest $request){
+        $result = $this->service->securityAgentLogin($request);
+        return response()->json($result);
     }
 
     //logout method to invalidate the token
     public function logout(){
-
-        try{
-
-            $user = JWTAuth::parseToken()->authenticate();
-            JWTAuth::invalidate(JWTAuth::getToken());
-        }
-        catch(JWTException $e){
-            return response()->json(['error' => 'Token is invalid or expired'], 401);
-        }
-
-
-        return response()->json(['message' => 'Logout successful']);
+        $this->service->logout();
     }
 }
