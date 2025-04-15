@@ -8,6 +8,7 @@ use App\Enum\TripStatus;
 use App\Events\TripBooked;
 use App\Events\WalletFunded;
 use App\Models\Notification;
+use App\Models\PaymentLog;
 use App\Models\PremiumHireBooking;
 use App\Models\Trip;
 use App\Models\TripBooking;
@@ -285,6 +286,35 @@ trait PaymentTrait
             Log::info("message: " . $e->getMessage());
             return $e->getMessage();
         }
+    }
+
+    protected function isAlreadyProcessed($event)
+    {
+        $paymentData = $event['data'];
+        $tripId = $paymentData['metadata']['trip_id'];
+        $userId = $paymentData['metadata']['user_id'];
+        $selectedSeats = explode(',', str_replace(' ', '', $paymentData['metadata']['selected_seat']));
+
+        $paymentLogExists = PaymentLog::where([
+            'trip_id' => $tripId,
+            'user_id' => $userId,
+            'type' => PaymentType::TRIP_BOOKING,
+        ])->exists();
+
+        $tripBookingExists = TripBooking::where([
+            'trip_id' => $tripId,
+            'user_id' => $userId,
+            'payment_status' => 1,
+            'payment_method' => PaymentType::TRIP_BOOKING,
+        ])
+        ->where(function ($query) use ($selectedSeats) {
+            foreach ($selectedSeats as $seat) {
+                $query->orWhereJsonContains('selected_seat', $seat);
+            }
+        })
+        ->exists();
+
+        return $paymentLogExists || $tripBookingExists;
     }
 }
 

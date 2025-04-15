@@ -204,6 +204,7 @@ Route::middleware('validate.header')
                     Route::post('/vehicle-requirements', 'vehicleReq');
                     Route::put('/edit-description', 'editDescription');
                     Route::post('/set-availability', 'setAvailability');
+                    Route::put('/vehilce/update-layout', 'updateLayout');
 
                     Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{seat_no?}', 'scanTicket');
                 });
