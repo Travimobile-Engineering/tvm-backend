@@ -11,22 +11,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('watch_lists', function (Blueprint $table) {
-            $table->id();
-            $table->string("full_name");
-            $table->string("phone");
-            $table->string("email");
-            $table->string("dob");
-            $table->string("state_of_origin");
-            $table->string("nin");
-            $table->string("investigation_officer");
-            $table->string("io_contact_number");
-            $table->string("alert_location");
-            $table->string("photo_url");
-            $table->string("documents");
-            $table->enum("status", ['active', 'closed', 'in custody'])->default('active');
-            $table->timestamps();
-        });
+        if(!Schema::hasTable('watch_lists')){
+            Schema::create('watch_lists', function (Blueprint $table) {
+                $table->id();
+                $table->string("full_name");
+                $table->string("phone");
+                $table->string("email");
+                $table->string("dob");
+                $table->string("state_of_origin");
+                $table->string("nin");
+                $table->string("investigation_officer");
+                $table->string("io_contact_number");
+                $table->string("alert_location");
+                $table->string("photo_url");
+                $table->string("documents");
+                $table->enum("status", ['active', 'closed', 'in custody'])->default('active');
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -34,6 +36,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('watch_list');
+        if(Schema::hasTable('watch_lists')){
+            Schema::dropIfExists('watch_lists');
+        }
     }
 };
