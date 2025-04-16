@@ -86,15 +86,15 @@ trait PaymentTrait
             $status = $paymentData['status'];
 
             $trip = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'tripBookings.user',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifest'
-                ]
-            )
+                    [
+                        'user.transitCompany',
+                        'vehicle',
+                        'tripBookings.user',
+                        'departureRegion.state',
+                        'destinationRegion.state',
+                        'manifest'
+                    ]
+                )
                 ->findOrFail($tripId);
 
             $seats = $trip->vehicle?->seats;
@@ -175,10 +175,9 @@ trait PaymentTrait
                 ])
             ]);
 
-            $user->driverTripPayments()->create([
+            $trip->user->driverTripPayments()->create([
                 'user_id' => $user->id,
                 'trip_id' => $tripId,
-                'driver_id' => $trip->user_id,
                 'title' => PaymentType::TRIP_BOOKING,
                 'amount' => $formattedAmount,
                 'status' => 'pending'

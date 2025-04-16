@@ -155,10 +155,9 @@ trait TripBookingTrait
                 ]
             ]);
 
-            $user->driverTripPayments()->create([
+            $trip->user->driverTripPayments()->create([
                 'user_id' => $user->id,
                 'trip_id' => $request->trip_id,
-                'driver_id' => $trip->user_id,
                 'title' => 'Bus ticket purchase',
                 'amount' => $amount_paid,
                 'status' => 'pending'
