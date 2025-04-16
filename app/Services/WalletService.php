@@ -19,6 +19,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Models\TripPayment;
 use App\Services\Paystack\PaystackService;
 use Illuminate\Support\Facades\Log;
 use Unicodeveloper\Paystack\Facades\Paystack;
@@ -379,19 +380,10 @@ class WalletService
 
         $date = request()->input('date');
 
-        $user = User::with([
-            'driverTripPayments' => fn($query) =>
-                $query->when($date, fn($q) => $q->whereDate('created_at', $date))
-        ])->findOrFail($userId);
-
-        $earnings = $user->driverTripPayments->map(function ($payment) {
-            return [
-                'id' => $payment->id,
-                'amount' => (int)$payment->amount,
-                'status' => $payment->status,
-                'created_at' => $payment->created_at,
-            ];
-        });
+        $earnings = TripPayment::select('id', 'title', 'amount', 'status', 'created_at')
+            ->where('driver_id', $userId)
+            ->when($date, fn($query) => $query->whereDate('created_at', $date))
+            ->get();
 
         return $this->success($earnings, "Recent earnings");
     }

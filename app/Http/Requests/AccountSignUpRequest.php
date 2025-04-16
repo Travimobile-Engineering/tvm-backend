@@ -23,7 +23,7 @@ class AccountSignUpRequest extends FormRequest
     {
         return [
             'full_name' => ['required', 'string', 'max:200'],
-            'email' => ['string'],
+            'email' => ['nullable', 'string'],
             'phone_number' => ['required_if:email,null'],
             'user_category' => ['required', 'string', 'in:passenger,driver,agent'],
             'password' => ['required', 'string', 'confirmed', 'min:8']

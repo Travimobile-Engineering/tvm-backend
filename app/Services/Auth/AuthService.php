@@ -47,7 +47,7 @@ class AuthService
             'first_name' => $firstName,
             'last_name' => $lastName,
             'email' => $request->email,
-            'phone_number' => $request->phone_number,
+            'phone_number' => formatPhoneNumber($request->phone_number),
             'verification_code' => $code,
             'verification_code_expires_at' => now()->addMinutes(10),
             'user_category' => $request->user_category,
@@ -113,13 +113,17 @@ class AuthService
 
     private function findUserByEmailOrPhone($request)
     {
-        return User::where(function ($query) use ($request) {
+        $normalizedPhone = $request->filled('phone_number')
+            ? formatPhoneNumber($request->phone_number)
+            : null;
+
+        return User::where(function ($query) use ($request, $normalizedPhone) {
             if ($request->filled('email')) {
                 $query->where('email', $request->email);
             }
 
-            if ($request->filled('phone_number')) {
-                $query->orWhere('phone_number', $request->phone_number);
+            if ($normalizedPhone) {
+                $query->orWhere('phone_number', $normalizedPhone);
             }
         })->first();
     }
