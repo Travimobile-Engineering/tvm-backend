@@ -284,14 +284,8 @@ trait TripBookingTrait
 
     private function checkPin($request, $user)
     {
-        if (!in_array($user->user_category, [UserType::AGENT, UserType::DRIVER])) {
-            if (!$request->pin || $request->pin != $user->txn_pin) {
-                return $this->error(null, "Invalid transaction pin", 400);
-            }
-        } else {
-            if (!$user->userPin || !Hash::check($request->pin, $user->userPin->pin)) {
-                return $this->error(null, "Invalid transaction pin", 400);
-            }
+        if (!$user->userPin || !Hash::check($request->pin, $user->userPin->pin)) {
+            return $this->error(null, "Invalid transaction pin", 400);
         }
     }
 
