@@ -21,12 +21,12 @@ class AuthenticateController extends Controller
     //login method to authenticate user and issue JWT
     public function login(LoginRequest $request){
         $result = $this->service->login($request);
-        return response()->json($result);
+        return response()->json($result, $result['code'] ?? 200);
     }
 
     public function securityAgentLogin(LoginRequest $request){
         $result = $this->service->securityAgentLogin($request);
-        return response()->json($result);
+        return response()->json($result, $result['code'] ?? 200);
     }
 
     //logout method to invalidate the token
