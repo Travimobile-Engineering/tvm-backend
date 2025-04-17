@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if(!Schema::hasTable('watch_lists')){
+        if(!Schema::hasTable('watch_lists')) {
             Schema::create('watch_lists', function (Blueprint $table) {
                 $table->id();
                 $table->string("full_name");
