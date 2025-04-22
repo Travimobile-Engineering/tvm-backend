@@ -73,6 +73,7 @@ class AuthLoginTest extends TestCase
         $user->refresh();
 
         $this->assertEquals(UserStatus::BLOCKED->value, $user->status->value);
+        $this->assertEquals(UserStatus::FAILED_LOGIN_ATTEMPTS->value, $user->reason);
     }
 
     #[Test]

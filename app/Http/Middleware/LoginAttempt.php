@@ -38,7 +38,7 @@ class LoginAttempt
             return $this->error(null, 'Invalid credentials.', 401);
         }
 
-        if ($user->status->isBlocked()) {
+        if ($user->status->isBlocked() && $user->reason === UserStatus::FAILED_LOGIN_ATTEMPTS->value) {
             return $this->error(null, 'Your account has been blocked due to too many failed attempts. Please contact support.', 403);
         }
 
@@ -49,6 +49,7 @@ class LoginAttempt
             if ($attempts >= 5) {
                 if ($user) {
                     $user->status = UserStatus::BLOCKED->value;
+                    $user->reason = UserStatus::FAILED_LOGIN_ATTEMPTS->value;
                     $user->save();
                 }
                 Cache::forget($key);

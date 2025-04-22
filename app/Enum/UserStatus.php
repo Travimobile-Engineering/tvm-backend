@@ -10,6 +10,9 @@ enum UserStatus: string
     case PENDING = 'pending';
     case DELETED = 'deleted';
 
+    // Reason
+    case FAILED_LOGIN_ATTEMPTS = 'failed_login_attempts';
+
     public function label(): string
     {
         return match ($this) {

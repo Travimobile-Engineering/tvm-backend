@@ -14,6 +14,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('status')->default(UserStatus::INACTIVE)->after('remember_token');
+            $table->text('reason')->nullable()->after('status');
         });
     }
 
@@ -23,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('status');
+            $table->dropColumn(['status', 'reason']);
         });
     }
 };
