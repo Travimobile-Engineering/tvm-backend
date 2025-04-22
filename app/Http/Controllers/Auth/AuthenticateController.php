@@ -32,11 +32,13 @@ class AuthenticateController extends Controller
         $this->service->logout();
     }
 
+    // New auth login for users
     public function authLogin(LoginRequest $request)
     {
         return $this->service->authLogin($request);
     }
 
+    // New auth login for security agencies
     public function agencyLogin(LoginRequest $request)
     {
         return $this->service->agencyLogin($request);
