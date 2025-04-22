@@ -30,7 +30,6 @@ class LoginService
         }catch(JWTException $e){
             Log::error($e->getMessage());
             return ['status' => false, 'message' => 'Could not create token', 'code' => 500];
-
         }
         $user = JWTAuth::user();
         $status = true;
@@ -56,7 +55,7 @@ class LoginService
             JWTAuth::invalidate(JWTAuth::getToken());
         }
         catch(JWTException $e){
-            return response()->json(['error' => 'Token is invalid or expired'], 401);
+            return response()->json(['error' => 'Token is invalid or expired'], 400);
         }
         return response()->json(['message' => 'Logout successful']);
     }

@@ -38,6 +38,7 @@ Route::middleware('validate.header')
         ->group(function(){
             Route::post('/signup', [RegisterController::class, 'accountSignUp']);
             Route::post('/login', [AuthenticateController::class, 'login']);
+            Route::post('/manifest-checker/login', [AuthenticateController::class, 'securityAgentLogin']);
             Route::post('/forgot-password-email', [ForgotPasswordController::class, 'send_password_reset_otp']);
             Route::post('/resend-code', [RegisterController::class, 'resendCode']);
             Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verify_password_reset_otp']);
@@ -283,7 +284,6 @@ Route::middleware('validate.header')
                 ->controller(ManifestCheckerController::class)
                 ->group(function(){
 
-                    Route::post('/login', [AuthenticateController::class, 'securityAgentLogin']);
                     Route::controller(ManifestCheckerController::class)
                     ->group(function(){
 
