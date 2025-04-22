@@ -3,6 +3,9 @@
 namespace App\Services\Auth;
 
 use App\Enum\UserType;
+use App\Trait\HttpResponse;
+use App\Trait\LoginTrait;
+use Illuminate\Http\JsonResponse;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -10,13 +13,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 
 class LoginService
 {
-    /**
-     * Create a new class instance.
-     */
-    public function __construct()
-    {
-        //
-    }
+    use HttpResponse, LoginTrait;
 
     public function login($request) :array{
         $emailOrPhone = filter_var($request->email, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
@@ -37,13 +34,23 @@ class LoginService
         return compact('status', 'token', 'user');
     }
 
+    public function authLogin($request): JsonResponse
+    {
+        return $this->authUserLogin($request, UserType::group(UserType::appUsers()));
+    }
+
+    public function agencyLogin($request): JsonResponse
+    {
+        return $this->authUserLogin($request, UserType::group(UserType::agencyUsers()));
+    }
+
     public function securityAgentLogin($request){
         $result = $this->login($request);
         if(!$result['status']) {
             return $result;
         }
 
-        if(!in_array(UserType::SECURITY, getUserTypes($result['user']))){
+        if(!in_array(UserType::SECURITY->value, getUserTypes($result['user']))){
             Auth::logout();
             return ['status' => false, 'message' => 'Unauthorized access', 'code' => 400];
         }
