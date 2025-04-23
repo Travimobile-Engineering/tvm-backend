@@ -44,6 +44,8 @@ COPY ./ ./
 
 COPY ./database  ./database
 
+COPY ./database/migrations  ./database/migrations
+
 COPY ./start.sh ./start.sh
 
 RUN chmod +x ./start.sh
