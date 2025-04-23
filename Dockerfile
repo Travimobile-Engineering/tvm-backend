@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y libicu-dev \
     && docker-php-ext-install -j$(nproc) intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y supervisor
+
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -43,6 +45,8 @@ COPY ./ ./
 
 COPY ./database  ./database
 
+COPY ./server/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 RUN composer install --no-dev --optimize-autoloader
 
 RUN chown -R www-data:www-data /var/www
@@ -53,10 +57,6 @@ RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
     && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
     && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-USER www-data
-
-EXPOSE 9000
-
-
-CMD bash -c "php-fpm -F & sleep 60; php artisan queue:work --tries=3; php artisan migrate --force; php artisan cache:clear"
+    
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
