@@ -46,7 +46,7 @@ COPY ./database  ./database
 
 COPY ./start.sh ./start.sh
 
-RUN chmod +x /start.sh
+RUN chmod +x ./start.sh
 
 RUN composer install --no-dev --optimize-autoloader
 
@@ -62,5 +62,5 @@ USER www-data
 
 EXPOSE 9000
 
-CMD ["/start.sh"]
+CMD ["./start.sh"]
 
