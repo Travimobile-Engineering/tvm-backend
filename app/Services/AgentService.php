@@ -728,7 +728,8 @@ class AgentService
             return $this->error(null, "Booking not found", 404);
         }
 
-        $passenger = $booking->tripBookingPassengers()->where('selected_seat', $seatNo)
+        $passenger = $booking->tripBookingPassengers()
+            ->where('selected_seat', $seatNo)
             ->first();
 
         if (!$passenger) {

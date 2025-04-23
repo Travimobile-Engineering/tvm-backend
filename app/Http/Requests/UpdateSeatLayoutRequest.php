@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AccountSignUpRequest extends FormRequest
+class UpdateSeatLayoutRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +22,10 @@ class AccountSignUpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'full_name' => ['required', 'string', 'max:200'],
-            'email' => ['nullable', 'string'],
-            'phone_number' => ['required_if:email,null'],
-            'user_category' => ['required', 'string', 'in:passenger,driver,agent'],
-            'password' => ['required', 'string', 'confirmed', 'min:8']
+            'user_id' => 'required|exists:users,id',
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'seat_row' => 'required|integer',
+            'seat_column' => 'required|integer',
         ];
     }
 }

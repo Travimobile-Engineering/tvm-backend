@@ -371,5 +371,17 @@ class DriverService
         return $this->success(null, "Saved successfully");
     }
 
+    public function updateLayout($request)
+    {
+        $vehicle = Vehicle::findOrFail($request->vehicle_id);
+
+        $vehicle->update([
+            'seat_row' => $request->seat_row,
+            'seat_column' => $request->seat_column,
+        ]);
+
+        return $this->success(null, "Updated successfully");
+    }
+
 }
 

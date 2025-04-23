@@ -7,6 +7,7 @@ use App\Services\AgentService;
 use App\Services\DriverService;
 use App\Http\Requests\DriverInfoRequest;
 use App\Http\Requests\SetAvailabilityRequest;
+use App\Http\Requests\UpdateSeatLayoutRequest;
 use App\Http\Requests\VehicleRequirementRequest;
 
 class DriverController extends Controller
@@ -88,5 +89,10 @@ class DriverController extends Controller
     public function scanTicket(Request $request, $bookingId = null, $passengerId = null)
     {
         return $this->agentService->scanTicket($request, $bookingId, $passengerId);
+    }
+
+    public function updateLayout(UpdateSeatLayoutRequest $request)
+    {
+        return $this->service->updateLayout($request);
     }
 }
