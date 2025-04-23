@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class WalletTopUpRequest extends FormRequest
+class UpdateSeatLayoutRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,10 +22,10 @@ class WalletTopUpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'integer', 'exists:users,id'],
-            'email' => ['required', 'email'],
-            'amount' => ['required', 'numeric'],
-            'redirect_url' => ['required', 'string', 'url']
+            'user_id' => 'required|exists:users,id',
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'seat_row' => 'required|integer',
+            'seat_column' => 'required|integer',
         ];
     }
 }

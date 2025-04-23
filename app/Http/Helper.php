@@ -1,14 +1,18 @@
 <?php
 
+use App\Models\User;
+use App\Enum\General;
+use App\Contracts\SMS;
+use App\Models\Mailing;
+use App\DTO\SendCodeData;
 use App\Jobs\ProcessMail;
 use App\Libraries\Utility;
-use App\Models\User;
-use App\Models\Mailing;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Database\Eloquent\Model;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 if (!function_exists('authUser')) {
     function authUser() {
@@ -163,10 +167,25 @@ if (!function_exists('hasSetupWallet')) {
         $hasBankDetails = $user->userBank()->exists();
 
         $hasPin = $user->userPin()
-            ->where('status', 'active')
+            ->where('status', General::ACTIVE)
             ->exists();
 
         return $hasBankDetails && $hasPin;
+    }
+}
+
+if (!function_exists('hasSetupPin')) {
+    function hasSetupPin(int $userId): bool
+    {
+        $user = User::with(['userPin'])->find($userId);
+
+        if (!$user) {
+            return false;
+        }
+
+        return $user->userPin()
+            ->where('status', General::ACTIVE)
+            ->exists();
     }
 }
 
@@ -238,4 +257,42 @@ if (! function_exists('formatPhoneNumber')) {
     }
 }
 
+if (! function_exists('sendCode')) {
+    function sendCode($request, SendCodeData $payload) {
+        $channels = [
+            'email' => function () use ($payload) {
+                mailSend(
+                    $payload->type,
+                    $payload->user,
+                    $payload->subject,
+                    $payload->mailable,
+                    $payload->data
+                );
+            },
+            'sms' => function () use ($payload) {
+                app(SMS::class)->sendSms(
+                    $payload->phone,
+                    $payload->message
+                );
+            },
+        ];
+
+        $method = $request->method ?? null;
+
+        if (isset($channels[$method])) {
+            $channels[$method]();
+        } else {
+            throw new \InvalidArgumentException("Unsupported method: {$method}");
+        }
+    }
+}
+
+if(!function_exists('getUserTypes')){
+    function getUserTypes(?Model $user = null){
+        if(!$user){
+            $user = Auth::user();
+        }
+        return explode(',', $user->user_category);
+    }
+}
 

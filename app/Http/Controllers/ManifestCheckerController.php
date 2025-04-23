@@ -42,6 +42,14 @@ class ManifestCheckerController extends Controller
         return $this->service->getIncidentSeverityLevels();
     }
 
+    public function getIncidents(){
+        return $this->service->getIncidents();
+    }
+
+    public function getIncident(Request $request){
+        return $this->service->getIncident($request);
+    }
+
     public function addRecordToWatchList(WatchListRequest $request){
         return $this->service->addUpdateWatchList($request);
     }
@@ -49,6 +57,10 @@ class ManifestCheckerController extends Controller
     public function updateWatchListRecord(WatchListRequest $request){
         $request->validate(['id' => 'required']);
         return $this->service->addUpdateWatchList($request, 'update');
+    }
+
+    public function getWatchListRecords(){
+        return $this->service->getWatchListRecords();
     }
 
     public function getWatchListRecord(Request $request){

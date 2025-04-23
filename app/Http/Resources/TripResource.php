@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Enum\ManifestStatus;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -57,7 +57,7 @@ class TripResource extends JsonResource
             'departure_date' => $this->departure_date,
             'departure_time' => $this->departure_time,
             'trip_duration' => $this->trip_duration,
-            'estimated_arrival_time' => $this->trip_duration,
+            'estimated_arrival_time' => $this->calculateEstimatedArrivalTime($this->departure_time, $this->trip_duration),
             'trip_days' => $this->trip_days,
             'reoccur_duration' => $this->reoccur_duration,
             'bus_type' => $this->bus_type,
@@ -95,4 +95,37 @@ class TripResource extends JsonResource
             'manifest_fee' => 1000,
         ];
     }
+
+    protected function calculateEstimatedArrivalTime($departureTime, $tripDuration): ?string
+    {
+        if (!$departureTime || !$tripDuration) {
+            return null;
+        }
+
+        try {
+            $departure = Carbon::createFromFormat('H:i', $departureTime);
+
+            // Try to parse as "H:i" format first
+            if (preg_match('/^\d{1,2}:\d{2}$/', $tripDuration)) {
+                [$hours, $minutes] = explode(':', $tripDuration);
+                $arrival = $departure->copy()->addHours((int)$hours)->addMinutes((int)$minutes);
+                return $arrival->format('H:i');
+            }
+
+            // Normalize spacing and lowercase
+            $duration = strtolower(preg_replace('/\s+/', '', $tripDuration));
+
+            // Match patterns like "2hours30mins", "1hour", "45mins"
+            preg_match('/(?:(\d+)hour[s]?)?(?:(\d+)min[s]?)?/', $duration, $matches);
+
+            $hours = isset($matches[1]) ? (int)$matches[1] : 0;
+            $minutes = isset($matches[2]) ? (int)$matches[2] : 0;
+
+            $arrival = $departure->copy()->addHours($hours)->addMinutes($minutes);
+            return $arrival->format('H:i');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
 }

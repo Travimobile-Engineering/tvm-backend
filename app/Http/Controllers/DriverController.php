@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\DriverInfoRequest;
-use App\Http\Requests\VehicleRequirementRequest;
+use Illuminate\Http\Request;
 use App\Services\AgentService;
 use App\Services\DriverService;
-use Illuminate\Http\Request;
+use App\Http\Requests\DriverInfoRequest;
+use App\Http\Requests\SetAvailabilityRequest;
+use App\Http\Requests\UpdateSeatLayoutRequest;
+use App\Http\Requests\VehicleRequirementRequest;
 
 class DriverController extends Controller
 {
@@ -79,21 +81,18 @@ class DriverController extends Controller
         return $this->service->editDescription($request);
     }
 
-    public function setAvailability(Request $request)
+    public function setAvailability(SetAvailabilityRequest $request)
     {
-        $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
-            'is_available' => ['required', 'boolean'],
-            'lng' => ['required', 'numeric'],
-            'lat' => ['required', 'numeric'],
-            'unavailable_dates' => ['required', 'array'],
-        ]);
-
         return $this->service->setAvailability($request);
     }
 
-    public function scanTicket(Request $request, $bookingId = null)
+    public function scanTicket(Request $request, $bookingId = null, $passengerId = null)
     {
-        return $this->agentService->scanTicket($request, $bookingId);
+        return $this->agentService->scanTicket($request, $bookingId, $passengerId);
+    }
+
+    public function updateLayout(UpdateSeatLayoutRequest $request)
+    {
+        return $this->service->updateLayout($request);
     }
 }

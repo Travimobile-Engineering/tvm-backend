@@ -8,5 +8,7 @@ enum UserType: string
     const DRIVER = "driver";
     const AGENT = "agent";
     const PASSENGER = "passenger";
+    const COPORATEDRIVER = "coporate-driver";
+    const SECURITY = 'security';
 }
 

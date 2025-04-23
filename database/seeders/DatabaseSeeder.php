@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             PermissionRoleSeeder::class,
             HaveQuestionSeeder::class,
+            IncidentSeeder::class,
         ]);
         // User::factory(10)->create();
 
