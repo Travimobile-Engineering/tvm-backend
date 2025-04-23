@@ -13,6 +13,7 @@ use App\Models\TripBooking;
 use App\Models\User;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -26,16 +27,29 @@ trait TripBookingTrait
             return $result;
         }
 
-        $trip = $this->handleTripCheck($request, $user);
+        try {
+            DB::beginTransaction();
 
-        if ($trip instanceof \Illuminate\Http\JsonResponse && $trip->getStatusCode() !== 200) {
-            return $trip;
+            $tripCheck = $this->tripCheck($request, $user, lock: true);
+
+            if ($tripCheck instanceof JsonResponse && $tripCheck->getStatusCode() !== 200) {
+                DB::rollBack();
+                return $tripCheck;
+            }
+
+            $trip = $tripCheck;
+
+            $paymentService = new HandlePaymentService($paymentProcessor);
+            $paymentDetails = PaymentDetailService::paystackPayDetails($request, $trip);
+
+            $response = $paymentService->process($paymentDetails);
+
+            DB::commit();
+            return $response;
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw $th;
         }
-
-        $paymentService = new HandlePaymentService($paymentProcessor);
-        $paymentDetails = PaymentDetailService::paystackPayDetails($request, $trip);
-
-        return $paymentService->process($paymentDetails);
     }
 
     protected function walletPayment($amount_paid, $request, $user)
@@ -58,7 +72,7 @@ trait TripBookingTrait
 
         $trip = $this->handleTripCheck($request, $user);
 
-        if ($trip instanceof \Illuminate\Http\JsonResponse && $trip->getStatusCode() !== 200) {
+        if ($trip instanceof JsonResponse && $trip->getStatusCode() !== 200) {
             return $trip;
         }
 
@@ -141,10 +155,10 @@ trait TripBookingTrait
                 ]
             ]);
 
-            $user->driverTripPayments()->create([
+            $trip->user->driverTripPayments()->create([
                 'user_id' => $user->id,
                 'trip_id' => $request->trip_id,
-                'driver_id' => $trip->user_id,
+                'title' => 'Bus ticket purchase',
                 'amount' => $amount_paid,
                 'status' => 'pending'
             ]);
@@ -184,23 +198,31 @@ trait TripBookingTrait
         return null;
     }
 
-    protected function tripCheck($request, $user)
+    protected function tripCheck($request, $user, $lock = false)
     {
-        $trip = Trip::with(
-            [
-                'user.transitCompany',
-                'vehicle',
-                'tripBookings.user',
-                'departureRegion.state',
-                'destinationRegion.state',
-                'manifest'
-            ]
-        )
+        $query = Trip::with([
+            'user.transitCompany',
+            'vehicle',
+            'tripBookings.user',
+            'departureRegion.state',
+            'destinationRegion.state',
+            'manifest'
+        ])
         ->where('status', TripStatus::UPCOMING)
-        ->find($request->trip_id);
+        ->where('id', $request->trip_id);
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $trip = $query->first();
 
         if(! $trip) {
             return $this->error(null, "Invalid trip ID or trip is no longer available", 400);
+        }
+
+        if ($trip->user_id === $user->id) {
+            return $this->error(null, 'Drivers cannot book tickets for their own trip.');
         }
 
         $seats = $trip->vehicle?->seats;
@@ -262,14 +284,8 @@ trait TripBookingTrait
 
     private function checkPin($request, $user)
     {
-        if (!in_array($user->user_category, [UserType::AGENT, UserType::DRIVER])) {
-            if (!$request->pin || $request->pin != $user->txn_pin) {
-                return $this->error(null, "Invalid transaction pin", 400);
-            }
-        } else {
-            if (!$user->userPin || !Hash::check($request->pin, $user->userPin->pin)) {
-                return $this->error(null, "Invalid transaction pin", 400);
-            }
+        if (!$user->userPin || !Hash::check($request->pin, $user->userPin->pin)) {
+            return $this->error(null, "Invalid transaction pin", 400);
         }
     }
 
@@ -297,7 +313,7 @@ trait TripBookingTrait
                 'trip_booking_id' => $tripBooking->id,
                 'name' => $passenger['name'],
                 'email' => $passenger['email'] ?? null,
-                'phone_number' => $passenger['phone_number'],
+                'phone_number' => $passenger['phone_number'] ?? "nil",
                 'next_of_kin' => $index === 0 ? ($data['user']['next_of_kin'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['name'] ?? ''),
                 'next_of_kin_phone_number' => $index === 0 ? ($data['user']['next_of_kin_phone'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['phone_number'] ?? 00000000000),
 

@@ -2,22 +2,26 @@
 
 namespace App\Services;
 
-use App\Enum\PaymentType;
-use App\Events\WalletFunded;
+use App\Enum\General;
 use App\Models\Bank;
 use App\Models\User;
+use App\Enum\PaymentType;
+use App\Enum\UserType;
+use App\Events\WalletFunded;
+use App\Mail\VerifyPinMail;
 use App\Models\Transaction;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use App\Mail\ConfirmationEmail;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Services\Paystack\PaystackService;
-use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Mail\VerifyPinMail;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Models\TripPayment;
+use App\Services\Paystack\PaystackService;
+use Illuminate\Support\Facades\Log;
 use Unicodeveloper\Paystack\Facades\Paystack;
 
 class WalletService
@@ -40,7 +44,9 @@ class WalletService
             return $this->error("User not found", 404);
         }
 
-        return $this->success(['data' => $user->wallet ?? []], "Wallet balance retrieved");
+        $data = $user->wallet ?? [];
+
+        return $this->success($data, "Wallet balance retrieved");
     }
 
     public function fundWallet($request){
@@ -72,18 +78,29 @@ class WalletService
         else return ['message' => $response, 'code' => 400];
     }
 
-    public function transfer($request){
+    public function transfer($request)
+    {
+        $user = User::where('agent_id', $request->agent_id)
+            ->first();
 
-        if(!in_array(2, json_decode($this->user->user_category)))
-        return ['message'=>'You can only make transfers to agents', 'code' => 400];
+        if(!$user) {
+            return $this->error(null, "You are not authorized to perform this action", 403);
+        }
 
+        if($this->user->wallet < $request->amount) {
+            return $this->error(null, "Insufficient wallet balance", 400);
+        }
 
-        if($this->user->txn_pin != $request->pin) return ['message' => 'Incorrect transaction pin', 'code' => 400];
-        if($this->user->wallet < $request->amount) return ['message' => 'Your balance is insufficient to complete this transaction. Please fund your wallet first', 'code' =>400];
-        if(!User::where('agent_id', $request->agent_id)->exists() || $request->agent_id == $this->user->agent_id) return ['message' => 'Invalid agent ID', 'code' => 400];
+        $user = User::where('agent_id', $request->agent_id)
+            ->exists();
+
+        if(!$user || $request->agent_id == $this->user->agent_id) {
+            return $this->error(null, "Invalid agent ID", 400);
+        }
 
         $this->user->update(['wallet' => $this->user->wallet - $request->amount]);
-        $receiver = User::where('agent_id', $request->agent_id)->first();
+        $receiver = User::where('agent_id', $request->agent_id)->firstOrFail();
+
         $status = $receiver->update(['wallet' => $receiver->wallet + $request->amount]);
 
         if($status)
@@ -96,14 +113,15 @@ class WalletService
                 'receiver_id' => $receiver->id
             ]);
 
-            return ['message' => 'Funds tranfered successfully'];
+            return $this->success(null, "Funds tranfered successfully");
         }
-        return ['message' => 'Please try again. Something went wrong', 'code' => 400];
+
+        return $this->error(null, "Funds transfer failed", 400);
 
     }
 
     public function getTransactions(){
-        $userId = request()->input('userId') ?? $this->user->id;
+        $userId = request()->input('userId') ?? $this->user?->id;
 
         $user = User::with('transactions')->find($userId);
 
@@ -111,46 +129,9 @@ class WalletService
             return $this->error("User not found", 404);
         }
 
-        return $this->success(['data' => $user->transactions ?? []], "Wallet transactions retrieved");
-    }
+        $data = $user->transactions ?? [];
 
-    public function setTransactionPin($request){
-
-        if($this->user->txn_pin > 0){
-
-            if(!isset($request->verification_code)){
-
-            //Pin has already been set. Send OTP
-            $verification_code = generateVerificationCode();
-            $now = Carbon::now();
-            $verification_code_expires_at = $now->addMinutes(10);
-
-            User::where('id', Auth::id())
-            ->update([
-                'verification_code' => $verification_code,
-                'verification_code_expires_at' => $verification_code_expires_at
-            ]);
-
-            Mail::to($this->user->email)->send(new ConfirmationEmail($this->user->first_name." ".$this->user->last_name, $verification_code, 'email.change_transaction_pin_otp'));
-            return ['message' => 'Verification OTP has been sent to your email address'];
-            }
-
-            elseif(
-                $request->verification_code != $this->user->verification_code
-                || Carbon::now() > $this->user->verification_code_expires_at
-            ) return ['message' => 'Invalid or expired verification code'];
-        }
-
-        $user = User::where('id', $this->user->id)->update([
-            'txn_pin' => $request->pin,
-            'verification_code' => ''
-        ]);
-        if($user) return ['message' => 'Transaction pin updated successfully'];
-    }
-
-    public function getTransactionPin(){
-        $pin = User::where('id', $this->user->id)->pluck('txn_pin')->first();
-        return ['data' => $pin];
+        return $this->success($data, "Wallet transactions retrieved");
     }
 
     public function walletSetup($request)
@@ -289,6 +270,26 @@ class WalletService
         return $this->success(null, "Setup successfully");
     }
 
+    public function setTransactionPin($request)
+    {
+        $user = User::with(['userPin'])
+            ->findOrFail($request->user_id);
+
+        if ($user->userPin) {
+            return $this->error(null, "You have already set a transaction pin", 403);
+        }
+
+        $user->userPin()->create([
+            'pin' => bcrypt($request->pin),
+            'ip_address' => $request->ip(),
+            'device_info' => $request->header('User-Agent'),
+            'attempts' => 0,
+            'status' => General::ACTIVE,
+        ]);
+
+        return $this->success(null, "Transaction pin set successfully");
+    }
+
     public function withdraw($request)
     {
         $user = User::with(['userPin', 'userTransferReceipient', 'userWithdrawLogs'])
@@ -379,20 +380,10 @@ class WalletService
 
         $date = request()->input('date');
 
-        $user = User::with(['driverTripPayments' => function ($query) use ($date) {
-            if ($date) {
-                $query->whereDate('created_at', $date);
-            }
-        }])->findOrFail($userId);
-
-        $earnings = $user->driverTripPayments->map(function ($payment) {
-            return [
-                'id' => $payment->id,
-                'amount' => (int)$payment->amount,
-                'status' => $payment->status,
-                'created_at' => $payment->created_at,
-            ];
-        });
+        $earnings = TripPayment::select('id', 'title', 'amount', 'status', 'created_at')
+            ->where('driver_id', $userId)
+            ->when($date, fn($query) => $query->whereDate('created_at', $date))
+            ->get();
 
         return $this->success($earnings, "Recent earnings");
     }
@@ -428,29 +419,36 @@ class WalletService
 
     public function stats($userId)
     {
-        $startDate = request()->input('start_date') ?: now()->startOfWeek();
-        $endDate = request()->input('end_date') ?: now()->endOfWeek();
-
-        $allDays = [
-            'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-        ];
+        $startDate = Carbon::parse(request()->input('start_date') ?: now()->startOfWeek())->startOfDay();
+        $endDate = Carbon::parse(request()->input('end_date') ?: now()->endOfWeek())->endOfDay();
 
         $transactions = Transaction::where('user_id', $userId)
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
             ->selectRaw("
-                DAYNAME(created_at) as day_of_week,
+                DATE(created_at) as transaction_date,
                 SUM(CASE WHEN type = 'CR' THEN amount ELSE 0 END) as inflow,
                 SUM(CASE WHEN type = 'DR' THEN amount ELSE 0 END) as outflow
             ")
-            ->groupBy('day_of_week')
+            ->groupBy('transaction_date')
             ->get()
-            ->keyBy('day_of_week');
+            ->keyBy(function ($transaction) {
+                return Carbon::parse($transaction->transaction_date)->format('Y-m-d');
+            });
 
-        $statistics = collect($allDays)->map(function ($day) use ($transactions) {
+        $allDates = collect();
+        $currentDate = $startDate->copy();
+
+        while ($currentDate <= $endDate) {
+            $allDates->push($currentDate->format('Y-m-d'));
+            $currentDate->addDay();
+        }
+
+        $statistics = $allDates->map(function ($date) use ($transactions) {
             return [
-                'day' => $day,
-                'inflow' => (int) ($transactions[$day]->inflow ?? 0),
-                'outflow' => (int) ($transactions[$day]->outflow ?? 0),
+                'date' => $date,
+                'inflow' => (int) ($transactions[$date]->inflow ?? 0),
+                'outflow' => (int) ($transactions[$date]->outflow ?? 0),
             ];
         });
 

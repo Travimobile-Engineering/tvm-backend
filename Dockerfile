@@ -50,6 +50,12 @@ COPY ./start.sh ./start.sh
 
 RUN chmod +x ./start.sh
 
+COPY ./database/migrations  ./database/migrations
+
+COPY ./start.sh ./start.sh
+
+RUN chmod +x ./start.sh
+
 RUN composer install --no-dev --optimize-autoloader
 
 RUN chown -R www-data:www-data /var/www

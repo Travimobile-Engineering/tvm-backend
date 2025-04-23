@@ -417,9 +417,22 @@ class TripService
     public function startTrip($request)
     {
         $user = User::with(['transactions', 'driverTripPayments'])->findOrFail($request->user_id);
-        $trip = Trip::with(['tripBookings' => function ($query) {
-            $query->where('payment_status', 1);
-        }, 'manifest'])->find($request->trip_id);
+
+        $existingTrip = Trip::where('user_id', $user->id)
+            ->where('status', TripStatus::INPROGRESS)
+            ->first();
+
+        if ($existingTrip) {
+            return $this->error(null, "You have an ongoing trip. Complete it before starting a new one.", 400);
+        }
+
+        $trip = Trip::with([
+                'tripBookings' => function ($query) {
+                    $query->where('payment_status', 1)
+                        ->with('tripBookingPassengers');
+                },
+                'manifest'
+            ])->find($request->trip_id);
 
         if (!$trip) {
             return $this->error(null, "Trip not found!", 404);
@@ -445,6 +458,14 @@ class TripService
 
             if ($trip->tripBookings->isEmpty()) {
                 return $this->error(null, "No bookings available!", 400);
+            }
+
+            $notSeatedPassengers = $trip->tripBookings
+                ->flatMap->tripBookingPassengers
+                ->filter(fn($passenger) => !$passenger->on_seat);
+
+            if ($notSeatedPassengers->isNotEmpty()) {
+                return $this->error(null, "Cannot start trip. All passengers must be seated.", 400);
             }
 
             foreach ($trip->tripBookings as $booking) {
@@ -516,7 +537,7 @@ class TripService
 
         $data = TripResource::collection($trips);
 
-        return $this->success($data, "Upcoming trips", 200);
+        return $this->success($data, "Upcoming trips");
     }
 
     public function getCompletedTrips($userId)
@@ -568,58 +589,37 @@ class TripService
     public function getAllTrips($userId)
     {
         $type = request()->query('type');
-        $date = request()->query('date');
-        $time = request()->query('time');
+        $status = request()->query('status', TripStatus::UPCOMING);
+        $date = request()->query('departure_date');
+        $time = request()->query('departure_time');
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
-        $query = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'tripBookings.user',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifest',
-                    'departureRegion.parks',
-                    'destinationRegion.parks',
-                ]
-            )
+        $trips = Trip::with([
+                'user.transitCompany',
+                'vehicle',
+                'tripBookings.user',
+                'departureRegion.state',
+                'destinationRegion.state',
+                'manifest',
+                'departureRegion.parks',
+                'destinationRegion.parks',
+            ])
             ->where('user_id', $userId)
-            ->where('status', TripStatus::UPCOMING);
-
-        if ($type) {
-            $query->where('type', $type);
-        }
-
-        if ($departure) {
-            $query->where('departure', $departure);
-        }
-
-        if ($destination) {
-            $query->where('destination', $destination);
-        }
-
-        if ($date && $time) {
-            $query->where(function ($q) use ($date, $time) {
+            ->where('status', $status)
+            ->when($type, fn($q) => $q->where('type', $type))
+            ->when($departure, fn($q) => $q->where('departure', $departure))
+            ->when($destination, fn($q) => $q->where('destination', $destination))
+            ->when($date && $time, function ($q) use ($date, $time) {
                 $q->whereDate('departure_date', '>=', $date)
                 ->whereTime('departure_time', '=', $time);
-            });
-        } elseif ($date) {
-            $query->whereDate('departure_date', $date);
-        }
+            })
+            ->when($date && !$time, fn($q) => $q->whereDate('departure_date', $date))
+            ->get();
 
-        $trips = $query->get();
+        $data = TripResource::collection($trips);
 
-        if ($type === TripType::RECURRING) {
-            $data = RecurringTripResource::collection($trips);
-        } elseif ($type === TripType::ONETIME) {
-            $data = OneTimeTripResource::collection($trips);
-        } else {
-            $data = TripResource::collection($trips);
-        }
-
-        return $this->success($data, "All trips", 200);
+        return $this->success($data, "All trips");
     }
 
     public function getAll()
@@ -725,7 +725,10 @@ class TripService
 
     public function getBusStops($stateId)
     {
-        $stops = BusStop::where('state_id', $stateId)->get();
+        $auth = authUser();
+        $stops = BusStop::where('user_id', $auth->id)
+            ->where('state_id', $stateId)
+            ->get();
 
         $data = $stops->map(function ($stop) {
             return $stop->stops;
@@ -789,5 +792,25 @@ class TripService
         ]);
 
         return $this->success(null, "Settings saved successfully");
+    }
+
+    public function tripExtendTime($request)
+    {
+        $trip = Trip::findOrFail($request->trip_id);
+
+        $tripExtendTime = $request->trip_extended_time;
+        if (!$tripExtendTime || !preg_match('/^\d{1,2}:\d{2}$/', $tripExtendTime)) {
+            return $this->error(null, "Invalid time format. Please use HH:MM format.", 400);
+        }
+
+        $departureTime = Carbon::parse($trip->departure_time);
+        list($hours, $minutes) = explode(':', $tripExtendTime);
+
+        $totalMinutes = ((int) $hours * 60) + (int) $minutes;
+        $newDepartureTime = $departureTime->addMinutes($totalMinutes);
+
+        $trip->update(['departure_time' => $newDepartureTime->format('H:i')]);
+
+        return $this->success(null, "Trip extended successfully");
     }
 }

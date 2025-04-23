@@ -30,6 +30,7 @@ class DriverProfileResource extends JsonResource
             'next_of_kin_full_name' => $this->next_of_kin_full_name,
             'next_of_kin_phone_number' => $this->next_of_kin_phone_number,
             'next_of_kin_gender' => $this->next_of_kin_gender,
+            'next_of_kin_relationship' => $this->next_of_kin_relationship,
             'avatar_url' => $this->avatar_url,
             'profile_photo' => $this->profile_photo,
             'status' => ($this->email_verified || $this->sms_verified) ? 'verified' : 'pending',
@@ -40,6 +41,8 @@ class DriverProfileResource extends JsonResource
             'lng' => (float)$this->lng,
             'lat' => (float)$this->lat,
             'trip_extended_time' => $this->trip_extended_time,
+            'sms_notification' => $this->inbox_notifications,
+            'email_notification' => $this->email_notifications,
             'transit_company' => (object)[
                 'id' => $this->transitCompany?->id,
                 'name' => $this->transitCompany?->name,

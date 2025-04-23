@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CancelTripBookingRequest;
 use App\Models\TripBooking;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
@@ -50,14 +51,15 @@ class TripBookingController extends Controller
     public function update(TripBookingUpdateRequest $request, TripBooking $tripBooking)
     {
         return $this->service->update($request, $tripBooking);
-
     }
 
-    public function cancelTripBooking(Request $request){
+    public function cancelTripBooking(CancelTripBookingRequest $request)
+    {
         return $this->service->cancelTripBooking($request);
     }
 
-    public function getUserTripBookingHistory(Request $request){
+    public function getUserTripBookingHistory(Request $request)
+    {
         return $this->service->userBookingHistory($request);
     }
 

@@ -2,53 +2,49 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\DriverWalletSetupequest;
-use App\Http\Requests\DriverWithdrawRequest;
+use App\Http\Requests\ChangePinRequest;
 use App\Trait\HttpResponse;
+use Illuminate\Http\Request;
 use App\Services\WalletService;
 use App\Http\Requests\FundWalletRequest;
-use App\Http\Requests\WalletTransferRequest;
-use App\Http\Requests\WalletSetTransactionPinRequest;
 use App\Http\Requests\WalletTopUpRequest;
-use App\Models\User;
-use Illuminate\Http\Request;
+use App\Http\Requests\DriverWithdrawRequest;
+use App\Http\Requests\WalletTransferRequest;
+use App\Http\Requests\DriverWalletSetupequest;
+use App\Http\Requests\SendPinOtpRequest;
+use App\Http\Requests\SetTransactionPinRequest;
+use App\Http\Requests\VerifyPinRequest;
+use App\Services\AgentService;
 
 class WalletController extends Controller
 {
 
     use HttpResponse;
 
-    protected $service;
-
-    public function __construct(WalletService $service){
-        $this->service = $service;
-    }
+    public function __construct(
+        protected WalletService $service,
+        protected AgentService $agentService,
+    )
+    {}
 
     public function getBalance()
     {
         return $this->service->getBalance();
     }
 
-    public function fundWallet(FundWalletRequest $request){
+    public function fundWallet(FundWalletRequest $request)
+    {
         return $this->response($this->service->fundWallet($request));
     }
 
-    public function transfer(WalletTransferRequest $request){
+    public function transfer(WalletTransferRequest $request)
+    {
         return $this->response($this->service->transfer($request));
-
     }
 
     public function getTransactions()
     {
         return $this->service->getTransactions();
-    }
-
-    public function setTransactionPin(WalletSetTransactionPinRequest $request){
-        return $this->response($this->service->setTransactionPin($request));
-    }
-
-    public function getTransactionPin(){
-        return $this->response($this->service->getTransactionPin());
     }
 
     public function walletSetup(DriverWalletSetupequest $request)
@@ -69,6 +65,16 @@ class WalletController extends Controller
         ]);
 
         return $this->service->verifyPin($request);
+    }
+
+    public function setTransactionPin(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'pin' => ['required', 'string', 'confirmed', 'min:4', 'max:4'],
+        ]);
+
+        return $this->service->setTransactionPin($request);
     }
 
     public function withdraw(DriverWithdrawRequest $request)
@@ -99,5 +105,20 @@ class WalletController extends Controller
     public function stats($userId)
     {
         return $this->service->stats($userId);
+    }
+
+    public function sendOtp(SendPinOtpRequest $request)
+    {
+        return $this->agentService->sendOtp($request);
+    }
+
+    public function verifyWalletPin(VerifyPinRequest $request)
+    {
+        return $this->agentService->verifyPin($request);
+    }
+
+    public function changePin(ChangePinRequest $request)
+    {
+        return $this->agentService->changePin($request);
     }
 }

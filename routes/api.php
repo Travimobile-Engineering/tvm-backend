@@ -38,6 +38,7 @@ Route::middleware('validate.header')
         ->group(function(){
             Route::post('/signup', [RegisterController::class, 'accountSignUp']);
             Route::post('/login', [AuthenticateController::class, 'login']);
+            Route::post('/manifest-checker/login', [AuthenticateController::class, 'securityAgentLogin']);
             Route::post('/forgot-password-email', [ForgotPasswordController::class, 'send_password_reset_otp']);
             Route::post('/resend-code', [RegisterController::class, 'resendCode']);
             Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verify_password_reset_otp']);
@@ -112,6 +113,7 @@ Route::middleware('validate.header')
                 ->group(function () {
                     Route::post('/setup', 'walletSetup');
                     Route::post('/verify-pin', 'verifyPin');
+                    Route::post('/set-transaction-pin', 'setTransactionPin');
                     Route::post('/withdraw', 'withdraw')
                         ->middleware('transaction.pin');
                     Route::post('/balance/withdraw', 'balanceWithdraw')
@@ -119,6 +121,12 @@ Route::middleware('validate.header')
                     Route::post('/topup', 'walletTopUp');
                     Route::post('/change-bank', 'changeBank')
                         ->middleware('transaction.pin');
+
+                    // Change Pin
+                    Route::post('/pin/send-otp', 'sendOtp');
+                    Route::post('/pin/verify', 'verifyWalletPin');
+                    Route::post('/pin/change', 'changePin')
+                    ->middleware('verify.pin');
 
                     // Transaction
                     Route::get('/recent-transaction/{user_id}', 'recentTransaction');
@@ -134,6 +142,7 @@ Route::middleware('validate.header')
                     Route::post('/edit/{trip}', 'update');
                     Route::get('/get-trips', 'getTrips')->middleware('cacheResponse:300');
                     Route::get('/{trip}', 'getTrip')->middleware('doNotCacheResponse');
+                    Route::post('/extend-time', 'tripExtendTime');
 
                     // Get Bus Stops
                     Route::get('/bus-stops/{state_id}', 'getBusStops');
@@ -196,8 +205,9 @@ Route::middleware('validate.header')
                     Route::post('/vehicle-requirements', 'vehicleReq');
                     Route::put('/edit-description', 'editDescription');
                     Route::post('/set-availability', 'setAvailability');
+                    Route::put('/vehilce/update-layout', 'updateLayout');
 
-                    Route::match(['get', 'post'], '/scan-ticket/{booking_id?}', 'scanTicket');
+                    Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{seat_no?}', 'scanTicket');
                 });
 
             Route::prefix('premium')
@@ -244,7 +254,7 @@ Route::middleware('validate.header')
                 ->group(function(){
                     Route::post('/create', 'booking');
                     Route::post('/edit/{tripBooking}', 'update');
-                    Route::get('/cancel/{booking_id}', 'cancelTripBooking');
+                    Route::post('/cancel', 'cancelTripBooking');
                     Route::get('/history/{user}', 'getUserTripBookingHistory')->middleware('cacheResponse:300');
                     Route::get('/{tripBooking}', 'show')->middleware('doNotCacheResponse');
                     Route::get('/payment/{reference}', 'getPaymentRef');
@@ -259,38 +269,45 @@ Route::middleware('validate.header')
             ->group(function(){
                 Route::get('/get-balance', [WalletController::class, 'getBalance']);
                 Route::post('/fund-wallet', [WalletController::class, 'fundWallet']);
-                Route::post('/transfer', [WalletController::class, 'transfer']);
+                Route::post('/transfer', [WalletController::class, 'transfer'])
+                    ->middleware('transaction.pin');
                 Route::get('/transactions', [WalletController::class, 'getTransactions']);
-                Route::post('/set-transaction-pin', [WalletController::class, 'setTransactionPin']);
             });
 
             Route::prefix('notification')
-            ->controller(NotificationController::class)
-            ->group(function(){
-                Route::get('/', 'all');
-            });
+                ->controller(NotificationController::class)
+                ->group(function(){
+                    Route::get('/', 'all');
+                });
 
             Route::prefix('manifest-checker')
                 ->controller(ManifestCheckerController::class)
                 ->group(function(){
 
-                    Route::get('/check/{plate_no}', 'getManifestData');
+                    Route::controller(ManifestCheckerController::class)
+                    ->group(function(){
 
-                    Route::prefix('incident')
-                        ->group(function(){
-                            Route::get('/get-categories', 'getIncidentCategories');
-                            Route::get('/get-types', 'getIncidentTypes');
-                            Route::get('/get-severity-levels', 'getIncidentSeverityLevels');
-                            Route::post('/add', 'addIncident');
-                        });
+                        Route::get('/check/{plate_no}', 'getManifestData');
 
-                    Route::prefix('watch-list')
-                        ->group(function(){
-                            Route::post('/add', 'addRecordToWatchList');
-                            Route::post('/update/{id}', 'updateWatchListRecord');
-                            Route::get('/get/{id}', 'getWatchListRecord');
-                            Route::post('/search', 'searchWatchList');
-                        });
+                        Route::prefix('incident')
+                            ->group(function(){
+                                Route::get('/get-categories', 'getIncidentCategories');
+                                Route::get('/get-types', 'getIncidentTypes');
+                                Route::get('/get-severity-levels', 'getIncidentSeverityLevels');
+                                Route::get('/get-incidents', 'getIncidents');
+                                Route::get('/get-incident/{id}', 'getIncident');
+                                Route::post('/add', 'addIncident');
+                            });
+
+                        Route::prefix('watch-list')
+                            ->group(function(){
+                                Route::post('/add', 'addRecordToWatchList');
+                                Route::post('/update/{id}', 'updateWatchListRecord');
+                                Route::get('/get-watchlists', 'getWatchListRecords');
+                                Route::get('/get/{id}', 'getWatchListRecord');
+                                Route::post('/search', 'searchWatchList');
+                            });
+                    });
                 });
         });
 
@@ -303,12 +320,13 @@ Route::middleware('validate.header')
                 Route::post('/update-profile', 'updateProfile');
                 Route::post('/change-password', 'changePassword');
                 Route::delete('/delete-account', 'deleteProfile');
+                Route::get('/{agent_id}', 'getAgent');
 
                 // Ticket & Trip Management
                 Route::post('/bus-search', 'busSearch');
                 Route::post('/buy-ticket', 'buyTicket');
                 Route::post('/ticket/search', 'ticketSearch');
-                Route::match(['get', 'post'], '/scan-ticket/{booking_id?}', 'scanTicket');
+                Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{seat_no?}', 'scanTicket');
 
                 // Passenger Management
                 Route::post('/search/passenger', 'searchPassenger');
@@ -330,6 +348,7 @@ Route::middleware('validate.header')
                 Route::post('/search-driver', 'searchDriver');
                 Route::post('/impersonate-driver', 'impersonateDriver')
                     ->middleware('impersonation.throttle');
+                Route::post('/driver/validate-pin', 'validateDriverPin');
 
                 // Trip
                 Route::prefix('trip')
@@ -351,7 +370,6 @@ Route::middleware('validate.header')
 
                 //Notification
                 Route::patch('/notification', 'updateNotification');
-
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

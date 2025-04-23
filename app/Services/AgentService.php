@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTO\SendCodeData;
 use App\Enum\MailingEnum;
 use App\Enum\ManifestStatus;
 use App\Enum\PaymentMethod;
@@ -14,6 +15,7 @@ use App\Events\TripStart;
 use App\Http\Resources\AgentProfileResource;
 use App\Http\Resources\TripBookingResource;
 use App\Http\Resources\TripResource;
+use App\Mail\VerifyPinMail;
 use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\TripLog;
@@ -56,6 +58,25 @@ class AgentService
         $data = new AgentProfileResource($user);
 
         return $this->success($data, "Agent profile");
+    }
+
+    public function getAgent($agentId)
+    {
+        $agent = User::with([
+                'transitCompany',
+                'busStops.state',
+                'userBank',
+            ])
+            ->where('agent_id', $agentId)
+            ->first();
+
+        if (!$agent) {
+            return $this->error(null, "Agent not found", 404);
+        }
+
+        $data = new AgentProfileResource($agent);
+
+        return $this->success($data, "Agent details");
     }
 
     public function changePassword($request)
@@ -106,7 +127,7 @@ class AgentService
             ->where('destination', $request->destination)
             ->where('departure_date', $request->departure_date)
             ->where('departure_time', $request->departure_time)
-            ->where('status', TripStatus::ACTIVE)
+            ->where('status', TripStatus::UPCOMING)
             ->get();
 
         $data = TripResource::collection($trips);
@@ -312,10 +333,10 @@ class AgentService
 
     public function sendOtp($request)
     {
-        $user = User::where('email', $request->email)->first();
+        $user = User::find($request->user_id);
 
         if (! $user) {
-            return $this->error(null, 'Email not found', 404);
+            return $this->error(null, 'User not found', 404);
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
@@ -326,19 +347,20 @@ class AgentService
             'verification_code_expires_at' => now()->addMinutes(10),
         ]);
 
-        if ($request->method === 'email') {
-            $data = [
-                'name' => $user->first_name,
-                'code' => $code
-            ];
-            mailSend(
-                MailingEnum::VERIFY_OTP,
-                $user,
-                "Verify Pin",
-                "App\Mail\VerifyPinMail",
-                $data
-            );
-        }
+        $data = [
+            'name' => $user->first_name,
+            'code' => $code
+        ];
+
+        sendCode($request, new SendCodeData(
+            type: MailingEnum::VERIFY_OTP,
+            user: $user,
+            data: $data,
+            phone: formatPhoneNumber($user->phone_number),
+            message: "Your Travi Verification Pin is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi",
+            subject: 'Verify OTP',
+            mailable: VerifyPinMail::class,
+        ));
 
         return $this->success(null, 'Verification code sent successfully');
     }
@@ -458,7 +480,7 @@ class AgentService
                 'bus_stops' => $request->bus_stops ?? [],
                 'means' => $request->means ?? 1,
                 'type' => TripType::ONETIME,
-                'status' => TripStatus::ACTIVE,
+                'status' => TripStatus::UPCOMING,
             ]);
 
             return $this->success($trip, "Created successfully", 201);
@@ -512,7 +534,7 @@ class AgentService
                         'bus_stops' => $request->bus_stops ?? [],
                         'means' => $request->means ?? 1,
                         'type' => TripType::RECURRING,
-                        'status' => TripStatus::ACTIVE,
+                        'status' => TripStatus::UPCOMING,
                     ]);
 
                     $currentDate->addWeek();
@@ -530,34 +552,34 @@ class AgentService
         $date = request()->query('date');
         $status = request()->query('status', TripStatus::UPCOMING);
 
-        if (!in_array($status, [TripStatus::UPCOMING, TripStatus::COMPLETED, TripStatus::CANCELLED])) {
+        if (!in_array($status, [
+                TripStatus::UPCOMING,
+                TripStatus::COMPLETED,
+                TripStatus::CANCELLED,
+                TripStatus::INPROGRESS,
+            ]
+        )) {
             return $this->error("Invalid status", 400);
         }
 
         $trips = Trip::with([
-            'user.transitCompany',
-            'tripBookings.user',
-            'departureRegion.state',
-            'destinationRegion.state',
-            'manifest',
-            'vehicle',
-            'departureRegion.parks',
-            'destinationRegion.parks',
-        ])
-        ->where('user_id', $userId)
-        ->when($status === TripStatus::UPCOMING, function ($query) {
-            $query->where(function ($q) {
-                $q->whereDate('departure_date', '>', now())
-                  ->orWhereDate('start_date', '>', now());
-            });
-        })
-        ->when($status && $status !== TripStatus::UPCOMING, function ($query) use ($status) {
-            $query->where('status', $status);
-        })
-        ->when($date, function ($query, $date) {
-            $query->whereDate('created_at', $date);
-        })
-        ->get();
+                'user.transitCompany',
+                'tripBookings.user',
+                'departureRegion.state',
+                'destinationRegion.state',
+                'manifest',
+                'vehicle',
+                'departureRegion.parks',
+                'destinationRegion.parks',
+            ])
+            ->where('user_id', $userId)
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->when($date, function ($query, $date) {
+                $query->whereDate('created_at', $date);
+            })
+            ->get();
 
         $data = TripResource::collection($trips);
 
@@ -595,7 +617,7 @@ class AgentService
             return $this->error(null, "Trip not found!", 404);
         }
 
-        if ($trip->status !== TripStatus::ACTIVE) {
+        if ($trip->status !== TripStatus::UPCOMING) {
             return $this->error(null, "Sorry " . $trip->status, 400);
         }
 
@@ -620,7 +642,7 @@ class AgentService
 
             $this->topUpWallet($user);
 
-            if ($request->payment_method === 'driver_wallet') {
+            if ($request->payment_method === PaymentMethod::DRIVERWALLET) {
                 $this->chargeWallet($user, $request->amount);
             }
 
@@ -685,26 +707,57 @@ class AgentService
         return $this->success(null, "Notification sent successfully");
     }
 
-    public function scanTicket($request, $bookingId)
+    public function scanTicket($request, $bookingId, $seatNo)
     {
         $ticketId = $bookingId ?? $request->input('booking_id');
+        $seatNo = $seatNo ?? $request->input('seat_no');
 
         if (!$ticketId) {
             return $this->error(null, "Ticket ID is required", 400);
         }
 
-        $booking = TripBooking::where('booking_id', $ticketId)
+        if (!$seatNo) {
+            return $this->error(null, "Passenger ID is required", 400);
+        }
+
+        $booking = TripBooking::with('tripBookingPassengers')
+            ->where('booking_id', $ticketId)
             ->first();
 
         if (!$booking) {
             return $this->error(null, "Booking not found", 404);
         }
 
-        $booking->update([
-            'on_seat' => true,
-        ]);
+        $passenger = $booking->tripBookingPassengers()
+            ->where('selected_seat', $seatNo)
+            ->first();
+
+        if (!$passenger) {
+            return $this->error(null, "Passenger not found", 404);
+        }
+
+        $passenger->update(['on_seat' => true]);
 
         return $this->success(null, "Ticket scanned successfully");
+    }
+
+    public function validateDriverPin($request)
+    {
+        $user = User::with('userPin')->find($request->user_id);
+
+        if (!$user) {
+            return $this->error(null, "User not found", 404);
+        }
+
+        if (!$user->userPin) {
+            return $this->error(null, "User pin not found", 404);
+        }
+
+        if(Hash::check($request->pin, $user->userPin->pin)) {
+            return $this->success(null, "Pin is valid");
+        }
+
+        return $this->error(null, "Invalid pin", 400);
     }
 }
 

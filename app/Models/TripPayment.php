@@ -10,6 +10,7 @@ class TripPayment extends Model
         'user_id',
         'trip_id',
         'driver_id',
+        'title',
         'amount',
         'status',
     ];
