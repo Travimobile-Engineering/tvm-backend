@@ -264,7 +264,7 @@ class WalletService
 
         return $this->success(null, "Setup successfully");
     }
-    
+
     public function setTransactionPin($request)
     {
         $user = User::with(['userPin'])
