@@ -39,6 +39,10 @@ class TripService
         try {
             $user = User::with(['transitCompany', 'vehicle'])->findOrFail($request->user_id);
 
+            if (!$user instanceof User) {
+                $user = User::findOrFail($user->id);
+            }
+
             $trip = Trip::create([
                 'user_id' => $user->id,
                 'vehicle_id' => $request->vehicle_id ?? $user->vehicle->id,

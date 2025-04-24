@@ -24,7 +24,8 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Controllers\UserController;
 
-Route::get('/', fn() => response(null, 200)) ;
+Route::get('/', fn() => response('Welcome to the API', 200));
+
 Route::middleware('validate.header')
     ->group(function () {
         Route::controller(OtherController::class)
@@ -37,18 +38,17 @@ Route::middleware('validate.header')
         Route::prefix('auth')
         ->group(function(){
             Route::post('/signup', [RegisterController::class, 'accountSignUp']);
-            Route::post('/login', [AuthenticateController::class, 'login']);
-            Route::post('/manifest-checker/login', [AuthenticateController::class, 'securityAgentLogin']);
+            Route::post('/login', [AuthenticateController::class, 'authLogin'])
+                ->middleware('login.attempt');
+
+            Route::post('/manifest-checker/login', [AuthenticateController::class, 'agencyLogin'])
+                ->middleware('login.attempt');
+
             Route::post('/forgot-password-email', [ForgotPasswordController::class, 'send_password_reset_otp']);
             Route::post('/resend-code', [RegisterController::class, 'resendCode']);
             Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verify_password_reset_otp']);
-            Route::get('/reset-password', fn()=> "Oops! Please bear with us. We are currently working on this page")->name('password.reset');
             Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
-            // Route::post('/verify', [RegisterController::class, 'verify_account']);
             Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
-
-            // Agent signup Deprecated
-            Route::post('/agent/signup', [RegisterController::class, 'accountSignUp']);
             Route::post('/verify/account', [RegisterController::class, 'verifyAcount']);
         });
 
@@ -283,12 +283,12 @@ Route::middleware('validate.header')
             Route::prefix('manifest-checker')
                 ->controller(ManifestCheckerController::class)
                 ->group(function(){
+                    Route::post('/login', [AuthenticateController::class, 'securityAgentLogin'])
+                        ->middleware(['login.attempt']);
 
                     Route::controller(ManifestCheckerController::class)
                     ->group(function(){
-
                         Route::get('/check/{plate_no}', 'getManifestData');
-
                         Route::prefix('incident')
                             ->group(function(){
                                 Route::get('/get-categories', 'getIncidentCategories');

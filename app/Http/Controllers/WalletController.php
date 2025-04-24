@@ -18,7 +18,6 @@ use App\Services\AgentService;
 
 class WalletController extends Controller
 {
-
     use HttpResponse;
 
     public function __construct(
