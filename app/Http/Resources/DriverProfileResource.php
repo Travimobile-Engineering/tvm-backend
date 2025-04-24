@@ -103,6 +103,10 @@ class DriverProfileResource extends JsonResource
             })->toArray() : [],
             'wallet_setup' => hasSetupWallet($this->id),
             'wallet_info' => (object)[
+                'earnings' => (object) [
+                    'available' => $this->wallet,
+                    'pending' => $pendingBalance,
+                ],
                 'available_balance' => $this->wallet,
                 'pending_balance' => $pendingBalance,
             ],
