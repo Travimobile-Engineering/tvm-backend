@@ -123,13 +123,13 @@ class ManifestCheckerService
         ];
 
         if($action == 'update') {
-            $record = WatchList::find($request->id)->update($data);
+            $record = WatchList::find($request->id)->update($request->all());
             if($record) return $this->success(null, "Record updated successfully");
             return $this->error(null, "Failed to update record");
         }
 
         $record = WatchList::create($data);
-        if($record) return $this->success(null, "Record successfully added to watch list");
+        if($record) return $this->success($record, "Record successfully added to watch list");
         return $this->error(null, "Failed to add record to watch list");
     }
 

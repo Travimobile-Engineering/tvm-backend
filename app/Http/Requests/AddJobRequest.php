@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AddIncidentRequest extends FormRequest
+class AddJobRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,13 +22,14 @@ class AddIncidentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category' => 'required|string',
-            'type' => 'required|string',
-            'date' => 'required',
-            'time' => 'required',
-            'location' => 'required|string',
-            'description' => 'required|string',
-            'media' => ['nullable', 'file', 'mimes:jpg,jpeg,png,mp4,mpeg,avi,mov'],
+            'title' => ['required'],
+            'type' => ['required', 'in:full-time,part-time,hybrid,remote,contract'],
+            'deadline' => ['required'],
+            'summary' => ['required'],
+            'responsibilities' => ['required'],
+            'requirement' => ['required'],
+            'offer' => ['required'],
+            
         ];
     }
 }

@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\JobController;
 use App\Http\Controllers\TripController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\OtherController;
 use App\Http\Controllers\RouteController;
@@ -22,7 +24,6 @@ use App\Http\Controllers\ManifestCheckerController;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Http\Controllers\UserController;
 
 Route::get('/', fn() => response(null, 200)) ;
 Route::middleware('validate.header')
@@ -32,6 +33,15 @@ Route::middleware('validate.header')
                 Route::get('/states', 'getStates');
                 Route::get('/bank', 'getBank');
                 Route::post('/account/lookup', 'accountLookUp');
+            });
+
+        Route::prefix('job')
+            ->controller(JobController::class)
+            ->group(function(){
+                Route::get('/all', 'getJobs');
+                Route::get('/{id}', 'getJob');
+                Route::post('/apply', 'apply');
+                Route::post('/add', 'addJob');
             });
 
         Route::prefix('auth')

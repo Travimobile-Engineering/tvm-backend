@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE trips MODIFY COLUMN status ENUM('active', 'completed', 'in-progress', 'cancelled', 'upcoming')");
+        if(DB::getDriverName() == 'mysql'){
+            DB::statement("ALTER TABLE trips MODIFY COLUMN status ENUM('active', 'completed', 'in-progress', 'cancelled', 'upcoming')");
+        }
     }
 
     /**
@@ -20,6 +22,8 @@ return new class extends Migration
      */
     public function down()
     {
-        DB::statement("ALTER TABLE trips MODIFY COLUMN status ENUM('active', 'completed', 'in-progress', 'cancelled')");
+        if(DB::getDriverName() == 'mysql'){
+            DB::statement("ALTER TABLE trips MODIFY COLUMN status ENUM('active', 'completed', 'in-progress', 'cancelled')");
+        }
     }
 };
