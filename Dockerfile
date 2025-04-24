@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y libicu-dev \
     && docker-php-ext-install -j$(nproc) intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y bash
+
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -45,6 +47,10 @@ COPY ./database ./database
 
 COPY ./database/migrations  ./database/migrations
 
+COPY ./start.sh ./start.sh
+
+RUN chmod +x ./start.sh
+
 RUN composer install --no-dev --optimize-autoloader
 
 RUN chown -R www-data:www-data /var/www
@@ -59,5 +65,5 @@ USER www-data
 
 EXPOSE 9000
 
-CMD bash -c "php-fpm -F & sleep 60; php artisan queue:work --tries=3; php artisan migrate --force; php artisan cache:clear"
+CMD ["./start.sh"]
 

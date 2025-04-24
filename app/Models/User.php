@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Enum\TripStatus;
+use App\Enum\UserStatus;
 use Illuminate\Support\Str;
 use App\Trait\UserRelationships;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -60,6 +61,8 @@ class User extends Authenticatable implements JWTSubject
         'trip_extended_time',
         'inbox_notifications',
         'email_notifications',
+        'status',
+        'reason',
     ];
 
     protected $guarded = [
@@ -91,11 +94,14 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     // The JWT Identifier method required by the JWT package
-    public function getJWTIdentifier(){
+    public function getJWTIdentifier()
+    {
         return $this->getKey();
     }
-// The JWT Custom Claims method required by the JWT package
-    public function getJWTCustomClaims(){
+
+    // The JWT Custom Claims method required by the JWT package
+    public function getJWTCustomClaims()
+    {
         return [];
     }
 
@@ -113,6 +119,7 @@ class User extends Authenticatable implements JWTSubject
             'is_available' => 'boolean',
             'inbox_notifications' => 'boolean',
             'email_notifications' => 'boolean',
+            'status' => UserStatus::class,
         ];
     }
 

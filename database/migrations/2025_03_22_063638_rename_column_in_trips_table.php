@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if(DB::getDriverName() == 'mysql'){
+        if (DB::getDriverName() !== 'sqlite') {
             DB::statement("ALTER TABLE trips MODIFY COLUMN status ENUM('active', 'completed', 'in-progress', 'cancelled', 'upcoming')");
         }
     }
@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down()
     {
-        if(DB::getDriverName() == 'mysql'){
+        if (DB::getDriverName() !== 'sqlite') {
             DB::statement("ALTER TABLE trips MODIFY COLUMN status ENUM('active', 'completed', 'in-progress', 'cancelled')");
         }
     }

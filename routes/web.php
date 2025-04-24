@@ -2,4 +2,4 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn() => response(null, 200));
+Route::get('/', fn() => view('welcome'));

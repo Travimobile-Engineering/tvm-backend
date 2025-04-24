@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        if(DB::getDriverName() == 'mysql'){
+        if (DB::getDriverName() !== 'sqlite') {
             DB::unprepared('
                 CREATE TRIGGER limit_records BEFORE INSERT ON fees
                 FOR EACH ROW
