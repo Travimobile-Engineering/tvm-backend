@@ -89,12 +89,10 @@ class ManifestCheckerService
 
     public function addUpdateWatchList($request, $action = 'create'){
 
-        $photo_url = "";
         $document_links = [];
 
         if($request->hasFile('photo')){
-            $response = $request->file('photo')->storeOnCloudinary('watch_list');
-            $photo_url = $response->getSecurePath();
+            $photo_url = uploadFile($request, 'photo', 'watch_list')['url'];
         }
 
         if($request->hasFile('documents')){
@@ -106,6 +104,8 @@ class ManifestCheckerService
                     $document_links[] = $response->getSecurePath();
                 }
             }
+
+            else $document_links[] = uploadFile($request, 'documents', 'watch_list')['url'];
         }
 
         $data = [
@@ -118,7 +118,7 @@ class ManifestCheckerService
             "investigation_officer" => $request->investigation_officer,
             "io_contact_number" => $request->io_contact_number,
             "alert_location" => $request->alert_location,
-            "photo_url" => $photo_url,
+            "photo_url" => $photo_url ?? '',
             "documents" => json_encode($document_links),
         ];
 
