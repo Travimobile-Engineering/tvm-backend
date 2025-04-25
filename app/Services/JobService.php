@@ -19,7 +19,6 @@ class JobService
     public function getJob($request){
         $job = JobOpening::findOrFail($request->id);
         return $this->success(new JobOpeningResource($job));
-        //
 
     }
     
