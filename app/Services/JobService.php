@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Http\Resources\JobOpeningResource;
 use App\Models\JobApplication;
 use App\Models\JobOpening;
 use App\Trait\HttpResponse;
@@ -17,7 +18,7 @@ class JobService
     
     public function getJob($request){
         $job = JobOpening::findOrFail($request->id);
-        return $this->success($job);
+        return $this->success(new JobOpeningResource($job));
 
     }
     
