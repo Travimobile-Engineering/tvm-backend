@@ -26,9 +26,9 @@ class AddJobRequest extends FormRequest
             'type' => ['required', 'in:full-time,part-time,hybrid,remote,contract'],
             'deadline' => ['required'],
             'summary' => ['required'],
-            'responsibilities' => ['required'],
-            'requirement' => ['required'],
-            'offer' => ['required'],
+            'responsibilities' => ['required', 'array'],
+            'requirement' => ['required', 'array'],
+            'offer' => ['required', 'array'],
             
         ];
     }

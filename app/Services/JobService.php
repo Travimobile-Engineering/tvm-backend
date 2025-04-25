@@ -61,9 +61,9 @@ class JobService
             'type' => $request->type,
             'deadline' => $request->deadline,
             'summary' => $request->summary,
-            'responsibilities' => $request->responsibilities,
-            'requirement' => $request->requirement,
-            'offer' => $request->offer,
+            'responsibilities' => json_encode($request->responsibilities),
+            'requirement' => json_encode($request->requirement),
+            'offer' => json_encode($request->offer),
         ]);
 
         if(!$job){
