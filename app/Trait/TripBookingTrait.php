@@ -176,7 +176,11 @@ trait TripBookingTrait
                 'reference' => $ref,
             ];
 
-            broadcast(new TripBooked($trip, $user));
+            broadcast(new TripBooked(
+                type: 'trip_booking',
+                message: 'Your bus ticket has been booked successfully!',
+                userId: $user->id
+            ));
 
             return $this->success($data, "Payment successful", 200);
         } catch (\Throwable $th) {

@@ -18,10 +18,10 @@ class TripBooked implements ShouldBroadcast
      * Create a new event instance.
      */
     public function __construct(
-        public $trip,
-        public $user
-    )
-    {}
+        public string $type,
+        public string $message,
+        public int $userId,
+    ) {}
 
     /**
      * Get the channels the event should broadcast on.
@@ -31,7 +31,15 @@ class TripBooked implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('trip.booking.' . $this->user->id),
+            new PrivateChannel("trip.booking.{$this->userId}"),
+        ];
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'type' => $this->type,
+            'message' => $this->message,
         ];
     }
 }
