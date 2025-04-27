@@ -22,15 +22,17 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        DB::unprepared('
-            CREATE TRIGGER limit_records BEFORE INSERT ON fees
-            FOR EACH ROW
-                BEGIN
-                    IF (SELECT COUNT(*) FROM fees) > 0 THEN
-                        SIGNAL SQLSTATE "45000" SET MESSAGE_TEXT = "Maximum record limit reached";
-                    END IF;
-                END
-        ');
+        if(DB::getDriverName() == 'mysql'){
+            DB::unprepared('
+                CREATE TRIGGER limit_records BEFORE INSERT ON fees
+                FOR EACH ROW
+                    BEGIN
+                        IF (SELECT COUNT(*) FROM fees) > 0 THEN
+                            SIGNAL SQLSTATE "45000" SET MESSAGE_TEXT = "Maximum record limit reached";
+                        END IF;
+                    END
+            ');
+        }
     }
 
     /**
