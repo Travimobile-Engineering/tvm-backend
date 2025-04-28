@@ -3,6 +3,10 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 
+Broadcast::routes([
+    'middleware' => ['auth:api'],
+]);
+
 Broadcast::channel('App.Models.User.{id}', fn (User $user, int $id): bool =>
     $user->id === $id
 );
