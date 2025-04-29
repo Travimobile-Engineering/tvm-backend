@@ -15,13 +15,13 @@ class JobService
         $jobs =  JobOpening::all();
         return $this->success($jobs);
     }
-    
+
     public function getJob($request){
         $job = JobOpening::findOrFail($request->id);
         return $this->success(new JobOpeningResource($job));
 
     }
-    
+
     public function apply($request){
 
         if($request->hasFile('resume')){
@@ -32,7 +32,7 @@ class JobService
             $cover_letter_url= uploadFile($request, 'cover_letter', 'JobApplications')['url'];
 
         }
-        
+
         $application  = JobApplication::create([
             'job_opening_id' => $request->job_id,
             'full_name' => $request->full_name,
