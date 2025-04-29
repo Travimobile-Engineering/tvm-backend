@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
-use App\Http\Resources\JobOpeningResource;
-use App\Models\JobApplication;
 use App\Models\JobOpening;
 use App\Trait\HttpResponse;
+use App\Models\JobApplication;
+use Illuminate\Support\Facades\Schema;
+use App\Http\Resources\JobOpeningResource;
 
 class JobService
 {
@@ -72,5 +73,24 @@ class JobService
         }
 
         return $this->success($job, 'Job was created successfully', 201);
+    }
+
+    public function updateJob($request){
+        
+        $data = collect($request->all())->filter(function($value, $key) {
+            return Schema::hasColumn('job_openings', $key);
+        })->all();
+
+        $data['responsibilities'] == null ? null : json_encode($data['responsibilities']);
+        $data['requirement'] == null ? null : json_encode($data['requirement']);
+        $data['offer'] == null ? null : json_encode($data['offer']);
+        
+        $job = JobOpening::where('id', $request->id)->update($data);
+
+        if(!$job){
+            return $this->error(null, 'Failed to update job. Please try again or contact support');
+        }
+
+        return $this->success(null, 'Job was updated successfully', 200);
     }
 }
