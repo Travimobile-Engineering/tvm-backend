@@ -25,6 +25,14 @@ class JobService
     
     public function apply($request){
 
+        $alreadyApplied = JobApplication::where('job_opening_id', $request->job_id)
+            ->where('email', $request->email)
+            ->exists();
+
+        if($alreadyApplied){
+            return $this->error(null, 'You have already applied for this job', 400);
+        }
+
         if($request->hasFile('resume')){
             $resume_url= uploadFile($request, 'resume', 'JobApplications')['url'];
         }
