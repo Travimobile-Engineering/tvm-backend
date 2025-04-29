@@ -36,7 +36,7 @@ class ManifestCheckerTest extends TestCase
         $headers = array_merge($headers, [
             'Authorization' => 'Bearer '.$token
         ]);
-        
+
         $data = [
             'user_id' => $user->id,
             'category' => 'General Security Incident',
