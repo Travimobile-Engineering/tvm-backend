@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Exception;
 use App\Models\JobOpening;
 use App\Trait\HttpResponse;
 use App\Models\JobApplication;
@@ -71,9 +72,9 @@ class JobService
             'type' => $request->type,
             'deadline' => $request->deadline,
             'summary' => $request->summary,
-            'responsibilities' => json_encode($request->responsibilities),
-            'requirement' => json_encode($request->requirement),
-            'offer' => json_encode($request->offer),
+            'responsibilities' => $request->responsibilities,
+            'requirement' => $request->requirement,
+            'offer' => $request->offer,
         ]);
 
         if(!$job){
@@ -85,20 +86,18 @@ class JobService
 
     public function updateJob($request){
         
-        $data = collect($request->all())->filter(function($value, $key) {
-            return Schema::hasColumn('job_openings', $key);
+        $columns = Schema::getColumnListing('job_openings');
+        $data = collect($request->all())->filter(function($value, $key) use($columns) {
+            return in_array($key, $columns);
         })->all();
-
-        $data['responsibilities'] == null ? null : json_encode($data['responsibilities']);
-        $data['requirement'] == null ? null : json_encode($data['requirement']);
-        $data['offer'] == null ? null : json_encode($data['offer']);
         
-        $job = JobOpening::where('id', $request->id)->update($data);
-
-        if(!$job){
-            return $this->error(null, 'Failed to update job. Please try again or contact support');
+        try{
+           JobOpening::where('id', $request->id)->update($data); 
+           return $this->success(null, 'Job was updated successfully');
+        }
+        catch(Exception $e){
+            return $this->error(null, "Failed to update job. $e");
         }
 
-        return $this->success(null, 'Job was updated successfully', 200);
     }
 }
