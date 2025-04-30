@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Testing\Fluent\Concerns\Has;
 
 class TripBooking extends Model
 {
-    use Notifiable;
+    use Notifiable, HasFactory;
 
     protected $fillable = [
         'payment_log_id',

@@ -17,13 +17,13 @@ class JobService
         $jobs =  JobOpening::all();
         return $this->success($jobs);
     }
-    
+
     public function getJob($request){
         $job = JobOpening::findOrFail($request->id);
         return $this->success(new JobOpeningResource($job));
 
     }
-    
+
     public function apply($request){
 
         $alreadyApplied = JobApplication::where('job_opening_id', $request->job_id)
@@ -70,6 +70,8 @@ class JobService
     }
 
     public function addJob($request){
+      
+      try{
         $job = JobOpening::create([
             'title' => $request->title,
             'type' => $request->type,
@@ -79,12 +81,13 @@ class JobService
             'requirement' => $request->requirement,
             'offer' => $request->offer,
         ]);
-
-        if(!$job){
-            return $this->error(null, 'Failed to create job. Please try again or contact support');
-        }
-
         return $this->success($job, 'Job was created successfully', 201);
+      }
+      catch(Exception $e){
+        return $this->error(null, 'Failed to create job. '.$e->getMessage());
+      }
+
+        
     }
 
     public function updateJob($request){

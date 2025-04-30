@@ -32,7 +32,6 @@ class ManifestCheckerTest extends TestCase
 
     public function test_add_incident(): void
     {
-        
         $data = [
             'user_id' => $this->user->id,
             'category' => 'General Security Incident',
