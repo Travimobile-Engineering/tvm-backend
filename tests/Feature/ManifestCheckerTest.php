@@ -29,10 +29,6 @@ class ManifestCheckerTest extends TestCase
             'Authorization' => 'Bearer '.$this->token
         ];
      }
-
-    public function test_add_incident(): void
-    {
-        
         $data = [
             'user_id' => $this->user->id,
             'category' => 'General Security Incident',

@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Trip;
+use App\Models\TripBooking;
 use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -16,11 +18,11 @@ Broadcast::channel('trip.created.{id}', fn (User $user, int $id): bool =>
 );
 
 Broadcast::channel('trip.departure.{tripId}', fn (User $user, int $tripId): bool =>
-    $user->trips()->where('id', $tripId)->exists()
+    $user->id === Trip::findOrFail($tripId)->user_id
 );
 
 Broadcast::channel('trip.start.{tripId}', fn (User $user, int $tripId): bool =>
-    $user->trips()->where('id', $tripId)->exists()
+    $user->id === Trip::findOrFail($tripId)->user_id
 );
 
 Broadcast::channel('wallet.funded.{userId}', fn (User $user, int $userId): bool =>
@@ -32,9 +34,9 @@ Broadcast::channel('trip.booking.{userId}', fn (User $user, int $userId): bool =
 );
 
 Broadcast::channel('trip.cancelled.{tripId}', fn (User $user, int $tripId): bool =>
-    $user->trips()->where('id', $tripId)->exists()
+    $user->id === Trip::findOrFail($tripId)->user_id
 );
 
 Broadcast::channel('booking.cancelled.{bookingId}', fn (User $user, int $bookingId): bool =>
-    $user->bookings()->where('id', $bookingId)->exists()
+    $user->id === TripBooking::findOrFail($bookingId)->user_id
 );

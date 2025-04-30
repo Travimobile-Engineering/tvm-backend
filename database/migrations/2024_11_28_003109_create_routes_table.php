@@ -21,6 +21,7 @@ return new class extends Migration
         Schema::create('route_subregions', function(Blueprint $table){
             $table->id();
             $table->foreignId('state_id')->constrained('states')->onDelete('cascade');
+            $table->foreignId('region_id')->constrained('route_regions')->onDelete('cascade');
             $table->string('name');
             $table->unsignedTinyInteger('status')->default(1);
             $table->timestamps();

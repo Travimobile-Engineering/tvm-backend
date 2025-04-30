@@ -22,6 +22,7 @@ use App\Models\User;
 use App\Trait\DriverTrait;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 use Spatie\ResponseCache\Facades\ResponseCache;
 
 class TripService
@@ -33,7 +34,7 @@ class TripService
     public function createOneTime($request)
     {
         if ($request->departure_id == $request->destination_id) {
-            return $this->error("Departure and destination cannot be the same", 400);
+            return $this->error(null, "Departure and destination cannot be the same", 400);
         }
 
         try {
@@ -63,8 +64,9 @@ class TripService
             broadcast(new TripCreated($user, $trip));
 
             return $this->success($trip, "Created successfully", 201);
-        } catch (\Throwable $th) {
-            throw $th;
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return $this->error('Something went wrong: ' . $e->getMessage(), 500);
         }
     }
 
@@ -248,7 +250,7 @@ class TripService
     public function createRecurring($request)
     {
         if ($request->departure_id == $request->destination_id) {
-            return $this->error("Departure and destination cannot be the same", 400);
+            return $this->error(null, "Departure and destination cannot be the same", 400);
         }
 
         try {
