@@ -43,27 +43,30 @@ class JobService
 
         }
         
-        $application  = JobApplication::create([
-            'job_opening_id' => $request->job_id,
-            'full_name' => $request->full_name,
-            'dob' => $request->dob,
-            'gender' => $request->gender,
-            'state_of_origin' => $request->state_of_origin,
-            'address' => $request->address,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'state_applying_for' => $request->state_applying_for,
-            'highest_level_of_education' => $request->highest_level_of_education,
-            'field_of_study' => $request->field_of_study,
-            'resume_url' => $resume_url ?? null,
-            'cover_letter_url' => $cover_letter_url ?? null
-        ]);
+        
+        try{
+            $application = JobApplication::create([
+                'job_opening_id' => $request->job_id,
+                'full_name' => $request->full_name,
+                'dob' => $request->dob,
+                'gender' => $request->gender,
+                'state_of_origin' => $request->state_of_origin,
+                'address' => $request->address,
+                'phone' => $request->phone,
+                'email' => $request->email,
+                'state_applying_for' => $request->state_applying_for,
+                'highest_level_of_education' => $request->highest_level_of_education,
+                'field_of_study' => $request->field_of_study,
+                'resume_url' => $resume_url ?? null,
+                'cover_letter_url' => $cover_letter_url ?? null
+            ]);
 
-        if(!$application){
-            return $this->error(null, 'Failed to process job application. Please try again or contact support');
+            return $this->success($application, 'Job application was successfully', 201);
+        }
+        catch(Exception $e){
+            return $this->error(null, 'Failed to process job application. '.$e->getMessage());
         }
 
-        return $this->success($application, 'Job application was successfully', 201);
     }
 
     public function addJob($request){
