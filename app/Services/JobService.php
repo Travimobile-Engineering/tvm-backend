@@ -81,6 +81,7 @@ class JobService
         }
 
         return $this->success($job, 'Job was created successfully', 201);
+        //
     }
 
     public function updateJob($request){
