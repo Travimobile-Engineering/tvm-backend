@@ -43,6 +43,7 @@ Route::middleware('validate.header')
                 Route::get('/{id}', 'getJob');
                 Route::post('/apply', 'apply');
                 Route::post('/add', 'addJob');
+                Route::post('/update/{id}', 'updateJob');
             });
 
         Route::prefix('auth')

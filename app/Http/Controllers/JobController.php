@@ -27,4 +27,8 @@ class JobController extends Controller
     public function addJob(AddJobRequest $request){
         return $this->service->addJob($request);
     }
+
+    public function updateJob(Request $request){
+        return $this->service->updateJob($request);
+    }
 }

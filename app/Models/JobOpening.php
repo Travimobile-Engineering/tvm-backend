@@ -15,4 +15,10 @@ class JobOpening extends Model
         'requirement',
         'offer',
     ];
+
+    protected $casts = [
+        'responsibilities' => 'array',
+        'requirement' => 'array',
+        'offer' => 'array'
+    ];
 }
