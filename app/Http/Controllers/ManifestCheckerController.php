@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AddIncidentRequest;
 use App\Http\Requests\WatchListRequest;
+use App\Models\WatchList;
 use App\Services\ManifestCheckerService;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
@@ -54,8 +55,7 @@ class ManifestCheckerController extends Controller
         return $this->service->addUpdateWatchList($request);
     }
 
-    public function updateWatchListRecord(WatchListRequest $request){
-        $request->validate(['id' => 'required']);
+    public function updateWatchListRecord(Request $request){
         return $this->service->addUpdateWatchList($request, 'update');
     }
 

@@ -23,8 +23,8 @@ return new class extends Migration
                 $table->string("investigation_officer");
                 $table->string("io_contact_number");
                 $table->string("alert_location");
-                $table->string("photo_url");
-                $table->string("documents");
+                $table->string("photo_url")->nullable();
+                $table->string("documents")->nullable();
                 $table->enum("status", ['active', 'closed', 'in custody'])->default('active');
                 $table->timestamps();
             });
