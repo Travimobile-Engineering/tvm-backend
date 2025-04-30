@@ -6,22 +6,17 @@ use App\Enum\General;
 use App\Models\Bank;
 use App\Models\User;
 use App\Enum\PaymentType;
-use App\Enum\UserType;
 use App\Events\WalletFunded;
 use App\Mail\VerifyPinMail;
 use App\Models\Transaction;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
-use App\Mail\ConfirmationEmail;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Models\TripPayment;
 use App\Services\Paystack\PaystackService;
-use Illuminate\Support\Facades\Log;
 use Unicodeveloper\Paystack\Facades\Paystack;
 
 class WalletService
@@ -337,35 +332,31 @@ class WalletService
         $date = request()->input('date');
 
         $user = User::with(['transactions' => function ($query) use ($date) {
-            if ($date) {
-                $query->whereDate('created_at', $date);
-            }
+            $query->when($date, fn($query) => $query->whereDate('created_at', $date));
         }])->findOrFail($userId);
 
         $relatedTransactions = Transaction::where('receiver_id', $userId)
             ->where('title', "Bus ticket purchase")
-            ->select('id', 'user_id', 'title', 'amount', 'status', 'created_at')
+            ->select('id', 'user_id', 'title', 'amount', 'type', 'status', 'created_at')
             ->get();
 
-        $transactions = $user->transactions->map(function ($transaction) {
-            return [
-                'id' => $transaction->id,
-                'title' => $transaction->title,
-                'amount' => (int)$transaction->amount,
-                'status' => $transaction->status,
-                'created_at' => $transaction->created_at,
-            ];
-        });
+        $transactions = $user->transactions->map(fn ($transaction) => [
+            'id' => $transaction->id,
+            'title' => $transaction->title,
+            'amount' => (int)$transaction->amount,
+            'type' => $transaction->type,
+            'status' => $transaction->status,
+            'created_at' => $transaction->created_at,
+        ]);
 
-        $relatedTransactions = $relatedTransactions->map(function ($transaction) {
-            return [
-                'id' => $transaction->id,
-                'title' => $transaction->title,
-                'amount' => (int)$transaction->amount,
-                'status' => $transaction->status,
-                'created_at' => $transaction->created_at,
-            ];
-        });
+        $relatedTransactions = $relatedTransactions->map(fn($transaction) => [
+            'id' => $transaction->id,
+            'title' => $transaction->title,
+            'amount' => (int)$transaction->amount,
+            'type' => $transaction->type,
+            'status' => $transaction->status,
+            'created_at' => $transaction->created_at,
+        ]);
 
         $allTransactions = $transactions->merge($relatedTransactions);
 

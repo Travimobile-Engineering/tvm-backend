@@ -52,6 +52,9 @@ class AgentProfileResource extends JsonResource
             'busstops' => BusStopResource::collection($this->busStops),
             'wallet_setup' => hasSetupWallet($this->id),
             'wallet_info' => (object)[
+                'earnings' => (object) [
+                    'available' => $this->wallet,
+                ],
                 'available_balance' => $this->wallet,
             ],
             'sms_notification' => $this->inbox_notifications,

@@ -89,12 +89,10 @@ class ManifestCheckerService
 
     public function addUpdateWatchList($request, $action = 'create'){
 
-        $photo_url = "";
         $document_links = [];
 
         if($request->hasFile('photo')){
-            $response = $request->file('photo')->storeOnCloudinary('watch_list');
-            $photo_url = $response->getSecurePath();
+            $photo_url = uploadFile($request, 'photo', 'watch_list')['url'];
         }
 
         if($request->hasFile('documents')){
@@ -106,6 +104,8 @@ class ManifestCheckerService
                     $document_links[] = $response->getSecurePath();
                 }
             }
+
+            else $document_links[] = uploadFile($request, 'documents', 'watch_list')['url'];
         }
 
         $data = [
@@ -118,18 +118,18 @@ class ManifestCheckerService
             "investigation_officer" => $request->investigation_officer,
             "io_contact_number" => $request->io_contact_number,
             "alert_location" => $request->alert_location,
-            "photo_url" => $photo_url,
+            "photo_url" => $photo_url ?? '',
             "documents" => json_encode($document_links),
         ];
 
         if($action == 'update') {
-            $record = WatchList::find($request->id)->update($data);
+            $record = WatchList::find($request->id)->update($request->all());
             if($record) return $this->success(null, "Record updated successfully");
             return $this->error(null, "Failed to update record");
         }
 
         $record = WatchList::create($data);
-        if($record) return $this->success(null, "Record successfully added to watch list");
+        if($record) return $this->success($record, "Record successfully added to watch list");
         return $this->error(null, "Failed to add record to watch list");
     }
 

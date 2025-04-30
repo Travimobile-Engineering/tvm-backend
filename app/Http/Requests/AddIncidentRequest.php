@@ -28,7 +28,7 @@ class AddIncidentRequest extends FormRequest
             'time' => 'required',
             'location' => 'required|string',
             'description' => 'required|string',
-            'media' => ['file', 'mimes:jpg,jpeg,png,mp4,mpeg,avi,mov'],
+            'media' => ['nullable', 'file', 'mimes:jpg,jpeg,png,mp4,mpeg,avi,mov'],
         ];
     }
 }

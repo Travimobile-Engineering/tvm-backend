@@ -127,7 +127,7 @@ trait TripBookingTrait
                 'payment_log_id' => $paymentLog->id,
                 'trip_id' => $trip->id,
                 'user_id' => $request->user_id ?? $user->id,
-                'agent_id' => $user->user_category == UserType::AGENT ? $user->id : null,
+                'agent_id' => $user->user_category == UserType::AGENT->value ? $user->id : null,
                 'third_party_booking' => $request->third_party_booking ?? 0,
                 'selected_seat' => $selectedSeats,
                 'trip_type' => $request->trip_type,
@@ -176,7 +176,11 @@ trait TripBookingTrait
                 'reference' => $ref,
             ];
 
-            broadcast(new TripBooked($trip, $user));
+            broadcast(new TripBooked(
+                type: 'trip_booking',
+                message: 'Your bus ticket has been booked successfully!',
+                userId: $user->id
+            ));
 
             return $this->success($data, "Payment successful", 200);
         } catch (\Throwable $th) {

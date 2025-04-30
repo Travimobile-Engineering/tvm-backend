@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('time');
             $table->string('location');
             $table->text('description');
-            $table->string('media_url');
+            $table->string('media_url')->nullable();
             $table->string('severity_level');
             $table->string('persons_of_interest');
             $table->timestamps();

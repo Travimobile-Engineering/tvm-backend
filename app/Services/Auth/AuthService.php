@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Enum\UserStatus;
 use App\Models\User;
 use App\Contracts\SMS;
 use App\Enum\MailingEnum;
@@ -74,6 +75,7 @@ class AuthService
             'email_verified_at' => now(),
             'verification_code' => 0,
             'verification_code_expires_at' => null,
+            'status' => UserStatus::ACTIVE->value,
         ]);
 
         return $this->success($user, "Account verified successfully");
