@@ -95,7 +95,7 @@ class DriverService
             }
 
             $user->update([
-                'user_category' => UserType::DRIVER,
+                'user_category' => UserType::DRIVER->value,
                 'gender' => $request->gender,
                 'next_of_kin_full_name' => $request->next_of_kin_full_name,
                 'next_of_kin_phone_number' => $request->next_of_kin_phone_number,

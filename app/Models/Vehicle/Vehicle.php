@@ -9,10 +9,13 @@ use App\Models\TripSchedule;
 use App\Models\UnavailableDate;
 use App\Models\User;
 use App\Models\VehicleImage;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Vehicle extends Model
 {
+    use HasFactory;
+
     protected $fillable  = [
         'name',
         'company_id',

@@ -32,6 +32,7 @@ class TripBookingResource extends JsonResource
             'payment_status' => $this->payment_status,
             'payment_method' => $this->payment_method,
             'trip_detail' => (object)[
+                'trip_id' => $this->trip?->id,
                 'departure_id' => $this->trip?->departure,
                 'destination_id' => $this->trip?->destination,
                 'departure' => $this->trip?->departureRegion?->state?->name . ' > ' . $this->trip?->departureRegion?->name,

@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware) {
+    ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'transaction.pin' => TransactionPinMiddleware::class,
             'cacheResponse' => \Spatie\ResponseCache\Middlewares\CacheResponse::class,
@@ -23,10 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'validate.header' => \App\Http\Middleware\ValidateHeader::class,
             'impersonation.throttle' => \App\Http\Middleware\ImpersonationThrottle::class,
             'verify.pin' => \App\Http\Middleware\VerifyPinChange::class,
+            'login.attempt' => \App\Http\Middleware\LoginAttempt::class,
         ]);
     })
-    ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->reportable(function (Throwable $e) {
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->reportable(function (Throwable $e): void {
             Log::channel('slack')->error($e->getMessage(),[
                 'file' => $e->getFile(),
                 'Line' => $e->getLine(),

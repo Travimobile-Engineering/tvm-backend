@@ -412,7 +412,7 @@ class AgentService
 
         $users = User::select('id', 'first_name', 'last_name', 'profile_photo')
             ->with('vehicle:id,user_id,plate_no,model,color')
-            ->where('user_category', UserType::DRIVER)
+            ->where('user_category', UserType::DRIVER->value)
             ->where(function ($query) use ($search) {
                 $query->where('phone_number', $search)
                     ->orWhere('first_name', 'LIKE', "%{$search}%")
@@ -429,7 +429,7 @@ class AgentService
         $cacheKey = "impersonation_attempts:driver_{$driverId}";
 
         $driver = User::with(['vehicle'])->where('id', $request->user_id)
-                  ->where('user_category', UserType::DRIVER)
+                  ->where('user_category', UserType::DRIVER->value)
                   ->first();
 
         if (! $driver) {
