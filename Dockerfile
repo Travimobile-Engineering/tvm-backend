@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y libicu-dev \
 
 RUN apt-get update && apt-get install -y bash
 
-
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpng-dev \
@@ -43,7 +42,13 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 COPY ./ ./
 
-COPY ./database ./database
+COPY ./database  ./database
+
+COPY ./database/migrations  ./database/migrations
+
+COPY ./start.sh ./start.sh
+
+RUN chmod +x ./start.sh
 
 COPY ./database/migrations  ./database/migrations
 

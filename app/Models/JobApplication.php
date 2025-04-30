@@ -18,7 +18,7 @@ class JobApplication extends Model
         'state_applying_for',
         'highest_level_of_education',
         'field_of_study',
-        'resume',
-        'cover_letter',
+        'resume_url',
+        'cover_letter_url',
     ];
 }
