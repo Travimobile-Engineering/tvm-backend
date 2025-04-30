@@ -96,7 +96,7 @@ class JobService
            return $this->success(null, 'Job was updated successfully');
         }
         catch(Exception $e){
-            return $this->error(null, "Failed to update job. $e");
+            return $this->error(null, "Failed to update job. ".$e->getMessage());
         }
 
     }
