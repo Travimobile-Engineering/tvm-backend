@@ -15,5 +15,5 @@ Schedule::everyMinute()
         Schedule::command('trip:extend-time');
     });
 
-
+Schedule::command('app:rotate-security-questions')->monthly();
 

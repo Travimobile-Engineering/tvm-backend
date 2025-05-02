@@ -59,6 +59,8 @@ class AgentProfileResource extends JsonResource
             ],
             'sms_notification' => $this->inbox_notifications,
             'email_notification' => $this->email_notifications,
+            'has_setup_security_answer' => hasSetSecurityAnswer($this->id),
+            'security_question' => $this->securityQuestion?->question,
         ];
     }
 }

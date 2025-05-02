@@ -11,6 +11,7 @@ use App\Models\PremiumHireBookingPassenger;
 use App\Models\PremiumHireManifest;
 use App\Models\PremiumHireRating;
 use App\Models\PremiumUpgrade;
+use App\Models\SecurityQuestion;
 use App\Models\Transaction;
 use App\Models\TransitCompany;
 use App\Models\Trip;
@@ -138,6 +139,11 @@ trait UserRelationships
     public function userNotifications()
     {
         return $this->hasMany(Notification::class, 'user_id');
+    }
+
+    public function securityQuestion()
+    {
+        return $this->hasOne(SecurityQuestion::class, 'id', 'security_question_id');
     }
 }
 
