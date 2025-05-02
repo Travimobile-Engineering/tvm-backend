@@ -47,7 +47,12 @@ trait PaymentTrait
 
             DB::commit();
 
-            broadcast(new WalletFunded($user, $formattedAmount));
+            broadcast(new WalletFunded(
+                type: 'fund_wallet',
+                message: 'Your wallet has been funded successfully!',
+                userId: $user->id,
+                amount: $formattedAmount
+            ));
             info("User with ID: {$user->id} topped up wallet with amount: {$formattedAmount}");
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -192,7 +197,12 @@ trait PaymentTrait
             ]);
 
             DB::commit();
-            broadcast(new TripBooked($trip, $user));
+
+            broadcast(new TripBooked(
+                type: 'trip_booking',
+                message: 'Your bus ticket has been booked successfully!',
+                userId: $user->id
+            ));
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;

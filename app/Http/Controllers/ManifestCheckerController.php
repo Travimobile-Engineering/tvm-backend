@@ -71,4 +71,12 @@ class ManifestCheckerController extends Controller
         $request->validate(['name' => 'string, required']);
         return $this->service->searchWatchList($request);
     }
+
+    public function getProfile(){
+        return $this->service->getProfile();
+    }
+
+    public function editProfile(Request $request){
+        return $this->service->editProfile($request);
+    }
 }
