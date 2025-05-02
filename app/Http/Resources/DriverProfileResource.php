@@ -116,6 +116,8 @@ class DriverProfileResource extends JsonResource
                 'account_number' => $this->userBank?->account_number,
                 'bank_name' => $this->userBank?->bank_name,
             ],
+            'has_setup_security_answer' => hasSetSecurityAnswer($this->id),
+            'security_question' => $this->securityQuestion?->question,
         ];
     }
 }
