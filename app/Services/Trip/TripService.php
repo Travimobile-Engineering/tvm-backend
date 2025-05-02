@@ -6,6 +6,7 @@ use App\Enum\ManifestStatus;
 use App\Models\Trip;
 use App\Enum\TripType;
 use App\Enum\TripStatus;
+use App\Events\PassengerTripStart;
 use App\Events\TripCancelled;
 use App\Events\TripCreated;
 use App\Events\TripStart;
@@ -61,7 +62,11 @@ class TripService
                 'status' => TripStatus::UPCOMING,
             ]);
 
-            broadcast(new TripCreated($user, $trip));
+            broadcast(new TripCreated(
+                type: 'trip_create',
+                message: 'Trip created successfully',
+                userId: $user->id,
+            ));
 
             return $this->success($trip, "Created successfully", 201);
         } catch (\Exception $e) {
@@ -298,6 +303,12 @@ class TripService
                 }
             }
 
+            broadcast(new TripCreated(
+                type: 'trip_create',
+                message: 'Trip created successfully',
+                userId: $user->id,
+            ));
+
             return $this->success(null, "Recurring trips created successfully", 201);
         } catch (\Throwable $th) {
             throw $th;
@@ -391,7 +402,12 @@ class TripService
             'status' => TripStatus::CANCELLED,
         ]);
 
-        broadcast(new TripCancelled($trip));
+        broadcast(new TripCancelled(
+            type: 'trip_cancelled',
+            message: 'Trip Cancelled',
+            tripId: $trip->id,
+        ));
+
         ResponseCache::clear();
 
         return $this->success(null, "Trip Cancelled Successfully", 200);
@@ -497,7 +513,18 @@ class TripService
             ]);
 
             DB::commit();
-            broadcast(new TripStart($trip));
+
+            broadcast(new TripStart(
+                type: 'trip_start',
+                message: 'Trip started successfully.',
+                tripId: $trip->id
+            ));
+            broadcast(new PassengerTripStart(
+                type: 'trip_start',
+                message: 'Trip started successfully.',
+                tripId: $trip->id
+            ));
+
             ResponseCache::clear();
             return $this->success(null, "Trip Started Successfully", 200);
         } catch (\Exception $e) {
