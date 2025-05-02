@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Models\Incident;
 use App\Models\Manifest;
 use App\Models\WatchList;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
+use App\Http\Resources\SecurityAgentProfileResource;
 
 class ManifestCheckerService
 {
@@ -153,5 +156,29 @@ class ManifestCheckerService
             return $this->success($records);
         }
         return $this->error(null, "No records found for '".$request->name."'");
+    }
+
+    public function getProfile(){
+        return new SecurityAgentProfileResource(Auth::user());
+    }
+
+    public function editProfile($request){
+        $columns = Schema::getColumnListing('users');
+        $data = array_filter($request->all(), function($key) use($columns){
+            return in_array($key, $columns);
+        }, ARRAY_FILTER_USE_KEY);
+
+        if(isset($request->full_name)){
+            $names = explode(' ', $request->full_name, 2);
+            $data['first_name'] = trim($names[0]);
+            $data['last_name'] = trim($names[1] ??= null);
+        }
+        try{
+            User::find(Auth::user()->id)->update($data);
+            return $this->success(null, 'User account updated successfully');
+        }
+        catch(\Exception $e){
+            return $this->error(null, $e->getMessage());
+        }
     }
 }
