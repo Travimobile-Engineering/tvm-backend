@@ -63,6 +63,8 @@ class User extends Authenticatable implements JWTSubject
         'email_notifications',
         'status',
         'reason',
+        'security_question_id',
+        'security_answer',
     ];
 
     protected $guarded = [

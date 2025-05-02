@@ -287,12 +287,29 @@ if (! function_exists('sendCode')) {
     }
 }
 
-if(!function_exists('getUserTypes')){
+if (!function_exists('getUserTypes')){
     function getUserTypes(?Model $user = null){
         if(!$user){
             $user = Auth::user();
         }
         return explode(',', $user->user_category);
+    }
+}
+
+if (!function_exists('hasSetSecurityAnswer')) {
+    function hasSetSecurityAnswer(int $userId): bool
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->security_question_id && $user->security_answer) {
+            return true;
+        }
+
+        return false;
     }
 }
 

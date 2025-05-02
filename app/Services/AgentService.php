@@ -9,6 +9,7 @@ use App\Enum\PaymentMethod;
 use App\Enum\TripStatus;
 use App\Enum\TripType;
 use App\Enum\UserType;
+use App\Events\PassengerTripStart;
 use App\Events\TripCancelled;
 use App\Events\TripDepartureNotification;
 use App\Events\TripStart;
@@ -47,6 +48,7 @@ class AgentService
                 'transitCompany',
                 'busStops.state',
                 'userBank',
+                'securityQuestion',
             ])
             ->where('id', $userId)
             ->first();
@@ -277,7 +279,12 @@ class AgentService
             'status' => TripStatus::CANCELLED,
         ]);
 
-        broadcast(new TripCancelled($trip));
+        broadcast(new TripCancelled(
+            type: 'trip_cancelled',
+            message: 'Trip cancelled successfully',
+            tripId: $trip->id
+        ));
+
         ResponseCache::clear();
 
         return $this->success($trip, 'Trip cancelled successfully');
@@ -659,7 +666,16 @@ class AgentService
 
             DB::commit();
 
-            broadcast(new TripStart($trip));
+            broadcast(new TripStart(
+                type: 'trip_start',
+                message: 'Trip started successfully.',
+                tripId: $trip->id
+            ));
+            broadcast(new PassengerTripStart(
+                type: 'trip_start',
+                message: 'Trip started successfully.',
+                tripId: $trip->id
+            ));
             ResponseCache::clear();
             return $this->success(null, "Trip Started Successfully", 200);
         } catch (\Exception $e) {
