@@ -10,7 +10,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class WalletFunded implements ShouldBroadcast
+class PassengerTripStart implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -20,8 +20,7 @@ class WalletFunded implements ShouldBroadcast
     public function __construct(
         public string $type,
         public string $message,
-        public int $userId,
-        public float $amount,
+        public int $tripId,
     )
     {}
 
@@ -33,7 +32,7 @@ class WalletFunded implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("wallet.funded.{$this->userId}"),
+            new PrivateChannel("passenger.trip.start.{$this->tripId}"),
         ];
     }
 
@@ -42,7 +41,7 @@ class WalletFunded implements ShouldBroadcast
         return [
             'type' => $this->type,
             'message' => $this->message,
-            'amount' => $this->amount,
+            'trip_id' => $this->tripId,
         ];
     }
 }
