@@ -32,6 +32,7 @@ class UserFactory extends Factory
             'user_category' => static::$category ?? 'passenger',
             'password' => static::$password ??= Hash::make('password'),
             'verification_code' => fake()->randomNumber(5, true),
+            'verification_code_expires_at' => now()->addMinutes(10)->format('Y-m-d H:i:s'),
             'email_verified' => fake()->boolean(),
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
