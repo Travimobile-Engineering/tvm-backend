@@ -292,7 +292,6 @@ Route::middleware('validate.header')
                 });
 
             Route::prefix('manifest-checker')
-                ->controller(ManifestCheckerController::class)
                 ->group(function(){
                     Route::post('/login', [AuthenticateController::class, 'securityAgentLogin'])
                         ->middleware(['login.attempt']);
@@ -300,6 +299,13 @@ Route::middleware('validate.header')
                     Route::controller(ManifestCheckerController::class)
                     ->group(function(){
                         Route::get('/check/{plate_no}', 'getManifestData');
+
+                        Route::prefix('profile')
+                            ->group(function(){
+                                Route::get('/', 'getProfile');
+                                Route::post('/edit', 'editProfile');
+                            });
+                            
                         Route::prefix('incident')
                             ->group(function(){
                                 Route::get('/get-categories', 'getIncidentCategories');

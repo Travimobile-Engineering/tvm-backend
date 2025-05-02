@@ -18,7 +18,9 @@ class TripCancelled implements ShouldBroadcast
      * Create a new event instance.
      */
     public function __construct(
-        public $trip
+        public string $type,
+        public string $message,
+        public int $tripId,
     )
     {}
 
@@ -30,7 +32,16 @@ class TripCancelled implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('trip.cancelled.' . $this->trip->id),
+            new PrivateChannel("trip.cancelled.{$this->tripId}"),
+        ];
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'type' => $this->type,
+            'message' => $this->message,
+            'trip_id' => $this->tripId,
         ];
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Enum;
 
-enum JobApplicationStatusEnum 
+enum JobApplicationStatusEnum
 {
     const APPLIED = 'applied';
     const REJECTED = 'rejected';

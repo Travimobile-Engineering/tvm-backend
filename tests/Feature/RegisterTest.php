@@ -10,12 +10,18 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class RegisterTest extends TestCase
 {
     use RefreshDatabase;
-    /**
-     * A basic feature test example.
-     */
+    
+    protected $headers;
+
+    public function setUp(): void{
+        parent::setUp();
+        $this->headers = [
+            'Accept' => 'application/json',
+            config('security.header_key') => config('security.header_value'),
+        ];
+    }
     public function test_account_signup(): void
     {
-        $headers = ['X-SECURE-AUTH' => 'eLxPtkXlJdCbxo2LRdfSXB'];
 
         $data = [
             'full_name' => 'Test User',
@@ -25,7 +31,8 @@ class RegisterTest extends TestCase
             'password' => 'password',
             'password_confirmation' => 'password',
         ];
-        $response = $this->postJson('/api/auth/signup', $data, $headers);
+        $response = $this->postJson('/api/auth/signup', $data, $this->headers);
+        $response->dump();
         $this->assertDatabaseHas('users', [
             'first_name' => 'Test',
             'email' => 'testuser@example.com',
@@ -36,25 +43,14 @@ class RegisterTest extends TestCase
 
     public function test_account_verification(): void
     {
-        $headers = ['X-SECURE-AUTH' => 'eLxPtkXlJdCbxo2LRdfSXB'];
-
-        $data = [
-            'full_name' => 'Test User',
-            'email' => 'testuser@example.com',
-            'phone_number' => '08123456789',
-            'user_category' => 'passenger',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ];
-        $response = $this->postJson('/api/auth/signup', $data, $headers);
+        User::factory()->create(['email' => 'testuser@example.com']);
         $user = User::where('email', 'testuser@example.com')
             ->where('verification_code_expires_at', '>=', now())
             ->first();
         
-        $response = $this->postJson('/api/auth/verify/account', ['code' => $user->verification_code], $headers);
+        $response = $this->postJson('/api/auth/verify/account', ['code' => $user->verification_code], $this->headers);
         
         $this->assertDatabaseHas('users', [
-            'first_name' => 'Test',
             'email' => 'testuser@example.com',
             'email_verified' => 1,
         ]);
