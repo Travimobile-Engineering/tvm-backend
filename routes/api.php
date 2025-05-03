@@ -81,6 +81,7 @@ Route::middleware('validate.header')
             });
 
         // User Set Security Answer
+        Route::get('/user/settings/get/questions', [UserSettingsController::class, 'getQuestions']);
         Route::post('/user/set-security-answer', [UserSettingsController::class, 'setSecurityAnswer']);
         Route::post('/user/create-password', [UserSettingsController::class, 'createPassword']);
         Route::get('/user/get-question', [UserSettingsController::class, 'getUserQuestion']);
@@ -129,7 +130,6 @@ Route::middleware('validate.header')
                         Route::prefix('settings')
                             ->controller(UserSettingsController::class)
                             ->group(function () {
-                                Route::get('/get/questions', 'getQuestions');
                                 Route::post('/change/security-answer', 'changeSecurityAnswer');
                             });
                     });
