@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\NotificationRequest;
+use App\Http\Requests\SaveFCMTokenRequest;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 
@@ -37,5 +38,10 @@ class UserController extends Controller
     public function updateNotification(NotificationRequest $request)
     {
         return $this->service->updateNotification($request);
+    }
+
+    public function saveFCMToken(SaveFCMTokenRequest $request)
+    {
+        return $this->service->saveFCMToken($request);
     }
 }

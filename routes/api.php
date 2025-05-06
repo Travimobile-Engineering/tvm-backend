@@ -125,6 +125,7 @@ Route::middleware('validate.header')
                         Route::get('/{user_id}/notifications', 'getNotifications');
                         Route::get('/{user_id}/notification/{id}', 'getNotification');
                         Route::patch('/notification', 'updateNotification');
+                        Route::post('/save-fcm-token', 'saveFCMToken');
 
                         //Settings
                         Route::prefix('settings')

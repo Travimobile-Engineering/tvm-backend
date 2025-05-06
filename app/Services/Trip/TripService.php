@@ -2,6 +2,7 @@
 
 namespace App\Services\Trip;
 
+use App\DTO\NotificationDispatchData;
 use App\Enum\ManifestStatus;
 use App\Models\Trip;
 use App\Enum\TripType;
@@ -20,6 +21,7 @@ use App\Models\Manifest;
 use App\Models\TripBooking;
 use App\Models\TripLog;
 use App\Models\User;
+use App\Services\Notification\NotificationDispatcher;
 use App\Trait\DriverTrait;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -31,6 +33,10 @@ class TripService
     use HttpResponse, DriverTrait;
 
     const TRIP_CHARGE_AMOUNT = 1000;
+
+    public function __construct(
+        protected NotificationDispatcher $notifier
+    ) {}
 
     public function createOneTime($request)
     {
@@ -62,10 +68,20 @@ class TripService
                 'status' => TripStatus::UPCOMING,
             ]);
 
-            broadcast(new TripCreated(
-                type: 'trip_create',
-                message: 'Trip created successfully',
-                userId: $user->id,
+            $this->notifier->send(new NotificationDispatchData(
+                eventClass: TripCreated::class,
+                eventPayload: [
+                    'type' => 'trip_create',
+                    'message' => 'Trip created successfully',
+                    'userId' => $user->id,
+                ],
+                recipients: $user,
+                title: 'Trip Created',
+                body: 'Your trip has been created successfully',
+                data: [
+                    'trip_id' => $trip->id,
+                    'type' => 'trip_created'
+                ]
             ));
 
             return $this->success($trip, "Created successfully", 201);
