@@ -95,8 +95,10 @@ class TripService
     {
         $trip->load([
             'user.transitCompany',
-            'tripBookings.user',
-            'tripBookings.tripBookingPassengers',
+            'tripBookings' => function($query){
+                $query->where('status', 1)
+                ->with(['user', 'tripBookingPassengers']);
+            },
             'departureRegion.state',
             'destinationRegion.state',
             'manifest',
