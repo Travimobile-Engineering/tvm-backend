@@ -81,11 +81,15 @@ Route::middleware('validate.header')
             });
 
         // User Set Security Answer
-        Route::get('/user/settings/get/questions', [UserSettingsController::class, 'getQuestions']);
-        Route::post('/user/set-security-answer', [UserSettingsController::class, 'setSecurityAnswer']);
-        Route::post('/user/create-password', [UserSettingsController::class, 'createPassword']);
-        Route::get('/user/get-question', [UserSettingsController::class, 'getUserQuestion']);
-        Route::post('/user/verify-security-answer', [UserSettingsController::class, 'verifySecurityAnswer']);
+        Route::prefix('user')
+            ->controller(UserSettingsController::class)
+            ->group(function () {
+                Route::get('/settings/get/questions', 'getQuestions');
+                Route::post('/set-security-answer', 'setSecurityAnswer');
+                Route::post('/create-password', 'createPassword');
+                Route::get('/get-question', 'getUserQuestion');
+                Route::post('/verify-security-answer', 'verifySecurityAnswer');
+            });
 
         Route::middleware(JWTAuthenticator::class)
             ->group(function () {
