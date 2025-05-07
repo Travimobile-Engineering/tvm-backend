@@ -49,12 +49,17 @@ if (!function_exists('uploadFile')) {
         }
 
         if ($request->hasFile($key)) {
-            $image = $request->file($key)->storeOnCloudinary($folder);
+            $uploadedFile = $request->file($key);
+            $uploaded = Cloudinary::upload($uploadedFile->getRealPath(), [
+                'folder' => $folder,
+            ]);
+
             return [
-                'url' => $image->getSecurePath(),
-                'public_id' => $image->getPublicId(),
+                'url' => $uploaded->getSecurePath(),
+                'public_id' => $uploaded->getPublicId(),
             ];
         }
+
         return ['url' => null, 'public_id' => null];
     }
 }
