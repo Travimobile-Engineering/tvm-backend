@@ -28,7 +28,7 @@ jobs:
 
 
   unit-test:
-    needs: compile-code
+    needs: static-analysis
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -52,7 +52,7 @@ jobs:
         run: echo "run unit test"
 
   sonarqube-test:
-    needs: [compile-code, unit-test]
+    needs: [static-analysis, unit-test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
