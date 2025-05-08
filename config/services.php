@@ -59,6 +59,12 @@ return [
         'api_key' => env('TERMII_API_KEY'),
         'sender_id' => env('TERMII_SENDER_ID'),
         'sender_id_default' => env('TERMII_DEFAULT_SENDER_ID'),
-    ]
+    ],
+
+    'imagekit' => [
+        'public_key' => env('IMAGEKIT_PUBLIC_KEY'),
+        'private_key' => env('IMAGEKIT_PRIVATE_KEY'),
+        'endpoint_key' => env('IMAGEKIT_URL_ENDPOINT'),
+    ],
 
 ];

@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Database\Eloquent\Model;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Log;
+use ImageKit\ImageKit;
 
 if (!function_exists('authUser')) {
     function authUser() {
@@ -41,20 +43,76 @@ if (!function_exists('getCode')) {
     }
 }
 
+if (!function_exists('uploadToImageKit')) {
+    function uploadToImageKit($file, $folder = 'uploads')
+    {
+        $imageKit = new ImageKit(
+            config('services.imagekit.public_key'),
+            config('services.imagekit.private_key'),
+            config('services.imagekit.endpoint_key')
+        );
+
+        $uploadFile = fopen($file->getRealPath(), 'r');
+
+        $uploadResponse = $imageKit->upload([
+            "file" => $uploadFile,
+            "fileName" => $file->getClientOriginalName(),
+            "folder" => $folder
+        ]);
+
+        if (isset($uploadResponse->result->url)) {
+            return [
+                'url' => $uploadResponse->result->url,
+                'public_id' => $uploadResponse->result->fileId,
+            ];
+        }
+
+        return ['url' => null, 'public_id' => null];
+    }
+}
+
+if (!function_exists('deleteOldFile')) {
+    function deleteOldFile($publicId)
+    {
+        if (!$publicId) {
+            return;
+        }
+
+        try {
+            if (preg_match('/^[a-f0-9]{24}$/', $publicId)) {
+                $imageKit = new \ImageKit\ImageKit(
+                    config('services.imagekit.public_key'),
+                    config('services.imagekit.private_key'),
+                    config('services.imagekit.endpoint_key')
+                );
+                $imageKit->deleteFile($publicId);
+            } else {
+                Cloudinary::destroy($publicId);
+            }
+        } catch (\Throwable $e) {
+            Log::error("Failed to delete file: {$e->getMessage()}");
+        }
+    }
+}
+
 if (!function_exists('uploadFile')) {
     function uploadFile($request, $key, $folder, $oldPublicId = null)
     {
-        if ($oldPublicId) {
-            Cloudinary::destroy($oldPublicId);
-        }
+        deleteOldFile($oldPublicId);
 
         if ($request->hasFile($key)) {
-            $image = $request->file($key)->storeOnCloudinary($folder);
-            return [
-                'url' => $image->getSecurePath(),
-                'public_id' => $image->getPublicId(),
-            ];
+            $file = $request->file($key);
+            try {
+                $image = $file->storeOnCloudinary($folder);
+                return [
+                    'url' => $image->getSecurePath(),
+                    'public_id' => $image->getPublicId(),
+                ];
+            } catch (\Throwable $e) {
+                return uploadToImageKit($file, $folder);
+            }
         }
+
         return ['url' => null, 'public_id' => null];
     }
 }
@@ -63,19 +121,22 @@ if (!function_exists('uploadFilesBatches')) {
     function uploadFilesBatches($request, $files, $folder, $oldPublicIds = [])
     {
         $results = [];
+
         foreach ($files as $key) {
             $oldPublicId = $oldPublicIds[$key] ?? null;
-
-            if ($oldPublicId) {
-                Cloudinary::destroy($oldPublicId);
-            }
+            deleteOldFile($oldPublicId);
 
             if ($request->hasFile($key)) {
-                $image = $request->file($key)->storeOnCloudinary($folder);
-                $results[$key] = [
-                    'url' => $image->getSecurePath(),
-                    'public_id' => $image->getPublicId(),
-                ];
+                $file = $request->file($key);
+                try {
+                    $image = $file->storeOnCloudinary($folder);
+                    $results[$key] = [
+                        'url' => $image->getSecurePath(),
+                        'public_id' => $image->getPublicId(),
+                    ];
+                } catch (\Throwable $e) {
+                    $results[$key] = uploadToImageKit($file, $folder);
+                }
             } else {
                 $results[$key] = ['url' => null, 'public_id' => null];
             }
@@ -95,18 +156,19 @@ if (!function_exists('uploadFilesBatch')) {
                 continue;
             }
 
-            $oldPublicId = $oldPublicIds[$file->getClientOriginalName()] ?? null;
+            $originalName = $file->getClientOriginalName();
+            $oldPublicId = $oldPublicIds[$originalName] ?? null;
+            deleteOldFile($oldPublicId);
 
-            if ($oldPublicId) {
-                Cloudinary::destroy($oldPublicId);
+            try {
+                $image = $file->storeOnCloudinary($folder);
+                $results[] = [
+                    'url' => $image->getSecurePath(),
+                    'public_id' => $image->getPublicId(),
+                ];
+            } catch (\Throwable $e) {
+                $results[] = uploadToImageKit($file, $folder);
             }
-
-            $image = $file->storeOnCloudinary($folder);
-
-            $results[] = [
-                'url' => $image->getSecurePath(),
-                'public_id' => $image->getPublicId(),
-            ];
         }
 
         return $results;
