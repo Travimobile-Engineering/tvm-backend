@@ -3,8 +3,6 @@ name: Build and Push Travi Backend Image to Registry
 on:
   push:
     branches: [ master, staging, dev ]
-  pull_request:
-    branches: [ master, staging, dev ]
 
 env:
   IMAGE_URI: "820242924853.dkr.ecr.eu-west-2.amazonaws.com/backend-nginx"
