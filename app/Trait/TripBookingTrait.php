@@ -2,6 +2,7 @@
 
 namespace App\Trait;
 
+use App\DTO\NotificationDispatchData;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
@@ -11,6 +12,7 @@ use App\Models\Notification;
 use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\User;
+use App\Services\Notification\NotificationDispatcher;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +22,11 @@ use Illuminate\Support\Facades\Hash;
 trait TripBookingTrait
 {
     use HttpResponse, PaymentLogTrait;
+
+    public function __construct(
+        protected NotificationDispatcher $notifier
+    )
+    {}
 
     public function processPayment($request, $result, $paymentProcessor = null, $user = null)
     {
@@ -176,10 +183,24 @@ trait TripBookingTrait
                 'reference' => $ref,
             ];
 
-            broadcast(new TripBooked(
-                type: 'trip_booking',
-                message: 'Your bus ticket has been booked successfully!',
-                userId: $user->id
+            $this->notifier->send(new NotificationDispatchData(
+                events: [
+                    [
+                        'class' => TripBooked::class,
+                        'payload' => [
+                            'type' => 'trip_booking',
+                            'message' => 'Your bus ticket has been booked successfully!',
+                            'userId' => $user->id,
+                        ],
+                    ]
+                ],
+                recipients: $user,
+                title: 'Trip Booked',
+                body: 'Your bus ticket has been booked successfully!',
+                data: [
+                    'userId' => $user->id,
+                    'type' => 'trip_booking',
+                ]
             ));
 
             return $this->success($data, "Payment successful", 200);

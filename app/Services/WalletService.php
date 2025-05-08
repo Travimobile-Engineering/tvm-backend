@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTO\NotificationDispatchData;
 use App\Enum\General;
 use App\Models\Bank;
 use App\Models\User;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Models\TripPayment;
+use App\Services\Notification\NotificationDispatcher;
 use App\Services\Paystack\PaystackService;
 use Unicodeveloper\Paystack\Facades\Paystack;
 
@@ -25,7 +27,9 @@ class WalletService
 
     protected $user;
 
-    public function __construct(){
+    public function __construct(
+        protected NotificationDispatcher $notifier
+    ){
         $this->user = JWTAuth::user();
     }
 
@@ -44,33 +48,52 @@ class WalletService
         return $this->success($data, "Wallet balance retrieved");
     }
 
-    public function fundWallet($request){
-
+    public function fundWallet($request)
+    {
         $ppc = new PaystackPaymentController();
 
         $response = $ppc->verifyTransaction($request->reference, $request->amount);
 
-        if($response['status'] == 'success'){
+        if ($response['status'] === 'success') {
+            $user = User::findOrFail($this->user->id);
+            $user->wallet += $request->amount;
+            $user->save();
 
-            $user = User::where('id', $this->user->id)->update(['wallet' => $this->user->wallet + $request->amount]);
+            Transaction::create([
+                'user_id' => $user->id,
+                'title' => 'Wallet top up',
+                'amount' => $request->amount,
+                'type' => 'CR',
+                'txn_reference' => $request->reference
+            ]);
 
-            if($user){
+            $formattedAmount = number_format($request->amount);
 
-                Transaction::create([
-                    'user_id' => $this->user->id,
-                    'title' => 'Wallet top up',
+            $this->notifier->send(new NotificationDispatchData(
+                events: [
+                    [
+                        'class' => WalletFunded::class,
+                        'payload' => [
+                            'type' => 'wallet_funded',
+                            'message' => "₦{$formattedAmount} has been added to your wallet.",
+                            'userId' => $user->id,
+                            'amount' => $request->amount,
+                        ],
+                    ],
+                ],
+                recipients: $user,
+                title: 'Wallet Funded',
+                body: "₦{$formattedAmount} has been added to your wallet.",
+                data: [
+                    'type' => 'wallet_funded',
                     'amount' => $request->amount,
-                    'type' => 'CR',
-                    'txn_reference' => $request->reference
-                ]);
+                ]
+            ));
 
-                broadcast(new WalletFunded($user, $request->amount));
-
-                return ['message' => 'Wallet funded successfully', 'data' => User::find($this->user->id)];
-            }
+            return $this->success($user, "Wallet funded successfully");
+        } else {
+            return $this->error(null, $response['message'], 400);
         }
-
-        else return ['message' => $response, 'code' => 400];
     }
 
     public function transfer($request)
