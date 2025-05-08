@@ -15,10 +15,12 @@ class NotificationDispatcher
 
     public function send(NotificationDispatchData $dto): void
     {
-        try {
-            broadcast(new ($dto->eventClass)(...$dto->eventPayload));
-        } catch (\Throwable $e) {
-            Log::error("Broadcast failed: {$e->getMessage()}");
+        foreach ($dto->events as $event) {
+            try {
+                broadcast(new ($event['class'])(...$event['payload']));
+            } catch (\Throwable $e) {
+                Log::error("Broadcast failed for {$event['class']}: {$e->getMessage()}");
+            }
         }
 
         $users = collect($dto->recipients instanceof Collection ? $dto->recipients : [$dto->recipients]);
@@ -26,9 +28,7 @@ class NotificationDispatcher
         foreach ($users as $user) {
             $tokens = [];
 
-            if (method_exists($user, 'deviceTokens')) {
-                $tokens = $user->deviceTokens()->pluck('token')->all();
-            } elseif (!empty($user->fcm_token)) {
+            if (!empty($user->fcm_token)) {
                 $tokens = [$user->fcm_token];
             }
 
@@ -46,6 +46,7 @@ class NotificationDispatcher
             }
         }
     }
+
 }
 
 

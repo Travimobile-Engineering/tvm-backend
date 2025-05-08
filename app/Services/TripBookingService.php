@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTO\NotificationDispatchData;
 use App\Models\Trip;
 use App\Models\User;
 use App\Enum\TripStatus;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\QueryException;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Resources\TripBookingResource;
+use App\Services\Notification\NotificationDispatcher;
 
 class TripBookingService
 {
@@ -29,9 +31,12 @@ class TripBookingService
 
     protected $user;
 
-    public function __construct(){
+    public function __construct(
+        protected NotificationDispatcher $notifier
+    ){
         $this->user = JWTAuth::user();
     }
+
     /**
      * Display a listing of the resource.
      */
@@ -296,7 +301,9 @@ class TripBookingService
 
     public function cancelTripBooking($request)
     {
-        $booking = TripBooking::where('booking_id', $request->booking_id)->firstOrFail();
+        $booking = TripBooking::with(['user', 'trip.user'])
+            ->where('booking_id', $request->booking_id)
+            ->firstOrFail();
 
         if(!in_array($this->user->id, [$booking->user_id, $booking->agent_id])) {
             return $this->error(null, 'You do not have the permission to complete this request', 400);
@@ -308,16 +315,32 @@ class TripBookingService
             'status' => 0
         ]);
 
-        broadcast(new BookingCancelled(
-            type: 'booking_cancelled',
-            message: 'Your booking has been cancelled',
-            bookingId:  $booking->booking_id,
-        ));
-
-        broadcast(new DriverBookingCancelled(
-            type: 'booking_cancelled',
-            message: 'User cancelled booking',
-            bookingId:  $booking->booking_id,
+        $this->notifier->send(new NotificationDispatchData(
+            events: [
+                [
+                    'class' => BookingCancelled::class,
+                    'payload' => [
+                        'type' => 'booking_cancelled',
+                        'message' => 'Your booking has been cancelled',
+                        'bookingId' => $booking->booking_id,
+                    ],
+                ],
+                [
+                    'class' => DriverBookingCancelled::class,
+                    'payload' => [
+                        'type' => 'booking_cancelled',
+                        'message' => 'User cancelled booking',
+                        'bookingId' => $booking->booking_id,
+                    ],
+                ],
+            ],
+            recipients: collect([$booking->user, $booking->trip->user])->filter()->unique('id'),
+            title: 'Booking Cancelled',
+            body: "Booking ID {$booking->booking_id} has been cancelled.",
+            data: [
+                'booking_id' => $booking->booking_id,
+                'type' => 'booking_cancelled',
+            ]
         ));
 
         return $this->success($booking, 'Booking cancelled successfully');

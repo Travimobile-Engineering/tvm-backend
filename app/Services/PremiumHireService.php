@@ -486,8 +486,8 @@ class PremiumHireService
         }
 
         $bookings = PremiumHireBooking::with([
-            'vehicle',
-        ])
+                'vehicle',
+            ])
             ->where('driver_id', $userId)
             ->where('status', $query)
             ->get();

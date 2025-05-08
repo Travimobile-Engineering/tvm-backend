@@ -7,9 +7,11 @@ use Illuminate\Support\Collection;
 
 class NotificationDispatchData
 {
+     /**
+     * @param array<array{class: string, payload: array}> $events
+     */
     public function __construct(
-        public string $eventClass,
-        public array $eventPayload,
+        public array $events,
         public User|Collection $recipients,
         public ?string $title = null,
         public ?string $body = null,

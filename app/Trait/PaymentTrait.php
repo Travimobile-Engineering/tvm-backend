@@ -2,6 +2,7 @@
 
 namespace App\Trait;
 
+use App\DTO\NotificationDispatchData;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
@@ -14,12 +15,18 @@ use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\User;
 use App\Models\Vehicle\Vehicle;
+use App\Services\Notification\NotificationDispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 trait PaymentTrait
 {
     use HttpResponse, PaymentLogTrait;
+
+    public function __construct(
+        protected NotificationDispatcher $notifier
+    )
+    {}
 
     protected function handleFundWallet($event)
     {
@@ -47,12 +54,27 @@ trait PaymentTrait
 
             DB::commit();
 
-            broadcast(new WalletFunded(
-                type: 'fund_wallet',
-                message: 'Your wallet has been funded successfully!',
-                userId: $user->id,
-                amount: $formattedAmount
+            $this->notifier->send(new NotificationDispatchData(
+                events: [
+                    [
+                        'class' => WalletFunded::class,
+                        'payload' => [
+                            'type' => 'wallet_funded',
+                            'message' => "₦{$formattedAmount} has been added to your wallet.",
+                            'userId' => $user->id,
+                            'amount' => $formattedAmount,
+                        ],
+                    ],
+                ],
+                recipients: $user,
+                title: 'Wallet Funded',
+                body: "₦{$formattedAmount} has been added to your wallet.",
+                data: [
+                    'type' => 'wallet_funded',
+                    'amount' => $formattedAmount,
+                ]
             ));
+
             info("User with ID: {$user->id} topped up wallet with amount: {$formattedAmount}");
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -198,10 +220,24 @@ trait PaymentTrait
 
             DB::commit();
 
-            broadcast(new TripBooked(
-                type: 'trip_booking',
-                message: 'Your bus ticket has been booked successfully!',
-                userId: $user->id
+            $this->notifier->send(new NotificationDispatchData(
+                events: [
+                    [
+                        'class' => TripBooked::class,
+                        'payload' => [
+                            'type' => 'trip_booking',
+                            'message' => 'Your bus ticket has been booked successfully!',
+                            'userId' => $user->id,
+                        ],
+                    ]
+                ],
+                recipients: $user,
+                title: 'Trip Booked',
+                body: 'Your bus ticket has been booked successfully!',
+                data: [
+                    'userId' => $user->id,
+                    'type' => 'trip_booking',
+                ]
             ));
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -212,7 +248,6 @@ trait PaymentTrait
     protected function handlePremiumHire($event)
     {
         try {
-
             $paymentData = $event['data'];
             $vehicleId = $paymentData['metadata']['vehicle_id'];
             $userId = $paymentData['metadata']['user_id'];
