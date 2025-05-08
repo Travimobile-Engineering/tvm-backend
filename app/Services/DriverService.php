@@ -12,6 +12,7 @@ use App\Models\Vehicle\Vehicle;
 use App\Trait\DriverTrait;
 use App\Trait\HttpResponse;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DriverService
@@ -248,9 +249,11 @@ class DriverService
         if (!$user->vehicle) {
             return $this->error('Vehicle not found', 404);
         }
+
         $user->vehicle()->update([
             'description' => $request->description,
         ]);
+
         return $this->success(null, "Saved successfully");
     }
 
@@ -359,11 +362,23 @@ class DriverService
             "lat" => $request->lat,
         ]);
 
+        if ($request->is_available) {
+            $user->unavailableDates()
+                ->where('date', '<=', now()->toDateString())
+                ->delete();
+        }
+
         if (!empty($request->unavailable_dates)) {
             foreach ($request->unavailable_dates as $date) {
-                $user->unavailableDates()->create([
+                $dateFormatted = Carbon::parse($date)->toDateString();
+
+                if ($request->is_available && $dateFormatted === now()->toDateString()) {
+                    continue;
+                }
+
+                $user->unavailableDates()->updateOrCreate([
                     'vehicle_id' => $user->vehicle->id,
-                    'date' => $date,
+                    'date' => $dateFormatted,
                 ]);
             }
         }

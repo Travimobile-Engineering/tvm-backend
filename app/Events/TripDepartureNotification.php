@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use App\Models\Trip;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -19,7 +18,9 @@ class TripDepartureNotification implements ShouldBroadcast
      * Create a new event instance.
      */
     public function __construct(
-        protected Trip $trip
+        protected string $type,
+        protected string $message,
+        protected int $tripId,
     )
     {}
 
@@ -31,7 +32,16 @@ class TripDepartureNotification implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('trip.departure' . $this->trip->id),
+            new PrivateChannel("trip.departure.{$this->tripId}"),
+        ];
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'type' => $this->type,
+            'message' => $this->message,
+            'tripId' => $this->tripId,
         ];
     }
 }

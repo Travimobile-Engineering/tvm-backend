@@ -21,7 +21,7 @@ class PaystackService
         ];
 
         $data = (new PostCurlService($url, $headers, $fields))->execute();
-
+        
         self::logTransfer($user, $data);
     }
 

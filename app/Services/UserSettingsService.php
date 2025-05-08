@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enum\MailingEnum;
+use App\Enum\UserStatus;
 use App\Mail\ConfirmationEmail;
 use App\Models\SecurityQuestion;
 use App\Models\User;
@@ -74,7 +75,8 @@ class UserSettingsService
         }
 
         $user->update([
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
+            'status' => UserStatus::ACTIVE,
         ]);
 
         Cache::forget("security_reset_{$user->email}");
