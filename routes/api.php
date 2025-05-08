@@ -169,10 +169,10 @@ Route::middleware('validate.header')
                     ->controller(TripController::class)
                     ->group(function () {
                         Route::post('/create', 'store');
-                        Route::get('/popular', 'getPopularTrips')->middleware('cacheResponse:300');
+                        Route::get('/popular', 'getPopularTrips');
                         Route::post('/edit/{trip}', 'update');
-                        Route::get('/get-trips', 'getTrips')->middleware('cacheResponse:300');
-                        Route::get('/{trip}', 'getTrip')->middleware('doNotCacheResponse');
+                        Route::get('/get-trips', 'getTrips');
+                        Route::get('/{trip}', 'getTrip');
                         Route::post('/extend-time', 'tripExtendTime');
 
                         // Get Bus Stops
@@ -213,9 +213,8 @@ Route::middleware('validate.header')
 
                         Route::prefix('/passenger')
                             ->group(function () {
-                                Route::get('/get-trips', 'getAll')->middleware('cacheResponse:300');
-                                Route::get('/ticket/download/{booking_id}', 'downloadTicket')
-                                    ->middleware('doNotCacheResponse');
+                                Route::get('/get-trips', 'getAll');
+                                Route::get('/ticket/download/{booking_id}', 'downloadTicket');
                             });
                     });
 
@@ -286,8 +285,8 @@ Route::middleware('validate.header')
                         Route::post('/create', 'booking');
                         Route::post('/edit/{tripBooking}', 'update');
                         Route::post('/cancel', 'cancelTripBooking');
-                        Route::get('/history/{user}', 'getUserTripBookingHistory')->middleware('cacheResponse:300');
-                        Route::get('/{tripBooking}', 'show')->middleware('doNotCacheResponse');
+                        Route::get('/history/{user}', 'getUserTripBookingHistory');
+                        Route::get('/{tripBooking}', 'show');
                         Route::get('/payment/{reference}', 'getPaymentRef');
                     });
 
