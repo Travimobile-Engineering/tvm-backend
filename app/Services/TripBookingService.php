@@ -346,40 +346,6 @@ class TripBookingService
         return $this->success($booking, 'Booking cancelled successfully');
     }
 
-    // Old version (Not optimized & not used anymore)
-    public function getUserTripBookingHistory($request){
-        $user_id = $request->user;
-        $is_email = filter_var($request->user, FILTER_VALIDATE_EMAIL) ? true : false;
-
-        if($is_email){
-            $user = User::where('email', $request->user)->select('id')->get()->first();
-            $user_id = $user->id;
-        }
-
-        if($this->user->id != $user_id) return['message' => 'You do not have the permission to complete this request', 'code' => 400];
-
-        $history = TripBooking::with('trip')->where('user_id', $user_id)->get();
-        $hty = [];
-        foreach($history as $key => $item){
-            foreach($item->toArray() as $k => $value){
-                if($k != 'trip') $hty[$key][$k] = $value;
-                else{
-                    $departure_town = DB::table('route_subregions')->where('id', $history[$key][$k]['departure'])->first();
-                    $departure_state = DB::table('states')->where('id', $departure_town->state_id)->first();
-                    $destination_town = DB::table('route_subregions')->where('id', $history[$key][$k]['destination'])->first();
-                    $destination_state = DB::table('states')->where('id', $destination_town->state_id)->first();
-
-                    $hty[$key][$k]['departure'] = $departure_state->name.' > '.$departure_town->name;
-                    $hty[$key][$k]['destination'] = $destination_state->name.' > '.$destination_town->name;
-                    $hty[$key][$k]['departure_at'] = $history[$key][$k]['departure_at'];
-                    $hty[$key][$k]['estimated_arrival_at'] = $history[$key][$k]['estimated_arrival_at'];
-                }
-
-            }
-        }
-        return['data' => $hty];
-    }
-
     // New version, optimized and shorter
     public function userBookingHistory($request)
     {
