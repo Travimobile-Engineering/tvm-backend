@@ -55,7 +55,6 @@ class PremiumHireService
             ->whereRaw("JSON_LENGTH(seats) = ?", [$seatCount])
             ->with([
                 'user',
-                'premiumUpgrades',
                 'premiumUpgrades.vehicle.vehicleImages',
                 'premiumUpgrades.vehicle.premiumHireRatings',
             ])
@@ -69,8 +68,8 @@ class PremiumHireService
                     'company_logo' => $vehicle->user->profile_photo,
                     'ac' => $vehicle->ac,
                     'seats' => is_array($seats = $vehicle->seats) ? count($seats) : 0,
-                    'image' => $vehicle->vehicleImages()->value('url'),
-                    'rating' => $premium->vehicle->premiumHireRatings?->avg('rating') ?? 0,
+                    'image' => $vehicle->vehicleImages->value('url'),
+                    'rating' => $premium->vehicle?->premiumHireRatings?->avg('rating') ?? 0,
                 ];
             });
         });
