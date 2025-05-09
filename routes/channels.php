@@ -59,9 +59,10 @@ Broadcast::channel('trip.cancelled.{tripId}', fn (User $user, int $tripId): bool
 Broadcast::channel('passenger.trip.cancelled.{tripId}', PassengerTripCancelledChannel::class);
 
 // Booking cancelled notification (Passenger)
-Broadcast::channel('booking.cancelled.{bookingId}', fn (User $user, string $bookingId): bool =>
-    $user->id === TripBooking::where('booking_id', $bookingId)->user_id
-);
+Broadcast::channel('booking.cancelled.{bookingId}', function (User $user, string $bookingId): bool {
+    $booking = TripBooking::where('booking_id', $bookingId)->first();
+    return $booking && $user->id === $booking->user_id;
+});
 
 // Booking cancelled notification (Driver)
 Broadcast::channel('booking.cancelled.driver.{bookingId}', DriverBookingCancelledChannel::class);
