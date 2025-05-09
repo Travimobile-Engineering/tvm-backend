@@ -22,9 +22,15 @@ Broadcast::channel('trip.created.{userId}', fn (User $user, int $userId): bool =
 );
 
 // Trip departure notification
-Broadcast::channel('trip.departure.{tripId}', fn (User $user, int $tripId): bool =>
-    $user->id === Trip::findOrFail($tripId)->user_id
-);
+Broadcast::channel('trip.departure.{tripId}', function (User $user, int $tripId) {
+    $trip = Trip::with('tripBookings')->find($tripId);
+
+    if (!$trip) {
+        return false;
+    }
+
+    return $trip->tripBookings->pluck('user_id')->contains($user->id);
+});
 
 // Start trip notification (Driver)
 Broadcast::channel('trip.start.{tripId}', fn (User $user, int $tripId): bool =>
@@ -53,7 +59,7 @@ Broadcast::channel('trip.cancelled.{tripId}', fn (User $user, int $tripId): bool
 Broadcast::channel('passenger.trip.cancelled.{tripId}', PassengerTripCancelledChannel::class);
 
 // Booking cancelled notification (Passenger)
-Broadcast::channel('booking.cancelled.{bookingId}', fn (User $user, int $bookingId): bool =>
+Broadcast::channel('booking.cancelled.{bookingId}', fn (User $user, string $bookingId): bool =>
     $user->id === TripBooking::where('booking_id', $bookingId)->user_id
 );
 

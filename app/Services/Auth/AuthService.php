@@ -90,9 +90,9 @@ class AuthService
             return $this->error(null, 'User not found', 404);
         }
 
-        if ($user->verification_code !== 0 || ($user->verification_code_expires_at !== null && $user->verification_code_expires_at >= now())) {
-            return $this->error(null, "A verification code has already been sent. Please check your email.", 400);
-        }
+        // if ($user->verification_code !== 0 || ($user->verification_code_expires_at !== null && $user->verification_code_expires_at >= now())) {
+        //     return $this->error(null, "A verification code has already been sent. Please check your email.", 400);
+        // }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
 

@@ -81,10 +81,15 @@ Route::middleware('validate.header')
             });
 
         // User Set Security Answer
-        Route::post('/user/set-security-answer', [UserSettingsController::class, 'setSecurityAnswer']);
-        Route::post('/user/create-password', [UserSettingsController::class, 'createPassword']);
-        Route::get('/user/get-question', [UserSettingsController::class, 'getUserQuestion']);
-        Route::post('/user/verify-security-answer', [UserSettingsController::class, 'verifySecurityAnswer']);
+        Route::prefix('user')
+            ->controller(UserSettingsController::class)
+            ->group(function () {
+                Route::get('/settings/get/questions', 'getQuestions');
+                Route::post('/set-security-answer', 'setSecurityAnswer');
+                Route::post('/create-password', 'createPassword');
+                Route::get('/get-question', 'getUserQuestion');
+                Route::post('/verify-security-answer', 'verifySecurityAnswer');
+            });
 
         Route::middleware(JWTAuthenticator::class)
             ->group(function () {
@@ -124,12 +129,12 @@ Route::middleware('validate.header')
                         Route::get('/{user_id}/notifications', 'getNotifications');
                         Route::get('/{user_id}/notification/{id}', 'getNotification');
                         Route::patch('/notification', 'updateNotification');
+                        Route::post('/save-fcm-token', 'saveFCMToken');
 
                         //Settings
                         Route::prefix('settings')
                             ->controller(UserSettingsController::class)
                             ->group(function () {
-                                Route::get('/get/questions', 'getQuestions');
                                 Route::post('/change/security-answer', 'changeSecurityAnswer');
                             });
                     });
@@ -164,10 +169,10 @@ Route::middleware('validate.header')
                     ->controller(TripController::class)
                     ->group(function () {
                         Route::post('/create', 'store');
-                        Route::get('/popular', 'getPopularTrips')->middleware('cacheResponse:300');
+                        Route::get('/popular', 'getPopularTrips');
                         Route::post('/edit/{trip}', 'update');
-                        Route::get('/get-trips', 'getTrips')->middleware('cacheResponse:300');
-                        Route::get('/{trip}', 'getTrip')->middleware('doNotCacheResponse');
+                        Route::get('/get-trips', 'getTrips');
+                        Route::get('/{trip}', 'getTrip');
                         Route::post('/extend-time', 'tripExtendTime');
 
                         // Get Bus Stops
@@ -208,9 +213,8 @@ Route::middleware('validate.header')
 
                         Route::prefix('/passenger')
                             ->group(function () {
-                                Route::get('/get-trips', 'getAll')->middleware('cacheResponse:300');
-                                Route::get('/ticket/download/{booking_id}', 'downloadTicket')
-                                    ->middleware('doNotCacheResponse');
+                                Route::get('/get-trips', 'getAll');
+                                Route::get('/ticket/download/{booking_id}', 'downloadTicket');
                             });
                     });
 
@@ -281,8 +285,8 @@ Route::middleware('validate.header')
                         Route::post('/create', 'booking');
                         Route::post('/edit/{tripBooking}', 'update');
                         Route::post('/cancel', 'cancelTripBooking');
-                        Route::get('/history/{user}', 'getUserTripBookingHistory')->middleware('cacheResponse:300');
-                        Route::get('/{tripBooking}', 'show')->middleware('doNotCacheResponse');
+                        Route::get('/history/{user}', 'getUserTripBookingHistory');
+                        Route::get('/{tripBooking}', 'show');
                         Route::get('/payment/{reference}', 'getPaymentRef');
                     });
 

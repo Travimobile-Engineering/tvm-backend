@@ -2,6 +2,7 @@
 
 namespace App\Services\Trip;
 
+use App\DTO\NotificationDispatchData;
 use App\Enum\ManifestStatus;
 use App\Models\Trip;
 use App\Enum\TripType;
@@ -20,6 +21,7 @@ use App\Models\Manifest;
 use App\Models\TripBooking;
 use App\Models\TripLog;
 use App\Models\User;
+use App\Services\Notification\NotificationDispatcher;
 use App\Trait\DriverTrait;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -31,6 +33,10 @@ class TripService
     use HttpResponse, DriverTrait;
 
     const TRIP_CHARGE_AMOUNT = 1000;
+
+    public function __construct(
+        protected NotificationDispatcher $notifier
+    ) {}
 
     public function createOneTime($request)
     {
@@ -62,10 +68,24 @@ class TripService
                 'status' => TripStatus::UPCOMING,
             ]);
 
-            broadcast(new TripCreated(
-                type: 'trip_create',
-                message: 'Trip created successfully',
-                userId: $user->id,
+            $this->notifier->send(new NotificationDispatchData(
+                events: [
+                    [
+                        'class' => TripCreated::class,
+                        'payload' => [
+                            'type' => 'trip_create',
+                            'message' => 'Trip created successfully',
+                            'userId' => $user->id,
+                        ],
+                    ]
+                ],
+                recipients: $user,
+                title: 'Trip Created',
+                body: 'Your trip has been created successfully',
+                data: [
+                    'trip_id' => $trip->id,
+                    'type' => 'trip_created',
+                ]
             ));
 
             return $this->success($trip, "Created successfully", 201);
@@ -79,8 +99,10 @@ class TripService
     {
         $trip->load([
             'user.transitCompany',
-            'tripBookings.user',
-            'tripBookings.tripBookingPassengers',
+            'tripBookings' => function($query){
+                $query->where('status', 1)
+                ->with(['user', 'tripBookingPassengers']);
+            },
             'departureRegion.state',
             'destinationRegion.state',
             'manifest',
@@ -92,42 +114,6 @@ class TripService
         $data = new TripResource($trip);
 
         return $this->success($data, "Trip details");
-    }
-
-    // Old Code New code being used (getTrip)
-    public function getTripss($request)
-    {
-        $trips = Trip::where('trips.status', 1);
-
-        if (!empty($request->date) || !empty($request->time)) {
-            $date = $request->date ?? date('Y-m-d');
-            $time = $request->time ?? '00:00:00';
-            $departureAt = "$date $time";
-            $trips->where('departure_date', '>=', $departureAt);
-        }
-
-        if (!empty($request->departure)) {
-            $trips->where('departure', $request->departure);
-        }
-
-        if (!empty($request->destination)) {
-            $trips->where('destination', $request->destination);
-        }
-
-        $trips->join('route_subregions as from_subregion', 'trips.departure', '=', 'from_subregion.id')
-            ->join('route_subregions as to_subregion', 'trips.destination', '=', 'to_subregion.id')
-            ->join('vehicles', 'trips.vehicle_id', '=', 'vehicles.id')
-            ->select(
-                'trips.*',
-                'vehicles.name as vehicle_name',
-                'vehicles.ac as vehicle_has_ac',
-                'vehicles.plate_no as vehicle_plate_no',
-                'vehicles.color as vehicle_color',
-                'from_subregion.name as departure_town',
-                'to_subregion.name as destination_town'
-            );
-
-        return $this->success($trips->get(), "Trips");
     }
 
     /**
@@ -145,7 +131,7 @@ class TripService
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
-        $query = Trip::with([
+        $trips = Trip::with([
                 'user.transitCompany',
                 'vehicle',
                 'departureRegion.state',
@@ -154,32 +140,29 @@ class TripService
                 'departureRegion.parks',
                 'destinationRegion.parks',
             ])
-            ->where('status', TripStatus::UPCOMING);
-
-        if ($departure) {
-            $query->where('departure', $departure);
-        }
-
-        if ($destination) {
-            $query->where('destination', $destination);
-        }
-
-        if ($date && $time) {
-            $query->where(function ($q) use ($date, $time) {
-                $q->whereDate('departure_date', '>=', $date)
-                ->whereTime('departure_time', '>=', $time);
-            });
-        } elseif ($date) {
-            $query->whereDate('departure_date', $date);
-        }
-
-        $trips = $query->get();
+            ->where('status', TripStatus::UPCOMING)
+            ->when($departure, function ($query, $departure) {
+                $query->where('departure', $departure);
+            })
+            ->when($destination, function ($query, $destination) {
+                $query->where('destination', $destination);
+            })
+            ->when($date && $time, function ($query) use ($date, $time) {
+                $query->where(function ($q) use ($date, $time) {
+                    $q->whereDate('departure_date', '>=', $date)
+                    ->whereTime('departure_time', '>=', $time);
+                });
+            }, function ($query) use ($date) {
+                $query->when($date, function ($q) use ($date) {
+                    $q->whereDate('departure_date', $date);
+                });
+            })
+            ->get();
 
         $data = TripResource::collection($trips);
 
         return $this->success($data, "Available trips", 200);
     }
-
 
     public function getOneTime($id)
     {
@@ -303,10 +286,23 @@ class TripService
                 }
             }
 
-            broadcast(new TripCreated(
-                type: 'trip_create',
-                message: 'Trip created successfully',
-                userId: $user->id,
+            $this->notifier->send(new NotificationDispatchData(
+                events: [
+                    [
+                        'class' => TripCreated::class,
+                        'payload' => [
+                            'type' => 'trip_create',
+                            'message' => 'Trip created successfully',
+                            'userId' => $user->id,
+                        ],
+                    ]
+                ],
+                recipients: $user,
+                title: 'Trip Created',
+                body: 'Your trip has been created successfully',
+                data: [
+                    'type' => 'trip_created',
+                ]
             ));
 
             return $this->success(null, "Recurring trips created successfully", 201);
@@ -390,7 +386,7 @@ class TripService
 
     public function cancelTrip($request, $id)
     {
-        $trip = Trip::find($id);
+        $trip = Trip::with('user')->find($id);
 
         if (! $trip) {
             return $this->error(null, "Data not found!", 404);
@@ -402,13 +398,24 @@ class TripService
             'status' => TripStatus::CANCELLED,
         ]);
 
-        broadcast(new TripCancelled(
-            type: 'trip_cancelled',
-            message: 'Trip Cancelled',
-            tripId: $trip->id,
+        $this->notifier->send(new NotificationDispatchData(
+            events: [
+                [
+                    'class' => TripCancelled::class,
+                    'payload' => [
+                        'type' => 'trip_cancelled',
+                        'message' => 'Your trip has been cancelled.',
+                        'tripId' => $trip->id,
+                    ],
+                ]
+            ],
+            recipients: $trip?->user,
+            title: 'Trip Cancelled',
+            body: 'Your trip has been cancelled.',
+            data: [
+                'type' => 'trip_cancelled',
+            ]
         ));
-
-        ResponseCache::clear();
 
         return $this->success(null, "Trip Cancelled Successfully", 200);
     }
@@ -514,18 +521,41 @@ class TripService
 
             DB::commit();
 
-            broadcast(new TripStart(
-                type: 'trip_start',
-                message: 'Trip started successfully.',
-                tripId: $trip->id
-            ));
-            broadcast(new PassengerTripStart(
-                type: 'trip_start',
-                message: 'Trip started successfully.',
-                tripId: $trip->id
+            $passengerUsers = $trip->tripBookings
+                ->pluck('user')
+                ->filter()
+                ->unique('id');
+
+            $recipients = collect([$user])->merge($passengerUsers);
+
+            $this->notifier->send(new NotificationDispatchData(
+                events: [
+                    [
+                        'class' => TripStart::class,
+                        'payload' => [
+                            'type' => 'trip_start',
+                            'message' => 'Trip started successfully.',
+                            'tripId' => $trip->id
+                        ],
+                    ],
+                    [
+                        'class' => PassengerTripStart::class,
+                        'payload' => [
+                            'type' => 'trip_start',
+                            'message' => 'Trip started successfully.',
+                            'tripId' => $trip->id
+                        ],
+                    ],
+                ],
+                recipients: $recipients,
+                title: 'Trip Started',
+                body: 'The trip has begun.',
+                data: [
+                    'trip_id' => $trip->id,
+                    'type' => 'trip_started'
+                ]
             ));
 
-            ResponseCache::clear();
             return $this->success(null, "Trip Started Successfully", 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -663,50 +693,43 @@ class TripService
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
-        $query = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'tripBookings.user',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifest',
-                    'departureRegion.parks',
-                    'destinationRegion.parks',
-                ]
-            )
-            ->where('status', TripStatus::UPCOMING);
+        $trips = Trip::with([
+                'user.transitCompany',
+                'vehicle',
+                'tripBookings.user',
+                'departureRegion.state',
+                'destinationRegion.state',
+                'manifest',
+                'departureRegion.parks',
+                'destinationRegion.parks',
+            ])
+            ->where('status', TripStatus::UPCOMING)
+            ->when($type, function ($query, $type) {
+                $query->where('type', $type);
+            })
+            ->when($departure, function ($query, $departure) {
+                $query->where('departure', $departure);
+            })
+            ->when($destination, function ($query, $destination) {
+                $query->where('destination', $destination);
+            })
+            ->when($date && $time, function ($query) use ($date, $time) {
+                $query->where(function ($q) use ($date, $time) {
+                    $q->whereDate('departure_date', '>=', $date)
+                    ->whereTime('departure_time', '=', $time);
+                });
+            }, function ($query) use ($date) {
+                $query->when($date, function ($q) use ($date) {
+                    $q->whereDate('departure_date', $date);
+                });
+            })
+            ->get();
 
-        if ($type) {
-            $query->where('type', $type);
-        }
-
-        if ($departure) {
-            $query->where('departure', $departure);
-        }
-
-        if ($destination) {
-            $query->where('destination', $destination);
-        }
-
-        if ($date && $time) {
-            $query->where(function ($q) use ($date, $time) {
-                $q->whereDate('departure_date', '>=', $date)
-                ->whereTime('departure_time', '=', $time);
-            });
-        } elseif ($date) {
-            $query->whereDate('departure_date', $date);
-        }
-
-        $trips = $query->get();
-
-        if ($type === TripType::RECURRING) {
-            $data = RecurringTripResource::collection($trips);
-        } elseif ($type === TripType::ONETIME) {
-            $data = OneTimeTripResource::collection($trips);
-        } else {
-            $data = TripResource::collection($trips);
-        }
+        $data = match ($type) {
+            TripType::RECURRING => RecurringTripResource::collection($trips),
+            TripType::ONETIME   => OneTimeTripResource::collection($trips),
+            default             => TripResource::collection($trips),
+        };
 
         return $this->success($data, "All trips", 200);
     }

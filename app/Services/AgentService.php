@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTO\NotificationDispatchData;
 use App\DTO\SendCodeData;
 use App\Enum\MailingEnum;
 use App\Enum\ManifestStatus;
@@ -26,6 +27,7 @@ use App\Trait\HttpResponse;
 use App\Trait\TripBookingTrait;
 use Carbon\Carbon;
 use App\Notifications\PassengerTripNotification;
+use App\Services\Notification\NotificationDispatcher;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -38,6 +40,10 @@ class AgentService
     use HttpResponse, TripBookingTrait, DriverTrait;
 
     const TRIP_CHARGE_AMOUNT = 1000;
+
+    public function __construct(
+        protected NotificationDispatcher $notifier
+    ) {}
 
     public function profile()
     {
@@ -279,13 +285,24 @@ class AgentService
             'status' => TripStatus::CANCELLED,
         ]);
 
-        broadcast(new TripCancelled(
-            type: 'trip_cancelled',
-            message: 'Trip cancelled successfully',
-            tripId: $trip->id
+        $this->notifier->send(new NotificationDispatchData(
+            events: [
+                [
+                    'class' => TripCancelled::class,
+                    'payload' => [
+                        'type' => 'trip_cancelled',
+                        'message' => 'Your trip has been cancelled.',
+                        'tripId' => $trip->id,
+                    ],
+                ]
+            ],
+            recipients: $trip?->user,
+            title: 'Trip Cancelled',
+            body: 'Your trip has been cancelled.',
+            data: [
+                'type' => 'trip_cancelled',
+            ]
         ));
-
-        ResponseCache::clear();
 
         return $this->success($trip, 'Trip cancelled successfully');
     }
@@ -666,17 +683,41 @@ class AgentService
 
             DB::commit();
 
-            broadcast(new TripStart(
-                type: 'trip_start',
-                message: 'Trip started successfully.',
-                tripId: $trip->id
+            $passengerUsers = $trip->tripBookings
+                ->pluck('user')
+                ->filter()
+                ->unique('id');
+
+            $recipients = collect([$user])->merge($passengerUsers);
+
+            $this->notifier->send(new NotificationDispatchData(
+                events: [
+                    [
+                        'class' => TripStart::class,
+                        'payload' => [
+                            'type' => 'trip_start',
+                            'message' => 'Trip started successfully.',
+                            'tripId' => $trip->id
+                        ],
+                    ],
+                    [
+                        'class' => PassengerTripStart::class,
+                        'payload' => [
+                            'type' => 'trip_start',
+                            'message' => 'Trip started successfully.',
+                            'tripId' => $trip->id
+                        ],
+                    ],
+                ],
+                recipients: $recipients,
+                title: 'Trip Started',
+                body: 'The trip has begun.',
+                data: [
+                    'trip_id' => $trip->id,
+                    'type' => 'trip_started'
+                ]
             ));
-            broadcast(new PassengerTripStart(
-                type: 'trip_start',
-                message: 'Trip started successfully.',
-                tripId: $trip->id
-            ));
-            ResponseCache::clear();
+
             return $this->success(null, "Trip Started Successfully", 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -714,11 +755,34 @@ class AgentService
     {
         $trip = Trip::with(['tripBookings'])->findOrFail($request->trip_id);
 
-        foreach ($trip->tripBookings as $passenger) {
-            $passenger->notify(new PassengerTripNotification($trip, $request));
+        foreach ($trip->tripBookings as $booking) {
+            $booking->user?->notify(new PassengerTripNotification($trip, $request));
         }
 
-        broadcast(new TripDepartureNotification($trip));
+        $passengerUsers = $trip->tripBookings
+            ->pluck('user')
+            ->filter()
+            ->unique('id');
+
+        $this->notifier->send(new NotificationDispatchData(
+            events: [
+                [
+                    'class' => TripDepartureNotification::class,
+                    'payload' => [
+                        'type' => 'trip_departure',
+                        'message' => 'Your trip is about to depart.',
+                        'tripId' => $trip->id,
+                    ],
+                ]
+            ],
+            recipients: $passengerUsers,
+            title: 'Trip Departure',
+            body: 'Your trip is about to depart.',
+            data: [
+                'trip_id' => $trip->id,
+                'type' => 'trip_departure',
+            ]
+        ));
 
         return $this->success(null, "Notification sent successfully");
     }

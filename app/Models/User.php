@@ -65,6 +65,7 @@ class User extends Authenticatable implements JWTSubject
         'reason',
         'security_question_id',
         'security_answer',
+        'fcm_token',
     ];
 
     protected $guarded = [

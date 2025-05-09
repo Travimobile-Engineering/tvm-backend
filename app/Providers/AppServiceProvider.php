@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,5 +43,26 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(60)->by($request->ip())
                 : Limit::perMinute(20)->by($request->ip());
         });
+
+        $this->configureModels();
+        $this->configureUrl();
+    }
+
+    /**
+     * Configure the application's models.
+     */
+    private function configureModels(): void
+    {
+        Model::shouldBeStrict();
+        Model::unguard();
+        Model::automaticallyEagerLoadRelationships();
+    }
+
+    /**
+     * Configure the application's URL.
+     */
+    private function configureUrl(): void
+    {
+        URL::formatScheme('https');
     }
 }

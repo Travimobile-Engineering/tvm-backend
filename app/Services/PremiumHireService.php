@@ -56,12 +56,12 @@ class PremiumHireService
             ->with([
                 'user',
                 'premiumUpgrades.vehicle.vehicleImages',
-                'premiumHireRatings',
+                'premiumUpgrades.premiumHireRatings',
             ])
             ->get();
 
         $data = $vehicles->flatMap(function ($vehicle) {
-            return $vehicle->premiumUpgrades->map(function () use ($vehicle) {
+            return $vehicle->premiumUpgrades->map(function ($premium) use ($vehicle) {
                 return [
                     'vehicle_id' => $vehicle->id,
                     'vehicle_model' => $vehicle->model,
@@ -69,7 +69,7 @@ class PremiumHireService
                     'ac' => $vehicle->ac,
                     'seats' => is_array($seats = $vehicle->seats) ? count($seats) : 0,
                     'image' => $vehicle->vehicleImages()->value('url'),
-                    'rating' => $vehicle->premiumHireRatings?->avg('rating') ?? 0,
+                    'rating' => $premium->premiumHireRatings?->avg('rating') ?? 0,
                 ];
             });
         });
@@ -486,8 +486,8 @@ class PremiumHireService
         }
 
         $bookings = PremiumHireBooking::with([
-            'vehicle',
-        ])
+                'vehicle',
+            ])
             ->where('driver_id', $userId)
             ->where('status', $query)
             ->get();
