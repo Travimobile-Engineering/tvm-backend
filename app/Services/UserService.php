@@ -89,6 +89,21 @@ class UserService
 
         return $this->success(null, 'FCM token saved successfully');
     }
+
+    public function removeFCMToken($request)
+    {
+        $user = User::find($request->user_id);
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        $user->update([
+            'fcm_token' => null,
+        ]);
+
+        return $this->success(null, 'FCM token removed successfully');
+    }
 }
 
 

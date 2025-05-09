@@ -44,4 +44,13 @@ class UserController extends Controller
     {
         return $this->service->saveFCMToken($request);
     }
+
+    public function removeFCMToken(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        return $this->service->removeFCMToken($request);
+    }
 }
