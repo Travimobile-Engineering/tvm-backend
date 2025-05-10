@@ -26,7 +26,7 @@ class ProfileController extends Controller
     //method to get the authenticated user
     public function index()
     {
-        if ($this->user->user_category !== UserType::PASSENGER->value) {
+        if ($this->user && $this->user?->user_category !== UserType::PASSENGER->value) {
             return $this->error(null, "You are not allowed to access this resource", 403);
         }
 
