@@ -111,7 +111,7 @@ class UserService
         $auth = authUser();
         $user = User::with('announcements')->findOrFail($auth->id);
 
-        $announcements = Announcement::select('id', 'title', 'description', 'announcements.priority')
+        $announcements = Announcement::select('id', 'title', 'description', 'priority', 'image')
             ->orderBy('priority', 'desc')
             ->get();
 

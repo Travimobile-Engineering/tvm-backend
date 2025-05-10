@@ -10,6 +10,8 @@ class Announcement extends Model
         'title',
         'description',
         'priority',
+        'image',
+        'public_id',
     ];
 
     public function users()
