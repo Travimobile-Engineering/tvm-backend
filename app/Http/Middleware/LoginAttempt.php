@@ -35,7 +35,7 @@ class LoginAttempt
         $user = User::where($loginField, $loginValue)->first();
 
         if (!$user) {
-            return $this->error(null, "Invalid credentials", 401);
+            return $this->error(null, "User doesn't exist", 404);
         }
 
         if ($user->status->isBlocked() && $user->reason === UserStatus::FAILED_LOGIN_ATTEMPTS->value) {
