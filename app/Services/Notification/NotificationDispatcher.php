@@ -40,7 +40,8 @@ class NotificationDispatcher
                         $dto->body ?? 'You have a new notification.',
                         array_merge($dto->data, ['user_id' => $user->id])
                     );
-                } catch (\Throwable $e) {
+                } catch (\Exception $e) {
+                    
                     Log::error("FCM error for user {$user->id}: {$e->getMessage()}");
                 }
             }

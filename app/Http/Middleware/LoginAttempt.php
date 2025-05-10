@@ -35,7 +35,11 @@ class LoginAttempt
         $user = User::where($loginField, $loginValue)->first();
 
         if (!$user) {
-            return $this->error(null, 'Invalid credentials.', 401);
+            $data = [
+                'status' => UserStatus::BLOCKED->value,
+                'reason' => UserStatus::FAILED_LOGIN_ATTEMPTS->value,
+            ];
+            return $this->error($data, "Account has been {$data['status']}", 401);
         }
 
         if ($user->status->isBlocked() && $user->reason === UserStatus::FAILED_LOGIN_ATTEMPTS->value) {
@@ -56,8 +60,12 @@ class LoginAttempt
                 return $this->error(null, 'Your account has been blocked due to too many failed attempts. Please contact support.', 403);
             }
 
-            return $this->error(null, 'Invalid credentials.', 401);
+            $data = [
+                'status' => UserStatus::BLOCKED->value,
+                'reason' => UserStatus::FAILED_LOGIN_ATTEMPTS->value,
+            ];
 
+            return $this->error($data, "Account {$data['status']}", 401);
         }
 
         Cache::forget($key);
