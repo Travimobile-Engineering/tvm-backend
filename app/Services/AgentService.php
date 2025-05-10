@@ -63,6 +63,10 @@ class AgentService
             return $this->error(null, "User not found", 404);
         }
 
+        if ($user->user_category !== UserType::AGENT->value) {
+            return $this->error(null, "You are not allowed to access this resource", 403);
+        }
+
         $data = new AgentProfileResource($user);
 
         return $this->success($data, "Agent profile");

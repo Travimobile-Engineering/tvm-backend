@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\NotificationRequest;
 use App\Http\Requests\SaveFCMTokenRequest;
 use App\Services\UserService;
@@ -14,14 +15,8 @@ class UserController extends Controller
     )
     {}
 
-    public function changePassword(Request $request)
+    public function changePassword(ChangePasswordRequest $request)
     {
-        $request->validate([
-            'current_password' => ['required', 'string'],
-            'new_password' => ['required', 'string', 'min:8'],
-            'confirm_password' => ['required', 'same:new_password']
-        ]);
-
         return $this->service->changePassword($request);
     }
 
@@ -52,5 +47,20 @@ class UserController extends Controller
         ]);
 
         return $this->service->removeFCMToken($request);
+    }
+
+    public function getAnnouncements()
+    {
+        return $this->service->getAnnouncements();
+    }
+
+    public function markAsRead(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'announcement_id' => ['required', 'integer', 'exists:announcements,id'],
+        ]);
+
+        return $this->service->markAsRead($request);
     }
 }

@@ -138,6 +138,13 @@ Route::middleware('validate.header')
                             ->group(function () {
                                 Route::post('/change/security-answer', 'changeSecurityAnswer');
                             });
+
+                        // Announcement
+                        Route::prefix('announcement')
+                            ->group(function () {
+                                Route::get('/', 'getAnnouncements');
+                                Route::post('/read', 'markAsRead');
+                            });
                     });
 
                 Route::prefix('user/wallet')

@@ -2,6 +2,7 @@
 
 namespace App\Trait;
 
+use App\Models\Announcement;
 use App\Models\BusStop;
 use App\Models\Document;
 use App\Models\Notification;
@@ -144,6 +145,11 @@ trait UserRelationships
     public function securityQuestion()
     {
         return $this->hasOne(SecurityQuestion::class, 'id', 'security_question_id');
+    }
+
+    public function announcements()
+    {
+        return $this->belongsToMany(Announcement::class)->withPivot('status');
     }
 }
 

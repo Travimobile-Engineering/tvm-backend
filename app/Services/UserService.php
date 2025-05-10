@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Announcement;
 use App\Models\User;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\Hash;
@@ -103,6 +104,60 @@ class UserService
         ]);
 
         return $this->success(null, 'FCM token removed successfully');
+    }
+
+    public function getAnnouncements()
+    {
+        $auth = authUser();
+        $user = User::with('announcements')->findOrFail($auth->id);
+
+        $announcements = Announcement::select('id', 'title', 'description', 'announcements.priority')
+            ->orderBy('priority', 'desc')
+            ->get();
+
+        $announcements->each(function ($announcement) use ($user) {
+            $pivot = $user->announcements()->where('announcement_id', $announcement->id)->first();
+
+            if ($pivot) {
+                $announcement->read_status = $pivot->pivot->status;
+            } else {
+                $announcement->read_status = 'unread';
+            }
+        });
+
+        return $this->success($announcements, 'Announcements retrieved successfully');
+    }
+
+    public function markAsRead($request)
+    {
+        $user = User::with('announcements')->find($request->user_id);
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        $existingPivot = $user->announcements()->where('announcement_id', $request->announcement_id)->exists();
+
+        if ($existingPivot) {
+            $user->announcements()->updateExistingPivot(
+                $request->announcement_id,
+                [
+                    'status' => 'read',
+                    'updated_at' => now(),
+                ]
+            );
+        } else {
+            $user->announcements()->attach(
+                $request->announcement_id,
+                [
+                    'status' => 'read',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+        }
+
+        return $this->success(null, 'Announcement marked as read');
     }
 }
 
