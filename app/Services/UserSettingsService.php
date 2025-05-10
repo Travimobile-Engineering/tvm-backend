@@ -77,6 +77,7 @@ class UserSettingsService
         $user->update([
             'password' => Hash::make($request->password),
             'status' => UserStatus::ACTIVE,
+            'reason' => null,
         ]);
 
         Cache::forget("security_reset_{$user->email}");

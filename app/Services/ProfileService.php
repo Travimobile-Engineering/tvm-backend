@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enum\UserType;
 use App\Http\Resources\DriverProfileResource;
 use App\Models\User;
 use App\Trait\HttpResponse;
@@ -71,6 +72,10 @@ class ProfileService
                 'securityQuestion',
             ])
             ->findOrFail($auth->id);
+
+        if ($user->user_category !== UserType::DRIVER->value) {
+            return $this->error(null, "You are not allowed to access this resource", 403);
+        }
 
         $data = new DriverProfileResource($user);
 
