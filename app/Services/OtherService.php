@@ -41,7 +41,6 @@ class OtherService
     public function accountLookUp($request)
     {
         $url = config('services.paystack_base_url') . "/resolve?account_number=". $request->account_number . "&bank_code=". $request->bank_code;
-
         $token = config('app.paystack_secret_key');
 
         $headers = [
