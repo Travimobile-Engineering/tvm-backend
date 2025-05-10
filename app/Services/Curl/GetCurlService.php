@@ -35,8 +35,12 @@ class GetCurlService
 
         $result = json_decode($response, true);
 
-        if (!$result || !isset($result['data'])) {
-            throw new Exception('Invalid response from API');
+        if (!$result) {
+            throw new Exception('Invalid JSON response from API: ' . $response);
+        }
+
+        if (!isset($result['data'])) {
+            throw new Exception('API response does not contain "data" field: ' . json_encode($result));
         }
 
         return $result['data'];

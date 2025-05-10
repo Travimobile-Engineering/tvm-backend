@@ -51,7 +51,7 @@ class TripResource extends JsonResource
             'departure_id' => $this->departure,
             'destination_id' => $this->destination,
             'departure' => $this->departureRegion?->state?->name . ' > ' . $this->departureRegion?->name,
-            'departure_park' => $this->departureRegion?->parks->pluck('name')->unique()->join(', '),
+            'departure_park' => $this->departureRegion?->parks,
             'destination' => $this->destinationRegion?->state?->name . ' > ' . $this->destinationRegion?->name,
             'destination_park' => $this->destinationRegion?->parks->pluck('name')->unique()->join(', '),
             'departure_date' => $this->departure_date,
