@@ -109,7 +109,9 @@ class ManifestCheckerService
                     }
                 }
     
-                else $document_links[] = uploadFile($request, 'documents', 'watch_list')['url'];
+                else {
+                    $document_links[] = uploadFile($request, 'documents', 'watch_list')['url'];
+                }
             }
     
             $data = [
