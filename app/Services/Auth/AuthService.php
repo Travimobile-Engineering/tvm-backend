@@ -48,7 +48,7 @@ class AuthService
             'first_name' => $firstName,
             'last_name' => $lastName,
             'email' => $request->email,
-            'phone_number' => $request->phone_number ? formatPhoneNumber($request->phone_number) : null,
+            'phone_number' => $request->filled('phone_number') ? formatPhoneNumber($request->phone_number) : null,
             'verification_code' => $code,
             'verification_code_expires_at' => now()->addMinutes(10),
             'user_category' => $request->user_category,

@@ -299,8 +299,12 @@ if (! function_exists('decryptData')) {
 }
 
 if (! function_exists('formatPhoneNumber')) {
-    function formatPhoneNumber(string $phone_number): string
+    function formatPhoneNumber(string $phone_number): ?string
     {
+        if (empty($phone_number)) {
+            return null;
+        }
+
         $phone_number = preg_replace('/\D/', '', $phone_number);
 
         if (preg_match('/^234[789][01]\d{8}$/', $phone_number)) {
