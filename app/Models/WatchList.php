@@ -8,6 +8,7 @@ class WatchList extends Model
 {
     protected $fillable = [
         "full_name",
+        "category",
         "phone",
         "email",
         "dob",
@@ -16,7 +17,9 @@ class WatchList extends Model
         "investigation_officer",
         "io_contact_number",
         "alert_location",
+        "recent_location",
         "photo_url",
         "documents",
+        "observation",
     ];
 }
