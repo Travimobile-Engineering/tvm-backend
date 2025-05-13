@@ -67,7 +67,6 @@ class User extends Authenticatable implements JWTSubject
         'security_answer',
         'fcm_token',
     ];
-
     protected $guarded = [
         'remember_token',
         'email_verified',
@@ -125,15 +124,14 @@ class User extends Authenticatable implements JWTSubject
             'status' => UserStatus::class,
         ];
     }
-
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
-        static::creating(function ($trip) {
+        static::creating(function ($trip): void {
             $trip->uuid = Str::uuid();
         });
+        static::bootDeletesUserRelationships();
     }
-
     public function totalTrips(): Attribute
     {
         return Attribute::get(fn () => $this->trips()

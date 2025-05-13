@@ -286,14 +286,14 @@ if (! function_exists('mailSend')) {
 
 if (! function_exists('encryptData')) {
     function encryptData($data, $key = null) {
-        $key = $key ?? config('security.encoding_key');
+        $key ??= config('security.encoding_key');
         return Utility::encrypt($data, $key);
     }
 }
 
 if (! function_exists('decryptData')) {
     function decryptData($data, $key = null) {
-        $key = $key ?? config('security.encoding_key');
+        $key ??= config('security.encoding_key');
         return Utility::decrypt($data, $key);
     }
 }
@@ -336,7 +336,7 @@ if (! function_exists('sendCode')) {
                 );
             },
             'sms' => function () use ($payload) {
-                app(SMS::class)->sendSms(
+                app(abstract: SMS::class)->sendSms(
                     $payload->phone,
                     $payload->message
                 );
