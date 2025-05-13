@@ -12,12 +12,10 @@ use App\Mail\ConfirmationEmail;
 class AuthService
 {
     use HttpResponse;
-
     public function __construct(
         protected SMS $smsService
     )
     {}
-
     public function accountSignUp($request)
     {
         $fullName = trim($request->input('full_name'));
@@ -48,7 +46,7 @@ class AuthService
             'first_name' => $firstName,
             'last_name' => $lastName,
             'email' => $request->email,
-            'phone_number' => formatPhoneNumber($request->phone_number),
+            'phone_number' => $request->filled('phone_number') ? formatPhoneNumber($request->phone_number) : null,
             'verification_code' => $code,
             'verification_code_expires_at' => now()->addMinutes(10),
             'user_category' => $request->user_category,
@@ -59,7 +57,6 @@ class AuthService
 
         return $this->success(null, "User created successfully", 201);
     }
-
     public function verifyAcount($request)
     {
         $user = User::where('verification_code', $request->code)
@@ -89,10 +86,6 @@ class AuthService
         if (! $user) {
             return $this->error(null, 'User not found', 404);
         }
-
-        // if ($user->verification_code !== 0 || ($user->verification_code_expires_at !== null && $user->verification_code_expires_at >= now())) {
-        //     return $this->error(null, "A verification code has already been sent. Please check your email.", 400);
-        // }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
 
