@@ -63,4 +63,13 @@ class UserController extends Controller
 
         return $this->service->markAsRead($request);
     }
+
+    public function deleteAccount(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        return $this->service->deleteAccount($request);
+    }
 }

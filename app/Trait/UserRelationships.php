@@ -19,6 +19,7 @@ use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\TripPayment;
 use App\Models\UnavailableDate;
+use App\Models\User;
 use App\Models\UserBank;
 use App\Models\UserPin;
 use App\Models\UserTransferReceipient;
@@ -150,6 +151,35 @@ trait UserRelationships
     public function announcements()
     {
         return $this->belongsToMany(Announcement::class)->withPivot('status');
+    }
+
+    public static function bootDeletesUserRelationships(): void
+    {
+        static::deleting(function (User $user) {
+            $user->trips()->delete();
+            $user->tripBookings()->delete();
+            $user->transitCompany()?->delete();
+            $user->vehicle()?->delete();
+            $user->documents()->delete();
+            $user->busStops()->delete();
+            $user->userBank()?->delete();
+            $user->userPin()?->delete();
+            $user->userTransferReceipient()?->delete();
+            $user->userWithdrawLogs()->delete();
+            $user->transactions()->delete();
+            $user->userTripPayments()->delete();
+            $user->driverTripPayments()->delete();
+            $user->paymentLogs()->delete();
+            $user->premiumUpgrades()->delete();
+            $user->unavailableDates()->delete();
+            $user->premiumHireBookings()->delete();
+            $user->driverPremiumHireBookings()->delete();
+            $user->premiumHireBookingPassengers()->delete();
+            $user->premiumHireManifests()->delete();
+            $user->premiumHireRatings()->delete();
+            $user->userNotifications()->delete();
+            $user->announcements()->detach();
+        });
     }
 }
 

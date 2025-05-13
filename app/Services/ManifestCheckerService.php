@@ -90,50 +90,69 @@ class ManifestCheckerService
         return $this->success($incident, 'incident retrieved successfully');
     }
 
-    public function addUpdateWatchList($request, $action = 'create'){
-
-        $document_links = [];
-
-        if($request->hasFile('photo')){
-            $photo_url = uploadFile($request, 'photo', 'watch_list')['url'];
-        }
-
-        if($request->hasFile('documents')){
-
-            $documents = $request->documents;
-            if(is_array($documents)){
-                foreach($documents as $doc){
-                    $response = $request->file($doc)->storeOnCloudinary('watch_list');
-                    $document_links[] = $response->getSecurePath();
+    public function addUpdateWatchList($request, bool $update = false){
+        
+        try{
+            $document_links = [];
+    
+            if($request->hasFile('photo')){
+                $photo_url = uploadFile($request, 'photo', 'watch_list')['url'];
+            }
+    
+            if($request->hasFile('documents')){
+    
+                $documents = $request->documents;
+                if(is_array($documents)){
+                    foreach($documents as $doc){
+                        $response = $request->file($doc)->storeOnCloudinary('watch_list');
+                        $document_links[] = $response->getSecurePath();
+                    }
+                }
+    
+                else {
+                    $document_links[] = uploadFile($request, 'documents', 'watch_list')['url'];
                 }
             }
+    
+            $data = [
+                "full_name" => $request->full_name,
+                "category" => $request->category,
+                "phone" => $request->phone,
+                "email" => $request->email,
+                "dob" => $request->dob,
+                "state_of_origin" => $request->state_of_origin,
+                "nin" => $request->nin,
+                "investigation_officer" => $request->investigation_officer,
+                "io_contact_number" => $request->io_contact_number,
+                "alert_location" => $request->alert_location,
+                "recent_location" => $request->recent_location,
+                "observation" => $request->observation,
+                "photo_url" => $photo_url ?? '',
+                "documents" => json_encode($document_links),
+            ];
 
-            else $document_links[] = uploadFile($request, 'documents', 'watch_list')['url'];
+            $record = WatchList::create($data);
+            return $this->success($record, "Record successfully added to watch list");
         }
-
-        $data = [
-            "full_name" => $request->full_name,
-            "phone" => $request->phone,
-            "email" => $request->email,
-            "dob" => $request->dob,
-            "state_of_origin" => $request->state_of_origin,
-            "nin" => $request->nin,
-            "investigation_officer" => $request->investigation_officer,
-            "io_contact_number" => $request->io_contact_number,
-            "alert_location" => $request->alert_location,
-            "photo_url" => $photo_url ?? '',
-            "documents" => json_encode($document_links),
-        ];
-
-        if($action == 'update') {
-            $record = WatchList::find($request->id)->update($request->all());
-            if($record) return $this->success(null, "Record updated successfully");
-            return $this->error(null, "Failed to update record");
+        catch(\Exception $e){
+            return $this->error(null, $e->getMessage());
         }
+    }
 
-        $record = WatchList::create($data);
-        if($record) return $this->success($record, "Record successfully added to watch list");
-        return $this->error(null, "Failed to add record to watch list");
+    public function updateWatchList($request){
+        
+        try{
+            $columns = Schema::getColumnListing('watch_lists');
+            $data = array_filter($request->all(), function($key) use($columns){
+                return in_array($key, $columns);
+            }, ARRAY_FILTER_USE_KEY);
+
+            WatchList::find($request->id)->update($data);
+            return $this->success(null, "Record updated successfully");
+        }
+        catch(\Exception $e){
+            return $this->error(null, $e->getMessage());
+        }
     }
 
     public function getWatchListRecords(){

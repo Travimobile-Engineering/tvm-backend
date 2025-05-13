@@ -159,6 +159,19 @@ class UserService
 
         return $this->success(null, 'Announcement marked as read');
     }
+
+    public function deleteAccount($request)
+    {
+        $user = User::find($request->user_id);
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        $user->delete();
+
+        return $this->success(null, 'Account deleted successfully');
+    }
 }
 
 
