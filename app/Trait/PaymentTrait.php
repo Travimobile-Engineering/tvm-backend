@@ -328,7 +328,7 @@ trait PaymentTrait
         } catch (\Exception $e) {
             DB::rollBack();
             Log::info("message: " . $e->getMessage());
-            throw $e->getMessage();
+            return $e->getMessage();
         }
     }
 
