@@ -131,6 +131,7 @@ Route::middleware('validate.header')
                         Route::patch('/notification', 'updateNotification');
                         Route::post('/save-fcm-token', 'saveFCMToken');
                         Route::patch('remove-fcm-token', 'removeFCMToken');
+                        Route::delete('/delete-account', 'deleteAccount');
 
                         //Settings
                         Route::prefix('settings')
