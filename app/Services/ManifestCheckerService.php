@@ -125,6 +125,7 @@ class ManifestCheckerService
                 "investigation_officer" => $request->investigation_officer,
                 "io_contact_number" => $request->io_contact_number,
                 "alert_location" => $request->alert_location,
+                "reason" => $request->reason,
                 "recent_location" => $request->recent_location,
                 "observation" => $request->observation,
                 "photo_url" => $photo_url ?? '',
