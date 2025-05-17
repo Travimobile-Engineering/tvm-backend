@@ -441,6 +441,7 @@ class AgentService
         $users = User::select('id', 'first_name', 'last_name', 'profile_photo')
             ->with('vehicle:id,user_id,plate_no,model,color')
             ->where('user_category', UserType::DRIVER->value)
+            ->where('is_premium_driver', false)
             ->where(function ($query) use ($search) {
                 $query->where('phone_number', $search)
                     ->orWhere('first_name', 'LIKE', "%{$search}%")

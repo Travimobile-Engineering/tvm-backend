@@ -66,7 +66,9 @@ class User extends Authenticatable implements JWTSubject
         'security_question_id',
         'security_answer',
         'fcm_token',
+        'is_premium_driver',
     ];
+
     protected $guarded = [
         'remember_token',
         'email_verified',
@@ -122,6 +124,7 @@ class User extends Authenticatable implements JWTSubject
             'inbox_notifications' => 'boolean',
             'email_notifications' => 'boolean',
             'status' => UserStatus::class,
+            'is_premium_driver' => 'boolean',
         ];
     }
     protected static function boot(): void
