@@ -17,6 +17,7 @@ class WatchList extends Model
         "investigation_officer",
         "io_contact_number",
         "alert_location",
+        "reason",
         "recent_location",
         "photo_url",
         "documents",
