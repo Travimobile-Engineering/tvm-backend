@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('watchlists', function (Blueprint $table) {
+        Schema::table('watch_lists', function (Blueprint $table) {
             $table->text('reason')->nullable()->after('alert_location');
         });
     }
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('watchlists', function (Blueprint $table) {
+        Schema::table('watch_lists', function (Blueprint $table) {
             $table->dropColumn('reason');
         });
     }
