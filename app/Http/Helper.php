@@ -15,10 +15,11 @@ use Illuminate\Database\Eloquent\Model;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Log;
 use ImageKit\ImageKit;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 if (!function_exists('authUser')) {
     function authUser() {
-        return Auth::guard('api')->user();
+        return Auth::guard('api')->user() ?? (object) request()->get('auth_user') ?? JWTAuth::user();
     }
 }
 

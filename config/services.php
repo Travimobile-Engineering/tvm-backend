@@ -67,4 +67,9 @@ return [
         'endpoint_key' => env('IMAGEKIT_URL_ENDPOINT'),
     ],
 
+    'auth_service' => [
+        'url' => env('AUTH_SERVICE_URL'),
+        'name' => 'transport',
+    ],
+
 ];

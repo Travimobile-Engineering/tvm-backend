@@ -127,6 +127,7 @@ class User extends Authenticatable implements JWTSubject
             'is_premium_driver' => 'boolean',
         ];
     }
+
     protected static function boot(): void
     {
         parent::boot();
@@ -135,6 +136,7 @@ class User extends Authenticatable implements JWTSubject
         });
         static::bootDeletesUserRelationships();
     }
+
     public function totalTrips(): Attribute
     {
         return Attribute::get(fn () => $this->trips()

@@ -91,7 +91,7 @@ Route::middleware('validate.header')
                 Route::post('/verify-security-answer', 'verifySecurityAnswer');
             });
 
-        Route::middleware(JWTAuthenticator::class)
+        Route::middleware(['auth.micro'])
             ->group(function () {
                 Route::prefix('profile')
                     ->controller(ProfileController::class)

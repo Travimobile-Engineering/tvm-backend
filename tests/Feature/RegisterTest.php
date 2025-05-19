@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class RegisterTest extends TestCase
 {
     use RefreshDatabase;
-    
+
     protected $headers;
 
     public function setUp(): void{
@@ -22,7 +22,6 @@ class RegisterTest extends TestCase
     }
     public function test_account_signup(): void
     {
-
         $data = [
             'full_name' => 'Test User',
             'email' => 'testuser@example.com',
@@ -37,7 +36,7 @@ class RegisterTest extends TestCase
             'first_name' => 'Test',
             'email' => 'testuser@example.com',
         ]);
-        
+
         $response->assertStatus(201);
     }
 
@@ -47,14 +46,14 @@ class RegisterTest extends TestCase
         $user = User::where('email', 'testuser@example.com')
             ->where('verification_code_expires_at', '>=', now())
             ->first();
-        
+
         $response = $this->postJson('/api/auth/verify/account', ['code' => $user->verification_code], $this->headers);
-        
+
         $this->assertDatabaseHas('users', [
             'email' => 'testuser@example.com',
             'email_verified' => 1,
         ]);
-        
+
         $response->assertStatus(200);
     }
 }
