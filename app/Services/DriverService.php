@@ -247,7 +247,7 @@ class DriverService
             ->findOrFail($request->user_id);
 
         if (!$user->vehicle) {
-            return $this->error('Vehicle not found', 404);
+            return $this->error(null, 'Vehicle not found', 404);
         }
 
         $user->vehicle()->update([
@@ -257,7 +257,7 @@ class DriverService
         return $this->success(null, "Saved successfully");
     }
 
-    public function vehicleReq($request)
+    public function premiumUpgrade($request)
     {
         try {
             DB::beginTransaction();
@@ -269,9 +269,7 @@ class DriverService
                 ])
                 ->findOrFail($request->user_id);
 
-            $vehicle = $user->vehicle;
-
-            if (!$vehicle) {
+            if (! $user->vehicle) {
                 return $this->error(null, 'Vehicle not found', 404);
             }
 
@@ -279,48 +277,26 @@ class DriverService
                 return $this->error(null, 'You already have a premium upgrade', 400);
             }
 
-            $vehicle->update([
+            $user->update([
+                'is_premium_driver' => true,
+            ]);
+
+            $user->vehicle->update([
                 'ac' => $request->is_ac_available,
             ]);
 
             $user->premiumUpgrades()->create([
-                'vehicle_id' => $vehicle->id,
+                'vehicle_id' => $user->vehicle->id,
                 'management_type' => $request->management_type,
                 'status' => PremiumUpgradeStatus::PENDING,
             ]);
 
             if ($request->hasFile('vehicle_interior_images')) {
-                $interiorImages = uploadFilesBatch(
-                    $request->file('vehicle_interior_images'),
-                    'driver/vehicle/interior'
-                );
-
-                foreach ($interiorImages as $image) {
-                    if ($image['url'] !== null) {
-                        $vehicle->vehicleImages()->create([
-                            'type' => 'interior',
-                            'url' => $image['url'],
-                            'public_id' => $image['public_id'],
-                        ]);
-                    }
-                }
+                $this->uploadInteriorImages($request, $user);
             }
 
             if ($request->hasFile('vehicle_exterior_images')) {
-                $exteriorImages = uploadFilesBatch(
-                    $request->file('vehicle_exterior_images'),
-                    'driver/vehicle/exterior'
-                );
-
-                foreach ($exteriorImages as $image) {
-                    if ($image['url'] !== null) {
-                        $vehicle->vehicleImages()->create([
-                            'type' => 'exterior',
-                            'url' => $image['url'],
-                            'public_id' => $image['public_id'],
-                        ]);
-                    }
-                }
+                $this->uploadExteriorImages($request, $user);
             }
 
             DB::commit();
@@ -335,13 +311,15 @@ class DriverService
     {
         $user = User::with('vehicle')->find($request->user_id);
 
-        if (!$user) {
+        if (! $user) {
             return $this->error(null, 'User not found', 404);
         }
 
-        $vehicle = Vehicle::findOrFail($request->vehicle_id);
+        if (! $user->vehicle || $user->vehicle->id != $request->vehicle_id) {
+            return $this->error(null, 'Vehicle does not belong to user', 403);
+        }
 
-        $vehicle->update([
+        $user->vehicle->update([
             'description' => $request->description,
         ]);
 
@@ -353,7 +331,7 @@ class DriverService
         $user = User::with(['vehicle', 'unavailableDates'])->findOrFail($request->user_id);
 
         if (!$user->vehicle) {
-            return $this->error('Vehicle not found', 404);
+            return $this->error(null, 'Vehicle not found', 404);
         }
 
         $user->update([

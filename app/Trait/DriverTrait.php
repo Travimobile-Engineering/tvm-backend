@@ -66,6 +66,42 @@ trait DriverTrait
         ]);
     }
 
+    protected function uploadInteriorImages($request, $user)
+    {
+        $interiorImages = uploadFilesBatch(
+            $request->file('vehicle_interior_images'),
+            'driver/vehicle/interior'
+        );
+
+        foreach ($interiorImages as $image) {
+            if ($image['url'] !== null) {
+                $user->vehicle->vehicleImages()->create([
+                    'type' => 'interior',
+                    'url' => $image['url'],
+                    'public_id' => $image['public_id'],
+                ]);
+            }
+        }
+    }
+
+    protected function uploadExteriorImages($request, $user)
+    {
+        $exteriorImages = uploadFilesBatch(
+            $request->file('vehicle_exterior_images'),
+            'driver/vehicle/exterior'
+        );
+
+        foreach ($exteriorImages as $image) {
+            if ($image['url'] !== null) {
+                $user->vehicle->vehicleImages()->create([
+                    'type' => 'exterior',
+                    'url' => $image['url'],
+                    'public_id' => $image['public_id'],
+                ]);
+            }
+        }
+    }
+
 }
 
 
