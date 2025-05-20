@@ -28,14 +28,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->reportable(function (Throwable $e): void {
-            Log::channel('slack')->error($e->getMessage(),[
-                'file' => $e->getFile(),
-                'Line' => $e->getLine(),
-                'code' => $e->getCode(),
-                'url' => request()->fullUrl(),
-            ]);
-        });
+        // $exceptions->reportable(function (Throwable $e): void {
+        //     Log::channel('slack')->error($e->getMessage(),[
+        //         'file' => $e->getFile(),
+        //         'Line' => $e->getLine(),
+        //         'code' => $e->getCode(),
+        //         'url' => request()->fullUrl(),
+        //     ]);
+        // });
 
         $exceptions->renderable(function (NotFoundHttpException $e, $request) {
             // Handle JSON request 404's

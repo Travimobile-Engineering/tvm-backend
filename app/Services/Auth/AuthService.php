@@ -16,6 +16,7 @@ class AuthService
         protected SMS $smsService
     )
     {}
+
     public function accountSignUp($request)
     {
         $fullName = trim($request->input('full_name'));
@@ -57,6 +58,7 @@ class AuthService
 
         return $this->success(null, "User created successfully", 201);
     }
+
     public function verifyAcount($request)
     {
         $user = User::where('verification_code', $request->code)

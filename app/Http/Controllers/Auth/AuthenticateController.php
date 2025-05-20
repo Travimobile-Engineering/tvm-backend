@@ -27,9 +27,9 @@ class AuthenticateController extends Controller
     }
 
     //logout method to invalidate the token
-    public function logout()
+    public function logout(Request $request)
     {
-        $this->service->logout();
+        return $this->service->logout($request);
     }
 
     // New auth login for users

@@ -10,6 +10,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Exceptions\JWTException;
+use Illuminate\Support\Facades\Http;
 
 class LoginService
 {
@@ -56,14 +57,27 @@ class LoginService
         return $result;
     }
 
-    public function logout(){
-        try{
-            $user = JWTAuth::parseToken()->authenticate();
-            JWTAuth::invalidate(JWTAuth::getToken());
+    public function logout($request){
+        $token = $request->bearerToken();
+        $service = config('services.auth_service.name');
+
+        if (! $token) {
+            return $this->error(null, 'Token missing', 401);
         }
-        catch(JWTException $e){
-            return response()->json(['error' => 'Token is invalid or expired'], 400);
+
+        $response = Http::withToken($token)
+            ->withHeaders([
+                'X-App-Service' => $service,
+                config('security.auth_header_key') => config('security.auth_header_value'),
+            ])
+            ->post(config('services.auth_service.url') . '/logout');
+
+        $data = $response->json();
+
+        if ($data['status']) {
+            return $this->success(null, $data['message']);
         }
-        return response()->json(['message' => 'Logout successful']);
+
+        return $this->error(null, $data['message'] ?? 'Unknown error', 500);
     }
 }

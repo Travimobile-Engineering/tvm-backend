@@ -189,7 +189,6 @@ class TripService
 
         return $this->success($data, "Trip found", 200);
     }
-
     public function getUserOneTimes($userId)
     {
         $trips = Trip::with(
@@ -242,7 +241,6 @@ class TripService
         }
 
         try {
-
             $user = User::with(['transitCompany', 'vehicle'])->findOrFail($request->user_id);
 
             $startDate = Carbon::parse($request->start_date);

@@ -47,7 +47,7 @@ class ConfirmationEmail extends Mailable
     {
         return new Content(
             view: 'email.confirmation',
-            with: ['name' => $this->name, 'verification_code' =>$this->verification_code]
+            with: ['name' => $this->name, 'verification_code' => $this->verification_code]
         );
     }
 

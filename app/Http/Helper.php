@@ -19,7 +19,11 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 if (!function_exists('authUser')) {
     function authUser() {
-        return Auth::guard('api')->user() ?? (object) request()->get('auth_user') ?? JWTAuth::user();
+        $user = request()->get('auth_user')
+            ?? Auth::guard('api')->user()
+            ?? JWTAuth::user();
+
+        return (object) $user;
     }
 }
 

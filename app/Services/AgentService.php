@@ -63,7 +63,7 @@ class AgentService
             return $this->error(null, "User not found", 404);
         }
 
-        if ($user->user_category !== UserType::AGENT->value) {
+        if ($auth->user_category !== UserType::AGENT->value) {
             return $this->error(null, "You are not allowed to access this resource", 403);
         }
 

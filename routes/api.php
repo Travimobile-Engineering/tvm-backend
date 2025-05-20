@@ -101,7 +101,7 @@ Route::middleware('validate.header')
                         Route::get('/driver', 'getDriverProfile');
                     });
 
-                Route::get('/auth/logout', [AuthenticateController::class, 'logout']);
+                Route::post('/auth/logout', [AuthenticateController::class, 'logout']);
 
                 Route::prefix('transit-company')
                     ->controller(TransitCompanyController::class)
@@ -357,7 +357,7 @@ Route::middleware('validate.header')
             });
 
         Route::prefix('agent')
-            ->middleware('agent.auth')
+            ->middleware(['auth.micro', 'agent.auth'])
             ->controller(AgentController::class)
             ->group(function () {
                 // Profile & Account Management

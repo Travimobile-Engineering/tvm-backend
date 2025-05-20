@@ -21,7 +21,7 @@ class AuthenticateViaAuthService
         $token = $request->bearerToken();
         $service = config('services.auth_service.name');
 
-        if (!$request->hasHeader('X-App-Service')) {
+        if (! $request->hasHeader('X-App-Service')) {
             return $this->error(null, 'Service name not configured', 500);
         }
 
@@ -34,17 +34,19 @@ class AuthenticateViaAuthService
                 'X-App-Service' => $service,
                 config('security.auth_header_key') => config('security.auth_header_value'),
             ])
-            ->get(config('services.auth_service.url'));
+            ->get(config('services.auth_service.url') . '/validate');
 
         $data = $response->json();
 
-        logger()->info($data['data']['user']);
+        if (!$data['status']) {
+            return $this->error(null, "Unauthenticated! {$data['message']}", 401);
+        }
 
         if ($data['data']['valid']) {
             $request->merge(['auth_user' => $data['data']['user']]);
             return $next($request);
         }
 
-        return $this->error(null, 'Unauthorized', 401);
+        return $this->error(null, "Unauthorized! {$data['message']}", 401);
     }
 }
