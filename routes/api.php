@@ -241,7 +241,7 @@ Route::middleware('validate.header')
                         Route::put('/edit-union', 'updateUnion');
 
                         Route::post('/setup-vehicle', 'setupVehicle');
-                        Route::post('/vehicle-requirements', 'vehicleReq');
+                        Route::post('/vehicle-requirements', 'premiumUpgrade');
                         Route::put('/edit-description', 'editDescription');
                         Route::post('/set-availability', 'setAvailability');
                         Route::put('/vehilce/update-layout', 'updateLayout');

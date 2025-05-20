@@ -71,9 +71,9 @@ class DriverController extends Controller
         return $this->service->setupVehicle($request);
     }
 
-    public function vehicleReq(VehicleRequirementRequest $request)
+    public function premiumUpgrade(VehicleRequirementRequest $request)
     {
-        return $this->service->vehicleReq($request);
+        return $this->service->premiumUpgrade($request);
     }
 
     public function editDescription(Request $request)
