@@ -294,7 +294,7 @@ trait PaymentTrait
                 'lat' => $lat,
                 'pickup_location' => $pickup_location,
                 'dropoff_location' => $dropoff_location,
-                'bus_stops' => $busStops,
+                'bus_stops' => $busStops ?? [],
                 'luggage' => $luggage,
                 'amount' => $formattedAmount,
                 'payment_type' => $paymentType,
@@ -325,10 +325,9 @@ trait PaymentTrait
             ]);
 
             DB::commit();
-        } catch (\Exception $e) {
+        } catch (\Throwable $th) {
             DB::rollBack();
-            Log::info("message: " . $e->getMessage());
-            return $e->getMessage();
+            throw $th;
         }
     }
 
