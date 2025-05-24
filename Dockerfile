@@ -40,6 +40,8 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+COPY ./custom.ini /usr/local/etc/php/conf.d/custom.ini
+
 COPY ./ ./
 
 COPY ./database  ./database
