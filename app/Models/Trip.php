@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Facades\UserFacade;
 use App\Models\Vehicle\Vehicle;
 use App\Trait\ClearsResponseCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -69,10 +70,15 @@ class Trip extends Model
         ];
     }
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    // public function user()
+    // {
+    //     return $this->belongsTo(User::class);
+    // }
+
+    // public function getUserAttribute()
+    // {
+    //     return UserFacade::find($this->user_id);
+    // }
 
     public function vehicle()
     {

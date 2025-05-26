@@ -384,3 +384,20 @@ if (!function_exists('hasSetSecurityAnswer')) {
     }
 }
 
+if (!function_exists(function: 'toObject')) {
+    function toObject($array): object
+    {
+        if (!is_array($array)) {
+            return (object) [];
+        }
+
+        $object = new \stdClass();
+        foreach ($array as $key => $value) {
+            $object->$key = is_array($value) ? toObject($value) : $value;
+        }
+
+        return $object;
+    }
+
+}
+

@@ -11,6 +11,7 @@ use App\Events\PassengerTripStart;
 use App\Events\TripCancelled;
 use App\Events\TripCreated;
 use App\Events\TripStart;
+use App\Facades\UserFacade;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\TripResource;
@@ -132,7 +133,7 @@ class TripService
         $destination = request()->query('destination');
 
         $trips = Trip::with([
-                'user.transitCompany',
+                'transitCompany',
                 'vehicle',
                 'departureRegion.state',
                 'destinationRegion.state',
@@ -158,6 +159,12 @@ class TripService
                 });
             })
             ->get();
+
+        $userIds = $trips->pluck('user_id')->unique()->values()->all();
+        $users = UserFacade::batchFind($userIds);
+        foreach ($trips as $trip) {
+            $trip->user = toObject($users[(string) $trip->user_id] ?? null);
+        }
 
         $data = TripResource::collection($trips);
 

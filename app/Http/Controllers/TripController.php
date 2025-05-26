@@ -49,8 +49,9 @@ class TripController extends Controller
         return $this->service->editOneTime($request, $id);
     }
 
-    public function getTrips(Request $request){
-        return $this->service->getTrips($request);
+    public function getTrips()
+    {
+        return $this->service->getTrips();
     }
 
     public function createRecurring(TransportRecurringRequest $request)

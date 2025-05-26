@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Facades\UserFacade;
 use Illuminate\Database\Eloquent\Model;
 
 class Document extends Model
@@ -18,8 +19,13 @@ class Document extends Model
         'status',
     ];
 
-    public function user()
+    // public function user()
+    // {
+    //     return $this->belongsTo(User::class);
+    // }
+
+    public function getUserAttribute()
     {
-        return $this->belongsTo(User::class);
+        return UserFacade::find($this->user_id);
     }
 }

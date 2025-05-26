@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Trait\HttpResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class AuthenticateViaAuthService
@@ -29,21 +30,31 @@ class AuthenticateViaAuthService
             return $this->error(null, 'Token missing', 401);
         }
 
-        $response = Http::withToken($token)
-            ->withHeaders([
-                'X-App-Service' => $service,
-                config('security.auth_header_key') => config('security.auth_header_value'),
-            ])
-            ->get(config('services.auth_service.url') . '/validate');
+        $cacheKey = 'auth_token_valid:' . sha1($token);
 
-        $data = $response->json();
+        $data = Cache::get($cacheKey);
 
-        if (!$data['status']) {
+        if (!$data) {
+            $response = Http::withToken($token)
+                ->withHeaders([
+                    'X-App-Service' => $service,
+                    config('security.auth_header_key') => config('security.auth_header_value'),
+                ])
+                ->get(config('services.auth_service.url') . '/auth/validate');
+
+            $data = $response->json();
+
+            if ($response->successful() && ($data['data']['valid'] ?? false)) {
+                Cache::put($cacheKey, $data, now()->addMinutes(2));
+            }
+        }
+
+        if (!($data['status'] ?? false)) {
             return $this->error(null, "Unauthenticated! {$data['message']}", 401);
         }
 
-        if ($data['data']['valid']) {
-            $request->merge(['auth_user' => $data['data']['user']]);
+        if (($data['data']['valid'] ?? false)) {
+            $request->merge(['auth_user' => $data['data']['user'] ?? null]);
             return $next($request);
         }
 
