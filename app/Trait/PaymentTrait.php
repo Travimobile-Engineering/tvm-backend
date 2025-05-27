@@ -295,7 +295,7 @@ trait PaymentTrait
                 'pickup_location' => $pickup_location,
                 'dropoff_location' => $dropoff_location,
                 'bus_stops' => $busStops ?? [],
-                'luggage' => $luggage,
+                'luggage' => $luggage ?? [],
                 'amount' => $formattedAmount,
                 'payment_type' => $paymentType,
                 'payment_status' => $status,
