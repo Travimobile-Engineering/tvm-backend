@@ -71,6 +71,7 @@ class PremiumHireBookingResource extends JsonResource
                         : null,
                 ],
             ],
+            'manifest_fee' => 1000,
             'reason' => $this->reason,
             'cancelled_on' => $this->reason ? $this->updated_at : null,
             'status' => $this->status

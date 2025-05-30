@@ -28,7 +28,7 @@ class ForgotPasswordController extends Controller
 
     public function store_otp(){
         $this->user->verification_code = $this->otp;
-        $this->user->verification_code_expires_at = Carbon::now()->addMinutes(10);
+        $this->user->verification_code_expires_at = now()->addMinutes(10);
         $this->user->save();
     }
 
@@ -39,22 +39,42 @@ class ForgotPasswordController extends Controller
         return $this->success(null, 'Password reset OTP has been sent to your email');
     }
 
-    public function verify_otp(){
-        if($this->otp != $this->user?->verification_code) return ['message'=>'Invalid OTP or Email address', 'status'=>false];
-        if($this->user->verification_code_expires_at < Carbon::now()) return ['message'=>'The verification code has expired. Please request for a new OTP', 'status'=>false];
+    public function verify_otp()
+    {
+        if($this->otp != $this->user?->verification_code) {
+            return ['message'=>'Invalid OTP or Email address', 'status'=>false];
+        }
+
+        if($this->user->verification_code_expires_at < now()) {
+            return ['message'=>'The verification code has expired. Please request for a new OTP', 'status'=>false];
+        }
+
         return ['message'=>'OTP is correct', 'status'=>true];
     }
 
-    public function verify_password_reset_otp(){
+    public function verify_password_reset_otp()
+    {
         $verify = $this->verify_otp();
-        if(!$verify['status']) return $this->error(null, $verify['message']);
+
+        if(!$verify['status']) {
+            return $this->error(null, $verify['message']);
+        }
+
         return $this->success(null, $verify['message']);
     }
 
-    public function resetPassword(){
+    public function resetPassword()
+    {
         $verify = $this->verify_otp();
-        if(!$verify['status']) return $this->error(null, $verify['message']);
-        if(is_null($this->password)) return $this->error(null, 'Password cannot be null');
+
+        if(!$verify['status']) {
+            return $this->error(null, $verify['message']);
+        }
+
+        if(is_null($this->password)) {
+            return $this->error(null, 'Password cannot be null');
+        }
+
         $this->user->password = Hash::make($this->password);
         $this->user->verification_code = "";
         $this->user->verification_code_expires_at = null;
