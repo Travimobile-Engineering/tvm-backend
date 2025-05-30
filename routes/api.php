@@ -263,7 +263,7 @@ Route::middleware('validate.header')
                         Route::prefix('booking')
                             ->group(function () {
                                 Route::get('/{user_id}', 'getBookings');
-                                Route::get('/detail/{id}', 'bookingDetails');
+                                Route::get('/detail/{id}', action: 'bookingDetails');
                             });
 
                         Route::prefix('user')->group(function () {
