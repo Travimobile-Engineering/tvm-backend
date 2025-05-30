@@ -144,7 +144,7 @@ class PremiumHireController extends Controller
     public function finishTrip(Request $request)
     {
         $request->validate([
-            'id' => 'required|exists:premium_hire_bookings,id',
+            'premium_hire_booking_id' => 'required|exists:premium_hire_bookings,id',
         ]);
 
         return $this->service->finishTrip($request);
