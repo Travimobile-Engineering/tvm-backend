@@ -441,6 +441,7 @@ class PremiumHireService
             'vehicle',
         ])
             ->where('user_id', $userId)
+            ->orWhere('driver_id', $userId)
             ->where('status', $query)
             ->get();
 
