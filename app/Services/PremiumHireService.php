@@ -440,8 +440,10 @@ class PremiumHireService
         $bookings = PremiumHireBooking::with([
             'vehicle',
         ])
-            ->where('user_id', $userId)
-            ->orWhere('driver_id', $userId)
+            ->where(function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                ->orWhere('driver_id', $userId);
+            })
             ->where('status', $query)
             ->get();
 
