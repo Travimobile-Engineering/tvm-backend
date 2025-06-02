@@ -87,6 +87,7 @@ trait TripBookingTrait
             DB::beginTransaction();
 
             $user = User::with(['transactions'])->findOrFail($user->id);
+            $passUser = User::findOrFail($request->user_id);
             $trip = Trip::with(
                 [
                     'user.transitCompany',
@@ -123,10 +124,10 @@ trait TripBookingTrait
             $passengers = collect($travellingWith ?? []);
 
             $passengers->prepend([
-                'name' => $user->first_name . ' ' . $user->last_name,
-                'email' => $user->email,
-                'phone_number' => $user->phone_number,
-                'gender' => $user->gender ?? 'unknown',
+                'name' => "{$passUser->first_name } {$passUser->last_name}",
+                'email' => $passUser->email,
+                'phone_number' => $passUser->phone_number,
+                'gender' => $passUser->gender ?? 'unknown',
             ]);
 
             $data = [
@@ -279,13 +280,15 @@ trait TripBookingTrait
             $travellingWith = null;
         }
 
+        $userPass = User::findOrFail($request->user_id);
+
         $passengers = collect($travellingWith ?? []);
 
         $passengers->prepend([
-            'name' => $user->first_name . ' ' . $user->last_name,
-            'email' => $user->email,
-            'phone_number' => $user->phone_number,
-            'gender' => $user->gender ?? 'unknown',
+            'name' => "{$userPass->first_name } {$userPass->last_name}",
+            'email' => $userPass->email,
+            'phone_number' => $userPass->phone_number,
+            'gender' => $userPass->gender ?? 'unknown',
         ]);
 
         if (count($selectedSeats) !== $passengers->count()) {

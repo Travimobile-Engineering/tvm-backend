@@ -8,6 +8,7 @@ enum BookingStatus: string
     case COMPLETED = "completed";
     case CANCELLED = "cancelled";
     case UPCOMING = "upcoming";
+    case INPROGRESS = "inprogress";
 
     public static function isValid(string $value): bool
     {
