@@ -82,163 +82,26 @@ trait PaymentTrait
         }
     }
 
-    protected function handleTripBooking($event)
+    protected function handleTripBooking($event): void
     {
         $paymentData = $event['data'];
-        $userId = $paymentData['metadata']['user_id'];
-        $tripId = $paymentData['metadata']['trip_id'];
-        $type = PaymentType::TRIP_BOOKING;
-        $user = User::with(['driverTripPayments', 'transactions', 'paymentLogs'])
-            ->find($userId);
+        $user = $this->getUserWithRelations($paymentData['metadata']['user_id']);
+        $trip = $this->getTripWithRelations($paymentData['metadata']['trip_id']);
+        $paymentLog = $this->logPayment($user, $event, PaymentType::TRIP_BOOKING, $trip->id);
 
-        if (!$user) {
-            throw new \Exception("User with ID: {$userId} not found.");
-        }
-
-        $paymentLog = $this->logPayment($user, $event, $type, $tripId);
+        DB::beginTransaction();
 
         try {
-            DB::beginTransaction();
-
-            $paymentData = $event['data'];
-            $thirdPartyBooking = $paymentData['metadata']['third_party_booking'];
-            $selectedSeat = $paymentData['metadata']['selected_seat'];
-            $tripType = $paymentData['metadata']['trip_type'];
-            $travellingWith = $paymentData['metadata']['travelling_with'];
-            $thirdPartyPassenger = $paymentData['metadata']['third_party_passenger_details'];
-            $paymentMethod = $paymentData['metadata']['payment_method'];
-            $amount = $paymentData['amount'];
-            $formattedAmount = number_format($amount / 100, 2, '.', '');
-            $ref = $paymentData['reference'];
-            $status = $paymentData['status'];
-
-            $trip = Trip::with(
-                    [
-                        'user.transitCompany',
-                        'vehicle',
-                        'tripBookings.user',
-                        'departureRegion.state',
-                        'destinationRegion.state',
-                        'manifest'
-                    ]
-                )
-                ->findOrFail($tripId);
-
-            $seats = $trip->vehicle?->seats;
-            $destination = $trip->destinationRegion?->state?->name . ' > ' . $trip->destinationRegion?->name;
-
-            $bookings = $trip->tripBookings()->where('status', 1)->get();
-
-            $selected_seats = $bookings->pluck('selected_seat')->toArray();
-            $available_seats = array_filter($seats, function ($seat) use ($selected_seats) {
-                return !in_array($seat, $selected_seats);
-            });
-
-            $trip->available_seats = $available_seats;
-
-            do {
-                $booking_id = getRandomNumber();
-            } while (TripBooking::where('booking_id', $booking_id)->exists());
-
-            $payStatus = $status === "success" ? 1 : 0;
-
-            $selectedSeats = explode(',', str_replace(' ', '', $selectedSeat));
-            $travellingWith = collect($travellingWith)->filter(function ($passenger) {
-                return !empty($passenger['name']) || !empty($passenger['email']) || !empty($passenger['phone_number']) || !empty($passenger['gender']);
-            })->values();
-
-            if ($travellingWith->isEmpty()) {
-                $travellingWith = null;
-            }
-
-            $passengers = collect($travellingWith ?? []);
-
-            $passengers->prepend([
-                'name' => $user->first_name . ' ' . $user->last_name,
-                'email' => $user->email,
-                'phone_number' => $user->phone_number,
-                'gender' => $user->gender ?? 'unknown',
-            ]);
-
-            $tripBooking = TripBooking::create([
-                'booking_id' => $booking_id,
-                'payment_log_id' => $paymentLog->id,
-                'trip_id' => $tripId,
-                'user_id' => $user->id,
-                'third_party_booking' => $thirdPartyBooking ?? 0,
-                'selected_seat' => $selectedSeats,
-                'trip_type' => $tripType,
-                'travelling_with' => $travellingWith ?? null,
-                'third_party_passenger_details' => $thirdPartyPassenger ?? null,
-                'amount_paid' => $formattedAmount ?? 0,
-                'payment_method' => $paymentMethod ?? '',
-                'payment_status' => $payStatus ?? 0,
-                'receive_sms' => 0,
-            ]);
-
-            foreach ($passengers as $index => $passenger) {
-                $tripBooking->tripBookingPassengers()->create([
-                    'trip_booking_id' => $tripBooking->id,
-                    'name' => $passenger['name'],
-                    'email' => $passenger['email'] ?? null,
-                    'phone_number' => $passenger['phone_number'],
-                    'next_of_kin' => $index === 0 ? ($user->next_of_kin ?? '') : ($thirdPartyPassenger[$index - 1]['name'] ?? ''),
-                    'next_of_kin_phone_number' => $index === 0 ? ($user->next_of_kin_phone ?? '') : ($thirdPartyPassenger[$index - 1]['phone_number'] ?? ''),
-
-                    'gender' => $passenger['gender'] ?? 'unknown',
-                    'selected_seat' => $selectedSeats[$index] ?? null,
-                    'on_seat' => false,
-                ]);
-            }
-
-            Notification::create([
-                'user_id' => $user->id,
-                'title' => 'Booking Successful',
-                'description' => 'Your bus ticket to ' . $destination . ' on ' . date("M jS Y h:iA", strtotime($trip->departure_at)) . ' has been successfully booked',
-                'additional_data' => json_encode([
-                    'booking_id' => $booking_id,
-                    'note' => 'Please arrive atleast 30 minutes early to ensure a smooth boarding experience.',
-                    'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
-                ])
-            ]);
-
-            $trip->user->driverTripPayments()->create([
-                'user_id' => $user->id,
-                'trip_id' => $tripId,
-                'title' => PaymentType::TRIP_BOOKING,
-                'amount' => $formattedAmount,
-                'status' => 'pending'
-            ]);
-
-            $user->transactions()->create([
-                'user_id' => $user->id,
-                'title' => PaymentType::TRIP_BOOKING,
-                'amount' => $formattedAmount,
-                'type' => PaymentType::CR,
-                'txn_reference' => $ref
-            ]);
+            $bookingDetails = $this->prepareBookingData($paymentData, $user);
+            $bookingId = $this->generateUniqueBookingId();
+            $tripBooking = $this->storeTripBooking($bookingId, $trip, $user, $paymentLog, $bookingDetails);
+            $this->storeTripPassengers($tripBooking, $bookingDetails['passengers'], $user, $bookingDetails['third_party_passenger_details']);
+            $this->notifyUserBooking($user, $trip, $bookingId);
+            $this->recordTransactions($trip, $user, $paymentData);
 
             DB::commit();
 
-            $this->notifier->send(new NotificationDispatchData(
-                events: [
-                    [
-                        'class' => TripBooked::class,
-                        'payload' => [
-                            'type' => 'trip_booking',
-                            'message' => 'Your bus ticket has been booked successfully!',
-                            'userId' => $user->id,
-                        ],
-                    ]
-                ],
-                recipients: $user,
-                title: 'Trip Booked',
-                body: 'Your bus ticket has been booked successfully!',
-                data: [
-                    'userId' => $user->id,
-                    'type' => 'trip_booking',
-                ]
-            ));
+            $this->dispatchTripBookedEvent($user);
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
@@ -359,5 +222,160 @@ trait PaymentTrait
 
         return $paymentLogExists || $tripBookingExists;
     }
+
+    /**
+     * Get user with payment-related relationships loaded.
+     *
+     * @param int $userId
+     * @return \App\Models\User
+     */
+    private function getUserWithRelations(int $userId): User
+    {
+        return User::with(['driverTripPayments', 'transactions', 'paymentLogs'])->findOrFail($userId);
+    }
+
+    private function getTripWithRelations($tripId): Trip
+    {
+        return Trip::with([
+            'user.transitCompany',
+            'vehicle',
+            'tripBookings.user',
+            'departureRegion.state',
+            'destinationRegion.state',
+            'manifest'
+        ])->findOrFail($tripId);
+    }
+
+    private function prepareBookingData(array $paymentData, User $user): array
+    {
+        $meta = $paymentData['metadata'];
+
+        $selectedSeats = explode(',', str_replace(' ', '', $meta['selected_seat']));
+        $amount = number_format($paymentData['amount'] / 100, 2, '.', '');
+        $payStatus = $paymentData['status'] === "success" ? 1 : 0;
+
+        $travellingWith = collect($meta['travelling_with'] ?? [])->filter(fn ($p) =>
+            !empty($p['name']) || !empty($p['email']) || !empty($p['phone_number']) || !empty($p['gender'])
+        )->values();
+
+        $passengers = $travellingWith->prepend([
+            'name' => $user->first_name . ' ' . $user->last_name,
+            'email' => $user->email,
+            'phone_number' => $user->phone_number,
+            'gender' => $user->gender ?? 'unknown',
+        ]);
+
+        return [
+            'booking_status' => $payStatus,
+            'selected_seat' => $selectedSeats,
+            'trip_type' => $meta['trip_type'] ?? null,
+            'third_party_booking' => $meta['third_party_booking'] ?? 0,
+            'payment_method' => $meta['payment_method'] ?? '',
+            'third_party_passenger_details' => $meta['third_party_passenger_details'] ?? [],
+            'amount_paid' => $amount,
+            'passengers' => $passengers,
+            'raw_travelling_with' => $travellingWith->isEmpty() ? null : $travellingWith,
+        ];
+    }
+
+    private function generateUniqueBookingId(): string
+    {
+        do {
+            $bookingId = getRandomNumber();
+        } while (TripBooking::where('booking_id', $bookingId)->exists());
+        return $bookingId;
+    }
+
+    private function storeTripBooking(string $bookingId, Trip $trip, User $user, $paymentLog, array $details): TripBooking
+    {
+        return TripBooking::create([
+            'booking_id' => $bookingId,
+            'payment_log_id' => $paymentLog->id,
+            'trip_id' => $trip->id,
+            'user_id' => $user->id,
+            'third_party_booking' => $details['third_party_booking'],
+            'selected_seat' => $details['selected_seat'],
+            'trip_type' => $details['trip_type'],
+            'travelling_with' => $details['raw_travelling_with'],
+            'third_party_passenger_details' => $details['third_party_passenger_details'],
+            'amount_paid' => $details['amount_paid'],
+            'payment_method' => $details['payment_method'],
+            'payment_status' => $details['booking_status'],
+            'receive_sms' => 0,
+        ]);
+    }
+
+    private function storeTripPassengers(TripBooking $booking, $passengers, User $user, array $thirdParty): void
+    {
+        foreach ($passengers as $index => $p) {
+            $booking->tripBookingPassengers()->create([
+                'trip_booking_id' => $booking->id,
+                'name' => $p['name'],
+                'email' => $p['email'] ?? null,
+                'phone_number' => $p['phone_number'],
+                'gender' => $p['gender'] ?? 'unknown',
+                'selected_seat' => $booking->selected_seat[$index] ?? null,
+                'on_seat' => false,
+                'next_of_kin' => $index === 0 ? ($user->next_of_kin ?? '') : ($thirdParty[$index - 1]['name'] ?? ''),
+                'next_of_kin_phone_number' => $index === 0 ? ($user->next_of_kin_phone ?? '') : ($thirdParty[$index - 1]['phone_number'] ?? ''),
+            ]);
+        }
+    }
+
+    private function notifyUserBooking(User $user, Trip $trip, string $bookingId): void
+    {
+        $destination = $trip->destinationRegion?->state?->name . ' > ' . $trip->destinationRegion?->name;
+        Notification::create([
+            'user_id' => $user->id,
+            'title' => 'Booking Successful',
+            'description' => 'Your bus ticket to ' . $destination . ' on ' . date("M jS Y h:iA", strtotime($trip->departure_at)) . ' has been successfully booked',
+            'additional_data' => json_encode([
+                'booking_id' => $bookingId,
+                'note' => 'Please arrive atleast 30 minutes early to ensure a smooth boarding experience.',
+                'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
+            ])
+        ]);
+    }
+
+    private function recordTransactions(Trip $trip, User $user, array $paymentData): void
+    {
+        $amount = number_format($paymentData['amount'] / 100, 2, '.', '');
+        $trip->user->driverTripPayments()->create([
+            'user_id' => $user->id,
+            'trip_id' => $trip->id,
+            'title' => PaymentType::TRIP_BOOKING,
+            'amount' => $amount,
+            'status' => 'pending',
+        ]);
+        $user->transactions()->create([
+            'user_id' => $user->id,
+            'title' => PaymentType::TRIP_BOOKING,
+            'amount' => $amount,
+            'type' => PaymentType::CR,
+            'txn_reference' => $paymentData['reference'],
+        ]);
+    }
+
+    private function dispatchTripBookedEvent(User $user): void
+    {
+        $this->notifier->send(new NotificationDispatchData(
+            events: [[
+                'class' => TripBooked::class,
+                'payload' => [
+                    'type' => 'trip_booking',
+                    'message' => 'Your bus ticket has been booked successfully!',
+                    'userId' => $user->id,
+                ],
+            ]],
+            recipients: $user,
+            title: 'Trip Booked',
+            body: 'Your bus ticket has been booked successfully!',
+            data: [
+                'userId' => $user->id,
+                'type' => 'trip_booking',
+            ]
+        ));
+    }
+
 }
 
