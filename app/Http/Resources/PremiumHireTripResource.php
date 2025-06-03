@@ -50,7 +50,7 @@ class PremiumHireTripResource extends JsonResource
             'passengers_count' => $this->premiumHireBookingPassengers ? $this->premiumHireBookingPassengers->count() : 0,
             'reason' => $this->reason,
             'cancelled_on' => $this->reason ? $this->updated_at->format('j F, Y') : null,
-            'manifest_fee' => 1000,
+            'manifest_fee' => getFee('manifest'),
             'status' => $this->status
         ];
     }
