@@ -32,8 +32,6 @@ class TripService
 {
     use HttpResponse, DriverTrait;
 
-    const TRIP_CHARGE_AMOUNT = 50;
-
     public function __construct(
         protected NotificationDispatcher $notifier
     ) {}
@@ -478,7 +476,7 @@ class TripService
         //     return $this->error(null, "Cannot start trip. Current date and time do not match the scheduled departure.", 400);
         // }
 
-        if ($user->wallet < self::TRIP_CHARGE_AMOUNT) {
+        if ($user->wallet < getFee('manifest')) {
             return $this->error(null, "Insufficient wallet balance!", 400);
         }
 
@@ -513,7 +511,7 @@ class TripService
             TripLog::create([
                 'user_id' => $user->id,
                 'trip_id' => $trip->id,
-                'amount_charged' => self::TRIP_CHARGE_AMOUNT,
+                'amount_charged' => getFee('manifest'),
                 'retry_attempt' => 1,
                 'status' => 'success',
                 'message' => 'Trip started successfully and manifest created.',

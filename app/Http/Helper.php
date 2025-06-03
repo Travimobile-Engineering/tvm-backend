@@ -7,6 +7,7 @@ use App\Models\Mailing;
 use App\DTO\SendCodeData;
 use App\Jobs\ProcessMail;
 use App\Libraries\Utility;
+use App\Models\Fee;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -376,6 +377,15 @@ if (!function_exists('hasSetSecurityAnswer')) {
         }
 
         return false;
+    }
+}
+
+if (!function_exists('getFee')) {
+    function getFee ($name) {
+        $name = strtolower($name);
+        $fee = Fee::whereRaw('LOWER(name) = ?', [$name])->first();
+
+        return $fee->amount ?? 50;
     }
 }
 
