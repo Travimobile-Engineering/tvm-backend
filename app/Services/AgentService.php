@@ -32,14 +32,13 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
-use Spatie\ResponseCache\Facades\ResponseCache;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AgentService
 {
     use HttpResponse, TripBookingTrait, DriverTrait;
 
-    const TRIP_CHARGE_AMOUNT = 1000;
+    const TRIP_CHARGE_AMOUNT = 50;
 
     public function __construct(
         protected NotificationDispatcher $notifier
