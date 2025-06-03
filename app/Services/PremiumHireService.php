@@ -28,7 +28,7 @@ class PremiumHireService
 {
     use HttpResponse, DriverTrait;
 
-    const TRIP_CHARGE_AMOUNT = 1000;
+    const TRIP_CHARGE_AMOUNT = 50;
 
     public function vehicleLookup($request)
     {
