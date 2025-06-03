@@ -10,8 +10,6 @@ trait DriverTrait
 {
     use HttpResponse;
 
-    const TRIP_CHARGE_AMOUNT = 50;
-
     protected function createTransitCompany($user, $request)
     {
         return TransitCompany::create([
@@ -47,13 +45,13 @@ trait DriverTrait
 
     protected function chargeWallet($user, $amount = null)
     {
-        $user->wallet -= $amount ?? self::TRIP_CHARGE_AMOUNT;
+        $user->wallet -= $amount ?? getFee('manifest');
         $user->save();
 
         $title = "Wallet charged for manifest";
         $type = PaymentType::DR;
 
-        $this->createTransaction($user, self::TRIP_CHARGE_AMOUNT, $title, $type);
+        $this->createTransaction($user, getFee('manifest'), $title, $type);
     }
 
     protected function createTransaction($user, $amount, $title, $type)

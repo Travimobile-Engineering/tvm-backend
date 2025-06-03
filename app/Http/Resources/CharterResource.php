@@ -21,7 +21,7 @@ class CharterResource extends JsonResource
             'vehicle_model' => $this->vehicle->model,
             'ac' => $this->vehicle->ac,
             'image' => $this->vehicle->vehicleImages()->value('url'),
-            'amount' => 250000,
+            'amount' => getFee('manifest'),
         ];
     }
 }
