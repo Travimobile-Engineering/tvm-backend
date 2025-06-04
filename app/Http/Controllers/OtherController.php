@@ -7,12 +7,10 @@ use Illuminate\Http\Request;
 
 class OtherController extends Controller
 {
-    protected $service;
-
-    public function __construct(OtherService $service)
-    {
-        $this->service = $service;
-    }
+    public function __construct(
+        protected OtherService $service
+    )
+    {}
 
     public function getStates()
     {
