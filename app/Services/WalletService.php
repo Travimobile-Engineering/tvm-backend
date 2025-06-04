@@ -35,7 +35,7 @@ class WalletService
 
     public function getBalance()
     {
-        $userId = request()->input('userId') ?? $this->user->id;
+        $userId = request()->input('userId') ?? $this->user?->id;
 
         $user = User::find($userId);
 
