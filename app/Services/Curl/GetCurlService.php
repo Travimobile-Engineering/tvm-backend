@@ -2,10 +2,13 @@
 
 namespace App\Services\Curl;
 
+use App\Trait\HttpResponse;
 use Exception;
 
 class GetCurlService
 {
+    use HttpResponse;
+
     protected $url;
     protected $headers = [];
 
@@ -17,7 +20,7 @@ class GetCurlService
         }
     }
 
-    public function execute(): array
+    public function execute()
     {
         $ch = curl_init();
 
@@ -28,7 +31,7 @@ class GetCurlService
         $response = curl_exec($ch);
 
         if (curl_errno($ch)) {
-            throw new Exception('Curl error: ' . curl_error($ch));
+            return $this->error(null, "Curl error: " . curl_error($ch), 400);
         }
 
         curl_close($ch);
@@ -36,11 +39,11 @@ class GetCurlService
         $result = json_decode($response, true);
 
         if (!$result) {
-            throw new Exception('Invalid JSON response from API: ' . $response);
+            return $this->error(null, "Invalid JSON response from API: {$response}", 400);
         }
 
         if (!isset($result['data'])) {
-            throw new Exception('API response does not contain "data" field: ' . json_encode($result));
+            return $this->error(null, "API response does not contain 'data' field: {$result}");
         }
 
         return $result['data'];
