@@ -28,7 +28,7 @@ class PaymentService
             return $this->error(null, 'Invalid payload', 400);
         }
 
-        PaystackEventHandler::handle($event);
+        (new PaystackEventHandler($event))->handle($event);
 
         return response()->json(['status' => true], 200);
     }

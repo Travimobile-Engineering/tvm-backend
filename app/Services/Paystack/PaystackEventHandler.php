@@ -11,14 +11,14 @@ class PaystackEventHandler
 {
     use PaymentTrait;
 
-    public static function handle(array $event): void
+    public function handle(array $event): void
     {
         $eventType = $event['event'];
         $data = $event['data'];
 
         switch ($eventType) {
             case PaystackEvent::CHARGE_SUCCESS:
-                self::handleChargeSuccess($event);
+                $this->handleChargeSuccess($event);
                 break;
 
             case PaystackEvent::TRANSFER_SUCCESS:
