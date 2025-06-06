@@ -4,12 +4,18 @@ namespace App\Services\Paystack;
 
 use App\Enum\PaymentType;
 use App\Enum\PaystackEvent;
+use App\Services\Notification\NotificationDispatcher;
 use App\Trait\PaymentTrait;
 use Illuminate\Support\Facades\Log;
 
 class PaystackEventHandler
 {
     use PaymentTrait;
+
+    public function __construct(NotificationDispatcher $notifier)
+    {
+        $this->notifier = $notifier;
+    }
 
     public function handle(array $event): void
     {
