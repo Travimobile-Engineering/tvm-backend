@@ -67,6 +67,10 @@ Route::middleware('validate.header')
         Route::post('/payment/webhook', [PaymentController::class, 'webhook'])
             ->withoutMiddleware('validate.header');
 
+        // Approval URL
+        Route::post('/payment/paystack/transfer/approve', [PaymentController::class, 'approveTransfer'])
+            ->withoutMiddleware('validate.header');
+
         // Google Auth
         Route::controller(GoogleAuthController::class)
             ->group(function (): void {

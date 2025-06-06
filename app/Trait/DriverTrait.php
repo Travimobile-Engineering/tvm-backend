@@ -5,6 +5,7 @@ namespace App\Trait;
 use App\Enum\PaymentType;
 use App\Enum\TransitCompanyType;
 use App\Models\TransitCompany;
+use App\Services\Admin\AccountService;
 
 trait DriverTrait
 {
@@ -45,6 +46,7 @@ trait DriverTrait
 
     protected function chargeWallet($user, $amount = null)
     {
+        $amount = $amount ? $amount : getFee('manifest');
         $user->wallet -= $amount ?? getFee('manifest');
         $user->save();
 
@@ -52,6 +54,8 @@ trait DriverTrait
         $type = PaymentType::DR;
 
         $this->createTransaction($user, getFee('manifest'), $title, $type);
+
+        (new AccountService())->initiateTransfer($amount);
     }
 
     protected function createTransaction($user, $amount, $title, $type)

@@ -24,7 +24,7 @@ class StartTripRequest extends FormRequest
         return [
             'user_id' => 'required|integer|exists:users,id',
             'trip_id' => 'required|integer|exists:trips,id',
-            'payment_method' => 'required|string|in:wallet',
+            'payment_method' => 'required|string|in:wallet,driver_wallet',
             'pin' => 'required|string',
         ];
     }

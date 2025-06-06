@@ -39,11 +39,11 @@ class GetCurlService
         $result = json_decode($response, true);
 
         if (!$result) {
-            return $this->error(null, "Invalid JSON response from API: {$response}", 400);
+            return $this->error(null, "Invalid JSON response from API: " . json_encode($response), 400);
         }
 
         if (!isset($result['data'])) {
-            return $this->error(null, "API response does not contain 'data' field: {$result}");
+            return $this->error(null, "API response does not contain 'data' field: " . json_encode($result));
         }
 
         return $result['data'];

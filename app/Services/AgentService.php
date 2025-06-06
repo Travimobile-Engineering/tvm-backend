@@ -670,7 +670,7 @@ class AgentService
 
             $this->topUpWallet($user);
 
-            if ($request->payment_method === PaymentMethod::DRIVERWALLET) {
+            if (in_array($request->payment_method, [PaymentMethod::DRIVERWALLET, PaymentMethod::WALLET])) {
                 $this->chargeWallet($user, $request->amount);
             }
 
@@ -679,7 +679,7 @@ class AgentService
             TripLog::create([
                 'user_id' => $user->id,
                 'trip_id' => $trip->id,
-                'amount_charged' => $request->amount ?? self::TRIP_CHARGE_AMOUNT,
+                'amount_charged' => $request->amount ?? getFee('manifest'),
                 'retry_attempt' => 1,
                 'status' => 'success',
                 'message' => 'Trip started successfully and manifest created.',
