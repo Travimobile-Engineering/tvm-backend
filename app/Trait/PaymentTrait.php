@@ -22,10 +22,7 @@ trait PaymentTrait
 {
     use HttpResponse, PaymentLogTrait;
 
-    public function __construct(
-        protected NotificationDispatcher $notifier
-    )
-    {}
+    protected NotificationDispatcher $notifier;
 
     protected function handleFundWallet($event)
     {
