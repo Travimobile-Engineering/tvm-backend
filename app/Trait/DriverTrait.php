@@ -5,6 +5,7 @@ namespace App\Trait;
 use App\Enum\PaymentType;
 use App\Enum\TransitCompanyType;
 use App\Models\TransitCompany;
+use App\Services\Admin\AccountService;
 
 trait DriverTrait
 {
@@ -45,13 +46,14 @@ trait DriverTrait
 
     protected function chargeWallet($user, $amount = null)
     {
-        $user->wallet -= $amount ?? getFee('manifest');
+        $amount = $amount ? $amount : getFee('manifest');
+        $user->wallet -= $amount;
         $user->save();
 
         $title = "Wallet charged for manifest";
         $type = PaymentType::DR;
 
-        $this->createTransaction($user, getFee('manifest'), $title, $type);
+        $this->createTransaction($user, $amount, $title, $type);
     }
 
     protected function createTransaction($user, $amount, $title, $type)
@@ -62,6 +64,8 @@ trait DriverTrait
             'type' => $type,
             'txn_reference' => getRandomNumber()
         ]);
+
+        (new AccountService())->initiateTransfer($amount);
     }
 
     protected function uploadInteriorImages($request, $user)

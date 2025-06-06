@@ -56,7 +56,7 @@ Route::middleware('validate.header')
                 Route::post('/manifest-checker/login', [AuthenticateController::class, 'agencyLogin'])
                     ->middleware('login.attempt');
 
-                Route::post('/forgot-password-email', [ForgotPasswordController::class, 'send_password_reset_otp']);
+                Route::post('/forgot-password-email', [ForgotPasswordController::class, 'sendPasswordResetOtp']);
                 Route::post('/resend-code', [RegisterController::class, 'resendCode']);
                 Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verify_password_reset_otp']);
                 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
@@ -65,6 +65,10 @@ Route::middleware('validate.header')
             });
 
         Route::post('/payment/webhook', [PaymentController::class, 'webhook'])
+            ->withoutMiddleware('validate.header');
+
+        // Approval URL
+        Route::post('/payment/paystack/transfer/approve', [PaymentController::class, 'approveTransfer'])
             ->withoutMiddleware('validate.header');
 
         // Google Auth

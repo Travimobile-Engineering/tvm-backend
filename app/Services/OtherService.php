@@ -45,7 +45,7 @@ class OtherService
 
         $headers = [
             'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => "Bearer {$token}",
         ];
 
         return (new GetCurlService($url, $headers))->execute();

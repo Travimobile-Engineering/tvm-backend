@@ -17,7 +17,6 @@ use App\Models\User;
 use App\Models\Vehicle\Vehicle;
 use App\Services\Notification\NotificationDispatcher;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 trait PaymentTrait
 {
