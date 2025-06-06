@@ -445,9 +445,7 @@ class TripService
     {
         $user = User::with(['transactions', 'driverTripPayments'])->findOrFail($request->user_id);
 
-        $existingTrip = Trip::where('user_id', $user->id)
-            ->where('status', TripStatus::INPROGRESS)
-            ->first();
+        $existingTrip = Trip::hasOngoingTrip($request->trip_id, $user->id);
 
         if ($existingTrip) {
             return $this->error(null, "You have an ongoing trip. Complete it before starting a new one.", 400);

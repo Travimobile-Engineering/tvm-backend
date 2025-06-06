@@ -9,11 +9,16 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 Schedule::everyMinute()
-    ->withoutOverlapping()
     ->group(function () {
         Schedule::command('email:process');
         Schedule::command('trip:extend-time');
     });
 
 Schedule::command('app:rotate-security-questions')->monthly();
+
+Schedule::everyTenMinutes()
+    ->withoutOverlapping()
+    ->group(function () {
+        Schedule::command('app:account-payout');
+    });
 
