@@ -19,7 +19,8 @@ class ForgotPasswordController extends Controller
     protected $otp;
     protected $password;
 
-    public function __construct(Request $request){
+    public function __construct(Request $request)
+    {
         $this->user = User::firstWhere('email', $request->email);
         $this->otp = $request->otp ?? str_pad(mt_rand(11111, 99999), 5, 0);
         $this->password = $request->password;
