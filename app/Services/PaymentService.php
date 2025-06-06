@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Enum\PaymentType;
-use App\Enum\PaystackEvent;
 use App\Services\Paystack\PaystackEventHandler;
 use App\Trait\HttpResponse;
 use App\Trait\PaymentTrait;
@@ -25,34 +23,6 @@ class PaymentService
         }
 
         $event = json_decode($payload, true);
-
-        // if (isset($event['event']) && $event['event'] === PaystackEvent::CHARGE_SUCCESS) {
-        //     $data = $event['data'];
-        //     $paymentType = $data['metadata']['payment_type'];
-
-        //     switch ($paymentType) {
-        //         case PaymentType::FUND_WALLET:
-        //             $this->handleFundWallet($event);
-        //             break;
-
-        //         case PaymentType::TRIP_BOOKING:
-        //             $alreadyProcessed = $this->isAlreadyProcessed($event);
-        //             if ($alreadyProcessed) {
-        //                 return response()->json(['status' => true, 'message' => 'Already processed'], 200);
-        //             }
-
-        //             $this->handleTripBooking($event);
-        //             break;
-
-        //         case PaymentType::PREMIUM_HIRE:
-        //             $this->handlePremiumHire($event);
-        //             break;
-
-        //         default:
-        //             Log::warning('Unknown payment type', ['payment_type' => $paymentType]);
-        //             break;
-        //     }
-        // }
 
         if (!isset($event['event']) || !isset($event['data'])) {
             return $this->error(null, 'Invalid payload', 400);
@@ -88,7 +58,6 @@ class PaymentService
 
         return response()->json(['message' => 'Transfer approved'], 200);
     }
-
 }
 
 

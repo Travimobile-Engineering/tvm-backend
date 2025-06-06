@@ -54,8 +54,6 @@ trait DriverTrait
         $type = PaymentType::DR;
 
         $this->createTransaction($user, $amount, $title, $type);
-
-        (new AccountService())->initiateTransfer($amount);
     }
 
     protected function createTransaction($user, $amount, $title, $type)
@@ -66,6 +64,8 @@ trait DriverTrait
             'type' => $type,
             'txn_reference' => getRandomNumber()
         ]);
+
+        (new AccountService())->initiateTransfer($amount);
     }
 
     protected function uploadInteriorImages($request, $user)
