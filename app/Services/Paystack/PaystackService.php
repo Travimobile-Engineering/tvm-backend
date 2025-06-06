@@ -72,22 +72,22 @@ class PaystackService
         $transferCode = $event['transfer_code'];
         $reference = $event['reference'];
 
-        $withdrawal = AccountTransfer::where('transfer_code', $transferCode)
+        $transfer = AccountTransfer::where('transfer_code', $transferCode)
             ->first();
 
-        if (!$withdrawal) {
-            Log::error("Transfer success: No matching withdrawal found for transfer_code: {$transferCode}");
+        if (!$transfer) {
+            Log::error("Transfer success: No matching transfer found for transfer_code: {$transferCode}");
             return;
         }
 
         DB::beginTransaction();
         try {
-            $withdrawal->update([
+            $transfer->update([
                 'status' => AccountTransferStatus::COMPLETED->value,
                 'response' => $event['reason'],
             ]);
 
-            Log::info("Transfer successful for withdrawal ID {$withdrawal->id} - Reference: {$reference}");
+            Log::info("Transfer successful for transfer ID {$transfer->id} - Reference: {$reference}");
 
             DB::commit();
         } catch (\Exception $e) {
@@ -102,23 +102,23 @@ class PaystackService
         $transferCode = $event['transfer_code'];
         $reference = $event['reference'];
 
-        $withdrawal = AccountTransfer::with('user')
+        $transfer = AccountTransfer::with('user')
             ->where('transfer_code', $transferCode)
             ->first();
 
-        if (!$withdrawal) {
-            Log::error("Transfer success: No matching withdrawal found for transfer_code: {$transferCode}");
+        if (!$transfer) {
+            Log::error("Transfer success: No matching transfer found for transfer_code: {$transferCode}");
             return;
         }
 
         DB::beginTransaction();
         try {
-            $withdrawal->update([
+            $transfer->update([
                 'status' => AccountTransferStatus::FAILED->value,
                 'response' => $event['reason'],
             ]);
 
-            Log::info("Transfer failed for withdrawal ID {$withdrawal->id} - Reference: {$reference}");
+            Log::info("Transfer failed for transfer ID {$transfer->id} - Reference: {$reference}");
 
             DB::commit();
         } catch (\Exception $e) {
@@ -133,23 +133,23 @@ class PaystackService
         $transferCode = $event['transfer_code'];
         $reference = $event['reference'];
 
-        $withdrawal = AccountTransfer::with('user')
+        $transfer = AccountTransfer::with('user')
             ->where('transfer_code', $transferCode)
             ->first();
 
-        if (!$withdrawal) {
-            Log::error("Transfer success: No matching withdrawal found for transfer_code: {$transferCode}");
+        if (!$transfer) {
+            Log::error("Transfer success: No matching transfer found for transfer_code: {$transferCode}");
             return;
         }
 
         DB::beginTransaction();
         try {
-            $withdrawal->update([
+            $transfer->update([
                 'status' => AccountTransferStatus::REVERSED->value,
                 'response' => $event['reason'],
             ]);
 
-            Log::info("Transfer failed for withdrawal ID {$withdrawal->id} - Reference: {$reference}");
+            Log::info("Transfer failed for transfer ID {$transfer->id} - Reference: {$reference}");
 
             DB::commit();
         } catch (\Exception $e) {

@@ -38,8 +38,6 @@ class AgentService
 {
     use HttpResponse, TripBookingTrait, DriverTrait;
 
-    const TRIP_CHARGE_AMOUNT = 50;
-
     public function __construct(
         protected NotificationDispatcher $notifier
     ) {}

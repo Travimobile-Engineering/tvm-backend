@@ -47,13 +47,13 @@ trait DriverTrait
     protected function chargeWallet($user, $amount = null)
     {
         $amount = $amount ? $amount : getFee('manifest');
-        $user->wallet -= $amount ?? getFee('manifest');
+        $user->wallet -= $amount;
         $user->save();
 
         $title = "Wallet charged for manifest";
         $type = PaymentType::DR;
 
-        $this->createTransaction($user, getFee('manifest'), $title, $type);
+        $this->createTransaction($user, $amount, $title, $type);
 
         (new AccountService())->initiateTransfer($amount);
     }
