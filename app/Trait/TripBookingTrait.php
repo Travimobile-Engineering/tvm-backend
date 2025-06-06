@@ -87,7 +87,9 @@ trait TripBookingTrait
             DB::beginTransaction();
 
             $user = User::with(['transactions'])->findOrFail($user->id);
-            $passUser = User::findOrFail($request->user_id);
+
+            $userId = $request->user_id ?? $user->id;
+            $passUser = User::findOrFail($userId);
             $trip = Trip::with(
                 [
                     'user.transitCompany',
@@ -234,8 +236,8 @@ trait TripBookingTrait
             'destinationRegion.state',
             'manifest'
         ])
-        ->where('status', TripStatus::UPCOMING)
-        ->where('id', $request->trip_id);
+        ->where('id', $request->trip_id)
+        ->where('status', TripStatus::UPCOMING);
 
         if ($lock) {
             $query->lockForUpdate();
@@ -280,7 +282,8 @@ trait TripBookingTrait
             $travellingWith = null;
         }
 
-        $userPass = User::findOrFail($request->user_id);
+        $userId = $request->user_id ?? $user->id;
+        $userPass = User::findOrFail($userId);
 
         $passengers = collect($travellingWith ?? []);
 

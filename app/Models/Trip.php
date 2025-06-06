@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enum\TripStatus;
 use App\Models\Vehicle\Vehicle;
 use App\Trait\ClearsResponseCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -106,6 +107,14 @@ class Trip extends Model
 
     public function transitCompany(){
         return $this->belongsTo(TransitCompany::class);
+    }
+
+    public static function hasOngoingTrip($id, $userId)
+    {
+        return self::where('id', $id)
+            ->where('user_id', $userId)
+            ->where('status', TripStatus::INPROGRESS)
+            ->exists();
     }
 
 }

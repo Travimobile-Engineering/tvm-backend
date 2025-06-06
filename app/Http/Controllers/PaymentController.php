@@ -14,4 +14,9 @@ class PaymentController extends Controller
     {
         return $this->service->webhook($request);
     }
+
+    public function approveTransfer(Request $request)
+    {
+        return $this->service->approveTransfer($request);
+    }
 }

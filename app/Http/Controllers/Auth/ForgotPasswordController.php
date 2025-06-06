@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Auth;
 
-use Carbon\Carbon;
 use App\Models\User;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
@@ -32,10 +31,20 @@ class ForgotPasswordController extends Controller
         $this->user->save();
     }
 
-    public function send_password_reset_otp(){
-        $this->store_otp();
-        $name = $this->user->first_name.' '.$this->user->last_name;
-        Mail::to($this->user->email)->send(new ConfirmationEmail($name, $this->otp, 'email.password_reset_otp'));
+    public function sendPasswordResetOtp(Request $request)
+    {
+        $user = User::where('email', $request->email)->firstOrFail();
+        $code = getCode();
+
+        $user->update([
+            'verification_code' => $code,
+            'verification_code_expires_at' => now()->addMinutes(10)
+        ]);
+
+        $name = "{$user->first_name} {$user->last_name}";
+
+        Mail::to($user->email)->send(new ConfirmationEmail($name, $code, 'email.password_reset_otp'));
+
         return $this->success(null, 'Password reset OTP has been sent to your email');
     }
 
@@ -79,6 +88,7 @@ class ForgotPasswordController extends Controller
         $this->user->verification_code = "";
         $this->user->verification_code_expires_at = null;
         $this->user->save();
+
         return $this->success(null, 'User password updated successfully');
     }
 
