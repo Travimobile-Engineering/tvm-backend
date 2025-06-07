@@ -3,8 +3,8 @@
 namespace App\Services\Auth;
 
 use App\Mail\ConfirmationEmail;
+use App\Models\User;
 use App\Trait\HttpResponse;
-use User;
 
 class ForgotPasswordService
 {
