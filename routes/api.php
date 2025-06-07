@@ -58,9 +58,8 @@ Route::middleware('validate.header')
 
                 Route::post('/forgot-password-email', [ForgotPasswordController::class, 'sendPasswordResetOtp']);
                 Route::post('/resend-code', [RegisterController::class, 'resendCode']);
-                Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verify_password_reset_otp']);
+                Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verifyPasswordResetOtp']);
                 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
-                Route::post('/resend-verification-code', [RegisterController::class, 'send_verification_code']);
                 Route::post('/verify/account', [RegisterController::class, 'verifyAcount']);
             });
 
