@@ -70,7 +70,6 @@ class TripBookingController extends Controller
     {
         //
     }
-
     public function booking(TripBookingCreateRequest $request)
     {
         return $this->tripBookService->store($request);
