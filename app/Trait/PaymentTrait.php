@@ -91,11 +91,9 @@ trait PaymentTrait
             $bookingDetails = $this->prepareBookingData($paymentData, $user);
             $bookingId = $this->generateUniqueBookingId();
             $tripBooking = $this->storeTripBooking($bookingId, $trip, $user, $paymentLog, $bookingDetails);
-            $thirdParty = $bookingDetails['third_party_passenger_details'];
             if (
-                !isset($thirdParty) ||
-                !is_array($thirdParty) ||
-                is_string($thirdParty)
+                !isset($bookingDetails['third_party_passenger_details']) ||
+                !is_array($bookingDetails['third_party_passenger_details'])
             ) {
                 $bookingDetails['third_party_passenger_details'] = [];
             }
@@ -103,7 +101,7 @@ trait PaymentTrait
                 $tripBooking,
                 $bookingDetails['passengers'],
                 $user,
-                $thirdParty
+                $bookingDetails['third_party_passenger_details']
             );
             $this->notifyUserBooking($user, $trip, $bookingId);
             $this->recordTransactions($trip, $user, $paymentData);
@@ -209,19 +207,15 @@ trait PaymentTrait
         $userId = $paymentData['metadata']['user_id'];
         $selectedSeats = explode(',', str_replace(' ', '', $paymentData['metadata']['selected_seat']));
 
-        $paymentLog = PaymentLog::where([
+        $paymentLogExists = PaymentLog::where([
             'trip_id' => $tripId,
             'user_id' => $userId,
             'type' => PaymentType::TRIP_BOOKING,
         ])
         ->whereIn('channel', ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'])
-        ->first();
+        ->exists();
 
-        if ($paymentLog && $paymentLog->tripBooking()->exists()) {
-            return true;
-        }
-
-        return TripBooking::where([
+        $tripBookingExists = TripBooking::where([
             'trip_id' => $tripId,
             'user_id' => $userId,
             'payment_status' => 1,
@@ -233,6 +227,8 @@ trait PaymentTrait
             }
         })
         ->exists();
+
+        return $paymentLogExists || $tripBookingExists;
     }
 
     /**
