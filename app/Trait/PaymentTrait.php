@@ -91,7 +91,13 @@ trait PaymentTrait
             $bookingDetails = $this->prepareBookingData($paymentData, $user);
             $bookingId = $this->generateUniqueBookingId();
             $tripBooking = $this->storeTripBooking($bookingId, $trip, $user, $paymentLog, $bookingDetails);
-            $this->storeTripPassengers($tripBooking, $bookingDetails['passengers'], $user, $bookingDetails['third_party_passenger_details']);
+            $bookingDetails['third_party_passenger_details'] ??= [];
+            $this->storeTripPassengers(
+                $tripBooking,
+                $bookingDetails['passengers'],
+                $user,
+                $bookingDetails['third_party_passenger_details']
+            );
             $this->notifyUserBooking($user, $trip, $bookingId);
             $this->recordTransactions($trip, $user, $paymentData);
 
