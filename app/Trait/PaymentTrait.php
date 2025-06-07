@@ -91,11 +91,19 @@ trait PaymentTrait
             $bookingDetails = $this->prepareBookingData($paymentData, $user);
             $bookingId = $this->generateUniqueBookingId();
             $tripBooking = $this->storeTripBooking($bookingId, $trip, $user, $paymentLog, $bookingDetails);
+            $thirdParty = $bookingDetails['third_party_passenger_details'];
+            if (
+                !isset($thirdParty) ||
+                !is_array($thirdParty) ||
+                is_string($thirdParty)
+            ) {
+                $bookingDetails['third_party_passenger_details'] = [];
+            }
             $this->storeTripPassengers(
                 $tripBooking,
                 $bookingDetails['passengers'],
                 $user,
-                $this->normalizeArray($bookingDetails['third_party_passenger_details'] ?? null)
+                $thirdParty
             );
             $this->notifyUserBooking($user, $trip, $bookingId);
             $this->recordTransactions($trip, $user, $paymentData);
@@ -108,12 +116,6 @@ trait PaymentTrait
             throw $th;
         }
     }
-
-    private function normalizeArray($value): array
-    {
-        return is_array($value) ? $value : [];
-    }
-
     protected function handlePremiumHire($event)
     {
         try {
@@ -207,15 +209,19 @@ trait PaymentTrait
         $userId = $paymentData['metadata']['user_id'];
         $selectedSeats = explode(',', str_replace(' ', '', $paymentData['metadata']['selected_seat']));
 
-        $paymentLogExists = PaymentLog::where([
+        $paymentLog = PaymentLog::where([
             'trip_id' => $tripId,
             'user_id' => $userId,
             'type' => PaymentType::TRIP_BOOKING,
         ])
         ->whereIn('channel', ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'])
-        ->exists();
+        ->first();
 
-        $tripBookingExists = TripBooking::where([
+        if ($paymentLog && $paymentLog->tripBooking()->exists()) {
+            return true;
+        }
+
+        return TripBooking::where([
             'trip_id' => $tripId,
             'user_id' => $userId,
             'payment_status' => 1,
@@ -227,8 +233,6 @@ trait PaymentTrait
             }
         })
         ->exists();
-
-        return $paymentLogExists || $tripBookingExists;
     }
 
     /**
