@@ -14,8 +14,6 @@ class RegisterController extends Controller
     public function __construct(
         protected AuthService $service
     ){}
-
-    //method to register a new user
     public function accountSignUp(AccountSignUpRequest $request)
     {
         return $this->service->accountSignUp($request);
