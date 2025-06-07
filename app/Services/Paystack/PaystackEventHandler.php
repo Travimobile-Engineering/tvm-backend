@@ -56,10 +56,10 @@ class PaystackEventHandler
                 break;
 
             case PaymentType::TRIP_BOOKING:
-                $alreadyProcessed = $this->isAlreadyProcessed($event);
-                if ($alreadyProcessed) {
-                    return response()->json(['status' => true, 'message' => 'Already processed'], 200);
-                }
+                // $alreadyProcessed = $this->isAlreadyProcessed($event);
+                // if ($alreadyProcessed) {
+                //     return response()->json(['status' => true, 'message' => 'Already processed'], 200);
+                // }
 
                 $this->handleTripBooking($event);
                 break;
