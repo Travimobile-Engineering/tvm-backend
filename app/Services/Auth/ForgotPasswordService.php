@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Enum\UserStatus;
 use App\Mail\ConfirmationEmail;
 use App\Models\User;
 use App\Trait\HttpResponse;
@@ -60,9 +61,12 @@ class ForgotPasswordService
         }
 
         $user->update([
+            'email_verified' => 1,
+            'email_verified_at' => now(),
             'password' => bcrypt($request->password),
             'verification_code' => 0,
             'verification_code_expires_at' => null,
+            'status' => UserStatus::ACTIVE->value,
         ]);
 
         return $this->success(null, 'User password updated successfully');
