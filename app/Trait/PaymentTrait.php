@@ -91,12 +91,11 @@ trait PaymentTrait
             $bookingDetails = $this->prepareBookingData($paymentData, $user);
             $bookingId = $this->generateUniqueBookingId();
             $tripBooking = $this->storeTripBooking($bookingId, $trip, $user, $paymentLog, $bookingDetails);
-            $bookingDetails['third_party_passenger_details'] ??= [];
             $this->storeTripPassengers(
                 $tripBooking,
                 $bookingDetails['passengers'],
                 $user,
-                $bookingDetails['third_party_passenger_details']
+                $this->normalizeArray($bookingDetails['third_party_passenger_details'] ?? null)
             );
             $this->notifyUserBooking($user, $trip, $bookingId);
             $this->recordTransactions($trip, $user, $paymentData);
@@ -108,6 +107,11 @@ trait PaymentTrait
             DB::rollBack();
             throw $th;
         }
+    }
+
+    private function normalizeArray($value): array
+    {
+        return is_array($value) ? $value : [];
     }
 
     protected function handlePremiumHire($event)
@@ -207,7 +211,9 @@ trait PaymentTrait
             'trip_id' => $tripId,
             'user_id' => $userId,
             'type' => PaymentType::TRIP_BOOKING,
-        ])->exists();
+        ])
+        ->whereIn('channel', ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'])
+        ->exists();
 
         $tripBookingExists = TripBooking::where([
             'trip_id' => $tripId,
