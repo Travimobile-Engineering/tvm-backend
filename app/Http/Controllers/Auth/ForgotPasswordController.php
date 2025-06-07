@@ -24,7 +24,7 @@ class ForgotPasswordController extends Controller
     public function verifyPasswordResetOtp(Request $request)
     {
         $request->validate([
-            'otp' => ['required', 'string', 'max:5']
+            'otp' => ['required', 'max:5']
         ]);
 
         return $this->forgotPasswordService->verifyPasswordResetOtp($request);
