@@ -61,6 +61,7 @@ class AgentProfileResource extends JsonResource
             'email_notification' => $this->email_notifications,
             'has_setup_security_answer' => hasSetSecurityAnswer($this->id),
             'security_question' => $this->securityQuestion?->question,
+            'drivers_created' => DriverProfileResource::collection(driversCreatedByAgent($this->id))
         ];
     }
 }

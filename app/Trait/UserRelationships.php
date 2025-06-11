@@ -153,6 +153,16 @@ trait UserRelationships
         return $this->belongsToMany(Announcement::class)->withPivot('status');
     }
 
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function createdDrivers()
+    {
+        return $this->hasMany(User::class, 'created_by');
+    }
+
     public static function bootDeletesUserRelationships(): void
     {
         static::deleting(function (User $user) {
