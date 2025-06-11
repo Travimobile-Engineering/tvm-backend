@@ -5,6 +5,7 @@ use App\Enum\General;
 use App\Contracts\SMS;
 use App\Models\Mailing;
 use App\DTO\SendCodeData;
+use App\Enum\UserType;
 use App\Jobs\ProcessMail;
 use App\Libraries\Utility;
 use App\Models\Fee;
@@ -388,4 +389,20 @@ if (!function_exists('getFee')) {
         return $fee->amount ?? 50;
     }
 }
+
+if (!function_exists('driversCreatedByAgent')) {
+    function driversCreatedByAgent(int $agentId)
+    {
+        $agent = User::find($agentId);
+
+        if (!$agent) {
+            return collect();
+        }
+
+        return $agent->createdDrivers()
+            ->where('user_category', UserType::DRIVER->value)
+            ->get();
+    }
+}
+
 
