@@ -23,6 +23,7 @@ class DriverInfoRequest extends FormRequest
     {
         return [
             'user_id' => 'required|exists:users,id',
+            'agent_id' => 'nullable|integer|exists:users,id',
             'transit_company_union_id' => 'required|integer',
             'vehicle_year' => 'required|integer|min:1900|max:' . now()->year,
             'vehicle_model' => 'required|string',

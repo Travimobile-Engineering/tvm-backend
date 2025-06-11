@@ -105,6 +105,7 @@ class DriverService
                 'profile_photo' => $fileUploads['profile_photo']['url'] ?? null,
                 'public_id' => $fileUploads['profile_photo']['public_id'] ?? null,
                 'driver_verified' => true,
+                'created_by' => $request->agent_id ?? null,
             ]);
 
             DB::commit();
