@@ -120,7 +120,7 @@ class AgentService
             'profile_photo' => $photo['url'],
             'public_id' => $photo['public_id'],
             'gender' => $request->gender,
-            'nin' => encryptData($request->nin),
+            'nin' => encryptData($request->nin) ?? null,
             'address' => $request->address,
             'next_of_kin_full_name' => $request->next_of_kin_full_name,
             'next_of_kin_relationship' => $request->next_of_kin_relationship,

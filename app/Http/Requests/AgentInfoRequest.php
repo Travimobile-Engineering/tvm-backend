@@ -23,9 +23,9 @@ class AgentInfoRequest extends FormRequest
     {
         return [
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'profile_photo' => ['required', 'image', 'mimes:png,jpg,jepg', 'max:2048'],
+            'profile_photo' => ['nullable', 'image', 'mimes:png,jpg,jepg', 'max:2048'],
             'gender' => ['required', 'string'],
-            'nin' => ['required', 'string'],
+            'nin' => ['nullable', 'string'],
             'address' => ['required', 'string'],
             'next_of_kin_full_name' => ['required', 'string'],
             'next_of_kin_relationship' => ['required', 'string'],

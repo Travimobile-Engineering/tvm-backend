@@ -27,6 +27,7 @@ class AccountService
 
         $this->transferToAccount($account, $amount);
     }
+    
     public function transferToAccount($account, $amount)
     {
         $account->accountTransfers()->create([
