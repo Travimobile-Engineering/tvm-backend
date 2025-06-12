@@ -184,11 +184,18 @@ class AgentService
     {
         $search = $request->input('search');
 
+        $formattedPhone = is_numeric($search) ? formatPhoneNumber($search) : null;
+
         $users = User::select('id', 'first_name', 'last_name', 'phone_number', 'email', 'gender', 'profile_photo')
-                ->where('phone_number', $search)
-                ->orWhere('first_name', 'LIKE', "%{$search}%")
-                ->orWhere('last_name', 'LIKE', "%{$search}%")
-                ->get();
+            ->where(function ($query) use ($search, $formattedPhone) {
+                if ($formattedPhone) {
+                    $query->where('phone_number', $formattedPhone);
+                }
+
+                $query->orWhere('first_name', 'LIKE', "%{$search}%")
+                    ->orWhere('last_name', 'LIKE', "%{$search}%");
+            })
+            ->get();
 
         return $this->success($users, "Passenger search result");
     }
