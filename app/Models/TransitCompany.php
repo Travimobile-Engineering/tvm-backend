@@ -24,6 +24,8 @@ class TransitCompany extends Model
         'phone',
         'address',
         'about_details',
+        'logo_url',
+        'logo_public_id',
         'union_id',
         'union_states_chapter',
         'ev',
@@ -39,6 +41,11 @@ class TransitCompany extends Model
         'ev',
         'sv'
     ];
+
+    protected function casts(){
+        return[
+        ];
+    }
 
     public function user()
     {
