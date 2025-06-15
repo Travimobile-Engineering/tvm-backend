@@ -27,6 +27,14 @@ class SetAvailabilityRequest extends FormRequest
             'lng' => ['required', 'numeric'],
             'lat' => ['required', 'numeric'],
             'unavailable_dates' => ['required', 'array'],
+            'unavailable_dates.*' => ['required', 'date_format:Y-m-d'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'unavailable_dates.*.date_format' => 'Each unavailable date must be in the format YYYY-MM-DD.',
         ];
     }
 }
