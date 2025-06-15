@@ -133,7 +133,7 @@ class PremiumHireService
 
     public function getCharter($userId)
     {
-        $user = Auth::user();
+        $user = authUser();
 
         if ($user->id != $userId) {
             return $this->error(null, 'Unauthorized action.', 401);

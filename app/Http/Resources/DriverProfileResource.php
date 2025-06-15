@@ -104,7 +104,7 @@ class DriverProfileResource extends JsonResource
             'wallet_setup' => hasSetupWallet($this->id),
             'wallet_info' => (object)[
                 'earnings' => (object) [
-                    'available' => $this->wallet,
+                    'available' => $pendingBalance,
                     'pending' => $pendingBalance,
                 ],
                 'available_balance' => $this->wallet,

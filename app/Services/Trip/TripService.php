@@ -226,7 +226,7 @@ class TripService
             'departure_date' => $request->departure_date,
             'departure_time' => $request->departure_time,
             'bus_type' => $request->bus_type,
-            'ticket_price' => $request->ticket_price,
+            'price' => $request->ticket_price,
             'bus_stops' => $request->bus_stops,
         ]);
 
