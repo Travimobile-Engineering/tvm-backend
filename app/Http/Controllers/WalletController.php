@@ -33,12 +33,12 @@ class WalletController extends Controller
 
     public function fundWallet(FundWalletRequest $request)
     {
-        return $this->response($this->service->fundWallet($request));
+        return $this->service->fundWallet($request);
     }
 
     public function transfer(WalletTransferRequest $request)
     {
-        return $this->response($this->service->transfer($request));
+        return $this->service->transfer($request);
     }
 
     public function getTransactions()

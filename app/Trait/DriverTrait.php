@@ -65,7 +65,9 @@ trait DriverTrait
             'txn_reference' => getRandomNumber()
         ]);
 
-        (new AccountService())->initiateTransfer($amount);
+        if (app()->environment('production')) {
+            app(AccountService::class)->initiateTransfer($amount);
+        }
     }
 
     protected function uploadInteriorImages($request, $user)
