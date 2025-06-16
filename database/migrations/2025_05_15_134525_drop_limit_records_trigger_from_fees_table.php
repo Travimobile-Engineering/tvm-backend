@@ -13,9 +13,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('fees', function (Blueprint $table) {
-            // $this->dropColumnsIfExists('fees', [
-            //     'passenger', 'driver', 'premium_hire', 'agent', 'manifest'
-            // ]);
             $table->dropColumn('passenger');
             $table->dropColumn('driver');
             $table->dropColumn('premium_hire');
@@ -59,13 +56,5 @@ return new class extends Migration
                     END
             ');
         }
-    }
-
-    public function dropColumnsIfExists(string $table, array $columns){
-        $tableColumns = Schema::getColumnListing($table);
-        $existingColumns = collect($columns)->filter(function($column) use($tableColumns){
-            return in_array($column, $tableColumns);
-        });
-        Schema::dropColumns($table, $existingColumns);
     }
 };
