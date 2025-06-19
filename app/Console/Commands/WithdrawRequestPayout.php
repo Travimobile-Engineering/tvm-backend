@@ -21,7 +21,7 @@ class WithdrawRequestPayout extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Payout system for withdraw requests';
 
     /**
      * Execute the console command.
