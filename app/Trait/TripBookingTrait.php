@@ -132,6 +132,8 @@ trait TripBookingTrait
                 'email' => $passUser->email,
                 'phone_number' => $passUser->phone_number,
                 'gender' => $passUser->gender ?? 'unknown',
+                'next_of_kin' => $passUser->next_of_kin_full_name ?? null,
+                'next_of_kin_phone_number' => $passUser->next_of_kin_phone_number ?? null,
             ]);
 
             $data = [
@@ -296,6 +298,8 @@ trait TripBookingTrait
             'email' => $userPass->email,
             'phone_number' => $userPass->phone_number,
             'gender' => $userPass->gender ?? 'unknown',
+            'next_of_kin' => $userPass->next_of_kin_full_name ?? null,
+            'next_of_kin_phone_number' => $userPass->next_of_kin_phone_number ?? null,
         ]);
 
         if (count($selectedSeats) !== $passengers->count()) {
