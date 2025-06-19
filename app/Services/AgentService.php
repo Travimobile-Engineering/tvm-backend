@@ -654,7 +654,7 @@ class AgentService
             return $this->error(null, "Sorry " . $trip->status, 400);
         }
 
-        if ($request->payment_method === 'driver_wallet' && $user->wallet < $request->amount) {
+        if ($request->payment_method === 'driver_wallet' && $user->wallet_amount < $request->amount) {
             return $this->error(null, "Insufficient wallet balance!", 400);
         }
 
@@ -672,8 +672,6 @@ class AgentService
             $trip->manifest()->create([
                 'status' => ManifestStatus::COMPLETED,
             ]);
-
-            $this->topUpWallet($user);
 
             if (in_array($request->payment_method, [PaymentMethod::DRIVERWALLET, PaymentMethod::WALLET])) {
                 $this->chargeWallet($user, $request->amount);

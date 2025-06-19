@@ -12,7 +12,6 @@ use App\Http\Requests\DriverWithdrawRequest;
 use App\Http\Requests\WalletTransferRequest;
 use App\Http\Requests\DriverWalletSetupequest;
 use App\Http\Requests\SendPinOtpRequest;
-use App\Http\Requests\SetTransactionPinRequest;
 use App\Http\Requests\VerifyPinRequest;
 use App\Services\AgentService;
 

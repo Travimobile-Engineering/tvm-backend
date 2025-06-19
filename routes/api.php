@@ -418,6 +418,14 @@ Route::middleware('validate.header')
 
                 //Notification
                 Route::patch('/notification', 'updateNotification');
+
+                // Create Driver
+                Route::prefix('driver')
+                    ->controller(RegisterController::class)
+                    ->group(function () {
+                        Route::post('/create', 'createDriver');
+                        Route::post('/verify-account', 'verifyDriverAccount');
+                    });
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);

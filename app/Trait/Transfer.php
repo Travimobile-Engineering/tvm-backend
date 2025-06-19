@@ -3,14 +3,19 @@
 namespace App\Trait;
 
 use App\Enum\AccountTransferStatus;
+use App\Enum\General;
 use Illuminate\Support\Str;
 use App\Models\Account;
 use App\Models\AccountTransfer;
+use App\Models\User;
+use App\Models\UserWithdrawLog;
+use App\Notifications\WithdrawalNotification;
 use App\Services\Admin\PayoutService;
 use Illuminate\Support\Facades\Log;
 
 trait Transfer
 {
+    // Requests from accounts
     protected function collectRequests(): array
     {
         $requests = [];
@@ -144,6 +149,119 @@ trait Transfer
         return true;
     }
 
+    // Requests from withdrawals
+    protected function collectWithdrawRequests(): array
+    {
+        $requests = [];
+
+        User::with(['userWithdrawLogs' => function ($query) {
+            $query->where('status', General::PENDING)->limit(1);
+        }, 'userBank'])
+        ->whereHas('userWithdrawLogs', function ($query) {
+            $query->where('status', General::PENDING);
+        })
+        ->chunk(100, function ($users) use (&$requests) {
+            foreach ($users as $user) {
+                $this->extractWithdrawAccountRequests($user, $requests);
+            }
+        });
+
+        return $requests;
+    }
+
+    protected function extractWithdrawAccountRequests($user, array &$requests): void
+    {
+        $bank = $user->userBank->first();
+
+        if (!$bank) {
+            return;
+        }
+
+        foreach ($user->userWithdrawLogs as $request) {
+            if ($request->status !== General::PENDING) {
+                continue;
+            }
+
+            $amount = intval($request->amount * 100);
+            if ($amount <= 0 || !$bank->recipient_code) {
+                continue;
+            }
+
+            $reference = (string) Str::uuid();
+
+            $request->update([
+                'status' => General::PROCESSING,
+                'reference' => $reference,
+            ]);
+
+            $requests[] = [
+                'reference' => $reference,
+                'amount' => $amount,
+                'recipient' => $bank->recipient_code,
+                'reason' => 'Withdrawal',
+                'request_id' => $request->id,
+                'user_id' => $user->id,
+            ];
+        }
+    }
+
+    protected function handleUserChunk(array $chunk): void
+    {
+        try {
+            $result = PayoutService::paystackBulkTransfer($chunk);
+
+            $success = $result['status'] === true;
+            $data = $result['data'];
+
+            foreach ($chunk as $item) {
+                $this->handleResultItem(
+                    $item,
+                    $success,
+                    $success ? null : $result,
+                    $data,
+                );
+            }
+        } catch (\Exception $e) {
+            Log::error('Paystack bulk transfer exception: ' . $e);
+
+            foreach ($chunk as $item) {
+                $this->markRequestFailed($item['request_id'], $item['user_id'], $e->getMessage());
+            }
+        }
+    }
+
+    private function handleResultItem(array $item, bool $success, $errorMessage = null, $data = null): void
+    {
+        $request = UserWithdrawLog::find($item['request_id']);
+        $user = User::with(['walletAccount'])->find($item['user_id']);
+
+        if ($success) {
+            Log::info("Bulk transfer queued: Withdrawal ID {$request->id}, Ref: {$item['reference']}");
+            foreach ($data as $transfer) {
+                $transferCode = $transfer['transfer_code'];
+                $request->update([
+                    'transfer_code' => $transferCode,
+                ]);
+            }
+        } else {
+            $this->markWithdrawRequestFailed($request->id, $user->id, $errorMessage);
+            $user->walletAccount->increment('balance', $request->amount);
+            Log::error("Failed to queue Paystack bulk transfer: " . json_encode($errorMessage));
+        }
+    }
+
+    private function markWithdrawRequestFailed(int $requestId, int $userId, $errorMessage = null): void
+    {
+        $request = UserWithdrawLog::find($requestId);
+        $user = User::find($userId);
+
+        $request->update([
+            'status' => General::FAILED,
+            'response' => $errorMessage,
+        ]);
+
+        $user->notify(new WithdrawalNotification($request, 'failed'));
+    }
 }
 
 
