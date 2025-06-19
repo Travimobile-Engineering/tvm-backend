@@ -5,6 +5,7 @@ use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AccountSignUpRequest;
+use App\Http\Requests\CreateDriverRequest;
 use App\Services\Auth\AuthService;
 
 class RegisterController extends Controller
@@ -33,5 +34,14 @@ class RegisterController extends Controller
         return $this->service->resendCode($request);
     }
 
+    public function createDriver(CreateDriverRequest $request)
+    {
+        return $this->service->createDriver($request);
+    }
+
+    public function verifyDriverAccount(Request $request)
+    {
+        return $this->service->verifyDriverAccount($request);
+    }
 }
 

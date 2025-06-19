@@ -22,7 +22,15 @@ class DriverService
     public function addDriverInfo($request)
     {
         $user = User::with(['vehicle', 'documents', 'transitCompany'])
-            ->findOrFail($request->user_id);
+            ->where([
+                'id' => $request->user_id,
+                'user_category' => UserType::DRIVER
+            ])
+            ->first();
+
+        if(!$user) {
+            return $this->error(null, "User not found!", 404);
+        }
 
         $accountExist = hasOnboarded($request->user_id);
 
@@ -105,7 +113,6 @@ class DriverService
                 'profile_photo' => $fileUploads['profile_photo']['url'] ?? null,
                 'public_id' => $fileUploads['profile_photo']['public_id'] ?? null,
                 'driver_verified' => true,
-                'created_by' => $request->agent_id ?? null,
             ]);
 
             DB::commit();

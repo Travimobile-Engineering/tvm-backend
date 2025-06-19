@@ -25,6 +25,7 @@ use App\Models\UserPin;
 use App\Models\UserTransferReceipient;
 use App\Models\UserWithdrawLog;
 use App\Models\Vehicle\Vehicle;
+use App\Models\Wallet;
 
 trait UserRelationships
 {
@@ -163,6 +164,11 @@ trait UserRelationships
         return $this->hasMany(User::class, 'created_by');
     }
 
+    public function walletAccount()
+    {
+        return $this->hasOne(Wallet::class, 'user_id');
+    }
+
     public static function bootDeletesUserRelationships(): void
     {
         static::deleting(function (User $user) {
@@ -189,10 +195,9 @@ trait UserRelationships
             $user->premiumHireRatings()->delete();
             $user->userNotifications()->delete();
             $user->announcements()->detach();
+            $user->createdBy()->delete();
+            $user->createdDrivers()->delete();
+            $user->wallet()?->delete();
         });
     }
 }
-
-
-
-

@@ -4,6 +4,7 @@ namespace App\Trait;
 
 use App\DTO\NotificationDispatchData;
 use App\Enum\PaymentMethod;
+use App\Enum\PaymentStatus;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
 use App\Enum\UserType;
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\Hash;
 
 trait TripBookingTrait
 {
-    use HttpResponse, PaymentLogTrait;
+    use HttpResponse, PaymentLogTrait, DriverTrait;
 
     public function __construct(
         protected NotificationDispatcher $notifier
@@ -65,16 +66,12 @@ trait TripBookingTrait
             return $response;
         }
 
-        if($amount_paid > $user->wallet) {
-            return $this->error(null, "Your balance is insufficient to complete your request",  400);
+        if ($amount_paid <= 0) {
+            return $this->error(null, "Amount must be greater than 0", 400);
         }
 
-        if ($user->wallet < $amount_paid) {
-            return $this->error(null, "Insufficient balance!", 400);
-        }
-
-        if($amount_paid <= 0) {
-            return $this->error(null, "Amount cannot be lesser than 0",  400);
+        if ($amount_paid > $user->wallet_amount) {
+            return $this->error(null, "Your balance is insufficient to complete your request", 400);
         }
 
         $trip = $this->handleTripCheck($request, $user);
@@ -86,7 +83,7 @@ trait TripBookingTrait
         try {
             DB::beginTransaction();
 
-            $user = User::with(['transactions'])->findOrFail($user->id);
+            $user = User::with(['transactions', 'walletAccount'])->findOrFail($user->id);
 
             $userId = $request->user_id ?? $user->id;
             $passUser = User::findOrFail($userId);
@@ -102,8 +99,13 @@ trait TripBookingTrait
             )
             ->findOrFail($request->trip_id);
 
-            $user->wallet -= $amount_paid;
-            $user->save();
+            if ($user->wallet >= $amount_paid) {
+                $this->userIncrementBalance($user, $user->wallet);
+                $user->update(['wallet' => 0]);
+            }
+
+            $this->userDecrementBalance($user, $amount_paid);
+
             $destination = $trip->destinationRegion?->state?->name . ' > ' . $trip->destinationRegion?->name;
 
             do {
@@ -170,7 +172,7 @@ trait TripBookingTrait
                 'trip_id' => $request->trip_id,
                 'title' => 'Bus ticket purchase',
                 'amount' => $amount_paid,
-                'status' => 'pending'
+                'status' => PaymentStatus::PAID->value,
             ]);
 
             $user->transactions()->create([
@@ -179,6 +181,8 @@ trait TripBookingTrait
                 'type' => "DR",
                 'txn_reference' => "wallet"
             ]);
+
+            $this->driverIncrementEarning($trip->user, $amount_paid);
 
             DB::commit();
 

@@ -11,4 +11,7 @@ enum General: string
     const CANCELLED = "cancelled";
     const UPCOMING = "upcoming";
     const REQUEST = "request";
+    const PENDING = "pending";
+    const PROCESSING = "processing";
+    const FAILED = "failed";
 }

@@ -2,10 +2,6 @@
 
 namespace App\Services;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-
 class PaystackPaymentService
 {
     protected $paystack_secret_key;

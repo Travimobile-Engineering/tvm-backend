@@ -14,6 +14,10 @@ class UserWithdrawLog extends Model
         'data',
         'ip_address',
         'device',
+        'previous_balance',
+        'new_balance',
+        'reference',
+        'response',
     ];
 
     protected function casts(): array

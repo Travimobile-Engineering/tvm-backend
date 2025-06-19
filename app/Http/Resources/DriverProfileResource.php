@@ -23,7 +23,7 @@ class DriverProfileResource extends JsonResource
             'last_name' => $this->last_name,
             'email' => $this->email,
             'phone_number' => $this->phone_number,
-            'wallet' => $this->wallet,
+            'wallet' => $this->wallet_amount,
             'address' => $this->address,
             'gender' => $this->gender,
             'is_admin' => $this->is_admin,
@@ -104,11 +104,10 @@ class DriverProfileResource extends JsonResource
             'wallet_setup' => hasSetupWallet($this->id),
             'wallet_info' => (object)[
                 'earnings' => (object) [
-                    'available' => $pendingBalance,
+                    'available' => $this->earning_balance,
                     'pending' => $pendingBalance,
                 ],
-                'available_balance' => $this->wallet,
-                'pending_balance' => $pendingBalance,
+                'available_balance' => $this->wallet_amount,
             ],
             'bank' => (object)[
                 'id' => $this->userBank?->id,

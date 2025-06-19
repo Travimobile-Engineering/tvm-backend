@@ -11,7 +11,6 @@ use App\Events\WalletFunded;
 use App\Mail\VerifyPinMail;
 use App\Models\Transaction;
 use App\Trait\HttpResponse;
-use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -19,11 +18,12 @@ use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Models\TripPayment;
 use App\Services\Notification\NotificationDispatcher;
 use App\Services\Paystack\PaystackService;
+use App\Trait\DriverTrait;
 use Unicodeveloper\Paystack\Facades\Paystack;
 
 class WalletService
 {
-    use HttpResponse;
+    use HttpResponse, DriverTrait;
 
     protected $user;
 
@@ -43,7 +43,7 @@ class WalletService
             return $this->error("User not found", 404);
         }
 
-        $data = $user->wallet ?? [];
+        $data = $user->wallet_amount ?? [];
 
         return $this->success($data, "Wallet balance retrieved");
     }
@@ -56,8 +56,6 @@ class WalletService
 
         if ($response['status'] === 'success') {
             $user = User::findOrFail($this->user->id);
-            $user->wallet += $request->amount;
-            $user->save();
 
             Transaction::create([
                 'user_id' => $user->id,
@@ -68,6 +66,8 @@ class WalletService
             ]);
 
             $formattedAmount = number_format($request->amount);
+
+            $this->userIncrementBalance($user, $formattedAmount);
 
             $this->notifier->send(new NotificationDispatchData(
                 events: [
@@ -105,40 +105,28 @@ class WalletService
             return $this->error(null, "You are not authorized to perform this action", 403);
         }
 
-        if($this->user->wallet < $request->amount) {
+        if($this->user->wallet_amount < $request->amount) {
             return $this->error(null, "Insufficient wallet balance", 400);
         }
 
-        $user = User::where('agent_id', $request->agent_id)
-            ->exists();
+        $amount = $this->user->wallet_amount - $request->amount;
 
-        if(!$user || $request->agent_id == $this->user->agent_id) {
-            return $this->error(null, "Invalid agent ID", 400);
-        }
+        $this->userDecrementBalance($this->user, $amount);
+        $this->userIncrementBalance($user, $request->amount);
 
-        $this->user->update(['wallet' => $this->user->wallet - $request->amount]);
-        $receiver = User::where('agent_id', $request->agent_id)->firstOrFail();
+        Transaction::create([
+            'user_id' => $this->user->id,
+            'title' => 'Funds transfer',
+            'amount' => $request->amount,
+            'type' => 'DR',
+            'receiver_id' => $user->id
+        ]);
 
-        $status = $receiver->update(['wallet' => $receiver->wallet + $request->amount]);
-
-        if($status)
-        {
-            Transaction::create([
-                'user_id' => $this->user->id,
-                'title' => 'Funds transfer',
-                'amount' => $request->amount,
-                'type' => 'DR',
-                'receiver_id' => $receiver->id
-            ]);
-
-            return $this->success(null, "Funds tranfered successfully");
-        }
-
-        return $this->error(null, "Funds transfer failed", 400);
-
+        return $this->success(null, "Funds tranfered successfully");
     }
 
-    public function getTransactions(){
+    public function getTransactions()
+    {
         $userId = request()->input('userId') ?? $this->user?->id;
 
         $user = User::with('transactions')->find($userId);
@@ -310,40 +298,66 @@ class WalletService
 
     public function withdraw($request)
     {
-        $user = User::with(['userPin', 'userTransferReceipient', 'userWithdrawLogs'])
+        $user = User::with(['userPin', 'walletAccount', 'userWithdrawLogs', 'userBank'])
             ->findOrFail($request->user_id);
 
-        if($user->wallet <= 0) {
-            return $this->error(null, "Insufficient wallet balance", 400);
+        if ($user->userBank->isEmpty()) {
+            return $this->error(null, "No bank found", 404);
         }
 
-        if($request->amount > $user->wallet) {
-            return $this->error(null, "Insufficient wallet balance", 400);
+        if (!$user->walletAccount) {
+            return $this->error(null, "Wallet not found", 404);
         }
 
-        if(empty($user?->userPin?->pin)){
+        if(empty($user?->userPin?->pin)) {
             return $this->error(null,  "Set your transaction pin!", 400);
         }
 
-        $fields = [
-            "source" => "balance",
-            "reason" => "Withdrawal",
-            "amount" => $request->amount . 00,
-            "reference" => Str::uuid(),
-            "recipient" => $user->userTransferReceipient?->recipient_code,
-        ];
+        if($request->amount > $user->earning_balance) {
+            return $this->error(null, "Insufficient earning balance", 400);
+        }
 
-        return PaystackService::transfer($user, $fields);
+        DB::transaction(function () use ($user, $request) {
+            $newBalance = $user->earning_balance - $request->amount;
+
+            $user->userWithdrawLogs()->create([
+                'amount' => $request->amount,
+                'previous_balance' => $user->earning_balance,
+                'new_balance' => $newBalance,
+                'status' => General::PENDING,
+                'ip_address' => $request->ip(),
+                'device' => $request->header('User-Agent'),
+            ]);
+
+            $user->walletAccount()->update([
+                'earnings' => $newBalance,
+            ]);
+        });
+
+        return $this->success(null, "Request sent successfully");
     }
 
     public function balanceWithdraw($request)
     {
-        $user = User::with(['userPin', 'userTransferReceipient', 'userWithdrawLogs'])
+        $user = User::with(['userPin', 'walletAccount', 'userWithdrawLogs'])
             ->findOrFail($request->user_id);
 
-        $user->increment('wallet', $request->amount);
+        if (!$user->walletAccount) {
+            return $this->error(null, "Wallet not found", 404);
+        }
 
-        return $this->success(null, "Withdrawal successful");
+        if(empty($user?->userPin?->pin)) {
+            return $this->error(null,  "Set your transaction pin!", 400);
+        }
+
+        if($request->amount > $user->earning_balance) {
+            return $this->error(null, "Insufficient earning balance", 400);
+        }
+
+        $this->driverDecrementEarning($user, $request->amount);
+        $this->userIncrementBalance($user, $request->amount);
+
+        return $this->success(null, "Withdrawal to wallet successful");
     }
 
     public function recentTransaction($userId)

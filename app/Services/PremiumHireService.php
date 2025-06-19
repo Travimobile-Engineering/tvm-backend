@@ -571,7 +571,7 @@ class PremiumHireService
         $booking = PremiumHireBooking::with(['premiumHireBookingPassengers', 'premiumHireManifests'])
             ->findOrFail($request->premium_hire_booking_id);
 
-        if ($user->wallet < self::TRIP_CHARGE_AMOUNT) {
+        if ($user->wallet_amount < getFee('manifest')) {
             return $this->error(null, "Insufficient wallet balance!", 400);
         }
 
@@ -596,7 +596,6 @@ class PremiumHireService
                 $booking->premiumHireManifests()->save($manifest);
             }
 
-            $this->topUpWallet($user);
             $this->chargeWallet($user);
 
             $booking->update([
