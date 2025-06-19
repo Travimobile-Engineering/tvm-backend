@@ -4,8 +4,9 @@ namespace App\Observers;
 
 use App\Models\User;
 use App\Models\Wallet;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class UserObserver
+class UserObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Handle the User "created" event.
