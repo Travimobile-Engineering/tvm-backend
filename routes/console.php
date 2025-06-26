@@ -20,5 +20,6 @@ Schedule::everyTenMinutes()
     ->withoutOverlapping()
     ->group(function () {
         Schedule::command('app:account-payout');
+        Schedule::command('app:withdraw-request-payout');
     });
 

@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Contracts\SMS;
 use App\Models\TripBooking;
+use App\Models\User;
 use App\Observers\TripBookingObserver;
+use App\Observers\UserObserver;
 use App\Services\SMS\SmsServiceFactory;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
@@ -49,7 +51,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureModels();
         $this->configureUrl();
 
+        // Register observers
         TripBooking::observe(TripBookingObserver::class);
+        User::observe(UserObserver::class);
     }
 
     /**

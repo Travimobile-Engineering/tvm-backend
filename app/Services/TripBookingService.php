@@ -16,7 +16,6 @@ use App\Trait\HttpResponse;
 use Illuminate\Support\Str;
 use App\Models\Notification;
 use App\Models\TransitCompany;
-use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;

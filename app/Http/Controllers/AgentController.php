@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AgentAddUserRequest;
 use Illuminate\Http\Request;
 use App\Services\AgentService;
 use App\Services\DriverService;
@@ -73,15 +74,8 @@ class AgentController extends Controller
         return $this->service->searchPassenger($request);
     }
 
-    public function addUser(Request $request)
+    public function addUser(AgentAddUserRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string',
-            'phone_number' => 'required|string|unique:users,phone_number',
-            'gender' => 'required|string',
-            'nin' => 'nullable|string',
-        ]);
-
         return $this->service->addUser($request);
     }
 

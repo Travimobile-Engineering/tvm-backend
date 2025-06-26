@@ -10,7 +10,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 trait LoginTrait
 {
-    use HttpResponse;
+    use HttpResponse, DriverTrait;
 
     public function authUserLogin($request, array $allowedCategories): JsonResponse
     {
@@ -32,6 +32,13 @@ trait LoginTrait
 
                 if ($res = $this->authCheck($user)) {
                     return $res;
+                }
+
+                if ($user->wallet > 0) {
+                    $this->userIncrementBalance($user, $user->wallet);
+                    $user->update([
+                        'wallet' => 0,
+                    ]);
                 }
 
                 $token = JWTAuth::fromUser($user);

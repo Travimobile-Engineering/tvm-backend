@@ -53,9 +53,9 @@ class AgentProfileResource extends JsonResource
             'wallet_setup' => hasSetupWallet($this->id),
             'wallet_info' => (object)[
                 'earnings' => (object) [
-                    'available' => $this->wallet,
+                    'available' => $this->earning_balance,
                 ],
-                'available_balance' => $this->wallet,
+                'available_balance' => $this->wallet_amount,
             ],
             'sms_notification' => $this->inbox_notifications,
             'email_notification' => $this->email_notifications,
