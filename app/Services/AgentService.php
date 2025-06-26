@@ -214,6 +214,10 @@ class AgentService
             'phone_number' => $request->phone_number,
             'gender' => $request->gender,
             'nin' => $request->nin,
+            'next_of_kin_full_name' => $request->next_of_kin_full_name,
+            'next_of_kin_phone_number' => $request->next_of_kin_phone_number,
+            'next_of_kin_gender' => $request->next_of_kin_gender,
+            'next_of_kin_relationship' => $request->next_of_kin_relationship,
             'verification_code' => 0000,
             'profile_photo' => null,
             'password' => bcrypt('12345678'),
@@ -654,7 +658,7 @@ class AgentService
             return $this->error(null, "Sorry " . $trip->status, 400);
         }
 
-        if ($request->payment_method === 'driver_wallet' && $user->wallet < $request->amount) {
+        if ($request->payment_method === 'driver_wallet' && $user->wallet_amount < $request->amount) {
             return $this->error(null, "Insufficient wallet balance!", 400);
         }
 
@@ -672,8 +676,6 @@ class AgentService
             $trip->manifest()->create([
                 'status' => ManifestStatus::COMPLETED,
             ]);
-
-            $this->topUpWallet($user);
 
             if (in_array($request->payment_method, [PaymentMethod::DRIVERWALLET, PaymentMethod::WALLET])) {
                 $this->chargeWallet($user, $request->amount);

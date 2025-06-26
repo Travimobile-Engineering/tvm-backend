@@ -20,7 +20,7 @@ class PassengerProfileResource extends JsonResource
             'last_name' => $this->last_name,
             'email' => $this->email,
             'phone_number' => $this->phone_number,
-            'wallet' => $this->wallet,
+            'wallet' => (float)$this->wallet_amount,
             'address' => $this->address,
             'gender' => $this->gender,
             'is_admin' => $this->is_admin,
@@ -37,7 +37,7 @@ class PassengerProfileResource extends JsonResource
             'wallet_setup' => hasSetupWallet($this->id),
             'pin_setup' => hasSetupPin($this->id),
             'wallet_info' => (object)[
-                'available_balance' => $this->wallet,
+                'available_balance' => (float)$this->wallet_amount,
             ],
             'bank' => (object)[
                 'id' => $this->userBank?->id,

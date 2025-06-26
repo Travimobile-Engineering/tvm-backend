@@ -474,7 +474,7 @@ class TripService
         //     return $this->error(null, "Cannot start trip. Current date and time do not match the scheduled departure.", 400);
         // }
 
-        if ($user->wallet < getFee('manifest')) {
+        if ($user->wallet_amount < getFee('manifest')) {
             return $this->error(null, "Insufficient wallet balance!", 400);
         }
 
@@ -501,7 +501,6 @@ class TripService
                 'status' => ManifestStatus::COMPLETED,
             ]);
 
-            $this->topUpWallet($user);
             $this->chargeWallet($user);
 
             $trip->update(['status' => TripStatus::INPROGRESS]);
@@ -777,8 +776,10 @@ class TripService
 
     public function getBusStops($stateId)
     {
-        $auth = authUser();
-        $stops = BusStop::where('user_id', $auth->id)
+        $driverId = request()->query('driver_id');
+        $userId = $driverId ?: authUser()->id;
+
+        $stops = BusStop::where('user_id', $userId)
             ->where('state_id', $stateId)
             ->get();
 

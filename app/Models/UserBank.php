@@ -11,7 +11,18 @@ class UserBank extends Model
         'bank_name',
         'account_number',
         'account_name',
+        'recipient_code',
+        'data',
+        'is_default',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'data' => 'array',
+            'is_default' => 'boolean',
+        ];
+    }
 
     public function user()
     {

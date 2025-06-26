@@ -6,16 +6,19 @@ use App\Enum\UserStatus;
 use App\Models\User;
 use App\Contracts\SMS;
 use App\Enum\MailingEnum;
+use App\Enum\UserType;
 use App\Trait\HttpResponse;
 use App\Mail\ConfirmationEmail;
 
 class AuthService
 {
     use HttpResponse;
+
     public function __construct(
         protected SMS $smsService
     )
     {}
+
     public function accountSignUp($request)
     {
         $fullName = trim($request->input('full_name'));
@@ -51,12 +54,14 @@ class AuthService
             'verification_code_expires_at' => now()->addMinutes(10),
             'user_category' => $request->user_category,
             'password' => bcrypt($request->password),
+            'status' => UserStatus::INACTIVE->value,
         ]);
 
         $this->sendCode($request, $user);
 
         return $this->success(null, "User created successfully", 201);
     }
+
     public function verifyAcount($request)
     {
         $user = User::where('verification_code', $request->code)
@@ -104,6 +109,76 @@ class AuthService
         mailSend($type, $user, $subject, $mail_class, $data);
 
         return $this->success(null, 'Verification code sent successfully');
+    }
+
+    public function createDriver($request)
+    {
+        $user = User::where([
+                'id' => $request->agent_id,
+                'user_category' => UserType::AGENT->value,
+            ])
+            ->first();
+
+        if (!$user) {
+            return $this->error(null, "Agent not found", 404);
+        }
+
+        $existingUser = $this->findUserByEmailOrPhone($request);
+
+        if ($existingUser) {
+            if ($this->hasActiveCode($existingUser)) {
+                return $this->error(null, "A verification code has already been sent. Please check your email or phone.", 400);
+            }
+
+            if ($existingUser->email_verified) {
+                return $this->error(null, "Email or phone number already in use.", 400);
+            }
+
+            $this->sendCode($request, $existingUser);
+
+            return $this->success(null, "OTP has been resent to your email or phone number.");
+        }
+
+        $code = generateUniqueNumber('users', 'verification_code', 5);
+
+        $user = User::create([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'phone_number' => $request->filled('phone_number') ? formatPhoneNumber($request->phone_number) : null,
+            'verification_code' => $code,
+            'verification_code_expires_at' => now()->addMinutes(10),
+            'user_category' => UserType::DRIVER->value,
+            'password' => bcrypt($request->password),
+            'created_by' => $request->agent_id ?? null,
+            'status' => UserStatus::INACTIVE->value,
+        ]);
+
+        $this->sendCode($request, $user);
+
+        return $this->success(null, "User created successfully", 201);
+    }
+
+    public function verifyDriverAccount($request)
+    {
+        $user = User::where('created_by', $request->agent_id)
+            ->where('verification_code', $request->code)
+            ->where('verification_code_expires_at', '>=', now())
+            ->first();
+
+        if (! $user) {
+            return $this->error(null, "Invalid code!", 400);
+        }
+
+        $user->update([
+            'email_verified' => 1,
+            'email_verified_at' => now(),
+            'verification_code' => 0,
+            'verification_code_expires_at' => null,
+            'status' => UserStatus::ACTIVE->value,
+        ]);
+
+        return $this->success($user, "Account verified successfully");
     }
 
     private function findUserByEmailOrPhone($request)

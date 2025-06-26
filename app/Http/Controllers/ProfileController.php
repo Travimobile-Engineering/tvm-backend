@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PassengerProfileResource;
+use App\Models\User;
 use App\Services\ProfileService;
 
 class ProfileController extends Controller
@@ -30,8 +31,10 @@ class ProfileController extends Controller
             return $this->error(null, "You are not allowed to access this resource", 403);
         }
 
-        $user = new PassengerProfileResource($this->user);
-        return $this->success($user, "Passenger profile");
+        $user = User::findOrFail($this->user?->id);
+
+        $data = new PassengerProfileResource($user);
+        return $this->success($data, "Passenger profile");
     }
 
     //Method to update user data

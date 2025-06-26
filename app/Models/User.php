@@ -145,4 +145,19 @@ class User extends Authenticatable implements JWTSubject
             ->count()
         );
     }
+
+    public function walletBalance(): Attribute
+    {
+        return Attribute::get(fn () => $this->walletAccount?->balance);
+    }
+
+    public function walletAmount(): Attribute
+    {
+        return Attribute::get(fn () => $this->wallet + $this->walletBalance);
+    }
+
+    public function earningBalance(): Attribute
+    {
+        return Attribute::get(fn () => $this->walletAccount?->earnings);
+    }
 }

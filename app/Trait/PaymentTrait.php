@@ -4,6 +4,7 @@ namespace App\Trait;
 
 use App\DTO\NotificationDispatchData;
 use App\Enum\PaymentMethod;
+use App\Enum\PaymentStatus;
 use App\Enum\PaymentType;
 use App\Enum\TripStatus;
 use App\Events\TripBooked;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 
 trait PaymentTrait
 {
-    use HttpResponse, PaymentLogTrait;
+    use HttpResponse, PaymentLogTrait, DriverTrait;
 
     protected NotificationDispatcher $notifier;
 
@@ -37,9 +38,7 @@ trait PaymentTrait
 
             DB::beginTransaction();
 
-            $user->update([
-                'wallet' => $user->wallet + $formattedAmount
-            ]);
+            $this->userIncrementBalance($user, $formattedAmount);
 
             $user->transactions()->create([
                 'title' => PaymentType::FUND_WALLET,
@@ -246,6 +245,7 @@ trait PaymentTrait
     {
         return Trip::with([
             'user.transitCompany',
+            'user.wallet',
             'vehicle',
             'tripBookings.user',
             'departureRegion.state',
@@ -348,13 +348,15 @@ trait PaymentTrait
     private function recordTransactions(Trip $trip, User $user, array $paymentData): void
     {
         $amount = number_format($paymentData['amount'] / 100, 2, '.', '');
+
         $trip->user->driverTripPayments()->create([
             'user_id' => $user->id,
             'trip_id' => $trip->id,
             'title' => PaymentType::TRIP_BOOKING,
             'amount' => $amount,
-            'status' => 'pending',
+            'status' => PaymentStatus::PAID->value,
         ]);
+
         $user->transactions()->create([
             'user_id' => $user->id,
             'title' => PaymentType::TRIP_BOOKING,
@@ -362,6 +364,8 @@ trait PaymentTrait
             'type' => PaymentType::CR,
             'txn_reference' => $paymentData['reference'],
         ]);
+
+        $this->driverIncrementEarning($trip->user, $amount);
     }
 
     private function dispatchTripBookedEvent(User $user): void

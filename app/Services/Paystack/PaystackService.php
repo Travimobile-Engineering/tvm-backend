@@ -4,6 +4,7 @@ namespace App\Services\Paystack;
 
 use App\Enum\AccountTransferStatus;
 use App\Models\AccountTransfer;
+use App\Models\UserWithdrawLog;
 use App\Services\Curl\PostCurlService;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,10 @@ class PaystackService
 
         $data = (new PostCurlService($url, $headers, $fields))->execute();
 
-        self::logTransfer($user, $data);
+        $user->userBank()->update([
+            'recipient_code' => $data['recipient_code'],
+            'data' => $data,
+        ]);
     }
 
     public static function transfer($user, $fields)
@@ -69,108 +73,67 @@ class PaystackService
 
     public static function handleTransferSuccess($event): void
     {
-        $transferCode = $event['transfer_code'];
-        $reference = $event['reference'];
+        self::updateTransferStatus($event, AccountTransferStatus::COMPLETED, 'Transfer successful');
+    }
 
-        $transfer = AccountTransfer::where('transfer_code', $transferCode)
-            ->first();
+    public static function handleTransferFailed($event): void
+    {
+        self::updateTransferStatus($event, AccountTransferStatus::FAILED, 'Transfer failed');
+    }
 
-        if (!$transfer) {
-            Log::error("Transfer success: No matching transfer found for transfer_code: {$transferCode}");
+    public static function handleTransferReversed($event): void
+    {
+        self::updateTransferStatus($event, AccountTransferStatus::REVERSED, 'Transfer reversed');
+    }
+
+    protected static function updateTransferStatus(array $event, AccountTransferStatus $status, string $logPrefix): void
+    {
+        $transferCode = $event['transfer_code'] ?? null;
+        $reference = $event['reference'] ?? null;
+        $reason = $event['reason'] ?? 'No reason provided';
+
+        if (!$transferCode) {
+            Log::error("{$logPrefix}: Missing transfer_code in event");
             return;
         }
 
         DB::beginTransaction();
         try {
-            $transfer->update([
-                'status' => AccountTransferStatus::COMPLETED->value,
-                'response' => $event['reason'],
-            ]);
+            // Try to update AccountTransfer
+            $adminTransfer = AccountTransfer::where('transfer_code', $transferCode)->first();
 
-            Log::info("Transfer successful for transfer ID {$transfer->id} - Reference: {$reference}");
+            if ($adminTransfer) {
+                $adminTransfer->update([
+                    'status' => $status->value,
+                    'response' => $reason,
+                ]);
 
-            DB::commit();
-        } catch (\Exception $e) {
+                Log::info("{$logPrefix} for AccountTransfer ID {$adminTransfer->id} - Ref: {$reference}");
+                DB::commit();
+                return;
+            }
+
+            // Try to update UserWithdrawLog
+            $userWithdraw = UserWithdrawLog::where('transfer_code', $transferCode)->first();
+
+            if ($userWithdraw) {
+                $userWithdraw->update([
+                    'status' => $status->value,
+                    'response' => $reason,
+                ]);
+
+                Log::info("{$logPrefix} for UserWithdrawLog ID {$userWithdraw->id} - Ref: {$reference}");
+                DB::commit();
+                return;
+            }
+
+            Log::error("{$logPrefix}: No matching transfer record found for code: {$transferCode}");
             DB::rollBack();
-            Log::error("Error processing transfer success: " . $e->getMessage());
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error("Error processing {$logPrefix}: " . $e->getMessage());
             throw $e;
         }
-    }
-
-    public static function handleTransferFailed($event)
-    {
-        $transferCode = $event['transfer_code'];
-        $reference = $event['reference'];
-
-        $transfer = AccountTransfer::with('user')
-            ->where('transfer_code', $transferCode)
-            ->first();
-
-        if (!$transfer) {
-            Log::error("Transfer success: No matching transfer found for transfer_code: {$transferCode}");
-            return;
-        }
-
-        DB::beginTransaction();
-        try {
-            $transfer->update([
-                'status' => AccountTransferStatus::FAILED->value,
-                'response' => $event['reason'],
-            ]);
-
-            Log::info("Transfer failed for transfer ID {$transfer->id} - Reference: {$reference}");
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Error processing transfer success: " . $e->getMessage());
-            throw $e;
-        }
-    }
-
-    public static function handleTransferReversed($event)
-    {
-        $transferCode = $event['transfer_code'];
-        $reference = $event['reference'];
-
-        $transfer = AccountTransfer::with('user')
-            ->where('transfer_code', $transferCode)
-            ->first();
-
-        if (!$transfer) {
-            Log::error("Transfer success: No matching transfer found for transfer_code: {$transferCode}");
-            return;
-        }
-
-        DB::beginTransaction();
-        try {
-            $transfer->update([
-                'status' => AccountTransferStatus::REVERSED->value,
-                'response' => $event['reason'],
-            ]);
-
-            Log::info("Transfer failed for transfer ID {$transfer->id} - Reference: {$reference}");
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Error processing transfer success: " . $e->getMessage());
-            throw $e;
-        }
-    }
-
-    private static function logTransfer($user, $data)
-    {
-        $user->userTransferReceipient()->updateOrCreate(
-            [
-                'user_id' => $user->id,
-            ],
-            [
-                'name' => $data['name'],
-                'recipient_code' => $data['recipient_code'],
-                'data' => $data,
-            ]
-        );
     }
 
     private static function logWithdraw($user, $data)

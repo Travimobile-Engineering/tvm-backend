@@ -26,12 +26,26 @@ trait DriverTrait
         ]);
     }
 
+    protected function chargeWallet($user, $amount = null)
+    {
+        $amount = $amount ? $amount : getFee('manifest');
+
+        $this->driverDecrementEarning($user, $amount);
+
+        $user->save();
+
+        $title = "Wallet charged for manifest";
+        $type = PaymentType::DR;
+
+        $this->createTransaction($user, $amount, $title, $type);
+    }
+
     protected function topUpWallet($user)
     {
         $pendingAmount = $user->driverTripPayments->where('status', 'pending')->sum('amount');
 
         if ($pendingAmount > 0) {
-            $user->increment('wallet', $pendingAmount);
+            $this->driverIncrementEarning($user, $pendingAmount);
 
             $user->driverTripPayments->where('status', 'pending')->each(function ($payment) {
                 $payment->update(['status' => 'paid']);
@@ -42,18 +56,6 @@ trait DriverTrait
 
             $this->createTransaction($user, $pendingAmount, $title, $type);
         }
-    }
-
-    protected function chargeWallet($user, $amount = null)
-    {
-        $amount = $amount ? $amount : getFee('manifest');
-        $user->wallet -= $amount;
-        $user->save();
-
-        $title = "Wallet charged for manifest";
-        $type = PaymentType::DR;
-
-        $this->createTransaction($user, $amount, $title, $type);
     }
 
     protected function createTransaction($user, $amount, $title, $type)
@@ -106,6 +108,57 @@ trait DriverTrait
         }
     }
 
+    protected function driverIncrementEarning($user, $amount)
+    {
+        $wallet = $user->walletAccount()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'balance' => 0.00,
+                'earnings' => 0.00,
+            ]
+        );
+
+        $wallet->increment('earnings', $amount);
+    }
+
+    protected function driverDecrementEarning($user, $amount)
+    {
+        $wallet = $user->walletAccount()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'balance' => 0.00,
+                'earnings' => 0.00,
+            ]
+        );
+
+        $wallet->decrement('earnings', $amount);
+    }
+
+    protected function userIncrementBalance($user, $amount)
+    {
+        $wallet = $user->walletAccount()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'balance' => 0.00,
+                'earnings' => 0.00,
+            ]
+        );
+
+        $wallet->increment('balance', $amount);
+    }
+
+    protected function userDecrementBalance($user, $amount)
+    {
+        $wallet = $user->walletAccount()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'balance' => 0.00,
+                'earnings' => 0.00,
+            ]
+        );
+
+        $wallet->decrement('balance', $amount);
+    }
 }
 
 
