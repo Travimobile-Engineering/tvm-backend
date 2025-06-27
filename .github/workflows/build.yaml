@@ -15,7 +15,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2' # Use the required PHP version for Laravel
+          php-version: '8.2'
           extensions: mbstring, bcmath, intl
           tools: composer
 
@@ -23,9 +23,21 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
 
       - name: Check code for bugs and errors
-        #run: vendor/bin/phpstan analyse
         run: echo "check code for bugs and errors using phpstan"
 
+      - name: Post a message in a channel
+        if: failure()
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "*GitHub Action build result*: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.ref_name }}"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "GitHub Action build result: ${{ job.status }}\n<${{ github.event.pull_request.html_url || github.event.head_commit.url }}>\n*Triggered by:* @${{ github.actor }}\n*Branch:* ${{ github.ref_name }}"
 
   unit-test:
     needs: static-analysis
@@ -48,8 +60,21 @@ jobs:
         run: cp .env.example .env && php artisan key:generate
 
       - name: Run unit tests
-        #run: vendor/bin/phpunit --coverage-text
         run: echo "run unit test"
+
+      - name: Post a message in a channel
+        if: failure()
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "*GitHub Action build result*: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.ref_name }}"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "GitHub Action build result: ${{ job.status }}\n<${{ github.event.pull_request.html_url || github.event.head_commit.url }}>\n*Triggered by:* @${{ github.actor }}\n*Branch:* ${{ github.ref_name }}"
 
   sonarqube-test:
     needs: [static-analysis, unit-test]
@@ -58,13 +83,58 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # - name: Set up SonarQube Scanner
-      #   uses: sonarsource/sonarqube-scan-action@v2
-      #   with:
-      #     host-url: ${{ secrets.SONAR_HOST_URL }}
-      #     project-key: ${{ secrets.SONAR_PROJECT_KEY }}
-      #     project-name: LaravelApp
-
       - name: Run SonarQube scan
-        #run: sonar-scanner
         run: echo "run sonarqube to check for security vulnerabilities"
+
+  check-for-leaked-secrets:
+    runs-on: ubuntu-latest
+    container:
+      image: zricethezav/gitleaks:v8.26.0
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install Python (Alpine Linux)
+        run: |
+          apk update
+          apk add --no-cache python3 py3-pip
+
+      - name: Disable Git ownership check
+        run: git config --global --add safe.directory "*"
+
+      - name: Scan the code for leaked secrets
+        run: gitleaks detect --verbose --source . -f json -r gitleaks.json
+
+      - name: Install requests package
+        if: always()
+        run: |
+          python3 -m venv venv
+          . venv/bin/activate
+          pip install --upgrade pip
+          pip install requests
+
+      - name: Upload to DefectDojo
+        if: failure()
+        env:
+          DEFECT_DOJO_FILE: gitleaks.json
+          DEFECT_DOJO_ENGAGEMENT: 1
+          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
+          DEFECT_DOJO_SCAN_TYPE: Gitleaks Scan
+          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
+          DEFECT_DOJO_PRODUCT_NAME: Admin-Panel
+        run: python upload-scan-report.py
+
+      - name: Post Slack message
+        if: failure()
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "*Gitleaks Scan Failed*: ${{ job.status }} — Branch: ${{ github.ref_name }}"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "Gitleaks scan failed.\n*Branch:* ${{ github.ref_name }}\n*Commit:* <${{ github.event.pull_request.html_url || github.event.head_commit.url }}>"
+
