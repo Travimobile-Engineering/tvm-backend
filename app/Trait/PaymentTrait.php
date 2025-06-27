@@ -245,7 +245,7 @@ trait PaymentTrait
     {
         return Trip::with([
             'user.transitCompany',
-            'user.wallet',
+            'user.walletAccount',
             'vehicle',
             'tripBookings.user',
             'departureRegion.state',
