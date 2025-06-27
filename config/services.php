@@ -44,7 +44,7 @@ return [
     'paystack_base_url' => "https://api.paystack.co/bank",
 
     'sms' => [
-        'default' => env('SMS_PROVIDER', 'africastalking'),
+        'default' => env('SMS_PROVIDER', 'termii'),
     ],
 
     'africastalking' => [
