@@ -301,7 +301,7 @@ class WalletService
         $user = User::with(['userPin', 'walletAccount', 'userWithdrawLogs', 'userBank'])
             ->findOrFail($request->user_id);
 
-        if ($user->userBank->isEmpty()) {
+        if (!$user->userBank) {
             return $this->error(null, "No bank found", 404);
         }
 
