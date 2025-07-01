@@ -16,6 +16,7 @@ class PassengerProfileResource extends JsonResource
     {
         return[
             'id' => (int)$this->id,
+            'uuid' => $this->uuid,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'email' => $this->email,
