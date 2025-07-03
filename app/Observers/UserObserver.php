@@ -23,6 +23,12 @@ class UserObserver implements ShouldHandleEventsAfterCommit
                 'earnings' => 0,
             ]
         );
+
+        if (!empty($user->referral_code)) {
+            $user->update([
+                'referral_code' => generateUniqueString('users', 'referral_code', 8)
+            ]);
+        }
     }
 
     /**

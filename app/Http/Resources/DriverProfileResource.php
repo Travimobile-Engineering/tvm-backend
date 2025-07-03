@@ -34,6 +34,7 @@ class DriverProfileResource extends JsonResource
             'next_of_kin_relationship' => $this->next_of_kin_relationship,
             'avatar_url' => $this->avatar_url,
             'profile_photo' => $this->profile_photo,
+            'referral_code' => $this->referral_code,
             'status' => ($this->email_verified || $this->sms_verified) ? 'verified' : 'pending',
             'driver_verified' => $this->driver_verified,
             'total_ride' => $this->total_trips,

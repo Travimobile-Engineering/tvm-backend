@@ -27,7 +27,7 @@ return [
     'allowed_origins_patterns' => [],
 
     // 'allowed_headers' => ['*'],
-    'allowed_headers' => ['Origin, Content-Type, X-Auth-Token , Cookie, Authorization, X-TVM-AUTH'],
+    'allowed_headers' => ['Origin', 'Content-Type', 'X-Auth-Token', 'Cookie', 'Authorization', 'X-Tvm-Auth'],
 
     'exposed_headers' => [],
 

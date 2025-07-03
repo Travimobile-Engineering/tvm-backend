@@ -102,6 +102,7 @@ Route::middleware('validate.header')
                         Route::get('/', 'index');
                         Route::post('/edit/{id}', 'edit');
                         Route::get('/driver', 'getDriverProfile');
+                        Route::get('/foo', 'getFoo');
                     });
 
                 Route::get('/auth/logout', [AuthenticateController::class, 'logout']);

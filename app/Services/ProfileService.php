@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enum\UserType;
 use App\Http\Resources\DriverProfileResource;
+use App\Http\Resources\FooProfileResource;
 use App\Models\User;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
@@ -80,6 +81,34 @@ class ProfileService
         $data = new DriverProfileResource($user);
 
         return $this->success($data, 'Driver profile retrieved successfully');
+    }
+
+    public function getFoo()
+    {
+        $auth = authUser();
+
+        $user = User::with([
+                'transitCompany',
+                'vehicle',
+                'vehicle.vehicleImages',
+                'vehicle.tripSchedule',
+                'documents',
+                'driverTripPayments',
+                'trips',
+                'premiumUpgrades.vehicle',
+                'unavailableDates',
+                'userBank',
+                'securityQuestion',
+            ])
+            ->findOrFail($auth->id);
+
+        if ($user->user_category !== UserType::FOO->value) {
+            return $this->error(null, "You are not allowed to access this resource", 403);
+        }
+
+        $data = new FooProfileResource($user);
+
+        return $this->success($data, 'Foo profile retrieved successfully');
     }
 }
 

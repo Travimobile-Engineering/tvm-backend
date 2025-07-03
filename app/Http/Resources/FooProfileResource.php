@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class AgentProfileResource extends JsonResource
+class FooProfileResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -35,35 +35,25 @@ class AgentProfileResource extends JsonResource
             'user_category' => $this->user_category,
             'referral_code' => $this->referral_code,
             'status' => ($this->email_verified || $this->sms_verified) ? 'verified' : 'pending',
-            'rating' => 3.5,
-            'lng' => (float)$this->lng,
-            'lat' => (float)$this->lat,
-            'transit_company' => (object)[
-                'id' => $this->transitCompany?->id,
-                'name' => $this->transitCompany?->name,
-                'email' => $this->transitCompany?->email,
-                'address' => $this->transitCompany?->address,
-                'park' => $this->transitCompany?->park,
-            ],
+            'sms_notification' => $this->inbox_notifications,
+            'email_notification' => $this->email_notifications,
+            'has_setup_security_answer' => hasSetSecurityAnswer($this->id),
+            'security_question' => $this->securityQuestion?->question,
             'bank' => (object)[
                 'id' => $this->userBank?->id,
                 'account_name' => $this->userBank?->account_name,
                 'account_number' => $this->userBank?->account_number,
                 'bank_name' => $this->userBank?->bank_name,
             ],
-            'busstops' => BusStopResource::collection($this->busStops),
             'wallet_setup' => hasSetupWallet($this->id),
+            'pin_setup' => hasSetupPin($this->id),
             'wallet_info' => (object)[
                 'earnings' => (object) [
                     'available' => $this->earning_balance,
                 ],
                 'available_balance' => $this->wallet_amount,
             ],
-            'sms_notification' => $this->inbox_notifications,
-            'email_notification' => $this->email_notifications,
-            'has_setup_security_answer' => hasSetSecurityAnswer($this->id),
-            'security_question' => $this->securityQuestion?->question,
-            'drivers_created' => DriverProfileResource::collection(driversCreatedByAgent($this->id))
+            'users_created' => usersCreated($this->id),
         ];
     }
 }

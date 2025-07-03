@@ -47,4 +47,9 @@ class ProfileController extends Controller
     {
         return $this->profileService->getDriverProfile();
     }
+
+    public function getFoo()
+    {
+        return $this->profileService->getFoo();
+    }
 }
