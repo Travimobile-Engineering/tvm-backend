@@ -69,6 +69,8 @@ class User extends Authenticatable implements JWTSubject
         'is_premium_driver',
         'created_by',
         'referral_code',
+        'state_id',
+        'zone_id',
     ];
 
     protected $guarded = [
