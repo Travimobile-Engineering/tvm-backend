@@ -405,4 +405,35 @@ if (!function_exists('driversCreatedByAgent')) {
     }
 }
 
+if (!function_exists('usersCreated')) {
+    function usersCreated(int $userId)
+    {
+        $user = User::find($userId);
 
+        if (!$user) {
+            return collect();
+        }
+
+        return $user->createdUsers()
+            ->get();
+    }
+}
+
+if (! function_exists('generateUniqueString')) {
+    function generateUniqueString($table, $column, $length = 10)
+    {
+        $attempts = 0;
+        $maxAttempts = 10;
+
+        do {
+            if ($attempts++ > $maxAttempts) {
+                throw new Exception("Unable to generate unique string after {$maxAttempts} attempts.");
+            }
+
+            $string = Str::random($length);
+
+        } while (DB::table($table)->where($column, $string)->exists());
+
+        return $string;
+    }
+}

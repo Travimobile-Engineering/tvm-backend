@@ -68,6 +68,7 @@ class User extends Authenticatable implements JWTSubject
         'fcm_token',
         'is_premium_driver',
         'created_by',
+        'referral_code',
     ];
 
     protected $guarded = [

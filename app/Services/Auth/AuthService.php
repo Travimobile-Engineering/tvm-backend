@@ -45,12 +45,23 @@ class AuthService
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
 
+        $createdBy = null;
+        if ($request->filled('referral_code')) {
+            $referrer = User::where('referral_code', $request->referral_code)->first();
+            if ($referrer) {
+                $createdBy = $referrer->id;
+            } else {
+                return $this->error(null, "Invalid referral code.", 400);
+            }
+        }
+
         $user = User::create([
             'first_name' => $firstName,
             'last_name' => $lastName,
             'email' => $request->email,
             'phone_number' => $request->filled('phone_number') ? formatPhoneNumber($request->phone_number) : null,
             'verification_code' => $code,
+            'created_by' => $createdBy,
             'verification_code_expires_at' => now()->addMinutes(10),
             'user_category' => $request->user_category,
             'password' => bcrypt($request->password),

@@ -164,6 +164,11 @@ trait UserRelationships
         return $this->hasMany(User::class, 'created_by');
     }
 
+    public function createdUsers()
+    {
+        return $this->hasMany(User::class, 'created_by');
+    }
+
     public function walletAccount()
     {
         return $this->hasOne(Wallet::class, 'user_id');
