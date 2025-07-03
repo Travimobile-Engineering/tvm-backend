@@ -33,6 +33,7 @@ class FooProfileResource extends JsonResource
             'avatar_url' => $this->avatar_url,
             'profile_photo' => $this->profile_photo,
             'user_category' => $this->user_category,
+            'referral_code' => $this->referral_code,
             'status' => ($this->email_verified || $this->sms_verified) ? 'verified' : 'pending',
             'sms_notification' => $this->inbox_notifications,
             'email_notification' => $this->email_notifications,
@@ -45,6 +46,7 @@ class FooProfileResource extends JsonResource
                 'bank_name' => $this->userBank?->bank_name,
             ],
             'wallet_setup' => hasSetupWallet($this->id),
+            'pin_setup' => hasSetupPin($this->id),
             'wallet_info' => (object)[
                 'earnings' => (object) [
                     'available' => $this->earning_balance,
