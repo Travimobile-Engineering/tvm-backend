@@ -24,7 +24,7 @@ class UserObserver implements ShouldHandleEventsAfterCommit
             ]
         );
 
-        if (!empty($user->referral_code)) {
+        if ($user->referral_code === null) {
             $user->update([
                 'referral_code' => generateUniqueString('users', 'referral_code', 8)
             ]);
