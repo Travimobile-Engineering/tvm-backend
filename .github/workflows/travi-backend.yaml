@@ -8,226 +8,136 @@ env:
   IMAGE_URI: "820242924853.dkr.ecr.eu-west-2.amazonaws.com/backend"
 
 jobs:
-  build-image:
+  build-backend-image:
     runs-on: ubuntu-latest
-    name: 'Build and push docker image to Artifact Registry'
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: "Export AWS Credentials"
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
 
-    - name: 'Authenticate to AWS ECR'
-      run:  aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $IMAGE_URI
+      - name: Authenticate to ECR
+        run: aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $IMAGE_URI
 
-    - name: Extract short commit SHA
-      id: vars
-      run: echo "short_commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Extract short commit SHA
+        run: echo "short_commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-    - name: Determine tag
-      id: tag
-      run: |
-        if [[ $GITHUB_REF == refs/heads/master ]]; then
-          echo "tag=${{ env.short_commit_sha }}-prod" >> $GITHUB_ENV
-        elif [[ $GITHUB_REF == refs/heads/staging ]]; then
-          echo "tag=${{ env.short_commit_sha }}-stg" >> $GITHUB_ENV
-        elif [[ $GITHUB_REF == refs/heads/dev ]]; then
-          echo "tag=${{ env.short_commit_sha }}-dev" >> $GITHUB_ENV
-        fi
-
-    - name: Build Docker image
-      run: docker build -t $IMAGE_URI:${{ env.tag }} .
-
-    - name: Push Docker image to Artifact Registry
-      run: docker push $IMAGE_URI:${{ env.tag }}
-
-    - name: Post a message in a channel
-      if: failure()
-      uses: slackapi/slack-github-action@v2.1.0
-      with:
-        webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-        webhook-type: incoming-webhook
-        payload: |
-          text: "*GitHub Action build result*: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref_name }}"
-          blocks:
-            - type: "section"
-              text:
-                type: "mrkdwn"
-                text: "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref_name }}"
-
-  check-for-leaked-secrets:
-    runs-on: ubuntu-latest
-    container:
-      image: zricethezav/gitleaks:v8.26.0
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Install Python (Alpine Linux)
+      - name: Determine tag
         run: |
-          apk update
-          apk add --no-cache python3 py3-pip
+          if [[ $GITHUB_REF == refs/heads/master ]]; then
+            echo "tag=main" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == refs/heads/staging ]]; then
+            echo "tag=stg" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == refs/heads/dev ]]; then
+            echo "tag=dev" >> $GITHUB_ENV
+          fi
 
-      - name: Disable Git ownership check
-        run: git config --global --add safe.directory "*"
+      - name: Build backend Docker image
+        run: docker build -t $IMAGE_URI:${{ env.tag }} .
 
-      - name: scan the code for leaked secrets
-        run: gitleaks detect --verbose --source . -f json -r gitleaks.json
+      - name: Push image
+        run: docker push $IMAGE_URI:${{ env.tag }}
 
-      - name: install request package
-        if: always()
-        run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install requests
-
-      - name: Upload to DefectDojo
-        if: failure()
-        env:
-          DEFECT_DOJO_FILE: gitleaks.json
-          DEFECT_DOJO_ENGAGEMENT: 1
-          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          DEFECT_DOJO_SCAN_TYPE: Gitleaks Scan
-          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          DEFECT_DOJO_PRODUCT_NAME: Admin-Panel
-        run: python upload-scan-report.py
-
-      - name: Post a message in a channel
+      - name: Slack alert on failure
         if: failure()
         uses: slackapi/slack-github-action@v2.1.0
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "*GitHub Action build result*: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref_name }}"
+            text: "*Docker Build Failed*: ${{ job.status }} — <${{ github.event.head_commit.url }}> on *${{ github.ref_name }}* by @${{ github.actor }}"
             blocks:
-              - type: "section"
+              - type: section
                 text:
-                  type: "mrkdwn"
-                  text: "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref_name }}"
+                  type: mrkdwn
+                  text: "*Docker Build Failed*\nBranch: `${{ github.ref_name }}`\nTriggered by: @${{ github.actor }}\n<${{ github.event.head_commit.url }}>"
 
-  dependency-scan:
+  
+
+  dependency-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --no-dev
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: install javascript package for filament
-        run: npm install
-
-      - name: install dependency-check
+      - name: Install PHP and Node dependencies
         run: |
-          chmod +x dependency-check.sh
-          ./dependency-check.sh
+          sudo apt update
+          sudo apt install -y unzip openjdk-11-jre
+          composer install --no-dev
+          npm install
 
-      - name: scan the admin-panel project
+      - name: Run dependency check
         run: |
-          mkdir -p ./dc-data ./reports
+          mkdir -p ./reports
           dependency-check \
-            --nvdApiDelay 7000 \
-            --nvdApiKey ${{ secrets.NVD_API }} \
-            --data ./dc-data \
-            --scan . \
-            --log ./reports/dependency-check.log \
-            --enableExperimental \
             --format JSON \
             --format XML \
-            --failOnCVSS 4.0 \
-            --out reports/
-
-      - name: install request package
-        if: always()
-        run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install requests
+            --project travi-backend \
+            --out ./reports \
+            --scan .
 
       - name: Upload to DefectDojo
         if: failure()
         env:
-          DEFECT_DOJO_FILE: ./dependency-check-report.xml
+          DEFECT_DOJO_FILE: ./reports/dependency-check-report.xml
           DEFECT_DOJO_ENGAGEMENT: 1
           DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
           DEFECT_DOJO_SCAN_TYPE: Dependency Check Scan
           DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          DEFECT_DOJO_PRODUCT_NAME: Admin-Panel
+          DEFECT_DOJO_PRODUCT_NAME: Backend
         run: python upload-scan-report.py
 
-      - name: Post a message in a channel
+      - name: Slack alert on failure
         if: failure()
         uses: slackapi/slack-github-action@v2.1.0
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "*GitHub Action build result*: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref_name }}"
+            text: "*Dependency Check Failed* on `${{ github.ref_name }}`"
             blocks:
-              - type: "section"
+              - type: section
                 text:
-                  type: "mrkdwn"
-                  text: "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref_name }}"
+                  type: mrkdwn
+                  text: "*Dependency Check Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
 
-  SAST-test:
+  sast-semgrep:
     runs-on: ubuntu-latest
     container:
       image: semgrep/semgrep
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: run semgrep scan
-        run: semgrep scan --config=auto --error --verbose --json --output semgrep.json
+      - name: Run Semgrep scan
+        run: semgrep scan --config=auto --error --json --output semgrep.json
 
-      - name: install request package
-        if: always()
-        run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install requests
+      - name: Upload to DefectDojo
+        if: failure()
+        env:
+          DEFECT_DOJO_FILE: semgrep.json
+          DEFECT_DOJO_ENGAGEMENT: 1
+          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
+          DEFECT_DOJO_SCAN_TYPE: Semgrep JSON Report
+          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
+          DEFECT_DOJO_PRODUCT_NAME: Backend
+        run: python upload-scan-report.py
 
-     # - name: Upload to DefectDojo
-      #  if: failure()
-       # env:
-        #  DEFECT_DOJO_FILE: semgrep.json
-         # DEFECT_DOJO_ENGAGEMENT: 1
-          #DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          #DEFECT_DOJO_SCAN_TYPE: Semgrep JSON Report
-          #DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          #DEFECT_DOJO_PRODUCT_NAME: Admin-Panel
-        #run: python upload-scan-report.py
-
-      - name: Post a message in a channel
+      - name: Slack alert on failure
         if: failure()
         uses: slackapi/slack-github-action@v2.1.0
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "*GitHub Action build result*: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref_name }}"
+            text: "*Semgrep Scan Failed* on `${{ github.ref_name }}`"
             blocks:
-              - type: "section"
+              - type: section
                 text:
-                  type: "mrkdwn"
-                  text: "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n*Triggered by*: @${{ github.actor }}\n*Branch*: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref_name }}"
+                  type: mrkdwn
+                  text: "*Semgrep SAST Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
+

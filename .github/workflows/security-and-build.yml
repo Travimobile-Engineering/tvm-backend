@@ -1,9 +1,0 @@
-🔐 Gitleaks
-
-🔐 Dependency-check
-
-🔐 Semgrep
-
-✅ Docker build + push to AWS ECR
-
-📢 Slack + DefectDojo integration (on failure)
