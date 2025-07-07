@@ -52,7 +52,8 @@ class TransitCompanyService
             'address' => $request->address,
             'about_details' => $request->about_details,
             'ver_code' => $v_code,
-            'ver_code_expires_at' => Carbon::now()->addMinutes(10)
+            'ver_code_expires_at' => Carbon::now()->addMinutes(10),
+            'type' => 'transit_company',
         ]);
 
         $type = MailingEnum::EMAIL_VERIFICATION;
