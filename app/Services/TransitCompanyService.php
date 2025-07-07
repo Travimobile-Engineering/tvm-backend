@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enum\MailingEnum;
 use App\Models\TransitCompany;
 use Illuminate\Support\Carbon;
 use App\Mail\ConfirmationEmail;
+use App\Models\State;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -15,7 +17,9 @@ class TransitCompanyService
     use HttpResponse;
 
     protected $user;
-    public function __construct(){
+
+    public function __construct()
+    {
         $this->user = JWTAuth::user();
     }
     /**
@@ -31,10 +35,10 @@ class TransitCompanyService
      */
     public function store($request)
     {
-
         $v_code = str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
+        $stateID = State::where('name', $request->state)->first();
 
-        $company = TransitCompany::create([
+        TransitCompany::create([
             'name' => $request->name,
             'user_id' => $this->user->id,
             'short_name' => $request->short_name,
@@ -42,6 +46,7 @@ class TransitCompanyService
             'url' => $request->url,
             'email' => $request->email,
             'state' => $request->state,
+            'union_states_chapter' => $stateID->id ?? 25,
             'lga' => $request->lga,
             'phone' => $request->phone,
             'address' => $request->address,
@@ -50,10 +55,17 @@ class TransitCompanyService
             'ver_code_expires_at' => Carbon::now()->addMinutes(10)
         ]);
 
-        if($company){
-            Mail::to($request->email)->send(new ConfirmationEmail($request->name, $v_code));
-            return ['message' => 'Account created successfully', 'data' => $company];
-        }
+        $type = MailingEnum::EMAIL_VERIFICATION;
+        $subject = "Email Verification";
+        $mail_class = ConfirmationEmail::class;
+        $data = [
+            'name' => $request->name,
+            'verification_code' => $v_code
+        ];
+
+        mailSend($type, $this->user, $subject, $mail_class, $data);
+
+        return $this->success(null, 'Account created successfully', 201);
     }
 
     /**
@@ -61,10 +73,11 @@ class TransitCompanyService
      */
     public function show(TransitCompany $transitCompany)
     {
-        if($transitCompany){
-            return ['data' => $transitCompany];
+        if (! $transitCompany) {
+            return $this->error(null, "Not found", 404);
         }
-        else return ['message' => 'not found', 'code' => '400'];
+
+        return $this->success($transitCompany, "Transit company retrieved successfully");
     }
 
     /**
@@ -73,7 +86,9 @@ class TransitCompanyService
     public function update($request, $transitCompany)
     {
 
-        if($transitCompany->user_id != $this->user->id) return response()->json(['error' => 'Invalid user detected'], 400);
+        if($transitCompany->user_id != $this->user->id) {
+            return $this->error(null, "You are not authorized to update this account", 401);
+        }
 
         $company = $transitCompany->update([
             'name' => $request->name,
@@ -87,9 +102,7 @@ class TransitCompanyService
             'about_details' => $request->about_details
         ]);
 
-        if($company){
-            return ['message' => 'Account updated successfully', 'data' => $transitCompany];
-        }
+        return $this->success($company, "Transit company updated successfully");
     }
 
     public function getUnions()

@@ -12,12 +12,12 @@ use App\Http\Requests\TransitCompany\UpdateRequest;
 class TransitCompanyController extends Controller
 {
     use HttpResponse;
-    
-    protected $service;
 
-    public function __construct(TransitCompanyService $service){
-        $this->service = $service;
-    }
+    public function __construct(
+        protected TransitCompanyService $service
+    )
+    {}
+
     /**
      * Display a listing of the resource.
      */
@@ -31,8 +31,7 @@ class TransitCompanyController extends Controller
      */
     public function store(StoreRequest $request): JsonResponse
     {
-        $response = $this->service->store($request);
-        return $this->success($response['data'], $response['message'], 200);
+        return $this->service->store($request);
     }
 
     /**
@@ -40,8 +39,7 @@ class TransitCompanyController extends Controller
      */
     public function show(TransitCompany $transitCompany)
     {
-        $response = $this->service->show($transitCompany);
-        return $this->response($response);
+        return $this->service->show($transitCompany);
     }
 
     /**
@@ -49,8 +47,7 @@ class TransitCompanyController extends Controller
      */
     public function update(UpdateRequest $request, TransitCompany $transitCompany)
     {
-        $response = $this->service->update($request, $transitCompany);
-        return $this->response($response);
+        return $this->service->update($request, $transitCompany);
     }
 
     public function getUnions(){
