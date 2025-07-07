@@ -202,7 +202,7 @@ trait UserRelationships
             $user->announcements()->detach();
             $user->createdBy()->delete();
             $user->createdDrivers()->delete();
-            $user->wallet()?->delete();
+            $user->walletAccount()?->delete();
         });
     }
 }
