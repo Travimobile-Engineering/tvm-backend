@@ -140,7 +140,7 @@ class WalletService
         return $this->success($data, "Wallet transactions retrieved");
     }
 
-    public function walletSetup($request)
+    public function walletSetup($request, $sendVerificationCode)
     {
         $user = User::with(['userBank', 'userPin', 'userTransferReceipient'])
             ->findOrFail($request->user_id);
@@ -161,7 +161,7 @@ class WalletService
                         'verification_code_expires_at' => now()->addMinutes(30),
                     ]);
 
-                    sendMail($user->email, new VerifyPinMail($user->first_name, $code));
+                    $sendVerificationCode->execute($user, $code);
 
                     DB::commit();
                     return $this->success(null, "Verification email resent successfully", 200);
@@ -210,7 +210,7 @@ class WalletService
 
             DB::commit();
 
-            sendMail($user->email, new VerifyPinMail($user->first_name, $code));
+            $sendVerificationCode->execute($user, $code);
 
             return $this->success(null, "Created successfully", 201);
         } catch (\Throwable $th) {

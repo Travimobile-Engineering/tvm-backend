@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\SendVerificationCode;
 use App\Http\Requests\ChangePinRequest;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
@@ -45,9 +46,9 @@ class WalletController extends Controller
         return $this->service->getTransactions();
     }
 
-    public function walletSetup(DriverWalletSetupequest $request)
+    public function walletSetup(DriverWalletSetupequest $request, SendVerificationCode $sendVerificationCode)
     {
-        return $this->service->walletSetup($request);
+        return $this->service->walletSetup($request, $sendVerificationCode);
     }
 
     public function changeBank(Request $request)
