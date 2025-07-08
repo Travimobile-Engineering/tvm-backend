@@ -112,8 +112,8 @@ Route::middleware('validate.header')
                     ->group(function () {
                         Route::post('/create', 'store');
                         Route::get('/get-unions', 'getUnions');
-                        Route::post('/edit/{transitCompany}', 'update');
                         Route::get('/{transitCompany}', 'show');
+                        Route::post('/edit/{transitCompany}', 'update');
                     });
 
                 Route::prefix('vehicle')
