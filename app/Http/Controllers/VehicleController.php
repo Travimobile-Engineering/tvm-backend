@@ -2,23 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\VehicleCreateRequest;
 use App\Models\TransitCompany;
 use App\Models\Vehicle\Vehicle;
 use App\Models\vehicle\VehicleBrand;
 use App\Models\vehicle\VehicleType;
-use Exception;
-use Illuminate\Database\QueryException;
+use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class VehicleController extends Controller
 {
+    use HttpResponse;
 
     protected $user;
 
-    public function __construct(){
+    public function __construct()
+    {
         $this->user = JWTAuth::user();
     }
     /**
@@ -32,59 +32,31 @@ class VehicleController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(VehicleCreateRequest $request)
     {
-        try{
-            $request->validate([
-                'name' => 'required|string',
-                'company_id' => 'required|int',
-                'brand_id' => 'required|integer',
-                'type_id' => 'required|integer',
-                'plate_no' => 'required|string',
-                'engine_no' => 'required|string',
-                'chassis_no' => 'required|string',
-                'color' => 'required|string',
-                'seats' => 'required|string'
-            ]);
-        }
-        catch(ValidationException $e){
-            return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
+        $tCompany = TransitCompany::with('user')->find($request->company_id);
+
+        if (!$tCompany) {
+            return $this->error(null, "Company not found", 404);
         }
 
-        $tCompany = TransitCompany::where('id', $request->company_id);
-        if(!$tCompany->exists()) return response()->json(['error' => 'Invalid company ID'], 400);
-
-        $owner = $tCompany->get('user_id')->first();
-        if($owner->user_id != $this->user->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
-
-        try{
-
-            $vehicle = Vehicle::create([
-                'name' => $request->name,
-                'company_id' => $request->company_id,
-                'brand_id' => $request->brand_id,
-                'type_id' => $request->type_id,
-                'plate_no' => $request->plate_no,
-                'engine_no' => $request->engine_no,
-                'chassis_no' => $request->chassis_no,
-                'color' => $request->color,
-                'seats' => $request->seats,
-            ]);
-
-            if($vehicle){
-                return response()->json(['message' => 'Vehicle created successfully', 'data' => $vehicle], 200);
-            }
-        }
-        catch(QueryException $e){
-            if($e->getCode() === '23000'){
-                return response()->json(['error' => 'Cannot add or update a child row: a foreign key constraint fails'], 400);
-            }
-            else{
-                Log::error($e->getMessage());
-                return response()->json(['error' => 'An error occured, please contact support'], 400);
-            }
+        if ($tCompany->user_id != $this->user->id) {
+            return $this->error(null, "You do not have permission to complete this request", 400);
         }
 
+        $vehicle = Vehicle::create([
+            'name' => $request->name,
+            'company_id' => $request->company_id,
+            'brand_id' => $request->brand_id,
+            'type_id' => $request->type_id,
+            'plate_no' => $request->plate_no,
+            'engine_no' => $request->engine_no,
+            'chassis_no' => $request->chassis_no,
+            'color' => $request->color,
+            'seats' => $request->seats,
+        ]);
+
+        return $this->success($vehicle, "Vehicle created successfully", 201);
     }
 
     /**
@@ -92,69 +64,41 @@ class VehicleController extends Controller
      */
     public function show(Vehicle $vehicle)
     {
-        return response()->json([
-            'data' => $vehicle
-        ], 200);
+        return $this->success($vehicle, "Vehicle retrieved successfully");
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Vehicle $vehicle)
+    public function update(VehicleCreateRequest $request, Vehicle $vehicle)
     {
-        try{
-            $request->validate([
-                'name' => 'required|string',
-                'company_id' => 'required|int',
-                'brand_id' => 'required|integer',
-                'type_id' => 'required|integer',
-                'plate_no' => 'required|string',
-                'engine_no' => 'required|string',
-                'chassis_no' => 'required|string',
-                'color' => 'required|string',
-                'seats' => 'required|string'
-            ]);
-        }
-        catch(ValidationException $e){
-            return response()->json(['error' => collect($e->errors())->flatten()->first()], 400);
+        $tCompany = TransitCompany::with('user')->find($request->company_id);
+
+        if (!$tCompany) {
+            return $this->error(null, "Company not found", 404);
         }
 
-        $tCompany = TransitCompany::where('id', $request->company_id);
-        if(!$tCompany->exists()) return response()->json(['error' => 'Invalid company ID'], 400);
-
-
-        $owner = $tCompany->get(['user_id', 'id'])->first();
-        if($owner->user_id != $this->user->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
-
-        if($vehicle->company_id != $owner->id) return response()->json(['error' => 'You do not have permission to complete this request'], 400);
-
-        try{
-
-            $status = $vehicle->update([
-                'name' => $request->name,
-                'company_id' => $request->company_id,
-                'brand_id' => $request->brand_id,
-                'type_id' => $request->type_id,
-                'plate_no' => $request->plate_no,
-                'engine_no' => $request->engine_no,
-                'chassis_no' => $request->chassis_no,
-                'color' => $request->color,
-                'seats' => $request->seats,
-            ]);
-
-            if($status){
-                return response()->json(['message' => 'Vehicle updated successfully', 'data' => $vehicle], 200);
-            }
+        if ($tCompany->user_id != $this->user->id) {
+            return $this->error(null, "You do not have permission to complete this request", 400);
         }
-        catch(QueryException $e){
-            if($e->getCode() === '23000'){
-                return response()->json(['error' => 'Cannot add or update a child row: a foreign key constraint fails'], 400);
-            }
-            else{
-                Log::error($e->getMessage());
-                return response()->json(['error' => 'An error occured, please contact support'], 400);
-            }
+
+        if($vehicle->company_id != $tCompany->id) {
+            return $this->error(null, "You do not have permission to complete this request", 400);
         }
+
+        $vehicle->update([
+            'name' => $request->name,
+            'company_id' => $request->company_id,
+            'brand_id' => $request->brand_id,
+            'type_id' => $request->type_id,
+            'plate_no' => $request->plate_no,
+            'engine_no' => $request->engine_no,
+            'chassis_no' => $request->chassis_no,
+            'color' => $request->color,
+            'seats' => $request->seats,
+        ]);
+
+        return $this->success($vehicle, "Vehicle updated successfully");
     }
 
     /**
@@ -165,13 +109,17 @@ class VehicleController extends Controller
         //
     }
 
-    public function getVehicleTypes(){
+    public function getVehicleTypes()
+    {
         $types = VehicleType::select('name', 'id' )->get();
-        return response()->json(['data' => $types], 200);
+
+        return $this->success($types, "Vehicle types retrieved successfully");
     }
 
-    public function getVehicleBrands(){
+    public function getVehicleBrands()
+    {
         $brands = VehicleBrand::select('name', 'id')->get();
-        return response()->json(['data' => $brands], 200);
+
+        return $this->success($brands, "Vehicle brands retrieved successfully");
     }
 }
