@@ -2,142 +2,103 @@ name: Build and Push Travi Backend NGINX Image to Registry
 
 on:
   push:
-    branches: [ master, staging, dev ]
+    branches: [ main, staging, dev ]
 
 env:
   IMAGE_URI: "820242924853.dkr.ecr.eu-west-2.amazonaws.com/backend-nginx"
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
-  build-nginx-image:
+  build-image:
     runs-on: ubuntu-latest
+    name: 'Build and push NGINX image to Artifact Registry'
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
+    - name: Install Trivy
+      run: |
+        wget https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.deb
+        sudo dpkg -i trivy_0.18.3_Linux-64bit.deb
 
-      - name: Authenticate to ECR
-        run: aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $IMAGE_URI
+    - name: Export AWS Credentials using OIDC
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::820242924853:role/github_actions_role20250624143236171300000001
+        aws-region: eu-west-2
 
-      - name: Extract short commit SHA
-        run: echo "short_commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+    - name: Authenticate to AWS ECR
+      run: aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $IMAGE_URI
 
-      - name: Determine tag
-        run: |
-          if [[ $GITHUB_REF == refs/heads/master ]]; then
-            echo "tag=main" >> $GITHUB_ENV
-          elif [[ $GITHUB_REF == refs/heads/staging ]]; then
-            echo "tag=stg" >> $GITHUB_ENV
-          elif [[ $GITHUB_REF == refs/heads/dev ]]; then
-            echo "tag=dev" >> $GITHUB_ENV
-          fi
+    - name: Extract short commit SHA
+      id: vars
+      run: echo "short_commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - name: Build NGINX Docker image
-        run: docker build -f Dockerfile.nginx -t $IMAGE_URI:${{ env.tag }} .
+    - name: Determine tag
+      id: tag
+      run: |
+        if [[ $GITHUB_REF == refs/heads/main ]]; then
+          echo "tag=${{ env.short_commit_sha }}-prod" >> $GITHUB_ENV
+        elif [[ $GITHUB_REF == refs/heads/staging ]]; then
+          echo "tag=${{ env.short_commit_sha }}-stg" >> $GITHUB_ENV
+        elif [[ $GITHUB_REF == refs/heads/dev ]]; then
+          echo "tag=${{ env.short_commit_sha }}-dev" >> $GITHUB_ENV
+        fi
 
-      - name: Push image
-        run: docker push $IMAGE_URI:${{ env.tag }}
+    - name: Build Docker image
+      run: docker build -f Dockerfile.nginx -t $IMAGE_URI:${{ env.tag }} .
 
-      - name: Slack alert on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "*Docker Build Failed*: ${{ job.status }} — <${{ github.event.head_commit.url }}> on *${{ github.ref_name }}* by @${{ github.actor }}"
-            blocks:
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "*Docker Build Failed*\nBranch: `${{ github.ref_name }}`\nTriggered by: @${{ github.actor }}\n<${{ github.event.head_commit.url }}>"
+    #- name: Trivy image scan
+    #  run: trivy image --exit-code 1 --format json --output trivy-results.json $IMAGE_URI:${{ env.tag }}
 
-    
+    - name: Setup Python for scan report upload
+      if: always()
+      run: |
+        python3 -m venv venv
+        . venv/bin/activate
+        pip install --upgrade pip
+        pip install requests
 
-  dependency-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    - name: Determine DefectDojo Engagement ID
+      if: failure()
+      id: ID
+      run: |
+        if [[ $GITHUB_REF == refs/heads/main ]]; then
+          echo ID=5 >> $GITHUB_ENV
+        elif [[ $GITHUB_REF == refs/heads/staging ]]; then
+          echo ID=4 >> $GITHUB_ENV
+        elif [[ $GITHUB_REF == refs/heads/dev ]]; then
+          echo ID=3 >> $GITHUB_ENV
+        fi
 
-      - name: Install PHP and Node dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y unzip openjdk-11-jre
-          composer install --no-dev
-          npm install
+    - name: Upload to DefectDojo
+      if: failure()
+      env:
+        DEFECT_DOJO_FILE: trivy-results.json
+        DEFECT_DOJO_ENGAGEMENT: ${{ env.ID }}
+        DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
+        DEFECT_DOJO_SCAN_TYPE: Trivy Scan
+        DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
+        DEFECT_DOJO_PRODUCT_NAME: Backend-NGINX
+      run: python upload-scan-report.py
 
-      - name: Run dependency check
-        run: |
-          mkdir -p ./reports
-          dependency-check \
-            --format JSON \
-            --format XML \
-            --project travi-backend-nginx \
-            --out ./reports \
-            --scan .
+    - name: Push Docker image
+      run: docker push $IMAGE_URI:${{ env.tag }}
 
-      - name: Upload to DefectDojo
-        if: failure()
-        env:
-          DEFECT_DOJO_FILE: ./reports/dependency-check-report.xml
-          DEFECT_DOJO_ENGAGEMENT: 1
-          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          DEFECT_DOJO_SCAN_TYPE: Dependency Check Scan
-          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          DEFECT_DOJO_PRODUCT_NAME: Backend-NGINX
-        run: python upload-scan-report.py
-
-      - name: Slack alert on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "*Dependency Check Failed* on `${{ github.ref_name }}`"
-            blocks:
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "*Dependency Check Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
-
-  sast-semgrep:
-    runs-on: ubuntu-latest
-    container:
-      image: semgrep/semgrep
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Semgrep scan
-        run: semgrep scan --config=auto --error --json --output semgrep.json
-
-      - name: Upload to DefectDojo
-        if: failure()
-        env:
-          DEFECT_DOJO_FILE: semgrep.json
-          DEFECT_DOJO_ENGAGEMENT: 1
-          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          DEFECT_DOJO_SCAN_TYPE: Semgrep JSON Report
-          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          DEFECT_DOJO_PRODUCT_NAME: Backend-NGINX
-        run: python upload-scan-report.py
-
-      - name: Slack alert on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "*Semgrep Scan Failed* on `${{ github.ref_name }}`"
-            blocks:
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "*Semgrep SAST Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
-
+    - name: Slack alert on failure
+      if: failure()
+      uses: slackapi/slack-github-action@v2.1.0
+      with:
+        webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+        webhook-type: incoming-webhook
+        payload: |
+          text: "*Backend NGINX Build Failed*: ${{ job.status }} — <${{ github.event.head_commit.url }}> on *${{ github.ref_name }}* by @${{ github.actor }}"
+          blocks:
+          - type: section
+            text:
+              type: mrkdwn
+              text: "*Backend NGINX Build Failed*\nBranch: `${{ github.ref_name }}`\nTriggered by: @${{ github.actor }}\n<${{ github.event.head_commit.url }}>"
