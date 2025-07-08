@@ -219,6 +219,13 @@ if (!function_exists('sendMail')) {
     }
 }
 
+if (! function_exists('sendSmS')) {
+    function sendSmS($phone, $message)
+    {
+        return app(SMS::class)->sendSms($phone, $message);
+    }
+}
+
 if (!function_exists('hasSetupWallet')) {
     function hasSetupWallet(int $userId): bool
     {
