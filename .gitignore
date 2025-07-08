@@ -24,3 +24,4 @@ yarn-error.log
 /app/storage/*
 !/app/storage/firebase
 
+tvm-backend/
