@@ -70,20 +70,8 @@ class VehicleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Vehicle $vehicle)
+    public function update(VehicleCreateRequest $request, Vehicle $vehicle)
     {
-        $request->validate([
-            'name' => 'required|string',
-            'company_id' => 'required|int',
-            'brand_id' => 'required|integer',
-            'type_id' => 'required|integer',
-            'plate_no' => 'required|string',
-            'engine_no' => 'required|string',
-            'chassis_no' => 'required|string',
-            'color' => 'required|string',
-            'seats' => 'required|string'
-        ]);
-
         $tCompany = TransitCompany::with('user')->find($request->company_id);
 
         if (!$tCompany) {
