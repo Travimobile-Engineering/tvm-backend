@@ -17,6 +17,10 @@ trait LoginTrait
         $loginValue = $request->email ?? $request->phone_number;
         $loginField = filter_var($loginValue, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
 
+        if ($loginField === 'phone_number') {
+            $loginValue = formatPhoneNumber($loginValue);
+        }
+
         $credentials = [
             $loginField => $loginValue,
             'password' => $request->password,
