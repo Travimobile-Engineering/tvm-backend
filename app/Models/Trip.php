@@ -38,6 +38,7 @@ class Trip extends Model
         'trip_schedule',
         'departure_park',
         'destination_park',
+        'zone_id',
     ];
 
     protected $hidden = [];
