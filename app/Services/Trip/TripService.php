@@ -18,6 +18,7 @@ use App\Http\Resources\OneTimeTripResource;
 use App\Http\Resources\RecurringTripResource;
 use App\Models\BusStop;
 use App\Models\Manifest;
+use App\Models\RouteSubregion;
 use App\Models\TripBooking;
 use App\Models\TripLog;
 use App\Models\User;
@@ -49,6 +50,8 @@ class TripService
                 $user = User::findOrFail($user->id);
             }
 
+            $route = RouteSubregion::with('state')->findOrFail($request->destination_id);
+
             $trip = Trip::create([
                 'user_id' => $user->id,
                 'vehicle_id' => $request->vehicle_id ?? $user->vehicle->id,
@@ -62,6 +65,7 @@ class TripService
                 'price' => $request->price,
                 'bus_stops' => $request->bus_stops ?? [],
                 'means' => $request->means ?? 1,
+                'zone_id' => $route->state?->zone_id,
                 'type' => TripType::ONETIME,
                 'status' => TripStatus::UPCOMING,
             ]);
@@ -247,6 +251,8 @@ class TripService
             $endDate = $startDate->copy()->addMonths($request->reoccur_duration);
             $tripSchedule = $request->trip_days;
 
+            $route = RouteSubregion::with('state')->findOrFail($request->destination_id);
+
             foreach ($request->trip_days as $tripDay) {
                 $day = strtolower($tripDay['day']);
                 $time = $tripDay['time'];
@@ -276,6 +282,7 @@ class TripService
                         'price' => $request->price,
                         'bus_stops' => $request->bus_stops ?? [],
                         'means' => $request->means ?? 1,
+                        'zone_id' => $route->state?->zone_id,
                         'type' => TripType::RECURRING,
                         'status' => TripStatus::UPCOMING,
                     ]);
