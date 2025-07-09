@@ -52,6 +52,7 @@ class VehicleController extends Controller
             'engine_no' => $request->engine_no,
             'chassis_no' => $request->chassis_no,
             'color' => $request->color,
+            'model' => $request->model,
             'seats' => $request->seats,
         ]);
 
@@ -93,6 +94,7 @@ class VehicleController extends Controller
             'engine_no' => $request->engine_no,
             'chassis_no' => $request->chassis_no,
             'color' => $request->color,
+            'model' => $request->model,
             'seats' => $request->seats,
         ]);
 
