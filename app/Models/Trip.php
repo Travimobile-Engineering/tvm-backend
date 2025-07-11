@@ -106,7 +106,8 @@ class Trip extends Model
         return $this->hasMany(PaymentLog::class, 'trip_id');
     }
 
-    public function transitCompany(){
+    public function transitCompany()
+    {
         return $this->belongsTo(TransitCompany::class);
     }
 
