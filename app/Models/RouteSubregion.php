@@ -17,6 +17,7 @@ class RouteSubregion extends Model
         'region_id',
         'status'
     ];
+
     public function state()
     {
         return $this->belongsTo(State::class);
