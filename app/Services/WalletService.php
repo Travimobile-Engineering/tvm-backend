@@ -428,7 +428,7 @@ class WalletService
         }
 
         $paymentDetails = [
-            'email' => $request->input('email'),
+            'email' => $request->input('email') ?? "support@travimobile.com",
             'amount' => $amount,
             'metadata' => json_encode([
                 'user_id' => $request->input('user_id'),
