@@ -38,6 +38,19 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::table('issued_items', function (Blueprint $table) {
+            $table->dropColumn('serial_number');
+        });
+
+        Schema::table('inventories', function (Blueprint $table) {
+            $table->dropForeign(['category_id']);
+            $table->dropColumn('category_id');
+        });
+
+        Schema::dropIfExists('inventory_categories');
+
+        if (Schema::hasTable('issued_items')) {
+            Schema::rename('issued_items', 'issued_item');
+        }
     }
 };
