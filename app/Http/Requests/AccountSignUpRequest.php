@@ -21,12 +21,30 @@ class AccountSignUpRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'full_name' => ['required', 'string', 'max:200'],
-            'email' => ['nullable', 'string'],
+            'email' => ['nullable', 'string', 'email'],
             'phone_number' => ['required_if:email,null'],
             'user_category' => ['required', 'string', 'in:passenger,driver,agent'],
             'password' => ['required', 'string', 'confirmed', 'min:8']
+        ];
+
+        if (app()->environment('production')) {
+            $rules['email'][] = 'regex:/^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|outlook\.com|hotmail\.com)$/';
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Get custom error messages for specific fields.
+     *
+     * @return array
+     */
+    public function messages()
+    {
+        return [
+            'email.regex' => 'Please use a valid email address with one of the following domains: gmail.com, yahoo.com, outlook.com, hotmail.com.',
         ];
     }
 }
