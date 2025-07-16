@@ -16,9 +16,12 @@ class JobOpening extends Model
         'offer',
     ];
 
-    protected $casts = [
-        'responsibilities' => 'array',
-        'requirement' => 'array',
-        'offer' => 'array'
-    ];
+    protected function casts(): array
+    {
+        return [
+            'responsibilities' => 'array',
+            'requirement' => 'array',
+            'offer' => 'array',
+        ];
+    }
 }
