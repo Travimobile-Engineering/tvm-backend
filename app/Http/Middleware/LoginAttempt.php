@@ -22,12 +22,15 @@ class LoginAttempt
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $loginValue = $request->input('email') ?? $request->input('phone_number');
+        $loginValue = !empty($request->input('email'))
+            ? $request->input('email')
+            : $request->input('phone_number');
+
         $key = "failed_attempts_{$loginValue}";
 
         $loginField = filter_var($loginValue, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
 
-        if ($loginField === 'phone_number') {
+        if ($loginField === 'phone_number' && !empty($loginValue)) {
             $loginValue = formatPhoneNumber($loginValue);
         }
 

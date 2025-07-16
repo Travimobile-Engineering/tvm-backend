@@ -20,9 +20,9 @@ class JobOpeningResource extends JsonResource
             "type" => $this->type,
             "deadline" => $this->deadline,
             "summary" => $this->summary,
-            "responsibilities" => json_decode($this->responsibilities, true),
-            "requirement" => json_decode($this->requirement, true),
-            "offer" => json_decode($this->offer, true),
+            "responsibilities" => $this->responsibilities,
+            "requirement" => $this->requirement,
+            "offer" => $this->offer,
         ];
     }
 }

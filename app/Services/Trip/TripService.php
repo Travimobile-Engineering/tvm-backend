@@ -254,6 +254,10 @@ class TripService
             $route = RouteSubregion::with('state')->findOrFail($request->destination_id);
 
             foreach ($request->trip_days as $tripDay) {
+                if (!is_array($tripDay) || !isset($tripDay['day'], $tripDay['time'])) {
+                    return $this->error("Invalid trip_days format. Expected array of {day, time}", 422);
+                }
+
                 $day = strtolower($tripDay['day']);
                 $time = $tripDay['time'];
 

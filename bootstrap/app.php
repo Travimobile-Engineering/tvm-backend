@@ -30,9 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->reportable(function (Throwable $e): void {
             Log::channel('slack')->error($e->getMessage(),[
                 'file' => $e->getFile(),
-                'Line' => $e->getLine(),
+                'line' => $e->getLine(),
                 'code' => $e->getCode(),
                 'url' => request()->fullUrl(),
+                'input' => request()->all(),
             ]);
         });
 

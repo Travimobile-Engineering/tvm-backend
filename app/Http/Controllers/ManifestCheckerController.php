@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AddIncidentRequest;
 use App\Http\Requests\WatchListRequest;
-use App\Models\WatchList;
 use App\Services\ManifestCheckerService;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
@@ -12,11 +11,9 @@ use Illuminate\Http\Request;
 class ManifestCheckerController extends Controller
 {
     use HttpResponse;
-
     public function __construct(
         protected ManifestCheckerService $service
-    )
-    {}
+    ) {}
 
     public function getManifestData(Request $request)
     {
@@ -43,40 +40,52 @@ class ManifestCheckerController extends Controller
         return $this->service->getIncidentSeverityLevels();
     }
 
-    public function getIncidents(){
+    public function getIncidents()
+    {
         return $this->service->getIncidents();
     }
 
-    public function getIncident(Request $request){
+    public function getIncident(Request $request)
+    {
         return $this->service->getIncident($request);
     }
 
-    public function addRecordToWatchList(WatchListRequest $request){
+    public function addRecordToWatchList(WatchListRequest $request)
+    {
         return $this->service->addUpdateWatchList($request);
     }
 
-    public function updateWatchListRecord(Request $request){
+    public function updateWatchListRecord(Request $request)
+    {
         return $this->service->updateWatchList($request);
     }
 
-    public function getWatchListRecords(){
+    public function getWatchListRecords()
+    {
         return $this->service->getWatchListRecords();
     }
 
-    public function getWatchListRecord(Request $request){
+    public function getWatchListRecord(Request $request)
+    {
         return $this->service->getWatchListRecord($request);
     }
 
-    public function searchWatchList(Request $request){
-        $request->validate(['name' => 'string, required']);
+    public function searchWatchList(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string'
+        ]);
+
         return $this->service->searchWatchList($request);
     }
 
-    public function getProfile(){
+    public function getProfile()
+    {
         return $this->service->getProfile();
     }
 
-    public function editProfile(Request $request){
+    public function editProfile(Request $request)
+    {
         return $this->service->editProfile($request);
     }
 }
