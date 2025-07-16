@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\RouteSubregion;
 
 class AgentService
 {
@@ -503,6 +504,8 @@ class AgentService
             $user = User::with(['transitCompany', 'vehicle'])
                 ->findOrFail($request->user_id);
 
+            $route = RouteSubregion::with('state')->findOrFail($request->destination_id);
+
             $trip = Trip::create([
                 'user_id' => $user->id,
                 'vehicle_id' => $request->vehicle_id ?? $user->vehicle->id,
@@ -516,6 +519,7 @@ class AgentService
                 'price' => $request->price,
                 'bus_stops' => $request->bus_stops ?? [],
                 'means' => $request->means ?? 1,
+                'zone_id' => $route->state?->zone_id,
                 'type' => TripType::ONETIME,
                 'status' => TripStatus::UPCOMING,
             ]);
@@ -541,7 +545,13 @@ class AgentService
             $endDate = $startDate->copy()->addMonths($request->reoccur_duration);
             $tripSchedule = $request->trip_days;
 
+            $route = RouteSubregion::with('state')->findOrFail($request->destination_id);
+
             foreach ($request->trip_days as $tripDay) {
+                if (!is_array($tripDay) || !isset($tripDay['day'], $tripDay['time'])) {
+                    return $this->error("Invalid trip_days format. Expected array of {day, time}", 422);
+                }
+
                 $day = strtolower($tripDay['day']);
                 $time = $tripDay['time'];
 
@@ -570,6 +580,7 @@ class AgentService
                         'price' => $request->price,
                         'bus_stops' => $request->bus_stops ?? [],
                         'means' => $request->means ?? 1,
+                        'zone_id' => $route->state?->zone_id,
                         'type' => TripType::RECURRING,
                         'status' => TripStatus::UPCOMING,
                     ]);
