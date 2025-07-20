@@ -2,6 +2,7 @@
 
 namespace App\Trait;
 
+use App\Enum\DocumentStatus;
 use App\Enum\PaymentType;
 use App\Enum\TransitCompanyType;
 use App\Models\TransitCompany;
@@ -24,6 +25,56 @@ trait DriverTrait
             'type' => TransitCompanyType::INDIVIDUAL,
             'ver_code' => 0,
         ]);
+    }
+
+    protected function handleDriverDocumentUploads($request, $user, array $fileUploads)
+    {
+        $documentTypes = [
+            'license_photo' => [
+                'type' => 'license',
+                'extra_fields' => [
+                    'number' => $request->license_number,
+                    'expiration_date' => $request->license_expiration_date,
+                ]
+            ],
+            'nin_photo' => [
+                'type' => 'nin',
+                'extra_fields' => [
+                    'number' => $request->nin,
+                ]
+            ],
+            'vehicle_insurance_photo' => [
+                'type' => 'vehicle_insurance',
+                'extra_fields' => [
+                    'expiration_date' => $request->vehicle_insurance_expiration_date,
+                ]
+            ],
+        ];
+
+        foreach ($documentTypes as $key => $docDetails) {
+            $hasFile = !empty($fileUploads[$key]['url']);
+            $hasExtraField = false;
+
+            foreach ($docDetails['extra_fields'] as $field => $value) {
+                if ($request->filled($field)) {
+                    $hasExtraField = true;
+                    break;
+                }
+            }
+
+            if (!$hasFile && !$hasExtraField) {
+                continue;
+            }
+
+            $user->documents()->create([
+                'type' => $docDetails['type'],
+                'image_url' => $fileUploads[$key]['url'] ?? null,
+                'public_id' => $fileUploads[$key]['public_id'] ?? null,
+                'number' => $docDetails['extra_fields']['number'] ?? null,
+                'expiration_date' => $docDetails['extra_fields']['expiration_date'] ?? null,
+                'status' => DocumentStatus::PENDING,
+            ]);
+        }
     }
 
     protected function chargeWallet($user, $amount = null)

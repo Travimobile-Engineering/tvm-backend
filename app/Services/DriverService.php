@@ -28,13 +28,13 @@ class DriverService
             ])
             ->first();
 
-        if(!$user) {
+        if(! $user) {
             return $this->error(null, "User not found!", 404);
         }
 
         $accountExist = hasOnboarded($request->user_id);
 
-        if($accountExist) {
+        if ($accountExist) {
             return $this->error(null, "Account already exist!", 400);
         }
 
@@ -68,40 +68,7 @@ class DriverService
                 'seat_column' => $request->seat_column,
             ]);
 
-            $documentTypes = [
-                'license_photo' => [
-                    'type' => 'license',
-                    'extra_fields' => [
-                        'number' => $request->license_number,
-                        'expiration_date' => $request->license_expiration_date,
-                    ]
-                ],
-                'nin_photo' => [
-                    'type' => 'nin',
-                    'extra_fields' => [
-                        'number' => $request->nin,
-                    ]
-                ],
-                'vehicle_insurance_photo' => [
-                    'type' => 'vehicle_insurance',
-                    'extra_fields' => [
-                        'expiration_date' => $request->vehicle_insurance_expiration_date,
-                    ]
-                ],
-            ];
-
-            foreach ($documentTypes as $key => $docDetails) {
-                if (!empty($fileUploads[$key]['url']) || ($docDetails['type'] === 'nin' && $request->filled('nin'))) {
-                    $user->documents()->create([
-                        'type' => $docDetails['type'],
-                        'image_url' => $fileUploads[$key]['url'] ?? null,
-                        'public_id' => $fileUploads[$key]['public_id'] ?? null,
-                        'number' => $docDetails['extra_fields']['number'] ?? null,
-                        'expiration_date' => $docDetails['extra_fields']['expiration_date'] ?? null,
-                        'status' => DocumentStatus::PENDING,
-                    ]);
-                }
-            }
+            $this->handleDriverDocumentUploads($request, $user, $fileUploads);
 
             $user->update([
                 'user_category' => UserType::DRIVER->value,
@@ -113,6 +80,7 @@ class DriverService
                 'profile_photo' => $fileUploads['profile_photo']['url'] ?? null,
                 'public_id' => $fileUploads['profile_photo']['public_id'] ?? null,
                 'driver_verified' => true,
+                'referral_code' => generateUniqueString('users', 'referral_code', 8),
             ]);
 
             DB::commit();
