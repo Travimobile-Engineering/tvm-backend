@@ -163,4 +163,17 @@ class User extends Authenticatable implements JWTSubject
     {
         return Attribute::get(fn () => $this->walletAccount?->earnings);
     }
+
+    public function hasCompletedOnboarding(): bool
+    {
+        $fields = [
+            'first_name',
+            'last_name',
+            'next_of_kin_full_name',
+            'next_of_kin_phone_number',
+            'next_of_kin_gender',
+        ];
+
+        return collect($fields)->every(fn($field) => !empty($this->$field));
+    }
 }

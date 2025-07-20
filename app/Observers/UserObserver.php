@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\User;
+use App\Enum\UserType;
 use App\Models\Wallet;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
@@ -14,21 +15,9 @@ class UserObserver implements ShouldHandleEventsAfterCommit
     public function created(User $user): void
     {
         Wallet::updateOrCreate(
-            [
-                'user_id' => $user->id
-            ],
-            [
-                'user_id' => $user->id,
-                'balance' => 0,
-                'earnings' => 0,
-            ]
+            ['user_id' => $user->id],
+            ['balance' => 0, 'earnings' => 0]
         );
-
-        if ($user->referral_code === null) {
-            $user->update([
-                'referral_code' => generateUniqueString('users', 'referral_code', 8)
-            ]);
-        }
     }
 
     /**
@@ -36,7 +25,15 @@ class UserObserver implements ShouldHandleEventsAfterCommit
      */
     public function updated(User $user): void
     {
-        //
+        if (
+            $user->user_category === UserType::PASSENGER->value &&
+            $user->hasCompletedOnboarding() &&
+            empty($user->referral_code)
+        ) {
+            $user->updateQuietly([
+                'referral_code' => generateUniqueString('users', 'referral_code', 8),
+            ]);
+        }
     }
 
     /**
