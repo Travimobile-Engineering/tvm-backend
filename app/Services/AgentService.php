@@ -126,6 +126,7 @@ class AgentService
             'next_of_kin_full_name' => $request->next_of_kin_full_name,
             'next_of_kin_relationship' => $request->next_of_kin_relationship,
             'next_of_kin_phone_number' => $request->next_of_kin_phone_number,
+            'referral_code' => generateUniqueString('users', 'referral_code', 8),
         ]);
 
         return $this->success(null, "Agent information updated successfully");

@@ -8,9 +8,7 @@ enum UserType: string
     case AGENT = 'agent';
     case PASSENGER = 'passenger';
     case SECURITY = 'security';
-
     case FOO = 'foo';
-
     case AFOO = 'afoo';
 
     /**
