@@ -7,6 +7,7 @@ use App\Models\Incident;
 use App\Models\Manifest;
 use App\Models\WatchList;
 use App\Trait\HttpResponse;
+use App\Models\WatchlistUpdate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -54,10 +55,13 @@ class ManifestCheckerService
             'date' => $request->date,
             'time' => $request->time,
             'location' => $request->location,
+            'state_id' => $request->state_id,
+            'city' => $request->city,
             'description' => $request->description,
             'media_url' => $file['url'] ?? null,
             'severity_level' => $request->severity_level,
-            'persons_of_interest' => $request->persons_of_interest
+            'persons_of_interest' => $request->persons_of_interest,
+            'status' => 'new'
         ]);
 
         return $this->success($incident, "Incident created successfully");
@@ -81,7 +85,7 @@ class ManifestCheckerService
     }
 
     public function getIncidents(){
-        $incidents = Incident::all();
+        $incidents = Incident::paginate(25);
         return $this->success($incidents, 'Incidents retrieved successfully');
     }
 
@@ -124,10 +128,9 @@ class ManifestCheckerService
                 "nin" => $request->nin,
                 "investigation_officer" => $request->investigation_officer,
                 "io_contact_number" => $request->io_contact_number,
-                "alert_location" => $request->alert_location,
+                "state_id" => $request->state_id,
+                "city" => $request->city,
                 "reason" => $request->reason,
-                "recent_location" => $request->recent_location,
-                "observation" => $request->observation,
                 "photo_url" => $photo_url ?? '',
                 "documents" => json_encode($document_links),
             ];
@@ -144,12 +147,14 @@ class ManifestCheckerService
         
         try{
             $columns = Schema::getColumnListing('watch_lists');
-            $data = array_filter($request->all(), function($key) use($columns){
-                return in_array($key, $columns);
-            }, ARRAY_FILTER_USE_KEY);
 
-            WatchList::find($request->id)->update($data);
-            return $this->success(null, "Record updated successfully");
+            WatchlistUpdate::create([
+                'observation' => $request->observation,
+                'state_id' => $request->state_id,
+                'city' => $request->city,
+                'watchlist_id' => $request->watchlist_id,
+            ]);
+            return $this->success(null, "Obeservation created successfully");
         }
         catch(\Exception $e){
             return $this->error(null, $e->getMessage());
@@ -157,7 +162,7 @@ class ManifestCheckerService
     }
 
     public function getWatchListRecords(){
-        $record = WatchList::all();
+        $record = WatchList::paginate(25);
         return $this->success($record, null);
     }
 
@@ -171,7 +176,7 @@ class ManifestCheckerService
     }
 
     public function searchWatchList($request){
-        $records = WatchList::where('full_name', 'LIKE', "%".$request->name."%")->get();
+        $records = WatchList::where('full_name', 'LIKE', "%".$request->name."%")->paginate(25);
         if($records){
             return $this->success($records);
         }

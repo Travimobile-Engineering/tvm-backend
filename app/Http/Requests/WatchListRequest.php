@@ -30,7 +30,8 @@ class WatchListRequest extends FormRequest
             "nin" => ['required', 'integer'],
             "investigation_officer" => 'required',
             "io_contact_number" => 'required',
-            "alert_location" => 'required',
+            "state_id" => 'required',
+            "city" => 'required',
             "photo" => ['nullable', 'mimes:jpg,jpeg,png'],
             "documents" => ['nullable', 'mimes:png,jpeg,jpg,docx,txt,pdf'],
             "status" => ["nullable", "in:active,in custody,closed"]
