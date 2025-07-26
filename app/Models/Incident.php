@@ -13,9 +13,12 @@ class Incident extends Model
         'date',
         'time',
         'location',
+        'state_id',
+        'city',
         'description',
         'media_url',
         'severity_level',
         'persons_of_interest',
+        'status',
     ];
 }

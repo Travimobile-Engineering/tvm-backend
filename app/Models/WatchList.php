@@ -16,11 +16,10 @@ class WatchList extends Model
         "nin",
         "investigation_officer",
         "io_contact_number",
-        "alert_location",
+        "state_id",
+        "city",
         "reason",
-        "recent_location",
         "photo_url",
         "documents",
-        "observation",
     ];
 }

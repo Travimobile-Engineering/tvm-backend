@@ -26,7 +26,8 @@ class AddIncidentRequest extends FormRequest
             'type' => 'required|string',
             'date' => 'required',
             'time' => 'required',
-            'location' => 'required|string',
+            'state_id' => 'required|integer',
+            'city' => 'required|string',
             'description' => 'required|string',
             'media' => ['nullable', 'file', 'mimes:jpg,jpeg,png,mp4,mpeg,avi,mov'],
         ];
