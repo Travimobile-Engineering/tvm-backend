@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\AgentClassification;
 use App\Models\User;
 use App\Enum\UserType;
 use App\Models\Wallet;
@@ -18,6 +19,14 @@ class UserObserver implements ShouldHandleEventsAfterCommit
             ['user_id' => $user->id],
             ['balance' => 0, 'earnings' => 0]
         );
+
+        if ($user->user_category === UserType::AGENT->value) {
+            $levelA = AgentClassification::where('level', 'A')->first();
+
+            $user->updateQuietly([
+                'classification_id' => $levelA?->id
+            ]);
+        }
     }
 
     /**

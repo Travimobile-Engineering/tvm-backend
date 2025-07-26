@@ -23,3 +23,6 @@ Schedule::everyTenMinutes()
         Schedule::command('app:withdraw-request-payout');
     });
 
+Schedule::command('drivers:charge-usage')->dailyAt('00:00');
+
+

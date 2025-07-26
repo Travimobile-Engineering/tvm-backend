@@ -4,6 +4,7 @@ namespace App\Trait;
 
 use App\Enum\UserStatus;
 use App\Enum\UserType;
+use App\Models\AgentClassification;
 use Illuminate\Http\JsonResponse;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -40,8 +41,15 @@ trait LoginTrait
 
                 if ($user->wallet > 0) {
                     $this->userIncrementBalance($user, $user->wallet);
-                    $user->update([
+                    $user->updateQuietly([
                         'wallet' => 0,
+                    ]);
+                }
+
+                if ($user->classification_id === null || $user->classification_id === 0) {
+                    $levelA = AgentClassification::where('level', 'A')->first();
+                    $user->updateQuietly([
+                        'classification_id' => $levelA?->id
                     ]);
                 }
 
