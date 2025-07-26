@@ -65,7 +65,8 @@ class ManifestCheckerTest extends TestCase
             "nin" => '12345678909',
             "investigation_officer" => 'Isham Agat',
             "io_contact_number" => '09012345678',
-            "alert_location" => 'Port Harcourt',
+            "state_id" => '33',
+            "city" => 'Port Harcourt',
             "photo" => '',
             "documents" => '',
             "status" => 'active'
@@ -92,7 +93,8 @@ class ManifestCheckerTest extends TestCase
             "nin" => '12345678909',
             "investigation_officer" => 'Isham Agat',
             "io_contact_number" => '09012345678',
-            "alert_location" => 'Port Harcourt',
+            "state_id" => "33",
+            "city" => 'Port Harcourt',
             "photo" => '',
             "documents" => '',
             "status" => 'active'
