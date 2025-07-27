@@ -23,6 +23,7 @@ use App\Models\TripPayment;
 use App\Models\UnavailableDate;
 use App\Models\User;
 use App\Models\UserBank;
+use App\Models\UserCharge;
 use App\Models\UserPin;
 use App\Models\UserTransferReceipient;
 use App\Models\UserWithdrawLog;
@@ -43,7 +44,7 @@ trait UserRelationships
 
     public function agentTripBookings()
     {
-        return $this->hasMany(TripBooking::class, 'user_id', 'agent_id');
+        return $this->hasMany(TripBooking::class, 'agent_id', 'id');
     }
 
     public function transitCompany()
@@ -174,6 +175,11 @@ trait UserRelationships
     public function walletAccount()
     {
         return $this->hasOne(Wallet::class, 'user_id');
+    }
+
+    public function userCharges()
+    {
+        return $this->hasMany(UserCharge::class, 'user_id');
     }
 
     public function commissionsAsAgent()

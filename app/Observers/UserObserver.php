@@ -43,6 +43,10 @@ class UserObserver implements ShouldHandleEventsAfterCommit
                 'referral_code' => generateUniqueString('users', 'referral_code', 8),
             ]);
         }
+
+        if ($user->wasChanged('total_bookings_amount')) {
+            $user->checkAndUpgradeLevel();
+        }
     }
 
     /**

@@ -178,10 +178,20 @@ class User extends Authenticatable implements JWTSubject
         return collect($fields)->every(fn($field) => !empty($this->$field));
     }
 
+    public function getTotalBookingsAmount()
+    {
+        return $this->agentTripBookings()->sum('amount_paid');
+    }
+
     public function checkAndUpgradeLevel()
     {
         // Get the agent's total booking amount (you can modify this based on your booking records)
-        $totalBookings = $this->agentTripBookings()->sum('amount_paid');
+        $totalBookings = $this->getTotalBookingsAmount();
+
+        if ($totalBookings === 0) {
+            // No bookings, no upgrade possible
+            return;
+        }
 
         // Get the current classification level
         $currentClassification = $this->classification;

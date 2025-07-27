@@ -73,7 +73,7 @@ trait TripBookingTrait
             return $trip;
         }
 
-        return $this->processPaymentTransaction($amount_paid, $request, $user, $trip);
+        return $this->processPaymentTransaction($amount_paid, $request, $user);
     }
 
     protected function validatePayment($request, $amount_paid, $user)
@@ -93,26 +93,24 @@ trait TripBookingTrait
         return null;
     }
 
-    protected function processPaymentTransaction($amount_paid, $request, $user, $trip)
+    protected function processPaymentTransaction($amount_paid, $request, $user)
     {
         try {
             DB::beginTransaction();
 
-            $user = User::with(['transactions', 'walletAccount'])->findOrFail($user->id);
-
             $userId = $request->user_id ?? $user->id;
             $passUser = User::findOrFail($userId);
             $getTrip = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'tripBookings.user',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifest'
-                ]
-            )
-            ->findOrFail($request->trip_id);
+                    [
+                        'user.transitCompany',
+                        'vehicle',
+                        'tripBookings.user',
+                        'departureRegion.state',
+                        'destinationRegion.state',
+                        'manifest'
+                    ]
+                )
+                ->findOrFail($request->trip_id);
 
             // Process Wallet and Transactions
             $this->updateUserWallet($amount_paid, $user);
@@ -125,6 +123,9 @@ trait TripBookingTrait
 
             // Send Notifications
             $data = $this->sendBookingNotification($user, $bookingId, $getTrip);
+
+            // After the booking is completed, automatically check for level upgrade
+            $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
 
             DB::commit();
 
