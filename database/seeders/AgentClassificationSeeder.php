@@ -15,9 +15,9 @@ class AgentClassificationSeeder extends Seeder
     {
         $data = [
             ['level' => 'A', 'amount' => 1000],
-            ['level' => 'B', 'amount' => 2000],
-            ['level' => 'C', 'amount' => 3000],
-            ['level' => 'D', 'amount' => 4000],
+            ['level' => 'B', 'amount' => 10000],
+            ['level' => 'C', 'amount' => 100000],
+            ['level' => 'D', 'amount' => 1000000],
         ];
 
         DB::table('agent_classifications')->insert($data);
