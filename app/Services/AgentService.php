@@ -153,6 +153,13 @@ class AgentService
         $result = null;
         $paymentProcessor = null;
 
+        $user = User::with(['transactions', 'walletAccount'])
+                ->findOrFail($user->id);
+
+        if ($user->user_category == UserType::AGENT->value && $user->wallet_balance < 1000) {
+            return $this->error(null, "Your wallet balance must be at least 1000 to make a booking", 400);
+        }
+
         match($request->payment_method) {
             PaymentMethod::WALLET => $result = $this->walletPayment($amount_paid, $request, $user),
             default => throw new \Exception('Invalid payment method'),

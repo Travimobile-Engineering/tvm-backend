@@ -27,7 +27,7 @@ class AccountService
 
         $this->transferToAccount($account, $amount);
     }
-    
+
     public function transferToAccount($account, $amount)
     {
         $account->accountTransfers()->create([
@@ -56,7 +56,7 @@ class AccountService
 
     private function createPaystackRecipient(Account $account, Bank $bank): array
     {
-        $url = "https://api.paystack.co/transferrecipient";
+        $url = config('app.paystack_transfer_url');
         $token = config('app.paystack_secret_key');
 
         $headers = [

@@ -2,8 +2,10 @@
 
 namespace App\Trait;
 
+use App\Models\AgentClassification;
 use App\Models\Announcement;
 use App\Models\BusStop;
+use App\Models\Commission;
 use App\Models\Document;
 use App\Models\Notification;
 use App\Models\PaymentLog;
@@ -21,6 +23,7 @@ use App\Models\TripPayment;
 use App\Models\UnavailableDate;
 use App\Models\User;
 use App\Models\UserBank;
+use App\Models\UserCharge;
 use App\Models\UserPin;
 use App\Models\UserTransferReceipient;
 use App\Models\UserWithdrawLog;
@@ -41,7 +44,7 @@ trait UserRelationships
 
     public function agentTripBookings()
     {
-        return $this->hasMany(TripBooking::class, 'user_id', 'agent_id');
+        return $this->hasMany(TripBooking::class, 'agent_id', 'id');
     }
 
     public function transitCompany()
@@ -172,6 +175,33 @@ trait UserRelationships
     public function walletAccount()
     {
         return $this->hasOne(Wallet::class, 'user_id');
+    }
+
+    public function userCharges()
+    {
+        return $this->hasMany(UserCharge::class, 'user_id');
+    }
+
+    public function commissionsAsAgent()
+    {
+        return $this->hasMany(Commission::class, 'agent_id');
+    }
+
+    // Get all commissions where this user is the passenger
+    public function commissionsAsPassenger()
+    {
+        return $this->hasMany(Commission::class, 'passenger_id');
+    }
+
+    // Get the first agent who booked this passenger (if applicable)
+    public function firstAgentCommission()
+    {
+        return $this->hasMany(Commission::class, 'passenger_id')->first();
+    }
+
+    public function classification()
+    {
+        return $this->belongsTo(AgentClassification::class, 'classification_id');
     }
 
     public static function bootDeletesUserRelationships(): void

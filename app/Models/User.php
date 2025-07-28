@@ -71,6 +71,7 @@ class User extends Authenticatable implements JWTSubject
         'referral_code',
         'state_id',
         'zone_id',
+        'classification_id',
     ];
 
     protected $guarded = [
@@ -175,5 +176,51 @@ class User extends Authenticatable implements JWTSubject
         ];
 
         return collect($fields)->every(fn($field) => !empty($this->$field));
+    }
+
+    public function getTotalBookingsAmount()
+    {
+        return $this->agentTripBookings()->sum('amount_paid');
+    }
+
+    public function checkAndUpgradeLevel()
+    {
+        // Get the agent's total booking amount (you can modify this based on your booking records)
+        $totalBookings = $this->getTotalBookingsAmount();
+
+        if ($totalBookings === 0) {
+            // No bookings, no upgrade possible
+            return;
+        }
+
+        // Get the current classification level
+        $currentClassification = $this->classification;
+
+        $highestLevel = AgentClassification::orderByRaw("FIELD(level, 'A', 'B', 'C', 'D')")
+                            ->orderBy('amount', 'desc')
+                            ->first();
+
+        if ($currentClassification->level == $highestLevel->level) {
+            // Agent is already at the highest level, so no upgrade is possible
+            return;
+        }
+
+        // Check if agent exceeds the threshold for the current level
+        if ($totalBookings > $currentClassification->amount) {
+            $nextLevel = $this->getNextLevel($currentClassification);
+
+            // Upgrade agent to the next level
+            $this->classification()->associate($nextLevel);
+            $this->walletAccount()->increment('balance', $nextLevel->amount); // Optionally, you can add the level amount to the wallet balance
+            $this->save();
+        }
+    }
+
+    public function getNextLevel($currentClassification)
+    {
+        // Find the next level (this could be more dynamic based on your business rules)
+        return AgentClassification::where('level', '>', $currentClassification->level)
+                                  ->orderBy('level', 'asc')
+                                  ->first();
     }
 }
