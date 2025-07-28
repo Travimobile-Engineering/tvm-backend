@@ -116,10 +116,10 @@ trait TripBookingTrait
             $this->updateUserWallet($amount_paid, $user);
 
             // Create Booking and Log Payment
-            $bookingId = $this->createBookingAndLogPayment($request, $passenger, $user, $amount_paid, $getTrip);
+            $bookingData = $this->createBookingAndLogPayment($request, $passenger, $user, $amount_paid, $getTrip);
 
             // Send Notifications
-            $data = $this->sendBookingNotification($user, $bookingId, $getTrip);
+            $data = $this->sendBookingNotification($user, $bookingData['booking_id'], $getTrip, $bookingData['ref']);
 
             if ($user->user_category == UserType::AGENT->value) {
                 // Distribute Agent Commission
@@ -217,7 +217,10 @@ trait TripBookingTrait
 
         $this->driverIncrementEarning($trip->user, $amount_paid);
 
-        return $booking_id;
+        return [
+            'booking_id' => $booking_id,
+            'ref' => $ref,
+        ];
     }
 
     protected function distributeAgentCommission($passUser, $user)
@@ -225,10 +228,9 @@ trait TripBookingTrait
         app(AgentCommissionService::class)->distributeAgentCommission($passUser, $user);
     }
 
-    protected function sendBookingNotification($user, $booking_id, $trip)
+    protected function sendBookingNotification($user, $booking_id, $trip, $ref)
     {
         $destination = $trip->destinationRegion?->state?->name . ' > ' . $trip->destinationRegion?->name;
-        $ref = getRandomString();
 
         Notification::create([
             'user_id' => $user->id,
