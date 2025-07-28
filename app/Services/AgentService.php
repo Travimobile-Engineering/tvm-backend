@@ -220,7 +220,7 @@ class AgentService
         $user = User::create([
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'phone_number' => $request->phone_number,
+            'phone_number' => formatPhoneNumber($request->phone_number),
             'gender' => $request->gender,
             'nin' => $request->nin,
             'next_of_kin_full_name' => $request->next_of_kin_full_name,
