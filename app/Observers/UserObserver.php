@@ -21,7 +21,7 @@ class UserObserver implements ShouldHandleEventsAfterCommit
         );
 
         if ($user->user_category === UserType::AGENT->value) {
-            $levelA = AgentClassification::where('level', 'A')->first();
+            $levelA = AgentClassification::where('level', 'D')->first();
 
             $user->updateQuietly([
                 'classification_id' => $levelA?->id

@@ -47,9 +47,9 @@ trait LoginTrait
                 }
 
                 if ($user->classification_id === null || $user->classification_id === 0) {
-                    $levelA = AgentClassification::where('level', 'A')->first();
+                    $levelD = AgentClassification::where('level', 'D')->first();
                     $user->updateQuietly([
-                        'classification_id' => $levelA?->id
+                        'classification_id' => $levelD?->id
                     ]);
                 }
 

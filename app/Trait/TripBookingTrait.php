@@ -118,14 +118,16 @@ trait TripBookingTrait
             // Create Booking and Log Payment
             $bookingId = $this->createBookingAndLogPayment($request, $passUser, $user, $amount_paid, $getTrip);
 
-            // Distribute Agent Commission
-            $this->distributeAgentCommission($passUser, $user);
-
             // Send Notifications
             $data = $this->sendBookingNotification($user, $bookingId, $getTrip);
 
-            // After the booking is completed, automatically check for level upgrade
-            $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
+            if ($user->user_category == UserType::AGENT->value) {
+                // Distribute Agent Commission
+                $this->distributeAgentCommission($passUser, $user);
+            
+                // After the booking is completed, automatically check for level upgrade
+                $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
+            }
 
             DB::commit();
 

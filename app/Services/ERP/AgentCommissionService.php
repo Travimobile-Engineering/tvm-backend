@@ -59,6 +59,9 @@ class AgentCommissionService
             'is_first_time' => true,
             'first_agent_id' => $agent->id, // The first agent is the current one
         ]);
+
+        // Top up the agent's earnings
+        $this->topUpEarnings($agent, $primaryCommission->amount);
     }
 
     /**
@@ -99,5 +102,19 @@ class AgentCommissionService
             'is_first_time' => false,
             'first_agent_id' => $passenger->commissionsAsPassenger->first()->firstAgent->id, // First agent remains the same
         ]);
+
+        // Top up the agent's earnings
+        $this->topUpEarnings($agent, $secondaryCommission->amount);
+    }
+
+    /**
+     * Top up the earnings of the agent.
+     *
+     * @param User $agent
+     * @param int $amount
+     */
+    private function topUpEarnings(User $agent, $amount)
+    {
+        $agent->walletAccount()->increment('earnings', $amount);
     }
 }

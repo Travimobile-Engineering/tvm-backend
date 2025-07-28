@@ -62,7 +62,7 @@ class DriverUsageService
                 'user_category' => UserType::DRIVER->value,
             ]);
 
-            if (app()->environment(['production', 'staging', 'local'])) {
+            if (app()->environment(['production', 'staging'])) {
                 app(AccountService::class)->initiateTransfer($fee->amount);
             }
 

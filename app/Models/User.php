@@ -204,7 +204,7 @@ class User extends Authenticatable implements JWTSubject
         }
 
         // Check if agent exceeds the threshold for the current level
-        if ($totalBookings >= $currentClassification->amount) {
+        if ($totalBookings > $currentClassification->amount) {
             $nextLevel = $this->getNextLevel($currentClassification);
 
             // Upgrade agent to the next level
