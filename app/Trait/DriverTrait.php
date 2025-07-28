@@ -79,7 +79,7 @@ trait DriverTrait
 
     protected function chargeWallet($user, $amount = null)
     {
-        $amount = $amount ? $amount : getFee('manifest');
+        $amount = $amount ?: getFee('manifest');
 
         $this->driverDecrementEarning($user, $amount);
 
