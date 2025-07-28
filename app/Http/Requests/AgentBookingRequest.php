@@ -36,7 +36,7 @@ class AgentBookingRequest extends FormRequest
             'next_of_kin.*.name' => 'required|string',
             'next_of_kin.*.relationship' => 'required|string',
             'next_of_kin.*.phone_number' => 'required|string',
-            'amount_paid' => 'nullable|int',
+            'amount_paid' => 'required|int',
             'payment_method' => 'required|in:wallet,paystack',
             'pin' => 'required_if:payment_method,wallet'
         ];
