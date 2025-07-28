@@ -196,7 +196,9 @@ class User extends Authenticatable implements JWTSubject
         // Get the current classification level
         $currentClassification = $this->classification;
 
-        $highestLevel = AgentClassification::orderBy('level', 'desc')->first();
+        $highestLevel = AgentClassification::orderByRaw("FIELD(level, 'A', 'B', 'C', 'D')")
+                            ->orderBy('amount', 'desc')
+                            ->first();
 
         if ($currentClassification->level == $highestLevel->level) {
             // Agent is already at the highest level, so no upgrade is possible
