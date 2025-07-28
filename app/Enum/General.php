@@ -14,4 +14,5 @@ enum General: string
     const PENDING = "pending";
     const PROCESSING = "processing";
     const FAILED = "failed";
+    const DRIVER_CHARGE = "Driver charge";
 }
