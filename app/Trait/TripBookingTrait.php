@@ -99,7 +99,7 @@ trait TripBookingTrait
             DB::beginTransaction();
 
             $userId = $request->user_id ?? $user->id;
-            $passUser = User::findOrFail($userId);
+            $passenger = User::findOrFail($userId);
             $getTrip = Trip::with(
                     [
                         'user.transitCompany',
@@ -116,14 +116,14 @@ trait TripBookingTrait
             $this->updateUserWallet($amount_paid, $user);
 
             // Create Booking and Log Payment
-            $bookingId = $this->createBookingAndLogPayment($request, $passUser, $user, $amount_paid, $getTrip);
+            $bookingId = $this->createBookingAndLogPayment($request, $passenger, $user, $amount_paid, $getTrip);
 
             // Send Notifications
             $data = $this->sendBookingNotification($user, $bookingId, $getTrip);
 
             if ($user->user_category == UserType::AGENT->value) {
                 // Distribute Agent Commission
-                $this->distributeAgentCommission($passUser, $user);
+                $this->distributeAgentCommission($passenger, $user);
             
                 // After the booking is completed, automatically check for level upgrade
                 $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
@@ -134,7 +134,8 @@ trait TripBookingTrait
             return $this->success($data, "Payment successful");
         } catch (\Throwable $th) {
             DB::rollBack();
-            return $this->error(null, "An error occurred while processing your request: " . $th->getMessage(), 400);
+            throw $th;
+            //return $this->error(null, "An error occurred while processing your request: " . $th->getMessage(), 400);
         }
     }
 
