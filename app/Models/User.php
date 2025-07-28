@@ -209,10 +209,12 @@ class User extends Authenticatable implements JWTSubject
         if ($totalBookings > $currentClassification->amount) {
             $nextLevel = $this->getNextLevel($currentClassification);
 
-            // Upgrade agent to the next level
-            $this->classification()->associate($nextLevel);
-            $this->walletAccount()->increment('balance', $nextLevel->amount); // Optionally, you can add the level amount to the wallet balance
-            $this->save();
+            if ($nextLevel) {
+                // Upgrade agent to the next level
+                $this->classification()->associate($nextLevel);
+                $this->walletAccount()->increment('balance', $nextLevel->amount); // Add the level amount to the wallet balance
+                $this->save();
+            }
         }
     }
 

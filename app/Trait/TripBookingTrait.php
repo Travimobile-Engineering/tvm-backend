@@ -134,8 +134,7 @@ trait TripBookingTrait
             return $this->success($data, "Payment successful");
         } catch (\Throwable $th) {
             DB::rollBack();
-            throw $th;
-            //return $this->error(null, "An error occurred while processing your request: " . $th->getMessage(), 400);
+            return $this->error(null, "An error occurred while processing your request: " . $th->getMessage(), 400);
         }
     }
 
