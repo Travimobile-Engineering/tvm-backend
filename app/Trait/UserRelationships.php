@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\BusStop;
 use App\Models\Commission;
 use App\Models\Document;
+use App\Models\Earning;
 use App\Models\Notification;
 use App\Models\PaymentLog;
 use App\Models\PremiumHireBooking;
@@ -202,6 +203,11 @@ trait UserRelationships
     public function classification()
     {
         return $this->belongsTo(AgentClassification::class, 'classification_id');
+    }
+
+    public function earnings()
+    {
+        return $this->hasMany(Earning::class, 'user_id');
     }
 
     public static function bootDeletesUserRelationships(): void

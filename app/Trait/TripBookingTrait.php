@@ -124,7 +124,7 @@ trait TripBookingTrait
             if ($user->user_category == UserType::AGENT->value) {
                 // Distribute Agent Commission
                 $this->distributeAgentCommission($passenger, $user);
-            
+
                 // After the booking is completed, automatically check for level upgrade
                 $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
             }
@@ -203,13 +203,15 @@ trait TripBookingTrait
         $trip->user->driverTripPayments()->create([
             'user_id' => $user->id,
             'trip_id' => $request->trip_id,
-            'title' => 'Bus ticket purchase',
+            'title' => 'Trip booking',
             'amount' => $amount_paid,
             'status' => PaymentStatus::PAID->value,
         ]);
 
+        $trip->user->createEarning('Trip booking', $amount_paid, 'CR', PaymentStatus::PAID->value);
+
         $user->transactions()->create([
-            'title' => 'Bus ticket purchase',
+            'title' => 'Trip booking',
             'amount' => $amount_paid,
             'type' => "DR",
             'txn_reference' => "wallet"
