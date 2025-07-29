@@ -115,6 +115,16 @@ class AgentCommissionService
      */
     private function topUpEarnings(User $agent, $amount)
     {
-        $agent->walletAccount()->increment('earnings', $amount);
+        // Ensure the amount is a valid number (float or int)
+        $amount = (float)$amount;
+
+        // Check if the amount is valid and positive
+        if ($amount > 0) {
+            // Increment the earnings directly without converting to a string
+            $agent->walletAccount()->increment('earnings', $amount);
+        } else {
+            // Handle invalid amount
+            throw new \Exception("Invalid amount for earnings increment.");
+        }
     }
 }
