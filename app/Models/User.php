@@ -225,4 +225,14 @@ class User extends Authenticatable implements JWTSubject
                                   ->orderBy('level', 'asc')
                                   ->first();
     }
+
+    public function createEarning($title, $amount, $type, $status)
+    {
+        $this->earnings()->create([
+            'title' => $title,
+            'amount' => $amount,
+            'type' => $type,
+            'status' => $status,
+        ]);
+    }
 }

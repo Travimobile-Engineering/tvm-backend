@@ -2,6 +2,7 @@
 
 namespace App\Services\ERP;
 
+use App\Enum\PaymentStatus;
 use App\Models\AgentCommission;
 use App\Models\Commission;
 use App\Models\User;
@@ -122,6 +123,9 @@ class AgentCommissionService
         if ($amount > 0) {
             // Increment the earnings directly without converting to a string
             $agent->walletAccount()->increment('earnings', $amount);
+
+            // Create an earning record for the agent
+            $agent->createEarning('Agent commission', $amount, 'CR', PaymentStatus::PAID->value);
         } else {
             // Handle invalid amount
             throw new \Exception("Invalid amount for earnings increment.");

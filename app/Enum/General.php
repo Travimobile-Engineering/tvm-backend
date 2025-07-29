@@ -15,4 +15,5 @@ enum General: string
     const PROCESSING = "processing";
     const FAILED = "failed";
     const DRIVER_CHARGE = "Driver charge";
+    const PAID = "paid";
 }
