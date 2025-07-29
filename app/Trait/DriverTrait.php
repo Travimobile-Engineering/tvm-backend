@@ -3,6 +3,7 @@
 namespace App\Trait;
 
 use App\Enum\DocumentStatus;
+use App\Enum\General;
 use App\Enum\PaymentType;
 use App\Enum\TransitCompanyType;
 use App\Models\TransitCompany;

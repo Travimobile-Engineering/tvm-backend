@@ -2,24 +2,23 @@
 
 namespace App\Services;
 
-use App\DTO\NotificationDispatchData;
-use App\Enum\General;
 use App\Models\Bank;
 use App\Models\User;
+use App\Enum\General;
+use App\Models\Earning;
 use App\Enum\PaymentType;
-use App\Events\WalletFunded;
-use App\Mail\VerifyPinMail;
+use App\Trait\DriverTrait;
 use App\Models\Transaction;
 use App\Trait\HttpResponse;
+use App\Events\WalletFunded;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Models\TripPayment;
-use App\Services\Notification\NotificationDispatcher;
+use App\DTO\NotificationDispatchData;
 use App\Services\Paystack\PaystackService;
-use App\Trait\DriverTrait;
 use Unicodeveloper\Paystack\Facades\Paystack;
+use App\Services\Notification\NotificationDispatcher;
+use App\Http\Controllers\Payment\PaystackPaymentController;
 
 class WalletService
 {
@@ -332,6 +331,8 @@ class WalletService
             $user->walletAccount()->update([
                 'earnings' => $newBalance,
             ]);
+
+            $user->createEarning('Withdrawal', $request->amount, 'DR', General::PAID);
         });
 
         return $this->success(null, "Request sent successfully");
@@ -355,8 +356,8 @@ class WalletService
         }
 
         $this->driverDecrementEarning($user, $request->amount);
+        $user->createEarning('Withdrawal', $request->amount, 'DR', General::PAID);
         $this->userIncrementBalance($user, $request->amount);
-
         return $this->success(null, "Withdrawal to wallet successful");
     }
 
@@ -408,8 +409,8 @@ class WalletService
 
         $date = request()->input('date');
 
-        $earnings = TripPayment::select('id', 'title', 'amount', 'status', 'created_at')
-            ->where('driver_id', $userId)
+        $earnings = Earning::select('id', 'title', 'amount', 'type', 'status')
+            ->where('user_id', $userId)
             ->when($date, fn($query) => $query->whereDate('created_at', $date))
             ->get();
 
