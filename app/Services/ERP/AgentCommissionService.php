@@ -15,9 +15,10 @@ class AgentCommissionService
      *
      * @param User $passenger
      * @param User $agent
+     * @param int $passengerCount
      * @return void
      */
-    public function distributeAgentCommission(User $passenger, User $agent)
+    public function distributeAgentCommission(User $passenger, User $agent, int $passengerCount = 1)
     {
         // Retrieve primary commission (for the first agent)
         $primaryCommission = AgentCommission::where('type', AgentCommission::PRIMARY)
@@ -37,10 +38,10 @@ class AgentCommissionService
 
         // If it's the first-time booking, process the full commission for the current agent
         if (!$commissionRecord) {
-            $this->createFirstTimeBookingCommission($passenger, $agent, $primaryCommission);
+            $this->createFirstTimeBookingCommission($passenger, $agent, $primaryCommission, $passengerCount);
         } else {
             // If it's a subsequent booking, process commission for both the first agent and the current agent
-            $this->createSubsequentBookingCommission($passenger, $agent, $commissionRecord, $secondaryCommission);
+            $this->createSubsequentBookingCommission($passenger, $agent, $commissionRecord, $secondaryCommission, $passengerCount);
         }
     }
 
@@ -51,18 +52,20 @@ class AgentCommissionService
      * @param User $agent
      * @param $primaryCommission
      */
-    private function createFirstTimeBookingCommission(User $passenger, User $agent, $primaryCommission)
+    private function createFirstTimeBookingCommission(User $passenger, User $agent, $primaryCommission, int $passengerCount)
     {
+        $amount = $primaryCommission->amount * $passengerCount;
+
         Commission::create([
             'agent_id' => $agent->id,    // Current agent earns full commission
             'passenger_id' => $passenger->id,
-            'amount' => $primaryCommission->amount,
+            'amount' => $amount,
             'is_first_time' => true,
             'first_agent_id' => $agent->id, // The first agent is the current one
         ]);
 
         // Top up the agent's earnings
-        $this->topUpEarnings($agent, $primaryCommission->amount);
+        $this->topUpEarnings($agent, $amount);
     }
 
     /**
@@ -73,17 +76,17 @@ class AgentCommissionService
      * @param $commissionRecord
      * @param $secondaryCommission
      */
-    private function createSubsequentBookingCommission(User $passenger, User $agent, $commissionRecord, $secondaryCommission)
+    private function createSubsequentBookingCommission(User $passenger, User $agent, $commissionRecord, $secondaryCommission, int $passengerCount)
     {
         $firstAgent = $commissionRecord->firstAgent; // The first agent who booked this passenger
 
         // If it's the same agent as the first one, only one commission record for the current agent
         if ($firstAgent->id === $agent->id) {
-            $this->createCommission($agent, $passenger, $secondaryCommission);
+            $this->createCommission($agent, $passenger, $secondaryCommission, $passengerCount);
         } else {
             // If it's a different agent, create two commission records
-            $this->createCommission($firstAgent, $passenger, $secondaryCommission); // First agent
-            $this->createCommission($agent, $passenger, $secondaryCommission); // Current agent
+            $this->createCommission($firstAgent, $passenger, $secondaryCommission, $passengerCount); // First agent
+            $this->createCommission($agent, $passenger, $secondaryCommission, $passengerCount); // Current agent
         }
     }
 
@@ -94,18 +97,20 @@ class AgentCommissionService
      * @param User $passenger
      * @param $secondaryCommission
      */
-    private function createCommission(User $agent, User $passenger, $secondaryCommission)
+    private function createCommission(User $agent, User $passenger, $secondaryCommission, int $passengerCount)
     {
+        $amount = $secondaryCommission->amount * $passengerCount;
+
         Commission::create([
             'agent_id' => $agent->id,
             'passenger_id' => $passenger->id,
-            'amount' => $secondaryCommission->amount,
+            'amount' => $amount,
             'is_first_time' => false,
             'first_agent_id' => $passenger->commissionsAsPassenger->first()->firstAgent->id, // First agent remains the same
         ]);
 
         // Top up the agent's earnings
-        $this->topUpEarnings($agent, $secondaryCommission->amount);
+        $this->topUpEarnings($agent, $amount);
     }
 
     /**
@@ -117,18 +122,20 @@ class AgentCommissionService
     private function topUpEarnings(User $agent, $amount)
     {
         // Ensure the amount is a valid number (float or int)
-        $amount = (float)$amount;
+        $amount = (float) $amount;
 
-        // Check if the amount is valid and positive
-        if ($amount > 0) {
-            // Increment the earnings directly without converting to a string
-            $agent->walletAccount()->increment('earnings', $amount);
-
-            // Create an earning record for the agent
-            $agent->createEarning('Agent commission', $amount, 'CR', PaymentStatus::PAID->value);
-        } else {
-            // Handle invalid amount
+        if ($amount <= 0) {
             throw new \Exception("Invalid amount for earnings increment.");
         }
+
+        $wallet = $agent->walletAccount;
+
+        if (!$wallet) {
+            throw new \Exception("Agent wallet account not found.");
+        }
+
+        $wallet->increment('earnings', $amount);
+
+        $agent->createEarning('Agent commission', $amount, 'CR', PaymentStatus::PAID->value);
     }
 }
