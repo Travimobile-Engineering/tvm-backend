@@ -122,8 +122,9 @@ trait TripBookingTrait
             $data = $this->sendBookingNotification($user, $bookingData['booking_id'], $getTrip, $bookingData['ref']);
 
             if ($user->user_category == UserType::AGENT->value) {
+                $passengerCount = 1 + count($request->travelling_with ?? []);
                 // Distribute Agent Commission
-                $this->distributeAgentCommission($passenger, $user);
+                $this->distributeAgentCommission($passenger, $user, $passengerCount);
 
                 // After the booking is completed, automatically check for level upgrade
                 $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
