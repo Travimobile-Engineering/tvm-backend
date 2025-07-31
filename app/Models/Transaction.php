@@ -17,10 +17,10 @@ class Transaction extends Model
         'status'
     ];
 
-    public function casts(): array
+    protected function casts(): array
     {
         return [
-            'amount' => 'decimal:10,2',
+            'amount' => 'decimal:2',
         ];
     }
 }
