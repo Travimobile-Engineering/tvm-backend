@@ -376,6 +376,7 @@ class WalletService
 
         $relatedTransactions = Transaction::where('receiver_id', $userId)
             ->select('id', 'user_id', 'title', 'amount', 'type', 'status', 'created_at')
+            ->latest()
             ->get();
 
         $transactions = $user->transactions->map(fn ($transaction) => [
@@ -412,6 +413,7 @@ class WalletService
         $earnings = Earning::select('id', 'title', 'amount', 'type', 'status', 'created_at')
             ->where('user_id', $userId)
             ->when($date, fn($query) => $query->whereDate('created_at', $date))
+            ->latest()
             ->get();
 
         return $this->success($earnings, "Recent earnings");
