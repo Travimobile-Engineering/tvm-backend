@@ -12,11 +12,11 @@ class Wallet extends Model
         'earnings',
     ];
 
-    public function casts(): array
+    protected function casts(): array
     {
         return [
-            'balance' => 'decimal:10,2',
-            'earnings' => 'decimal:10,2',
+            'balance' => 'decimal:2',
+            'earnings' => 'decimal:2',
         ];
     }
 
