@@ -123,7 +123,8 @@ trait TripBookingTrait
             $data = $this->sendBookingNotification($user, $bookingData['booking_id'], $getTrip, $bookingData['ref']);
 
             if ($user->user_category == UserType::AGENT->value) {
-                $passengerCount = 1 + count($request->travelling_with ?? []);
+                $passengerCollect = collect($bookingData['travelling_with'] ?? []);
+                $passengerCount = 1 + $passengerCollect->count();
 
                 // Distribute Agent Commission
                 $this->distributeAgentCommission($passenger, $user, $passengerCount);
@@ -225,6 +226,7 @@ trait TripBookingTrait
         return [
             'booking_id' => $booking_id,
             'ref' => $ref,
+            'travelling_with' => $travellingWith,
         ];
     }
 
