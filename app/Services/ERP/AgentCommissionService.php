@@ -6,7 +6,8 @@ use App\Enum\PaymentStatus;
 use App\Models\AgentCommission;
 use App\Models\Commission;
 use App\Models\User;
-
+use App\Enum\TransactionTitle;
+use Illuminate\Support\Facades\DB;
 
 class AgentCommissionService
 {
@@ -18,7 +19,7 @@ class AgentCommissionService
      * @param int $passengerCount
      * @return void
      */
-    public function distributeAgentCommission(User $passenger, User $agent, int $passengerCount = 1)
+    public function distributeAgentCommission(User $passenger, User $agent, int $passengerCount)
     {
         // Retrieve primary commission (for the first agent)
         $primaryCommission = AgentCommission::where('type', AgentCommission::PRIMARY)
@@ -121,21 +122,23 @@ class AgentCommissionService
      */
     private function topUpEarnings(User $agent, $amount)
     {
-        // Ensure the amount is a valid number (float or int)
-        $amount = (float) $amount;
+        DB::transaction(function () use ($agent, $amount) {
+            // Ensure the amount is a valid number (float or int)
+            $amount = (float) $amount;
 
-        if ($amount <= 0) {
-            throw new \Exception("Invalid amount for earnings increment.");
-        }
+            if ($amount <= 0) {
+                throw new \Exception("Invalid amount for earnings increment.");
+            }
 
-        $wallet = $agent->walletAccount;
+            $wallet = $agent->walletAccount;
 
-        if (!$wallet) {
-            throw new \Exception("Agent wallet account not found.");
-        }
+            if (!$wallet) {
+                throw new \Exception("Agent wallet account not found.");
+            }
 
-        $wallet->increment('earnings', $amount);
+            $wallet->increment('earnings', $amount);
 
-        $agent->createEarning('Agent commission', $amount, 'CR', PaymentStatus::PAID->value);
+            $agent->createEarning(TransactionTitle::AGENT_COMMISSION->value, $amount, 'CR', PaymentStatus::PAID->value);
+        });
     }
 }

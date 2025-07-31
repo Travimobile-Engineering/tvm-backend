@@ -9,6 +9,7 @@ use App\Models\Earning;
 use App\Enum\PaymentType;
 use App\Trait\DriverTrait;
 use App\Models\Transaction;
+use App\Enum\TransactionTitle;
 use App\Trait\HttpResponse;
 use App\Events\WalletFunded;
 use Illuminate\Support\Carbon;
@@ -332,7 +333,7 @@ class WalletService
                 'earnings' => $newBalance,
             ]);
 
-            $user->createEarning('Withdrawal', $request->amount, 'DR', General::PAID);
+            $user->createEarning(TransactionTitle::WITHDRAWAL->value, $request->amount, 'DR', General::PAID);
         });
 
         return $this->success(null, "Request sent successfully");
@@ -356,7 +357,7 @@ class WalletService
         }
 
         $this->driverDecrementEarning($user, $request->amount);
-        $user->createEarning('Withdrawal', $request->amount, 'DR', General::PAID);
+        $user->createEarning(TransactionTitle::WITHDRAWAL->value, $request->amount, 'DR', General::PAID);
         $this->userIncrementBalance($user, $request->amount);
         return $this->success(null, "Withdrawal to wallet successful");
     }
@@ -374,14 +375,13 @@ class WalletService
         }])->findOrFail($userId);
 
         $relatedTransactions = Transaction::where('receiver_id', $userId)
-            ->where('title', "Bus ticket purchase")
             ->select('id', 'user_id', 'title', 'amount', 'type', 'status', 'created_at')
             ->get();
 
         $transactions = $user->transactions->map(fn ($transaction) => [
             'id' => $transaction->id,
             'title' => $transaction->title,
-            'amount' => (int)$transaction->amount,
+            'amount' => $transaction->amount,
             'type' => $transaction->type,
             'status' => $transaction->status,
             'created_at' => $transaction->created_at,
@@ -390,7 +390,7 @@ class WalletService
         $relatedTransactions = $relatedTransactions->map(fn($transaction) => [
             'id' => $transaction->id,
             'title' => $transaction->title,
-            'amount' => (int)$transaction->amount,
+            'amount' => $transaction->amount,
             'type' => $transaction->type,
             'status' => $transaction->status,
             'created_at' => $transaction->created_at,
@@ -409,7 +409,7 @@ class WalletService
 
         $date = request()->input('date');
 
-        $earnings = Earning::select('id', 'title', 'amount', 'type', 'status')
+        $earnings = Earning::select('id', 'title', 'amount', 'type', 'status', 'created_at')
             ->where('user_id', $userId)
             ->when($date, fn($query) => $query->whereDate('created_at', $date))
             ->get();

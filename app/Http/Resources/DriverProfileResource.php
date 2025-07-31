@@ -14,9 +14,6 @@ class DriverProfileResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $pendingBalance = $this->driverTripPayments->where('status', 'pending')
-            ->sum('amount');
-
         return [
             'id' => (int)$this->id,
             'uuid' => $this->uuid,
@@ -107,7 +104,7 @@ class DriverProfileResource extends JsonResource
             'wallet_info' => (object)[
                 'earnings' => (object) [
                     'available' => $this->earning_balance,
-                    'pending' => $pendingBalance,
+                    'pending' => $this->pending_balance,
                 ],
                 'available_balance' => $this->wallet_amount,
             ],

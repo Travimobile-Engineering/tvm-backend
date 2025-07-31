@@ -6,6 +6,7 @@ use App\Enum\DocumentStatus;
 use App\Enum\General;
 use App\Enum\PaymentType;
 use App\Enum\TransitCompanyType;
+use App\Enum\TransactionTitle;
 use App\Models\TransitCompany;
 use App\Services\Admin\AccountService;
 
@@ -86,7 +87,7 @@ trait DriverTrait
 
         $user->save();
 
-        $title = "Wallet charged for manifest";
+        $title = TransactionTitle::CHARGE_WALLET->value;
         $type = PaymentType::DR;
 
         $this->createTransaction($user, $amount, $title, $type);
@@ -94,16 +95,16 @@ trait DriverTrait
 
     protected function topUpWallet($user)
     {
-        $pendingAmount = $user->driverTripPayments->where('status', 'pending')->sum('amount');
+        $pendingAmount = $user->pending_balance;
 
         if ($pendingAmount > 0) {
             $this->driverIncrementEarning($user, $pendingAmount);
 
-            $user->driverTripPayments->where('status', 'pending')->each(function ($payment) {
-                $payment->update(['status' => 'paid']);
+            $user->driverTripPayments->where('status', General::PENDING)->each(function ($payment) {
+                $payment->update(['status' => General::PAID]);
             });
 
-            $title = "Credit wallet from pending balance";
+            $title = TransactionTitle::CREDIT_WALLET->value;
             $type = PaymentType::CR;
 
             $this->createTransaction($user, $pendingAmount, $title, $type);
