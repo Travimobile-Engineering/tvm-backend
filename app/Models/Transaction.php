@@ -16,4 +16,11 @@ class Transaction extends Model
         'txn_reference',
         'status'
     ];
+
+    public function casts(): array
+    {
+        return [
+            'amount' => 'decimal:10,2',
+        ];
+    }
 }

@@ -11,6 +11,7 @@ use App\Events\TripBooked;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
 use App\Models\TripBooking;
+use App\Enum\TransactionTitle;
 use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -205,15 +206,15 @@ trait TripBookingTrait
         $trip->user->driverTripPayments()->create([
             'user_id' => $user->id,
             'trip_id' => $request->trip_id,
-            'title' => 'Trip booking',
+            'title' => TransactionTitle::TRIP_BOOKING->value,
             'amount' => $amount_paid,
             'status' => PaymentStatus::PAID->value,
         ]);
 
-        $trip->user->createEarning('Trip booking', $amount_paid, 'CR', PaymentStatus::PAID->value);
+        $trip->user->createEarning(TransactionTitle::TRIP_BOOKING->value, $amount_paid, 'CR', PaymentStatus::PAID->value);
 
         $user->transactions()->create([
-            'title' => 'Trip booking',
+            'title' => TransactionTitle::TRIP_BOOKING->value,
             'amount' => $amount_paid,
             'type' => "DR",
             'txn_reference' => "wallet"

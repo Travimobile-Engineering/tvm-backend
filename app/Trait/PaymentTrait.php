@@ -2,22 +2,23 @@
 
 namespace App\Trait;
 
-use App\DTO\NotificationDispatchData;
+use App\Models\Trip;
+use App\Models\User;
+use App\Enum\TripStatus;
+use App\Enum\PaymentType;
+use App\Events\TripBooked;
+use App\Models\PaymentLog;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
-use App\Enum\PaymentType;
-use App\Enum\TripStatus;
-use App\Events\TripBooked;
+use App\Models\TripBooking;
 use App\Events\WalletFunded;
 use App\Models\Notification;
-use App\Models\PaymentLog;
-use App\Models\PremiumHireBooking;
-use App\Models\Trip;
-use App\Models\TripBooking;
-use App\Models\User;
+use App\Enum\TransactionTitle;
 use App\Models\Vehicle\Vehicle;
-use App\Services\Notification\NotificationDispatcher;
+use App\Models\PremiumHireBooking;
 use Illuminate\Support\Facades\DB;
+use App\DTO\NotificationDispatchData;
+use App\Services\Notification\NotificationDispatcher;
 
 trait PaymentTrait
 {
@@ -41,7 +42,7 @@ trait PaymentTrait
             $this->userIncrementBalance($user, $formattedAmount);
 
             $user->transactions()->create([
-                'title' => PaymentType::FUND_WALLET,
+                'title' => TransactionTitle::CREDIT_WALLET->value,
                 'amount' => $formattedAmount,
                 'type' => PaymentType::CR,
                 'txn_reference' => $ref
@@ -186,7 +187,7 @@ trait PaymentTrait
 
             $user->transactions()->create([
                 'user_id' => $user->id,
-                'title' => PaymentType::PREMIUM_HIRE,
+                'title' => TransactionTitle::PREMIUM_HIRE->value,
                 'amount' => $formattedAmount,
                 'type' => PaymentType::CR,
                 'txn_reference' => $ref
@@ -352,16 +353,16 @@ trait PaymentTrait
         $trip->user->driverTripPayments()->create([
             'user_id' => $user->id,
             'trip_id' => $trip->id,
-            'title' => PaymentType::TRIP_BOOKING,
+            'title' => TransactionTitle::TRIP_BOOKING->value,
             'amount' => $amount,
             'status' => PaymentStatus::PAID->value,
         ]);
 
-        $trip->user->createEarning('Trip booking', $amount, 'CR', PaymentStatus::PAID->value);
+        $trip->user->createEarning(TransactionTitle::TRIP_BOOKING->value, $amount, 'CR', PaymentStatus::PAID->value);
 
         $user->transactions()->create([
             'user_id' => $user->id,
-            'title' => PaymentType::TRIP_BOOKING,
+            'title' => TransactionTitle::TRIP_BOOKING->value,
             'amount' => $amount,
             'type' => PaymentType::CR,
             'txn_reference' => $paymentData['reference'],
