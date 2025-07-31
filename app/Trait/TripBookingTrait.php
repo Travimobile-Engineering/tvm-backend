@@ -191,7 +191,7 @@ trait TripBookingTrait
             'third_party_booking' => $request->third_party_booking ?? 0,
             'selected_seat' => $selectedSeats,
             'trip_type' => $request->trip_type,
-            'travelling_with' => $request->travelling_with,
+            'travelling_with' => $travellingWith,
             'third_party_passenger_details' => $request->third_party_passenger_details,
             'amount_paid' => $amount_paid ?? 0,
             'payment_method' => $request->payment_method ?? '',
