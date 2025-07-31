@@ -123,6 +123,7 @@ trait TripBookingTrait
 
             if ($user->user_category == UserType::AGENT->value) {
                 $passengerCount = 1 + count($request->travelling_with ?? []);
+
                 // Distribute Agent Commission
                 $this->distributeAgentCommission($passenger, $user, $passengerCount);
 
@@ -226,9 +227,9 @@ trait TripBookingTrait
         ];
     }
 
-    protected function distributeAgentCommission($passUser, $user)
+    protected function distributeAgentCommission($passUser, $user, $passengerCount)
     {
-        app(AgentCommissionService::class)->distributeAgentCommission($passUser, $user);
+        app(AgentCommissionService::class)->distributeAgentCommission($passUser, $user, $passengerCount);
     }
 
     protected function sendBookingNotification($user, $booking_id, $trip, $ref)
