@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enum\General;
 use App\Enum\TripStatus;
 use App\Enum\UserStatus;
 use Illuminate\Support\Str;
@@ -163,6 +164,15 @@ class User extends Authenticatable implements JWTSubject
     public function earningBalance(): Attribute
     {
         return Attribute::get(fn () => $this->walletAccount?->earnings);
+    }
+
+    public function pendingBalance(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->driverTripPayments()
+                ->where('status', General::PENDING)
+                ->sum('amount'),
+        );
     }
 
     public function hasCompletedOnboarding(): bool
