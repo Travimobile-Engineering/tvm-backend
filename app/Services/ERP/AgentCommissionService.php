@@ -21,8 +21,6 @@ class AgentCommissionService
      */
     public function distributeAgentCommission(User $passenger, User $agent, int $passengerCount)
     {
-        throw new \Exception("Passenger count is {$passengerCount}, travelling with: ");
-
         // Retrieve primary commission (for the first agent)
         $primaryCommission = AgentCommission::where('type', AgentCommission::PRIMARY)
                                             ->first();
@@ -58,6 +56,8 @@ class AgentCommissionService
     private function createFirstTimeBookingCommission(User $passenger, User $agent, $primaryCommission, int $passengerCount)
     {
         $amount = $primaryCommission->amount * $passengerCount;
+
+        throw new \Exception("Passenger count is {$amount}, travelling with: ");
 
         Commission::create([
             'agent_id' => $agent->id,    // Current agent earns full commission
@@ -103,6 +103,8 @@ class AgentCommissionService
     private function createCommission(User $agent, User $passenger, $secondaryCommission, int $passengerCount)
     {
         $amount = $secondaryCommission->amount * $passengerCount;
+
+        throw new \Exception("Passenger count is {$amount}, travelling with: ");
 
         Commission::create([
             'agent_id' => $agent->id,
