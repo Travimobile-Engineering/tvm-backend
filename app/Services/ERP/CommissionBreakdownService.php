@@ -16,7 +16,7 @@ class CommissionBreakdownService
     {
         $companyPercent = $companyPercent ?? (100 - $agentPercent);
 
-        if ($agentPercent + $companyPercent !== 100) {
+        if (abs(($agentPercent + $companyPercent) - 100) > 0.0001) {
             throw new \InvalidArgumentException("Agent and company percentages must add up to 100.");
         }
 
