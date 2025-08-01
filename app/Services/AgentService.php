@@ -516,6 +516,7 @@ class AgentService
 
             $trip = Trip::create([
                 'user_id' => $user->id,
+                'agent_id' => $request->agent_id ?? null,
                 'vehicle_id' => $request->vehicle_id ?? $user->vehicle->id,
                 'transit_company_id' => $user->transitCompany?->id ?? 1,
                 'departure' => $request->departure_id,
@@ -574,6 +575,7 @@ class AgentService
 
                     Trip::create([
                         'user_id' => $user->id,
+                        'agent_id' => $request->agent_id ?? null,
                         'vehicle_id' => $request->vehicle_id ?? $user->vehicle->id,
                         'transit_company_id' => $user->transitCompany?->id ?? 1,
                         'departure' => $request->departure_id,
