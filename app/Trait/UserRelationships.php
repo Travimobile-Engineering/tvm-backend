@@ -210,6 +210,11 @@ trait UserRelationships
         return $this->hasMany(Earning::class, 'user_id');
     }
 
+    public function agentTrips()
+    {
+        return $this->hasMany(Trip::class, 'agent_id');
+    }
+
     public static function bootDeletesUserRelationships(): void
     {
         static::deleting(function (User $user) {

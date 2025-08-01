@@ -245,4 +245,14 @@ class User extends Authenticatable implements JWTSubject
             'status' => $status,
         ]);
     }
+
+    public function createTransaction($title, $amount, $type, $reference)
+    {
+        $this->transactions()->create([
+            'title' => $title,
+            'amount' => $amount,
+            'type' => $type,
+            'txn_reference' => $reference,
+        ]);
+    }
 }
