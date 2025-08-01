@@ -71,7 +71,7 @@ class AgentCommissionService
             'passenger_id' => $passenger->id,
             'amount' => $amount,
             'is_first_time' => true,
-            'first_agent_id' => $agent->id, // The first agent is the current one
+            'first_agent_id' => $agent->id,
         ]);
 
         // Get the breakdown of the commission
