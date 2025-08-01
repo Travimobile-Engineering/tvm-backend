@@ -57,8 +57,6 @@ class AgentCommissionService
     {
         $amount = $primaryCommission->amount * $passengerCount;
 
-        throw new \Exception("Passenger count is {$amount}, travelling with: ");
-
         Commission::create([
             'agent_id' => $agent->id,    // Current agent earns full commission
             'passenger_id' => $passenger->id,
@@ -103,8 +101,6 @@ class AgentCommissionService
     private function createCommission(User $agent, User $passenger, $secondaryCommission, int $passengerCount)
     {
         $amount = $secondaryCommission->amount * $passengerCount;
-
-        throw new \Exception("Passenger count is {$amount}, travelling with: ");
 
         Commission::create([
             'agent_id' => $agent->id,
