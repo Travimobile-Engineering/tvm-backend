@@ -126,6 +126,8 @@ trait TripBookingTrait
                 $passengerCollect = collect($bookingData['travelling_with'] ?? []);
                 $passengerCount = 1 + $passengerCollect->count();
 
+                throw new \Exception("Passenger count is {$passengerCount}, travelling with: " . json_encode($bookingData['travelling_with'] ?? []));
+
                 // Distribute Agent Commission
                 $this->distributeAgentCommission($passenger, $user, $passengerCount);
 
