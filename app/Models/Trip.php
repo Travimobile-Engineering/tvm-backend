@@ -14,6 +14,7 @@ class Trip extends Model
 
     protected $fillable = [
         'user_id',
+        'agent_id',
         'uuid',
         'vehicle_id',
         'transit_company_id',
@@ -79,6 +80,11 @@ class Trip extends Model
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class, 'vehicle_id');
+    }
+
+    public function agent()
+    {
+        return $this->belongsTo(User::class, 'agent_id');
     }
 
     public function tripBookings()

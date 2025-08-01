@@ -2,15 +2,22 @@
 
 namespace App\Services\ERP;
 
+use App\Enum\CommissionEnum;
 use App\Enum\PaymentStatus;
 use App\Models\AgentCommission;
 use App\Models\Commission;
 use App\Models\User;
 use App\Enum\TransactionTitle;
+use App\Services\Admin\AccountService;
 use Illuminate\Support\Facades\DB;
+use App\Services\ERP\CommissionBreakdownService;
 
 class AgentCommissionService
 {
+    public function __construct(
+        protected CommissionBreakdownService $commissionBreakdownService
+    ) {}
+
     /**
      * Distribute the commission between the first agent and the current agent.
      *
@@ -65,8 +72,18 @@ class AgentCommissionService
             'first_agent_id' => $agent->id, // The first agent is the current one
         ]);
 
+        // Get the breakdown of the commission
+        $breakdown = $this->commissionBreakdownService->getBreakdown(
+            $amount,
+            CommissionEnum::BOOKING_AGENT_PERCENT->value,
+            CommissionEnum::BOOKING_COMPANY_PERCENT->value
+        );
+
         // Top up the agent's earnings
-        $this->topUpEarnings($agent, $amount);
+        $this->topUpEarnings($agent, $breakdown['agent_share']);
+
+        // Send the company share to the company account
+        app(AccountService::class)->initiateTransfer($breakdown['company_share']);
     }
 
     /**
@@ -110,8 +127,18 @@ class AgentCommissionService
             'first_agent_id' => $passenger->commissionsAsPassenger->first()->firstAgent->id, // First agent remains the same
         ]);
 
+        // Get the breakdown of the commission
+        $breakdown = $this->commissionBreakdownService->getBreakdown(
+            $amount,
+            CommissionEnum::BOOKING_AGENT_PERCENT->value,
+            CommissionEnum::BOOKING_COMPANY_PERCENT->value
+        );
+
         // Top up the agent's earnings
-        $this->topUpEarnings($agent, $amount);
+        $this->topUpEarnings($agent, $breakdown['agent_share']);
+
+        // Send the company share to the company account
+        app(AccountService::class)->initiateTransfer($breakdown['company_share']);
     }
 
     /**
