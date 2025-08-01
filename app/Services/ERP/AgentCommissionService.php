@@ -21,6 +21,8 @@ class AgentCommissionService
      */
     public function distributeAgentCommission(User $passenger, User $agent, int $passengerCount)
     {
+        throw new \Exception("Passenger count is {$passengerCount}, travelling with: ");
+
         // Retrieve primary commission (for the first agent)
         $primaryCommission = AgentCommission::where('type', AgentCommission::PRIMARY)
                                             ->first();
