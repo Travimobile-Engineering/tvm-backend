@@ -850,11 +850,11 @@ class AgentService
             return $this->validatePassword($user, $request);
         }
 
-        if(Hash::check($request->pin, $user?->userPin->pin)) {
-            return $this->success(null, "Pin is valid");
+        if (Hash::check($request->pin, $user?->userPin->pin)) {
+            return $this->success(null, "Valid credentials");
         }
 
-        return $this->error(null, "Invalid pin", 400);
+        return $this->error(null, "Invalid credentials", 400);
     }
 }
 
