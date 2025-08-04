@@ -101,16 +101,15 @@ class TripService
     {
         $trip->load([
             'user.transitCompany',
-            'tripBookings' => function($query){
-                $query->where('status', 1)
-                ->with(['user', 'tripBookingPassengers']);
-            },
+            'tripBookings' => fn ($q) => $q
+                ->onlySuccessful()
+                ->withUserAndPassengers(),
             'departureRegion.state',
             'destinationRegion.state',
             'manifest',
             'vehicle',
-            'departureRegion.parks',
-            'destinationRegion.parks',
+            'departureRegion.parksWithTransitCompany',
+            'destinationRegion.parksWithTransitCompany',
         ]);
 
         $data = new TripResource($trip);
@@ -133,16 +132,8 @@ class TripService
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
-        $trips = Trip::with([
-                'user.transitCompany',
-                'vehicle',
-                'departureRegion.state',
-                'destinationRegion.state',
-                'manifest',
-                'departureRegion.parks',
-                'destinationRegion.parks',
-            ])
-            ->where('status', TripStatus::UPCOMING)
+        $trips = Trip::where('status', TripStatus::UPCOMING)
+            ->defaultWithRelations()
             ->when($departure, function ($query, $departure) {
                 $query->where('departure', $departure);
             })
@@ -583,19 +574,8 @@ class TripService
     {
         $date = request()->query('date');
 
-        $query = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'tripBookings.user',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifest',
-                    'departureRegion.parks',
-                    'destinationRegion.parks',
-                ]
-            )
-            ->where('user_id', $userId)
+        $query = Trip::where('user_id', $userId)
+            ->defaultWithRelations()
             ->where('status', TripStatus::UPCOMING);
 
         if ($date) {
@@ -611,19 +591,8 @@ class TripService
 
     public function getCompletedTrips($userId)
     {
-        $trips = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'tripBookings.user',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifest',
-                    'departureRegion.parks',
-                    'destinationRegion.parks',
-                ]
-            )
-            ->where('user_id', $userId)
+        $trips = Trip::where('user_id', $userId)
+            ->defaultWithRelations()
             ->where('status', TripStatus::COMPLETED)
             ->get();
 
@@ -634,19 +603,8 @@ class TripService
 
     public function getCancelledTrips($userId)
     {
-        $trips = Trip::with(
-                [
-                    'user.transitCompany',
-                    'vehicle',
-                    'tripBookings.user',
-                    'departureRegion.state',
-                    'destinationRegion.state',
-                    'manifest',
-                    'departureRegion.parks',
-                    'destinationRegion.parks',
-                ]
-            )
-            ->where('user_id', $userId)
+        $trips = Trip::where('user_id', $userId)
+            ->defaultWithRelations()
             ->where('status', TripStatus::CANCELLED)
             ->get();
 
@@ -664,17 +622,8 @@ class TripService
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
-        $trips = Trip::with([
-                'user.transitCompany',
-                'vehicle',
-                'tripBookings.user',
-                'departureRegion.state',
-                'destinationRegion.state',
-                'manifest',
-                'departureRegion.parks',
-                'destinationRegion.parks',
-            ])
-            ->where('user_id', $userId)
+        $trips = Trip::where('user_id', $userId)
+            ->defaultWithRelations()
             ->where('status', $status)
             ->when($type, fn($q) => $q->where('type', $type))
             ->when($departure, fn($q) => $q->where('departure', $departure))
@@ -699,17 +648,8 @@ class TripService
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
-        $trips = Trip::with([
-                'user.transitCompany',
-                'vehicle',
-                'tripBookings.user',
-                'departureRegion.state',
-                'destinationRegion.state',
-                'manifest',
-                'departureRegion.parks',
-                'destinationRegion.parks',
-            ])
-            ->where('status', TripStatus::UPCOMING)
+        $trips = Trip::where('status', TripStatus::UPCOMING)
+            ->defaultWithRelations()
             ->when($type, function ($query, $type) {
                 $query->where('type', $type);
             })

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enum\TripStatus;
 use App\Models\Vehicle\Vehicle;
 use App\Trait\ClearsResponseCache;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -123,6 +124,26 @@ class Trip extends Model
             ->where('user_id', $userId)
             ->where('status', TripStatus::INPROGRESS)
             ->exists();
+    }
+
+    protected static function relationArray(): array
+    {
+        return [
+            'user.transitCompany',
+            'tripBookings.user',
+            'tripBookings.tripBookingPassengers',
+            'departureRegion.state',
+            'departureRegion.parksWithTransitCompany',
+            'destinationRegion.state',
+            'destinationRegion.parksWithTransitCompany',
+            'manifest',
+            'vehicle',
+        ];
+    }
+
+    public function scopeDefaultWithRelations($query)
+    {
+        return $query->with(self::relationArray());
     }
 
 }
