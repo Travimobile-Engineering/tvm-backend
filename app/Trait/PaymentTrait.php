@@ -270,7 +270,12 @@ trait PaymentTrait
             !empty($p['name']) || !empty($p['email']) || !empty($p['phone_number']) || !empty($p['gender'])
         )->values();
 
-        $passengers = collect($travellingWith->all())->prepend([
+        if ($travellingWith->isEmpty()) {
+            $travellingWith = null;
+        }
+
+        $passengers = collect($travellingWith ?? []);
+        $passengers->prepend([
             'name' => $user->first_name . ' ' . $user->last_name,
             'email' => $user->email,
             'phone_number' => $user->phone_number,
@@ -286,7 +291,7 @@ trait PaymentTrait
             'third_party_passenger_details' => $meta['third_party_passenger_details'] ?? [],
             'amount_paid' => $amount,
             'passengers' => $passengers,
-            'raw_travelling_with' => $travellingWith->isEmpty() ? null : $travellingWith->toArray(),
+            'raw_travelling_with' => $travellingWith,
         ];
     }
 

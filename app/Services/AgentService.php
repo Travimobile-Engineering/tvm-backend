@@ -401,7 +401,7 @@ class AgentService
             type: MailingEnum::VERIFY_OTP,
             user: $user,
             data: $data,
-            phone: formatPhoneNumber($request->phone_number),
+            phone: $request->phone_number,
             message: "Your Travi Verification Pin is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi",
             subject: 'Verify OTP',
             mailable: VerifyPinMail::class,
