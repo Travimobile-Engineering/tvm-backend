@@ -22,6 +22,7 @@ use App\Models\Trip;
 use App\Models\TripBooking;
 use App\Models\TripLog;
 use App\Models\User;
+use App\Trait\AgentTrait;
 use App\Trait\DriverTrait;
 use App\Trait\HttpResponse;
 use App\Trait\TripBookingTrait;
@@ -37,7 +38,7 @@ use App\Models\RouteSubregion;
 
 class AgentService
 {
-    use HttpResponse, TripBookingTrait, DriverTrait;
+    use HttpResponse, TripBookingTrait, DriverTrait, AgentTrait;
 
     public function __construct(
         protected NotificationDispatcher $notifier
@@ -139,6 +140,7 @@ class AgentService
             ->where('departure_date', $request->departure_date)
             ->where('departure_time', $request->departure_time)
             ->where('status', TripStatus::UPCOMING)
+            ->defaultWithRelations()
             ->get();
 
         $data = TripResource::collection($trips);
@@ -620,17 +622,8 @@ class AgentService
             return $this->error("Invalid status", 400);
         }
 
-        $trips = Trip::with([
-                'user.transitCompany',
-                'tripBookings.user',
-                'departureRegion.state',
-                'destinationRegion.state',
-                'manifest',
-                'vehicle',
-                'departureRegion.parks',
-                'destinationRegion.parks',
-            ])
-            ->where('user_id', $userId)
+        $trips = Trip::where('user_id', $userId)
+            ->defaultWithRelations()
             ->when($status, function ($query) use ($status) {
                 $query->where('status', $status);
             })
@@ -646,17 +639,9 @@ class AgentService
 
     public function tripDetails($tripId)
     {
-        $trip = Trip::with([
-            'user.transitCompany',
-            'tripBookings.user',
-            'departureRegion.state',
-            'destinationRegion.state',
-            'manifest',
-            'vehicle',
-            'departureRegion.parks',
-            'destinationRegion.parks',
-        ])
-        ->findOrFail($tripId);
+        $trip = Trip::where('id', $tripId)
+            ->defaultWithRelations()
+            ->firstOrFail();
 
         $data = new TripResource($trip);
         return $this->success($data, "Trip details");
@@ -857,15 +842,15 @@ class AgentService
     {
         $user = User::with('userPin')->find($request->user_id);
 
-        if (!$user) {
+        if (! $user) {
             return $this->error(null, "User not found", 404);
         }
 
-        if (!$user->userPin) {
-            return $this->error(null, "User pin not found", 404);
+        if (! $user->userPin) {
+            return $this->validatePassword($user, $request);
         }
 
-        if(Hash::check($request->pin, $user->userPin->pin)) {
+        if(Hash::check($request->pin, $user?->userPin->pin)) {
             return $this->success(null, "Pin is valid");
         }
 

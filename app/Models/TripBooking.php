@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -78,5 +79,15 @@ class TripBooking extends Model
         return Attribute::make(
             get: fn () => $this->tripBookingPassengers()->count() ?? 0,
         );
+    }
+
+    public function scopeOnlySuccessful(Builder $query): void
+    {
+        $query->where('status', 1);
+    }
+
+    public function scopeWithUserAndPassengers(Builder $query): void
+    {
+        $query->with(['user', 'tripBookingPassengers']);
     }
 }
