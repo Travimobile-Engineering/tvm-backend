@@ -32,4 +32,11 @@ class RouteSubregion extends Model
     {
         return $this->hasMany(Park::class, 'route_subregion_id');
     }
+
+    public function parksWithTransitCompany()
+    {
+        return $this->hasMany(Park::class, 'route_subregion_id')
+                    ->whereNotNull('transit_company_id');
+    }
+
 }

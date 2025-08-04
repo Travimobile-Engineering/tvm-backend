@@ -18,6 +18,7 @@ use App\Http\Requests\ImpersonateDriverRequest;
 use App\Http\Requests\SendPinOtpRequest;
 use App\Http\Requests\TransportRecurringRequest;
 use App\Http\Requests\VerifyPinRequest;
+use App\Http\Requests\ValidatePinRequest;
 
 class AgentController extends Controller
 {
@@ -202,7 +203,7 @@ class AgentController extends Controller
         return $this->service->scanTicket($request, $bookingId, $seatNo);
     }
 
-    public function validateDriverPin(Request $request)
+    public function validateDriverPin(ValidatePinRequest $request)
     {
         return $this->service->validateDriverPin($request);
     }
