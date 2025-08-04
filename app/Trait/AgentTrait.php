@@ -13,9 +13,9 @@ trait AgentTrait
         ]);
 
         if (Hash::check($request->password, $user->password)) {
-            return $this->success(null, "Password is valid");
+            return $this->success(null, "Valid credentials");
         }
 
-        return $this->error(null, "Invalid password", 400);
+        return $this->error(null, "Invalid credentials", 400);
     }
 }
