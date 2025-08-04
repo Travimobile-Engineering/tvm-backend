@@ -346,7 +346,7 @@ if (! function_exists('sendCode')) {
             },
             'sms' => function () use ($payload) {
                 app(abstract: SMS::class)->sendSms(
-                    $payload->phone,
+                    formatPhoneNumber($payload->phone),
                     $payload->message
                 );
             },

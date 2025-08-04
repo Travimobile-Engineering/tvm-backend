@@ -25,7 +25,7 @@ class SendPinOtpRequest extends FormRequest
             'user_id' => 'required|integer|exists:users,id',
             'method' => 'required|string|in:email,sms',
             'email' => 'required_if:method,email|email',
-            'phone_number' => 'required_if:method,sms|nullable|string',
+            'phone_number' => 'required_if:method,sms|nullable',
         ];
     }
 }
