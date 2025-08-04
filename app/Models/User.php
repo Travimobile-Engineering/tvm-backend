@@ -222,7 +222,7 @@ class User extends Authenticatable implements JWTSubject
             if ($nextLevel) {
                 // Upgrade agent to the next level
                 $this->classification()->associate($nextLevel);
-                $this->walletAccount()->increment('balance', $nextLevel->amount); // Add the level amount to the wallet balance
+                $this->walletAccount()->increment('balance', $nextLevel->reward_amount); // Add the level reward amount to the wallet balance
                 $this->save();
             }
         }
