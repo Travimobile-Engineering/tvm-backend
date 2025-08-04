@@ -97,12 +97,14 @@ trait PaymentTrait
             ) {
                 $bookingDetails['third_party_passenger_details'] = [];
             }
+
             $this->storeTripPassengers(
                 $tripBooking,
                 $bookingDetails['passengers'],
                 $user,
                 $bookingDetails['third_party_passenger_details']
             );
+
             $this->notifyUserBooking($user, $trip, $bookingId);
             $this->recordTransactions($trip, $user, $paymentData);
 
@@ -114,6 +116,7 @@ trait PaymentTrait
             throw $th;
         }
     }
+
     protected function handlePremiumHire($event)
     {
         try {
@@ -283,7 +286,7 @@ trait PaymentTrait
             'third_party_passenger_details' => $meta['third_party_passenger_details'] ?? [],
             'amount_paid' => $amount,
             'passengers' => $passengers,
-            'raw_travelling_with' => $travellingWith->isEmpty() ? null : $travellingWith,
+            'raw_travelling_with' => $travellingWith->isEmpty() ? null : $travellingWith->toArray(),
         ];
     }
 
