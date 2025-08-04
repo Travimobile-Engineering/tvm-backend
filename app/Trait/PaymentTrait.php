@@ -270,7 +270,7 @@ trait PaymentTrait
             !empty($p['name']) || !empty($p['email']) || !empty($p['phone_number']) || !empty($p['gender'])
         )->values();
 
-        $passengers = $travellingWith->prepend([
+        $passengers = collect($travellingWith->all())->prepend([
             'name' => $user->first_name . ' ' . $user->last_name,
             'email' => $user->email,
             'phone_number' => $user->phone_number,
