@@ -2,39 +2,40 @@
 
 namespace App\Services;
 
-use App\DTO\NotificationDispatchData;
-use App\DTO\SendCodeData;
-use App\Enum\MailingEnum;
-use App\Enum\ManifestStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\TripStatus;
+use Carbon\Carbon;
+use App\Models\Trip;
+use App\Models\User;
 use App\Enum\TripType;
 use App\Enum\UserType;
-use App\Events\PassengerTripStart;
-use App\Events\TripCancelled;
-use App\Events\TripDepartureNotification;
-use App\Events\TripStart;
-use App\Http\Resources\AgentProfileResource;
-use App\Http\Resources\TripBookingResource;
-use App\Http\Resources\TripResource;
-use App\Mail\VerifyPinMail;
-use App\Models\Trip;
-use App\Models\TripBooking;
 use App\Models\TripLog;
-use App\Models\User;
+use App\Enum\TripStatus;
+use App\DTO\SendCodeData;
+use App\Enum\MailingEnum;
+use App\Events\TripStart;
 use App\Trait\AgentTrait;
 use App\Trait\DriverTrait;
+use App\Enum\PaymentMethod;
+use App\Mail\VerifyPinMail;
+use App\Models\TripBooking;
 use App\Trait\HttpResponse;
+use Illuminate\Support\Str;
+use App\Enum\ManifestStatus;
+use App\Events\TripCancelled;
+use App\Models\RouteSubregion;
 use App\Trait\TripBookingTrait;
-use Carbon\Carbon;
+use App\Events\PassengerTripStart;
+use Illuminate\Support\Facades\DB;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Http\Resources\TripResource;
+use Illuminate\Support\Facades\Hash;
+use App\DTO\NotificationDispatchData;
+use Illuminate\Support\Facades\Cache;
+use App\Events\TripDepartureNotification;
+use App\Http\Resources\TripBookingResource;
+use Illuminate\Support\Facades\RateLimiter;
+use App\Http\Resources\AgentProfileResource;
 use App\Notifications\PassengerTripNotification;
 use App\Services\Notification\NotificationDispatcher;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\RateLimiter;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Models\RouteSubregion;
 
 class AgentService
 {
@@ -231,7 +232,7 @@ class AgentService
             'next_of_kin_relationship' => $request->next_of_kin_relationship,
             'verification_code' => 0000,
             'profile_photo' => null,
-            'password' => bcrypt('12345678'),
+            'password' => Str::password(10),
         ]);
 
         return $this->success($user, "User created successfully");
