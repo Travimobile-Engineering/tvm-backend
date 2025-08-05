@@ -28,10 +28,6 @@ class RegisterController extends Controller
 
     public function resendCode(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
-
         return $this->service->resendCode($request);
     }
 
