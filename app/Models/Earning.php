@@ -11,6 +11,7 @@ class Earning extends Model
         'title',
         'type',
         'amount',
+        'description',
         'status',
     ];
 

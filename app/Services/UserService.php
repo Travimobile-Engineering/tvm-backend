@@ -68,6 +68,10 @@ class UserService
             return $this->error(null, 'Notification not found', 404);
         }
 
+        $data->update([
+            'read' => true,
+        ]);
+
         return $this->success($data, 'Notification retrieved successfully');
     }
 

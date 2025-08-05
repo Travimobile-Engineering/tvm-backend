@@ -236,12 +236,13 @@ class User extends Authenticatable implements JWTSubject
                                   ->first();
     }
 
-    public function createEarning($title, $amount, $type, $status)
+    public function createEarning($title, $amount, $type, $status, $description = null)
     {
         $this->earnings()->create([
             'title' => $title,
             'amount' => $amount,
             'type' => $type,
+            'description' => $description,
             'status' => $status,
         ]);
     }

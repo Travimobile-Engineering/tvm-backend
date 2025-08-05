@@ -106,7 +106,7 @@ trait PaymentTrait
             );
 
             $this->notifyUserBooking($user, $trip, $bookingId);
-            $this->recordTransactions($trip, $user, $paymentData);
+            $this->recordTransactions($trip, $user, $paymentData, $bookingId);
 
             DB::commit();
 
@@ -354,7 +354,7 @@ trait PaymentTrait
         ]);
     }
 
-    private function recordTransactions(Trip $trip, User $user, array $paymentData): void
+    private function recordTransactions(Trip $trip, User $user, array $paymentData, string $bookingId): void
     {
         $amount = number_format($paymentData['amount'] / 100, 2, '.', '');
 
@@ -366,7 +366,12 @@ trait PaymentTrait
             'status' => PaymentStatus::PAID->value,
         ]);
 
-        $trip->user->createEarning(TransactionTitle::TRIP_BOOKING->value, $amount, 'CR', PaymentStatus::PAID->value);
+        $trip->user->createEarning(
+            TransactionTitle::TRIP_BOOKING->value, $amount,
+            'CR',
+            PaymentStatus::PAID->value,
+            "Earning with Booking ID: {$bookingId}"
+        );
 
         $user->transactions()->create([
             'user_id' => $user->id,
