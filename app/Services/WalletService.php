@@ -109,9 +109,7 @@ class WalletService
             return $this->error(null, "Insufficient wallet balance", 400);
         }
 
-        $amount = $this->user->wallet_amount - $request->amount;
-
-        $this->userDecrementBalance($this->user, $amount);
+        $this->userDecrementBalance($this->user, $request->amount);
         $this->userIncrementBalance($user, $request->amount);
 
         Transaction::create([
