@@ -18,6 +18,9 @@ class ForgotPasswordService
 
         if ($field === 'phone_number') {
             $value = formatPhoneNumber($value);
+            $this->validatePhone($value);
+        } else {
+            $this->validateEmail($request);
         }
 
         $user = User::where($field, $value)->firstOrFail();
@@ -29,10 +32,8 @@ class ForgotPasswordService
         ]);
 
         if ($field === 'phone_number') {
-            $this->validatePhone($request);
             sendSmS($value, "Your Travi password reset OTP is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi");
         } else {
-            $this->validateEmail($request);
 
             $name = "{$user->first_name} {$user->last_name}";
             sendMail(
@@ -100,11 +101,13 @@ class ForgotPasswordService
         ]);
     }
 
-    private function validatePhone($request)
+    private function validatePhone(string $value)
     {
-        $request->validate([
-            'phone' => ['required', 'exists:users,phone_number']
-        ]);
+        $exists = User::where('phone_number', $value)->exists();
+
+        if (! $exists) {
+            return $this->error(null, 'Phone number not found.', 422);
+        }
     }
 }
 
