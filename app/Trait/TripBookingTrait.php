@@ -127,7 +127,7 @@ trait TripBookingTrait
                 $passengerCount = 1 + $passengerCollect->count();
 
                 // Distribute Agent Commission
-                $this->distributeAgentCommission($passenger, $user, $passengerCount);
+                $this->distributeAgentCommission($passenger, $user, $passengerCount, $bookingData['booking_id']);
 
                 // After the booking is completed, automatically check for level upgrade
                 $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
@@ -212,7 +212,13 @@ trait TripBookingTrait
             'status' => PaymentStatus::PAID->value,
         ]);
 
-        $trip->user->createEarning(TransactionTitle::TRIP_BOOKING->value, $amount_paid, 'CR', PaymentStatus::PAID->value);
+        $trip->user->createEarning(
+            TransactionTitle::TRIP_BOOKING->value,
+            $amount_paid,
+            'CR',
+            PaymentStatus::PAID->value,
+            "Earning with Booking ID: {$booking_id}"
+        );
 
         $user->transactions()->create([
             'title' => TransactionTitle::TRIP_BOOKING->value,
@@ -230,9 +236,9 @@ trait TripBookingTrait
         ];
     }
 
-    protected function distributeAgentCommission($passUser, $user, $passengerCount)
+    protected function distributeAgentCommission($passUser, $user, $passengerCount, $bookingId)
     {
-        app(AgentCommissionService::class)->distributeAgentCommission($passUser, $user, $passengerCount);
+        app(AgentCommissionService::class)->distributeAgentCommission($passUser, $user, $passengerCount, $bookingId);
     }
 
     protected function sendBookingNotification($user, $booking_id, $trip, $ref)

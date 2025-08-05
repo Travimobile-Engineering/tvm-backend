@@ -24,9 +24,10 @@ class AgentCommissionService
      * @param User $passenger
      * @param User $agent
      * @param int $passengerCount
+     * @param string|null $bookingId
      * @return void
      */
-    public function distributeAgentCommission(User $passenger, User $agent, int $passengerCount)
+    public function distributeAgentCommission(User $passenger, User $agent, int $passengerCount, ?string $bookingId = null)
     {
         // Retrieve primary commission (for the first agent)
         $primaryCommission = AgentCommission::where('type', AgentCommission::PRIMARY)
@@ -46,10 +47,10 @@ class AgentCommissionService
 
         // If it's the first-time booking, process the full commission for the current agent
         if (!$commissionRecord) {
-            $this->createFirstTimeBookingCommission($passenger, $agent, $primaryCommission, $passengerCount);
+            $this->createFirstTimeBookingCommission($passenger, $agent, $primaryCommission, $passengerCount, $bookingId);
         } else {
             // If it's a subsequent booking, process commission for both the first agent and the current agent
-            $this->createSubsequentBookingCommission($passenger, $agent, $commissionRecord, $secondaryCommission, $passengerCount);
+            $this->createSubsequentBookingCommission($passenger, $agent, $commissionRecord, $secondaryCommission, $passengerCount, $bookingId);
         }
     }
 
@@ -60,7 +61,7 @@ class AgentCommissionService
      * @param User $agent
      * @param $primaryCommission
      */
-    private function createFirstTimeBookingCommission(User $passenger, User $agent, $primaryCommission, int $passengerCount)
+    private function createFirstTimeBookingCommission(User $passenger, User $agent, $primaryCommission, int $passengerCount, $bookingId)
     {
         $amount = $primaryCommission->amount * $passengerCount;
 
@@ -80,7 +81,7 @@ class AgentCommissionService
         );
 
         // Top up the agent's earnings
-        $this->topUpEarnings($agent, $breakdown['agent_share']);
+        $this->topUpEarnings($agent, $breakdown['agent_share'], $bookingId);
 
         // Send the company share to the company account
         app(AccountService::class)->initiateTransfer($breakdown['company_share']);
@@ -94,17 +95,24 @@ class AgentCommissionService
      * @param $commissionRecord
      * @param $secondaryCommission
      */
-    private function createSubsequentBookingCommission(User $passenger, User $agent, $commissionRecord, $secondaryCommission, int $passengerCount)
+    private function createSubsequentBookingCommission(
+        User $passenger,
+        User $agent,
+        $commissionRecord,
+        $secondaryCommission,
+        int $passengerCount,
+        $bookingId
+    )
     {
         $firstAgent = $commissionRecord->firstAgent; // The first agent who booked this passenger
 
         // If it's the same agent as the first one, only one commission record for the current agent
         if ($firstAgent->id === $agent->id) {
-            $this->createCommission($agent, $passenger, $secondaryCommission, $passengerCount);
+            $this->createCommission($agent, $passenger, $secondaryCommission, $passengerCount, $bookingId);
         } else {
             // If it's a different agent, create two commission records
-            $this->createCommission($firstAgent, $passenger, $secondaryCommission, $passengerCount); // First agent
-            $this->createCommission($agent, $passenger, $secondaryCommission, $passengerCount); // Current agent
+            $this->createCommission($firstAgent, $passenger, $secondaryCommission, $passengerCount, $bookingId); // First agent
+            $this->createCommission($agent, $passenger, $secondaryCommission, $passengerCount, $bookingId); // Current agent
         }
     }
 
@@ -115,7 +123,7 @@ class AgentCommissionService
      * @param User $passenger
      * @param $secondaryCommission
      */
-    private function createCommission(User $agent, User $passenger, $secondaryCommission, int $passengerCount)
+    private function createCommission(User $agent, User $passenger, $secondaryCommission, int $passengerCount, $bookingId)
     {
         $amount = $secondaryCommission->amount * $passengerCount;
 
@@ -135,7 +143,7 @@ class AgentCommissionService
         );
 
         // Top up the agent's earnings
-        $this->topUpEarnings($agent, $breakdown['agent_share']);
+        $this->topUpEarnings($agent, $breakdown['agent_share'], $bookingId);
 
         // Send the company share to the company account
         app(AccountService::class)->initiateTransfer($breakdown['company_share']);
@@ -147,9 +155,9 @@ class AgentCommissionService
      * @param User $agent
      * @param int $amount
      */
-    private function topUpEarnings(User $agent, $amount)
+    private function topUpEarnings(User $agent, $amount, $bookingId)
     {
-        DB::transaction(function () use ($agent, $amount) {
+        DB::transaction(function () use ($agent, $amount, $bookingId) {
             // Ensure the amount is a valid number (float or int)
             $amount = (float) $amount;
 
@@ -165,7 +173,9 @@ class AgentCommissionService
 
             $wallet->increment('earnings', $amount);
 
-            $agent->createEarning(TransactionTitle::AGENT_COMMISSION->value, $amount, 'CR', PaymentStatus::PAID->value);
+            $description = "Agent commission for booking ID: {$bookingId}";
+
+            $agent->createEarning(TransactionTitle::AGENT_COMMISSION->value, $amount, 'CR', PaymentStatus::PAID->value, $description);
         });
     }
 }

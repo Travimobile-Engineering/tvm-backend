@@ -410,7 +410,7 @@ class WalletService
 
         $date = request()->input('date');
 
-        $earnings = Earning::select('id', 'title', 'amount', 'type', 'status', 'created_at')
+        $earnings = Earning::select('id', 'title', 'amount', 'type', 'description', 'status', 'created_at')
             ->where('user_id', $userId)
             ->when($date, fn($query) => $query->whereDate('created_at', $date))
             ->latest()
