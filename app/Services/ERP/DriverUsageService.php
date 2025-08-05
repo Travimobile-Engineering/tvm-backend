@@ -24,7 +24,12 @@ class DriverUsageService
 
     public function execute()
     {
-        $trips = Trip::with(['user.walletAccount', 'agent.walletAccount'])
+        $trips = Trip::with([
+                'user.walletAccount',
+                'agent.walletAccount',
+                'departureRegion',
+                'destinationRegion',
+            ])
             ->whereToday('departure_date')
             ->where('status', TripStatus::COMPLETED)
             ->get();
@@ -88,12 +93,16 @@ class DriverUsageService
                 // Increment the agent's earnings
                 $agent->walletAccount->increment('earnings', $breakdown['agent_share']);
 
+                $departure = "{$trip->departureRegion?->state?->name} > {$trip->departureRegion?->name}";
+                $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
+
                 // Create the agent commission earning
                 $agent->createEarning(
                     TransactionTitle::AGENT_COMMISSION->value,
                     $breakdown['agent_share'],
                     PaymentType::CR,
-                    PaymentStatus::PAID->value
+                    PaymentStatus::PAID->value,
+                    "Driver charge earning for trip from {$departure} to {$destination}"
                 );
 
                 logger()->info("Credited agent ID {$agent->id} with ₦{$breakdown['agent_share']} from trip ID {$trip->id}.");
