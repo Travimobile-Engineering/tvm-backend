@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\SendVerificationCode;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Services\Auth\ForgotPasswordService;
@@ -16,7 +17,7 @@ class ForgotPasswordController extends Controller
     public function sendPasswordResetOtp(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'email', 'exists:users,email']
+            'email' => ['required', 'string']
         ]);
 
         return $this->forgotPasswordService->sendPasswordResetOtp($request);
