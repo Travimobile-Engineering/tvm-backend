@@ -97,14 +97,19 @@ class DriverService
         $user = User::with(['busStops'])
             ->findOrFail($request->user_id);
 
-        $user->busStops()->updateOrCreate(
-            [
-                'state_id' => $request->state_id,
-            ],
-            [
-                'stops' => $request->stops
-            ]
-        );
+        $exists = $user->busStops()
+            ->where('state_id', $request->state_id)
+            ->where('stops', $request->stops)
+            ->exists();
+
+        if ($exists) {
+            return $this->error(null, 'Bus stop already exists.', 409);
+        }
+
+        $user->busStops()->create([
+            'state_id' => $request->state_id,
+            'stops' => $request->stops,
+        ]);
 
         return $this->success(null, "Added successfully", 201);
     }
