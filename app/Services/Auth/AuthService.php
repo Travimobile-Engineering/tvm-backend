@@ -223,9 +223,10 @@ class AuthService
                 'name' => $user->first_name,
                 'verification_code' => $code
             ];
+
             mailSend(
                 MailingEnum::SIGN_UP_OTP,
-                $user,
+                $request,
                 "Verify Account",
                 "App\Mail\ConfirmationEmail",
                 $data
