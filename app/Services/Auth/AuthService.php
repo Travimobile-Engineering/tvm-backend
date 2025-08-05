@@ -30,14 +30,7 @@ class AuthService
         $existingUser = $this->findUserByEmailOrPhone($request);
 
         if ($existingUser) {
-            if ($this->hasActiveCode($existingUser)) {
-                return $this->error(null, "A verification code has already been sent. Please check your email or phone.", 400);
-            }
-
-            if ($existingUser->email_verified) {
-                return $this->error(null, "Email or phone number already in use.", 400);
-            }
-
+            $this->validateUser($existingUser, $request);
             $this->sendCode($request, $existingUser);
 
             return $this->success(null, "OTP has been resent to your email or phone number.");
@@ -96,12 +89,23 @@ class AuthService
 
     public function resendCode($request)
     {
-        $user = User::where('email', $request->email)
-            ->first();
+        $value = $request->email;
+        $field = filter_var($value, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
+
+        if ($field === 'phone_number') {
+            $value = formatPhoneNumber($value);
+            $this->validatePhone($value);
+        } else {
+            $this->validateEmail($request);
+        }
+
+        $user = User::where($field, $value)->first();
 
         if (! $user) {
             return $this->error(null, 'User not found', 404);
         }
+
+        $this->customvalidate($request, $user, $field, $value);
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
 
@@ -110,14 +114,18 @@ class AuthService
             'verification_code_expires_at' => now()->addMinutes(10),
         ]);
 
-        $type = MailingEnum::RESEND_CODE;
-        $subject = "Resend code";
-        $mail_class = ConfirmationEmail::class;
-        $data = [
-            'name' => $user->first_name,
-            'verification_code' => $code
-        ];
-        mailSend($type, $user, $subject, $mail_class, $data);
+        if ($field === 'phone_number') {
+            sendSmS($value, "Your Travi verification OTP is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi");
+        } else {
+            $type = MailingEnum::RESEND_CODE;
+            $subject = "Resend code";
+            $mail_class = ConfirmationEmail::class;
+            $data = [
+                'name' => $user->first_name,
+                'verification_code' => $code
+            ];
+            mailSend($type, $user, $subject, $mail_class, $data);
+        }
 
         return $this->success(null, 'Verification code sent successfully');
     }
@@ -137,14 +145,7 @@ class AuthService
         $existingUser = $this->findUserByEmailOrPhone($request);
 
         if ($existingUser) {
-            if ($this->hasActiveCode($existingUser)) {
-                return $this->error(null, "A verification code has already been sent. Please check your email or phone.", 400);
-            }
-
-            if ($existingUser->email_verified) {
-                return $this->error(null, "Email or phone number already in use.", 400);
-            }
-
+            $this->validateUser($existingUser, $request);
             $this->sendCode($request, $existingUser);
 
             return $this->success(null, "OTP has been resent to your email or phone number.");
@@ -192,7 +193,7 @@ class AuthService
         return $this->success($user, "Account verified successfully");
     }
 
-    private function findUserByEmailOrPhone($request)
+    private function findUserByEmailOrPhone($request): ?User
     {
         $normalizedPhone = $request->filled('phone_number')
             ? formatPhoneNumber($request->phone_number)
@@ -248,5 +249,60 @@ class AuthService
             $user->verification_code_expires_at >= now();
     }
 
+    private function validateUser(User $existingUser, $request)
+    {
+        if ($this->hasActiveCode($existingUser)) {
+            return $this->error(null, "A verification code has already been sent. Please check your email or phone.", 400);
+        }
+
+        if (
+            $request->filled('email') &&
+            $existingUser->email === $request->email &&
+            $existingUser->email_verified
+        ) {
+            return $this->error(null, "Email address already in use.", 400);
+        }
+
+        if ($request->filled('phone_number')) {
+            $normalized = formatPhoneNumber($request->phone_number);
+
+            if ($existingUser->phone_number === $normalized) {
+                return $this->error(null, "Phone number already in use.", 400);
+            }
+        }
+    }
+
+    private function validateEmail($request)
+    {
+        $request->validate([
+            'email' => ['required', 'email', 'exists:users,email']
+        ]);
+    }
+
+    private function validatePhone(string $value)
+    {
+        $exists = User::where('phone_number', $value)->exists();
+
+        if (! $exists) {
+            return $this->error(null, 'Phone number not found.', 422);
+        }
+    }
+
+    private function customvalidate($request, $user, $field, $value)
+    {
+        if ($field === 'email') {
+            if ($user->email !== $request->email) {
+                return $this->error(null, 'Email mismatch.', 400);
+            }
+
+            if ($user->email_verified) {
+                return $this->error(null, 'Email already verified.', 400);
+            }
+        } else {
+            if ($user->phone_number !== $value) {
+                return $this->error(null, 'Phone number mismatch.', 400);
+            }
+        }
+    }
 }
 

@@ -236,10 +236,7 @@ if (!function_exists('hasSetupWallet')) {
         }
 
         $hasBankDetails = $user->userBank()->exists();
-
-        $hasPin = $user->userPin()
-            ->where('status', General::ACTIVE)
-            ->exists();
+        $hasPin = hasSetupPin($userId);
 
         return $hasBankDetails && $hasPin;
     }
