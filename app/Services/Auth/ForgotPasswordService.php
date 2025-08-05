@@ -13,7 +13,14 @@ class ForgotPasswordService
 
     public function sendPasswordResetOtp($request)
     {
-        $user = User::where('email', $request->email)->firstOrFail();
+        $value = $request->email;
+        $field = filter_var($value, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
+
+        if ($field === 'phone_number') {
+            $value = formatPhoneNumber($value);
+        }
+
+        $user = User::where($field, $value)->firstOrFail();
         $code = getCode();
 
         $user->update([
@@ -21,15 +28,22 @@ class ForgotPasswordService
             'verification_code_expires_at' => now()->addMinutes(10)
         ]);
 
-        $name = "{$user->first_name} {$user->last_name}";
+        if ($field === 'phone_number') {
+            $this->validatePhone($request);
+            sendSmS($value, "Your Travi password reset OTP is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi");
+        } else {
+            $this->validateEmail($request);
 
-        sendMail(
-            $user->email,
-            new ConfirmationEmail($name, $code, 'email.password_reset_otp')
-        );
+            $name = "{$user->first_name} {$user->last_name}";
+            sendMail(
+                $user->email,
+                new ConfirmationEmail($name, $code, 'email.password_reset_otp')
+            );
+        }
 
-        return $this->success(null, 'Password reset OTP has been sent to your email');
+        return $this->success(null, 'Password reset OTP has been sent!');
     }
+
     public function verifyPasswordResetOtp($request)
     {
         $verify = User::where('verification_code', $request->otp)
@@ -46,12 +60,19 @@ class ForgotPasswordService
     public function resetPassword($request)
     {
         $request->validate([
-            'email' => ['required', 'email', 'exists:users,email'],
+            'email' => ['required', 'string'],
             'otp' => ['required', 'string', 'max:5'],
             'password' => ['required', 'string', 'min:8']
         ]);
 
-        $user = User::where('email', $request->email)
+        $value = $request->email;
+        $field = filter_var($value, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
+
+        if ($field === 'phone_number') {
+            $value = formatPhoneNumber($value);
+        }
+
+        $user = User::where($field, $value)
             ->where('verification_code', $request->otp)
             ->where('verification_code_expires_at', '>', now())
             ->first();
@@ -70,6 +91,20 @@ class ForgotPasswordService
         ]);
 
         return $this->success(null, 'User password updated successfully');
+    }
+
+    private function validateEmail($request)
+    {
+        $request->validate([
+            'email' => ['required', 'email', 'exists:users,email']
+        ]);
+    }
+
+    private function validatePhone($request)
+    {
+        $request->validate([
+            'phone' => ['required', 'exists:users,phone_number']
+        ]);
     }
 }
 
