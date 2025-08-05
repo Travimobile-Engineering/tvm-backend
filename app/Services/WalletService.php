@@ -293,7 +293,7 @@ class WalletService
             'status' => General::ACTIVE,
         ]);
 
-        return $this->success(null, "Transaction pin set successfully");
+        return $this->success(null, "Transaction pin set successfully", 201);
     }
 
     public function withdraw($request)
@@ -357,7 +357,13 @@ class WalletService
         }
 
         $this->driverDecrementEarning($user, $request->amount);
-        $user->createEarning(TransactionTitle::WITHDRAWAL->value, $request->amount, 'DR', General::PAID);
+        $user->createEarning(
+            TransactionTitle::WITHDRAWAL->value,
+            $request->amount,
+            'DR',
+            General::PAID,
+            "Withdrawal to wallet successful"
+        );
         $this->userIncrementBalance($user, $request->amount);
         return $this->success(null, "Withdrawal to wallet successful");
     }
