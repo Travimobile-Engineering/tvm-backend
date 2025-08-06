@@ -30,7 +30,11 @@ class AuthService
         $existingUser = $this->findUserByEmailOrPhone($request);
 
         if ($existingUser) {
-            $this->validateUser($existingUser, $request);
+
+            if ($validationResponse = $this->validateUser($existingUser, $request)) {
+                return $validationResponse;
+            }
+
             $this->sendCode($request, $existingUser);
 
             return $this->success(null, "OTP has been resent to your email or phone number.");
@@ -270,6 +274,8 @@ class AuthService
                 return $this->error(null, "Phone number already in use.", 400);
             }
         }
+
+        return null;
     }
 
     private function validateEmail($request)

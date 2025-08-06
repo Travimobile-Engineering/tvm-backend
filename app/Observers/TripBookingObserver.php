@@ -14,29 +14,31 @@ class TripBookingObserver implements ShouldHandleEventsAfterCommit
      */
     public function created(TripBooking $tripBooking): void
     {
-        $smsService = app(SMS::class);
-        $user = $tripBooking->user;
-        $trip = $tripBooking->trip;
+        if (app()->environment('production')) {
+            $smsService = app(SMS::class);
+            $user = $tripBooking->user;
+            $trip = $tripBooking->trip;
 
-        if (!$user || !$trip || !$user->phone_number) {
-            return;
+            if (!$user || !$trip || !$user->phone_number) {
+                return;
+            }
+
+            $trip->load(['departureRegion', 'destinationRegion']);
+
+            $name = Str::limit($user->first_name, 15, '');
+            $from = Str::limit($trip->departureRegion?->name, 12, '');
+            $to = Str::limit($trip->destinationRegion?->name, 12, '');
+            $duration = $trip->trip_duration ?? 'N/A';
+            $amount = number_format($tripBooking->amount_paid ?? 0, 2);
+            $bookingId = $tripBooking->booking_id;
+
+            $message = "Hi $name, your trip from $from to $to is booked. Booking ID: $bookingId. Duration: $duration. Amount paid: ₦$amount. Powered by Travi.";
+
+            $smsService->sendSms(
+                formatPhoneNumber($user->phone_number),
+                $message
+            );
         }
-
-        $trip->load(['departureRegion', 'destinationRegion']);
-
-        $name = Str::limit($user->first_name, 15, '');
-        $from = Str::limit($trip->departureRegion?->name, 12, '');
-        $to = Str::limit($trip->destinationRegion?->name, 12, '');
-        $duration = $trip->trip_duration ?? 'N/A';
-        $amount = number_format($tripBooking->amount_paid ?? 0, 2);
-        $bookingId = $tripBooking->booking_id;
-
-        $message = "Hi $name, your trip from $from to $to is booked. Booking ID: $bookingId. Duration: $duration. Amount paid: ₦$amount. Powered by Travi.";
-
-        $smsService->sendSms(
-            formatPhoneNumber($user->phone_number),
-            $message
-        );
     }
 
     /**

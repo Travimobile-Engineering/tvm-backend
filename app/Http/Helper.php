@@ -441,3 +441,31 @@ if (! function_exists('generateUniqueString')) {
         return $string;
     }
 }
+
+if (! function_exists('generateReference')) {
+    /**
+     * Generate a unique reference.
+     *
+     * @param string $prefix Optional prefix like 'TRF' or 'INV'
+     * @param string|null $table Optional table to check uniqueness
+     * @param string $column Column in the table to check (default: 'reference')
+     * @return string
+     */
+    function generateReference(string $prefix = '', ?string $table = null, string $column = 'reference'): string
+    {
+        do {
+            $random = strtoupper(Str::random(10));
+            $timestamp = now()->format('YmdHis');
+            $reference = $prefix . $timestamp . $random;
+
+            $exists = false;
+
+            if ($table) {
+                $exists = DB::table($table)->where($column, $reference)->exists();
+            }
+
+        } while ($exists);
+
+        return $reference;
+    }
+}
