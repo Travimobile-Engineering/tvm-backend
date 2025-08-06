@@ -448,7 +448,7 @@ if (! function_exists('generateReference')) {
      *
      * @param string $prefix Optional prefix like 'TRF' or 'INV'
      * @param string|null $table Optional table to check uniqueness
-     * @param string $column Column in the table to check (default: 'reference')
+     * @param string $column Column in the table to check (default: 'txn_reference')
      * @return string
      */
     function generateReference(string $prefix = '', ?string $table = null, string $column = 'txn_reference'): string
