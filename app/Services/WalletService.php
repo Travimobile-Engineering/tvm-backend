@@ -112,13 +112,22 @@ class WalletService
         $this->userDecrementBalance($this->user, $request->amount);
         $this->userIncrementBalance($user, $request->amount);
 
-        Transaction::create([
-            'user_id' => $this->user->id,
-            'title' => 'Funds transfer',
-            'amount' => $request->amount,
-            'type' => 'DR',
-            'receiver_id' => $user->id
-        ]);
+        $reference = generateReference('TRF', 'transactions');
+
+        $this->user->createTransaction(
+            TransactionTitle::TRANSFER_WALLET->value,
+            $request->amount,
+            'DR',
+            $reference,
+            $user->id,
+        );
+
+        $user->createTransaction(
+            TransactionTitle::CREDIT->value,
+            $request->amount,
+            'CR',
+            $reference,
+        );
 
         return $this->success(null, "Funds tranfered successfully");
     }
