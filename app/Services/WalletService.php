@@ -383,8 +383,10 @@ class WalletService
 
         $date = request()->input('date');
 
-        $transactions = Transaction::where('user_id', $userId)
-            ->where('receiver_id', $userId)
+        $transactions = Transaction::where(function ($query) use ($userId) {
+                $query->where('user_id', $userId)
+                    ->orWhere('receiver_id', $userId);
+            })
             ->when($date, fn($query) => $query->whereDate('created_at', $date))
             ->select('id', 'user_id', 'title', 'amount', 'type', 'status', 'created_at')
             ->latest()
