@@ -383,36 +383,22 @@ class WalletService
 
         $date = request()->input('date');
 
-        $user = User::with(['transactions' => function ($query) use ($date) {
-            $query->when($date, fn($query) => $query->whereDate('created_at', $date));
-        }])->findOrFail($userId);
-
-        $relatedTransactions = Transaction::where('receiver_id', $userId)
+        $transactions = Transaction::where('user_id', $userId)
+            ->where('receiver_id', $userId)
+            ->when($date, fn($query) => $query->whereDate('created_at', $date))
             ->select('id', 'user_id', 'title', 'amount', 'type', 'status', 'created_at')
             ->latest()
-            ->get();
+            ->get()
+            ->map(fn($transaction) => [
+                'id' => $transaction->id,
+                'title' => $transaction->title,
+                'amount' => $transaction->amount,
+                'type' => $transaction->type,
+                'status' => $transaction->status,
+                'created_at' => $transaction->created_at,
+            ]);
 
-        $transactions = $user->transactions->map(fn ($transaction) => [
-            'id' => $transaction->id,
-            'title' => $transaction->title,
-            'amount' => $transaction->amount,
-            'type' => $transaction->type,
-            'status' => $transaction->status,
-            'created_at' => $transaction->created_at,
-        ]);
-
-        $relatedTransactions = $relatedTransactions->map(fn($transaction) => [
-            'id' => $transaction->id,
-            'title' => $transaction->title,
-            'amount' => $transaction->amount,
-            'type' => $transaction->type,
-            'status' => $transaction->status,
-            'created_at' => $transaction->created_at,
-        ]);
-
-        $allTransactions = $transactions->merge($relatedTransactions);
-
-        return $this->success($allTransactions, "Recent transactions");
+        return $this->success($transactions, "Recent transactions");
     }
 
     public function recentEarning($userId)
