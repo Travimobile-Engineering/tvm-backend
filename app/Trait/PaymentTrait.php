@@ -91,19 +91,15 @@ trait PaymentTrait
             $bookingDetails = $this->prepareBookingData($paymentData, $user);
             $bookingId = $this->generateUniqueBookingId();
             $tripBooking = $this->storeTripBooking($bookingId, $trip, $user, $paymentLog, $bookingDetails);
-            if (
-                !isset($bookingDetails['third_party_passenger_details']) ||
-                !is_array($bookingDetails['third_party_passenger_details'])
-            ) {
-                $bookingDetails['third_party_passenger_details'] = [];
-            }
 
-            $this->storeTripPassengers(
-                $tripBooking,
-                $bookingDetails['passengers'],
-                $user,
-                $bookingDetails['third_party_passenger_details']
-            );
+            if ((int) $bookingDetails['third_party_booking'] === 0) {
+                $this->storeTripPassengers(
+                    $tripBooking,
+                    $bookingDetails['passengers'],
+                    $user,
+                    $bookingDetails['third_party_passenger_details']
+                );
+            }
 
             $this->notifyUserBooking($user, $trip, $bookingId);
             $this->recordTransactions($trip, $user, $paymentData, $bookingId);
@@ -313,8 +309,8 @@ trait PaymentTrait
             'third_party_booking' => $details['third_party_booking'],
             'selected_seat' => $details['selected_seat'],
             'trip_type' => $details['trip_type'],
-            'travelling_with' => $details['raw_travelling_with'],
-            'third_party_passenger_details' => $details['third_party_passenger_details'],
+            'travelling_with' => $details['third_party_booking'] === 0 ? $details['raw_travelling_with'] : null,
+            'third_party_passenger_details' => $details['third_party_passenger_details'] ?? null,
             'amount_paid' => $details['amount_paid'],
             'payment_method' => $details['payment_method'],
             'payment_status' => $details['booking_status'],

@@ -192,7 +192,7 @@ trait TripBookingTrait
             'selected_seat' => $selectedSeats,
             'trip_type' => $request->trip_type,
             'travelling_with' => $travellingWith,
-            'third_party_passenger_details' => $request->third_party_passenger_details,
+            'third_party_passenger_details' => $request->third_party_booking === 1 ? $request->third_party_passenger_details : null,
             'amount_paid' => $amount_paid ?? 0,
             'payment_method' => $request->payment_method ?? '',
             'payment_status' => 1,
@@ -355,16 +355,19 @@ trait TripBookingTrait
         $userId = $request->user_id ?? $user->id;
         $userPass = User::findOrFail($userId);
 
-        $passengers = collect($travellingWith ?? []);
-
-        $passengers->prepend([
-            'name' => "{$userPass->first_name } {$userPass->last_name}",
-            'email' => $userPass->email,
-            'phone_number' => $userPass->phone_number,
-            'gender' => $userPass->gender ?? 'unknown',
-            'next_of_kin' => $userPass->next_of_kin_full_name ?? null,
-            'next_of_kin_phone_number' => $userPass->next_of_kin_phone_number ?? null,
-        ]);
+        if ((int) $request->third_party_booking === 0) {
+            $passengers = collect($travellingWith ?? []);
+            $passengers->prepend([
+                'name' => "{$userPass->first_name } {$userPass->last_name}",
+                'email' => $userPass->email,
+                'phone_number' => $userPass->phone_number,
+                'gender' => $userPass->gender ?? 'unknown',
+                'next_of_kin' => $userPass->next_of_kin_full_name ?? null,
+                'next_of_kin_phone_number' => $userPass->next_of_kin_phone_number ?? null,
+            ]);
+        } else {
+            $passengers = collect($request->third_party_passenger_details);
+        }
 
         if (count($selectedSeats) !== $passengers->count()) {
             return $this->error(null, 'Number of seats must match the number of passengers.', 400);
@@ -403,7 +406,7 @@ trait TripBookingTrait
             'third_party_booking' => $data['third_party_booking'],
             'selected_seat' => $data['selected_seat'],
             'trip_type' => $data['trip_type'],
-            'travelling_with' => $data['travelling_with'],
+            'travelling_with' => $data['third_party_booking'] === 0 ? $data['travelling_with'] : null,
             'third_party_passenger_details' => $data['third_party_passenger_details'],
             'amount_paid' => $data['amount_paid'],
             'payment_method' => $data['payment_method'],
@@ -411,19 +414,20 @@ trait TripBookingTrait
             'receive_sms' => $data['receive_sms'],
         ]);
 
-        foreach ($data['passengers'] as $index => $passenger) {
-            $tripBooking->tripBookingPassengers()->create([
-                'trip_booking_id' => $tripBooking->id,
-                'name' => $passenger['name'],
-                'email' => $passenger['email'] ?? null,
-                'phone_number' => $passenger['phone_number'] ?? "nil",
-                'next_of_kin' => $index === 0 ? ($data['user']['next_of_kin'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['name'] ?? ''),
-                'next_of_kin_phone_number' => $index === 0 ? ($data['user']['next_of_kin_phone'] ?? '') : ($data['request']['third_party_passenger_details'][$index - 1]['phone_number'] ?? 00000000000),
-
-                'gender' => $passenger['gender'] ?? 'male',
-                'selected_seat' => $data['selected_seat'][$index] ?? null,
-                'on_seat' => false,
-            ]);
+        if ((int) $data['third_party_booking'] === 0) {
+            foreach ($data['passengers'] as $index => $passenger) {
+                $tripBooking->tripBookingPassengers()->create([
+                    'trip_booking_id' => $tripBooking->id,
+                    'name' => $passenger['name'],
+                    'email' => $passenger['email'] ?? null,
+                    'phone_number' => $passenger['phone_number'] ?? "nil",
+                    'next_of_kin' => $passenger['next_of_kin'] ?? '',
+                    'next_of_kin_phone_number' => $passenger['next_of_kin_phone_number'] ?? '',
+                    'gender' => $passenger['gender'] ?? 'male',
+                    'selected_seat' => $data['selected_seat'][$index] ?? null,
+                    'on_seat' => false,
+                ]);
+            }
         }
     }
 }

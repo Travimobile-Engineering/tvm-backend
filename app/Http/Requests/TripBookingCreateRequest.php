@@ -30,7 +30,7 @@ class TripBookingCreateRequest extends FormRequest
             'travelling_with.*.name' => 'nullable|string',
             'travelling_with.*.email' => 'nullable|string',
             'travelling_with.*.phone_number' => 'nullable|string',
-            'third_party_passenger_details' => 'nullable|string',
+            'third_party_passenger_details' => 'nullable|array',
             'amount_paid' => 'nullable|int',
             'payment_method' => 'required|in:wallet,paystack',
         ];
