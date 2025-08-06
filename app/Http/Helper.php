@@ -451,7 +451,7 @@ if (! function_exists('generateReference')) {
      * @param string $column Column in the table to check (default: 'reference')
      * @return string
      */
-    function generateReference(string $prefix = '', ?string $table = null, string $column = 'reference'): string
+    function generateReference(string $prefix = '', ?string $table = null, string $column = 'txn_reference'): string
     {
         do {
             $random = strtoupper(Str::random(10));
