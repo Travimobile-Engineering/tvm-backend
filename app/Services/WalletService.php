@@ -387,9 +387,9 @@ class WalletService
                 $query->where('user_id', $userId)
                     ->orWhere('receiver_id', $userId);
             })
-            ->when($date, fn($query) => $query->whereDate('created_at', $date))
             ->select('id', 'user_id', 'title', 'amount', 'type', 'status', 'created_at')
-            ->latest()
+            ->when($date, fn($query) => $query->whereDate('created_at', $date))
+            ->orderByDesc('created_at')
             ->get()
             ->map(fn($transaction) => [
                 'id' => $transaction->id,
