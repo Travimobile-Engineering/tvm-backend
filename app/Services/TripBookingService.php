@@ -252,8 +252,8 @@ class TripBookingService
                 'user.transitCompany',
                 'trip.departureRegion.state',
                 'trip.destinationRegion.state',
-                'trip.departureRegion.parks',
-                'trip.destinationRegion.parks',
+                'trip.departureRegion.parksWithTransitCompany',
+                'trip.destinationRegion.parksWithTransitCompany',
                 'trip.vehicle',
             ])
             ->where('booking_id', $tripBooking->booking_id)

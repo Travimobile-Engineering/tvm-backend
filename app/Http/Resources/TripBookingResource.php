@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -35,14 +36,14 @@ class TripBookingResource extends JsonResource
                 'trip_id' => $this->trip?->id,
                 'departure_id' => $this->trip?->departure,
                 'destination_id' => $this->trip?->destination,
-                'departure' => $this->trip?->departureRegion?->state?->name . ' > ' . $this->trip?->departureRegion?->name,
-                'departure_park' => $this->trip?->departureRegion?->parks->pluck('name')->join(', '),
-                'destination' => $this->trip?->destinationRegion?->state?->name . ' > ' . $this->trip?->destinationRegion?->name,
-                'destination_park' => $this->trip?->destinationRegion?->parks->pluck('name')->join(', '),
+                'departure' => "{$this->trip?->departureRegion?->state?->name} > {$this->trip?->departureRegion?->name}",
+                'departure_park' => $this->trip?->departureRegion?->parksWithTransitCompany->first()?->name,
+                'destination' => "{$this->trip?->destinationRegion?->state?->name} > {$this->trip?->destinationRegion?->name}",
+                'destination_park' => $this->trip?->destinationRegion?->parksWithTransitCompany->first()?->name,
                 'departure_date' => $this->trip?->departure_date,
                 'departure_time' => $this->trip?->departure_time,
                 'trip_duration' => $this->trip?->trip_duration,
-                'estimated_arrival_time' => $this->trip?->trip_duration,
+                'estimated_arrival_time' => $this->calculateEstimatedArrivalTime($this->trip?->departure_time, $this->trip?->trip_duration),
                 'bus_stops' => $this->trip?->bus_stops,
                 'status' => $this->trip?->status,
             ],
@@ -76,5 +77,37 @@ class TripBookingResource extends JsonResource
                 'type' => $this->user?->transitCompany?->type,
             ],
         ];
+    }
+
+    protected function calculateEstimatedArrivalTime($departureTime, $tripDuration): ?string
+    {
+        if (!$departureTime || !$tripDuration) {
+            return null;
+        }
+
+        try {
+            $departure = Carbon::createFromFormat('H:i', $departureTime);
+
+            // Try to parse as "H:i" format first
+            if (preg_match('/^\d{1,2}:\d{2}$/', $tripDuration)) {
+                [$hours, $minutes] = explode(':', $tripDuration);
+                $arrival = $departure->copy()->addHours((int)$hours)->addMinutes((int)$minutes);
+                return $arrival->format('H:i');
+            }
+
+            // Normalize spacing and lowercase
+            $duration = strtolower(preg_replace('/\s+/', '', $tripDuration));
+
+            // Match patterns like "2hours30mins", "1hour", "45mins"
+            preg_match('/(?:(\d+)hour[s]?)?(?:(\d+)min[s]?)?/', $duration, $matches);
+
+            $hours = isset($matches[1]) ? (int)$matches[1] : 0;
+            $minutes = isset($matches[2]) ? (int)$matches[2] : 0;
+
+            $arrival = $departure->copy()->addHours($hours)->addMinutes($minutes);
+            return $arrival->format('H:i');
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
