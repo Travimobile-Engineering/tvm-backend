@@ -24,6 +24,9 @@ enum TransactionTitle: string
     case AGENT_COMMISSION = 'Agent Commission';
     case DRIVER_CHARGE = 'Driver Charge';
     case TRANSFER_WALLET = 'Transfer from wallet';
+    case SMS_CHARGE = 'SMS Charge';
+    case ADMIN_CHARGE = 'Admin Charge';
+    case VAT_CHARGE = 'VAT Charge';
 
     public static function getValues(): array
     {
