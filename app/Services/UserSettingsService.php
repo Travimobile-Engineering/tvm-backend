@@ -24,7 +24,17 @@ class UserSettingsService
 
     public function setSecurityAnswer($request)
     {
-        $user = User::where('email', $request->email)->first();
+        $value = $request->email;
+        $field = filter_var($value, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
+
+        if ($field === 'phone_number') {
+            $value = formatPhoneNumber($value);
+            $this->validatePhone($value);
+        } else {
+            $this->validateEmail($request);
+        }
+        
+        $user = User::where($field, $value)->first();
 
         if (!$user) {
             return $this->error(null, 'User not found', 404);
@@ -42,25 +52,39 @@ class UserSettingsService
 
         Cache::put("security_reset_{$user->email}", true, now()->addMinutes(10));
 
-        $data = [
-            'name' => $user->first_name,
-            'verification_code' => $code
-        ];
-
-        mailSend(
-            MailingEnum::VERIFY_OTP,
-            $user,
-            "Verify Account",
-            ConfirmationEmail::class,
-            $data
-        );
+        if ($field === 'phone_number') {
+            sendSmS($value, "Your Travi OTP is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi");
+        } else {
+            $data = [
+                'name' => $user->first_name,
+                'verification_code' => $code
+            ];
+    
+            mailSend(
+                MailingEnum::VERIFY_OTP,
+                $user,
+                "Verify Account",
+                ConfirmationEmail::class,
+                $data
+            );
+        }
 
         return $this->success(null, 'Security answer set successfully');
     }
 
     public function createPassword($request)
     {
-        $user = User::where('email', $request->email)->first();
+        $value = $request->email;
+        $field = filter_var($value, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
+
+        if ($field === 'phone_number') {
+            $value = formatPhoneNumber($value);
+            $this->validatePhone($value);
+        } else {
+            $this->validateEmail($request);
+        }
+        
+        $user = User::where($field, $value)->first();
 
         if (!$user) {
             return $this->error(null, 'User not found', 404);
@@ -112,38 +136,52 @@ class UserSettingsService
 
     public function getUserQuestion()
     {
-        $email = request()->query('email');
+        $inputs = request()->only(['email', 'phone']);
+        $email = $inputs['email'] ?? null;
+        $phone = $inputs['phone'] ?? null;
 
-        if (!$email) {
-            return $this->error(null, 'Email is required', 400);
+        if (! $email && ! $phone) {
+            return $this->error(null, 'Email or phone is required', 400);
         }
 
-        $user = User::where('email', $email)->first();
+        $isEmail = filter_var($email, FILTER_VALIDATE_EMAIL);
+        $field = $isEmail ? 'email' : 'phone_number';
+        $value = $isEmail ? $email : formatPhoneNumber($phone);
 
-        if (!$user) {
+        $user = User::where($field, $value)->first();
+
+        if (! $user) {
             return $this->error(null, 'User not found', 404);
         }
 
-        if (!$user->security_question_id) {
+        if (! $user->security_question_id || ! $user->securityQuestion) {
             return $this->error(null, 'No security question set for this user', 400);
         }
 
-        $data = [
-            'question' => $user->securityQuestion->question
-        ];
-
-        return $this->success($data, 'Security question retrieved successfully');
+        return $this->success([
+            'question' => $user->securityQuestion->question,
+        ], 'Security question retrieved successfully');
     }
 
     public function verifySecurityAnswer($request)
     {
-        $user = User::where('email', $request->email)->first();
+        $value = $request->email;
+        $field = filter_var($value, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
 
-        if (!$user) {
+        if ($field === 'phone_number') {
+            $value = formatPhoneNumber($value);
+            $this->validatePhone($value);
+        } else {
+            $this->validateEmail($request);
+        }
+        
+        $user = User::where($field, $value)->first();
+
+        if (! $user) {
             return $this->error(null, 'User not found', 404);
         }
 
-        if (!$user->security_question_id || !$user->security_answer) {
+        if (! $user->security_question_id || ! $user->security_answer) {
             return $this->error(null, 'Please set your security question first', 403);
         }
 
@@ -156,6 +194,22 @@ class UserSettingsService
         Cache::put("security_reset_{$user->email}", true, now()->addMinutes(10));
 
         return $this->success(null, 'Security answer verified successfully');
+    }
+
+    private function validateEmail($request)
+    {
+        $request->validate([
+            'email' => ['required', 'email', 'exists:users,email']
+        ]);
+    }
+
+    private function validatePhone(string $value)
+    {
+        $exists = User::where('phone_number', $value)->exists();
+
+        if (! $exists) {
+            return $this->error(null, 'Phone number not found.', 422);
+        }
     }
 }
 
