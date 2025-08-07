@@ -9,12 +9,13 @@ use App\Models\Earning;
 use App\Enum\PaymentType;
 use App\Trait\DriverTrait;
 use App\Models\Transaction;
-use App\Enum\TransactionTitle;
 use App\Trait\HttpResponse;
 use App\Events\WalletFunded;
+use App\Enum\TransactionTitle;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Services\ERP\ChargeService;
 use App\DTO\NotificationDispatchData;
 use App\Services\Paystack\PaystackService;
 use Unicodeveloper\Paystack\Facades\Paystack;
@@ -308,11 +309,11 @@ class WalletService
         $user = User::with(['userPin', 'walletAccount', 'userWithdrawLogs', 'userBank'])
             ->findOrFail($request->user_id);
 
-        if (!$user->userBank) {
+        if (! $user->userBank) {
             return $this->error(null, "No bank found", 404);
         }
 
-        if (!$user->walletAccount) {
+        if (! $user->walletAccount) {
             return $this->error(null, "Wallet not found", 404);
         }
 
@@ -341,6 +342,9 @@ class WalletService
             ]);
 
             $user->createEarning(TransactionTitle::WITHDRAWAL->value, $request->amount, 'DR', General::PAID);
+
+            // Admin Charge
+            app(ChargeService::class)->adminCharge($user);
         });
 
         return $this->success(null, "Request sent successfully");
@@ -372,6 +376,10 @@ class WalletService
             "Withdrawal to wallet successful"
         );
         $this->userIncrementBalance($user, $request->amount);
+
+        // Admin Charge
+        app(ChargeService::class)->adminCharge($user);
+
         return $this->success(null, "Withdrawal to wallet successful");
     }
 
