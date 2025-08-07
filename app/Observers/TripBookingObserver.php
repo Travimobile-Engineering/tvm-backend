@@ -4,8 +4,9 @@ namespace App\Observers;
 
 use App\Contracts\SMS;
 use App\Models\TripBooking;
-use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Str;
+use App\Services\ERP\ChargeService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
 class TripBookingObserver implements ShouldHandleEventsAfterCommit
 {
@@ -14,31 +15,54 @@ class TripBookingObserver implements ShouldHandleEventsAfterCommit
      */
     public function created(TripBooking $tripBooking): void
     {
-        if (app()->environment('production')) {
-            $smsService = app(SMS::class);
-            $user = $tripBooking->user;
-            $trip = $tripBooking->trip;
-
-            if (!$user || !$trip || !$user->phone_number) {
-                return;
-            }
-
-            $trip->load(['departureRegion', 'destinationRegion']);
-
-            $name = Str::limit($user->first_name, 15, '');
-            $from = Str::limit($trip->departureRegion?->name, 12, '');
-            $to = Str::limit($trip->destinationRegion?->name, 12, '');
-            $duration = $trip->trip_duration ?? 'N/A';
-            $amount = number_format($tripBooking->amount_paid ?? 0, 2);
-            $bookingId = $tripBooking->booking_id;
-
-            $message = "Hi $name, your trip from $from to $to is booked. Booking ID: $bookingId. Duration: $duration. Amount paid: ₦$amount. Powered by Travi.";
-
-            $smsService->sendSms(
-                formatPhoneNumber($user->phone_number),
-                $message
-            );
+        if (! app()->environment('production')) {
+            return;
         }
+        
+        $user = $tripBooking->user;
+        
+        if (! $user || ! $user->phone_number || ! $user->inbox_notifications) {
+            return;
+        }
+        
+        $trip = $tripBooking->trip;
+        
+        if (! $trip) {
+            return;
+        }
+        
+        $trip->loadMissing(['departureRegion', 'destinationRegion']);
+        
+        $from = $trip->departureRegion?->name;
+        $to = $trip->destinationRegion?->name;
+        
+        if (! $from || ! $to) {
+            return;
+        }
+        
+        $name = Str::limit($user->first_name ?? 'User', 15);
+        $from = Str::limit($from, 12);
+        $to = Str::limit($to, 12);
+        $duration = $trip->trip_duration ?? 'N/A';
+        $amount = number_format($tripBooking->amount_paid ?? 0, 2);
+        $bookingId = $tripBooking->booking_id ?? 'N/A';
+        
+        $message = "Hi $name, your trip from $from to $to is booked. Booking ID: $bookingId. Duration: $duration. Amount paid: ₦$amount. Powered by Travi.";
+        
+        // Send SMS
+        app(SMS::class)->sendSms(
+            formatPhoneNumber($user->phone_number),
+            $message
+        );
+
+        // Charge user for SMS
+        app(ChargeService::class)->smsCharge($user);
+
+        // Admin Charge
+        app(ChargeService::class)->adminCharge($user);
+
+        // VAT Charge
+        app(ChargeService::class)->vatCharge($user);
     }
 
     /**
