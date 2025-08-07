@@ -60,12 +60,6 @@ class ForgotPasswordService
 
     public function resetPassword($request)
     {
-        $request->validate([
-            'email' => ['required', 'string'],
-            'otp' => ['required', 'string', 'max:5'],
-            'password' => ['required', 'string', 'min:8']
-        ]);
-
         $value = $request->email;
         $field = filter_var($value, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
 

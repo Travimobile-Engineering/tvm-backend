@@ -398,7 +398,7 @@ Route::middleware('validate.header')
                 Route::post('/update-profile', 'updateProfile');
                 Route::post('/change-password', 'changePassword');
                 Route::delete('/delete-account', 'deleteProfile');
-                Route::get('/{agent_id}', 'getAgent');
+                Route::get('/{agent_id}', 'getAgent')->withoutMiddleware('agent.auth');
 
                 // Ticket & Trip Management
                 Route::post('/bus-search', 'busSearch');
