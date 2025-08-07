@@ -21,7 +21,7 @@ class UserSettingsController extends Controller
     public function setSecurityAnswer(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|string',
             'answer' => 'required|string|min:3',
             'security_question_id' => 'required|exists:security_questions,id',
         ]);
@@ -32,7 +32,7 @@ class UserSettingsController extends Controller
     public function createPassword(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|string',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
