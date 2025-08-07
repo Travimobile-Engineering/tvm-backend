@@ -21,7 +21,7 @@ class TripBookingObserver implements ShouldHandleEventsAfterCommit
         
         $user = $tripBooking->user;
         
-        if (! $user || ! $user->phone_number || ! $user->inbox_notifications) {
+        if (! $user || ! $user->phone_number) {
             return;
         }
         
@@ -49,14 +49,16 @@ class TripBookingObserver implements ShouldHandleEventsAfterCommit
         
         $message = "Hi $name, your trip from $from to $to is booked. Booking ID: $bookingId. Duration: $duration. Amount paid: ₦$amount. Powered by Travi.";
         
-        // Send SMS
-        app(SMS::class)->sendSms(
-            formatPhoneNumber($user->phone_number),
-            $message
-        );
+        if ($user->inbox_notifications) {
+            // Send SMS
+            app(SMS::class)->sendSms(
+                formatPhoneNumber($user->phone_number),
+                $message
+            );
 
-        // Charge user for SMS
-        app(ChargeService::class)->smsCharge($user);
+            // Charge user for SMS
+            app(ChargeService::class)->smsCharge($user);
+        }
 
         // Admin Charge
         app(ChargeService::class)->adminCharge($user);
