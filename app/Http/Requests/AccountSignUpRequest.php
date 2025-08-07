@@ -24,7 +24,7 @@ class AccountSignUpRequest extends FormRequest
         $rules = [
             'full_name' => ['required', 'string', 'max:200'],
             'email' => ['nullable', 'string', 'email'],
-            'phone_number' => ['required_if:email,null', 'string'],
+            'phone_number' => ['required_if:email,null'],
             'user_category' => ['required', 'string', 'in:passenger,driver,agent'],
             'password' => ['required', 'string', 'confirmed', 'min:8']
         ];
