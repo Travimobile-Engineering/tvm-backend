@@ -76,7 +76,11 @@ class TripBooking extends Model
     protected function totalPassengers(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->tripBookingPassengers()->count() ?? 0,
+            get: fn () =>
+                ($this->tripBookingPassengers()->count() ?? 0)
+                + (is_array($this->third_party_passenger_details)
+                    ? count($this->third_party_passenger_details)
+                    : 0),
         );
     }
 

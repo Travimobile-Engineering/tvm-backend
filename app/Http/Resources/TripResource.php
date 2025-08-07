@@ -127,5 +127,4 @@ class TripResource extends JsonResource
             return null;
         }
     }
-
 }
