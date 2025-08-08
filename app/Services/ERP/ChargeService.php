@@ -12,7 +12,7 @@ class ChargeService
     public function smsCharge($user)
     {
         $user->loadMissing(['walletAccount']);
-        $feeAmount = Fee::where('name', ChargeType::SMS->value)->value('amount') ?? 4;
+        $feeAmount = Fee::where('name', ChargeType::SMS->value)->value('amount') ?? 4.00;
 
         $wallet = $user->walletAccount;
 
@@ -32,7 +32,7 @@ class ChargeService
         DB::transaction(function () use ($wallet, $feeAmount, $user) {
             $wallet->decrement('balance', $feeAmount);
             app(AccountService::class)->initiateTransfer($feeAmount);
-    
+
             $reference = generateReference('SMS', 'transactions');
             $user->createTransaction(TransactionTitle::SMS_CHARGE->value, $feeAmount, 'DR', $reference);
         });
@@ -41,7 +41,7 @@ class ChargeService
     public function adminCharge($user)
     {
         $user->loadMissing(['walletAccount']);
-        $feeAmount = Fee::where('name', ChargeType::ADMIN->value)->value('amount') ?? 10;
+        $feeAmount = Fee::where('name', ChargeType::ADMIN->value)->value('amount') ?? 10.00;
 
         $wallet = $user->walletAccount;
 
@@ -61,7 +61,7 @@ class ChargeService
         DB::transaction(function () use ($wallet, $feeAmount, $user) {
             $wallet->decrement('balance', $feeAmount);
             app(AccountService::class)->initiateTransfer($feeAmount);
-    
+
             $reference = generateReference('ADMIN', 'transactions');
             $user->createTransaction(TransactionTitle::ADMIN_CHARGE->value, $feeAmount, 'DR', $reference);
         });
@@ -70,7 +70,7 @@ class ChargeService
     public function vatCharge($user)
     {
         $user->loadMissing(['walletAccount']);
-        $feeAmount = Fee::where('name', ChargeType::VAT->value)->value('amount') ?? 20;
+        $feeAmount = Fee::where('name', ChargeType::VAT->value)->value('amount') ?? 20.00;
 
         $wallet = $user->walletAccount;
 
@@ -90,7 +90,7 @@ class ChargeService
         DB::transaction(function () use ($wallet, $feeAmount, $user) {
             $wallet->decrement('balance', $feeAmount);
             app(AccountService::class)->initiateTransfer($feeAmount);
-    
+
             $reference = generateReference('VAT', 'transactions');
             $user->createTransaction(TransactionTitle::VAT_CHARGE->value, $feeAmount, 'DR', $reference);
         });
