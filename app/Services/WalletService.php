@@ -385,10 +385,6 @@ class WalletService
 
     public function recentTransaction($userId)
     {
-        if ($this->user->id != $userId) {
-            return $this->error(null, "Unauthorized action.", 401);
-        }
-
         $date = request()->input('date');
 
         $transactions = Transaction::where(function ($query) use ($userId) {
@@ -413,10 +409,6 @@ class WalletService
 
     public function recentEarning($userId)
     {
-        if ($this->user->id != $userId) {
-            return $this->error(null, "Unauthorized action.", 401);
-        }
-
         $date = request()->input('date');
 
         $earnings = Earning::select('id', 'title', 'amount', 'type', 'description', 'status', 'created_at')
