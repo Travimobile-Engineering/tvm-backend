@@ -134,7 +134,6 @@ class TripService
 
         $trips = Trip::where('status', TripStatus::UPCOMING)
             ->defaultWithRelations()
-            ->withSum('tripBookings as total_selected_seats', 'total_passengers')
             ->when($departure, function ($query, $departure) {
                 $query->where('departure', $departure);
             })
@@ -577,7 +576,6 @@ class TripService
 
         $query = Trip::where('user_id', $userId)
             ->defaultWithRelations()
-            ->withSum('tripBookings as total_selected_seats', 'total_passengers')
             ->where('status', TripStatus::UPCOMING);
 
         if ($date) {
@@ -595,7 +593,6 @@ class TripService
     {
         $trips = Trip::where('user_id', $userId)
             ->defaultWithRelations()
-            ->withSum('tripBookings as total_selected_seats', 'total_passengers')
             ->where('status', TripStatus::COMPLETED)
             ->get();
 
@@ -608,7 +605,6 @@ class TripService
     {
         $trips = Trip::where('user_id', $userId)
             ->defaultWithRelations()
-            ->withSum('tripBookings as total_selected_seats', 'total_passengers')
             ->where('status', TripStatus::CANCELLED)
             ->get();
 
@@ -628,7 +624,6 @@ class TripService
 
         $trips = Trip::where('user_id', $userId)
             ->defaultWithRelations()
-            ->withSum('tripBookings as total_selected_seats', 'total_passengers')
             ->where('status', $status)
             ->when($type, fn($q) => $q->where('type', $type))
             ->when($departure, fn($q) => $q->where('departure', $departure))
@@ -655,7 +650,6 @@ class TripService
 
         $trips = Trip::where('status', TripStatus::UPCOMING)
             ->defaultWithRelations()
-            ->withSum('tripBookings as total_selected_seats', 'total_passengers')
             ->when($type, function ($query, $type) {
                 $query->where('type', $type);
             })

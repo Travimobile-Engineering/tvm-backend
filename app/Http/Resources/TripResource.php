@@ -21,7 +21,7 @@ class TripResource extends JsonResource
         $seats = $this->vehicle?->seats ?? [];
         $totalSeats = is_array($seats) ? count($seats) : 0;
 
-        $totalSelectedSeats = $this->total_selected_seats ?? $tripBookings->sum('total_passengers');
+        $totalSelectedSeats = $tripBookings->sum('total_passengers');
         $availableSeats = max(0, $totalSeats - $totalSelectedSeats);
 
         $selectedSeats = $paidBookings
