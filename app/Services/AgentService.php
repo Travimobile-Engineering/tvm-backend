@@ -142,7 +142,6 @@ class AgentService
             ->where('departure_time', $request->departure_time)
             ->where('status', TripStatus::UPCOMING)
             ->defaultWithRelations()
-            ->withSum('tripBookings as total_selected_seats', 'total_passengers')
             ->get();
 
         $data = TripResource::collection($trips);
@@ -626,7 +625,6 @@ class AgentService
 
         $trips = Trip::where('user_id', $userId)
             ->defaultWithRelations()
-            ->withSum('tripBookings as total_selected_seats', 'total_passengers')
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when($date, function ($q, $date) {
                 $start = Carbon::parse($date)->startOfDay();
@@ -644,7 +642,6 @@ class AgentService
     {
         $trip = Trip::where('id', $tripId)
             ->defaultWithRelations()
-            ->withSum('tripBookings as total_selected_seats', 'total_passengers')
             ->firstOrFail();
 
         $data = new TripResource($trip);
