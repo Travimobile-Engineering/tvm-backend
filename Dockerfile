@@ -2,12 +2,15 @@
 FROM php:8.2-fpm
 
 WORKDIR /var/www
+ARG MAX_CHILDREN=10
 
 RUN apt-get update && apt-get install -y libicu-dev \
     && docker-php-ext-install -j$(nproc) intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y bash
+
+RUN sed -i "s/^pm\.max_children\s*=.*/pm.max_children = ${MAX_CHILDREN}/" /usr/local/etc/php-fpm.d/www.conf
 
 RUN apt-get update && apt-get install -y \
     build-essential \
