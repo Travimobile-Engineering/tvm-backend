@@ -394,8 +394,8 @@ class WalletService
             ->select('id', 'user_id', 'title', 'amount', 'type', 'status', 'created_at')
             ->when($date, fn($query) => $query->whereDate('created_at', $date))
             ->orderByDesc('created_at')
-            ->get()
-            ->map(fn($transaction) => [
+            ->paginate(25)
+            ->through(fn($transaction) => [
                 'id' => $transaction->id,
                 'title' => $transaction->title,
                 'amount' => $transaction->amount,
@@ -404,7 +404,7 @@ class WalletService
                 'created_at' => $transaction->created_at,
             ]);
 
-        return $this->success($transactions, "Recent transactions");
+        return $this->withPagination($transactions, "Recent transactions");
     }
 
     public function recentEarning($userId)
@@ -415,9 +415,9 @@ class WalletService
             ->where('user_id', $userId)
             ->when($date, fn($query) => $query->whereDate('created_at', $date))
             ->latest()
-            ->get();
+            ->paginate(25);
 
-        return $this->success($earnings, "Recent earnings");
+        return $this->withPagination($earnings, "Recent earnings");
     }
 
     public function walletTopUp($request)
