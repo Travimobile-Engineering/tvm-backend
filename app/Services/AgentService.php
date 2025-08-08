@@ -179,11 +179,11 @@ class AgentService
         $tickets = TripBooking::with('user')
             ->where('agent_id', $user->id)
             ->where(function ($q) use ($query) {
-                $q->where('booking_id', 'LIKE', "%{$query}%");
-            })
-            ->orWhereHas('user', function ($q) use ($query) {
-                $q->where('first_name', 'LIKE', "%{$query}%")
-                ->orWhere('last_name', 'LIKE', "%{$query}%");
+                $q->where('booking_id', 'LIKE', "%{$query}%")
+                    ->orWhereHas('user', function ($q) use ($query) {
+                        $q->where('first_name', 'LIKE', "%{$query}%")
+                            ->orWhere('last_name', 'LIKE', "%{$query}%");
+                    });
             })
             ->get();
 
