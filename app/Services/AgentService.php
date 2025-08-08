@@ -631,11 +631,11 @@ class AgentService
             ->when($date, function ($query, $date) {
                 $query->whereDate('created_at', $date);
             })
-            ->get();
+            ->paginate(25);
 
         $data = TripResource::collection($trips);
 
-        return $this->success($data, "Trips", 200);
+        return $this->withPagination($data, "Trips");
     }
 
     public function tripDetails($tripId)
