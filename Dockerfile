@@ -2,7 +2,7 @@
 FROM php:8.2-fpm
 
 WORKDIR /var/www
-ARG MAX_CHILDREN=20
+ARG MAX_CHILDREN=40
 
 RUN apt-get update && apt-get install -y libicu-dev \
     && docker-php-ext-install -j$(nproc) intl \
