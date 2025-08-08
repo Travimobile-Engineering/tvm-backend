@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Database\Eloquent\Model;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use ImageKit\ImageKit;
 
@@ -386,11 +387,26 @@ if (!function_exists('hasSetSecurityAnswer')) {
 }
 
 if (!function_exists('getFee')) {
-    function getFee ($name) {
-        $name = strtolower($name);
-        $fee = Fee::whereRaw('LOWER(name) = ?', [$name])->first();
+    function getFee(string $name): int|float
+    {
+        static $localCache = [];
 
-        return $fee->amount ?? 50;
+        $name = strtolower($name);
+
+        if (array_key_exists($name, $localCache)) {
+            return $localCache[$name];
+        }
+
+        $amount = Cache::remember("fee:amount:$name", now()->addHour(), function () use ($name) {
+            return Fee::whereRaw('LOWER(name) = ?', [$name])->value('amount');
+        });
+
+        if ($amount === null) {
+            $amount = 50;
+        }
+
+        $localCache[$name] = $amount;
+        return $amount;
     }
 }
 

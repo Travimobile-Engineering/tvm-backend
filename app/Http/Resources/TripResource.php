@@ -15,16 +15,32 @@ class TripResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $filteredBookings = $this->tripBookings->where('payment_status', 1);
+        $tripBookings = $this->tripBookings;
+        $paidBookings = $tripBookings->where('payment_status', 1);
 
-        $seats = $this->vehicle?->seats;
+        $seats = $this->vehicle?->seats ?? [];
         $totalSeats = is_array($seats) ? count($seats) : 0;
-        $totalSelectedSeats = $this->tripBookings->sum(fn($passenger) => $passenger->total_passengers);
-        $availableSeats = $totalSeats - $totalSelectedSeats;
 
-        $selected_seats = $filteredBookings ? $this->tripBookings->flatMap(function ($passenger) {
-            return $passenger->selected_seat;
-        })->toArray() : [];
+        $totalSelectedSeats = $this->total_selected_seats ?? $tripBookings->sum('total_passengers');
+        $availableSeats = max(0, $totalSeats - $totalSelectedSeats);
+
+        $selectedSeats = $paidBookings
+            ->pluck('selected_seat')
+            ->flatten()
+            ->unique()
+            ->values()
+            ->toArray();
+
+        // $filteredBookings = $this->tripBookings->where('payment_status', 1);
+
+        // $seats = $this->vehicle?->seats;
+        // $totalSeats = is_array($seats) ? count($seats) : 0;
+        // $totalSelectedSeats = $this->tripBookings->sum(fn($passenger) => $passenger->total_passengers);
+        // $availableSeats = $totalSeats - $totalSelectedSeats;
+
+        // $selected_seats = $filteredBookings ? $this->tripBookings->flatMap(function ($passenger) {
+        //     return $passenger->selected_seat;
+        // })->toArray() : [];
 
         return [
             'id' => $this->id,
@@ -83,15 +99,11 @@ class TripResource extends JsonResource
                     'on_seat' => $p->on_seat,
                 ])
             )->values()->toArray(),
-            'selected_seats' => $filteredBookings ? $filteredBookings->map(function ($passenger) {
-                return $passenger?->selected_seat;
-            })->flatMap(function ($seat) {
-                return $seat;
-            })->unique()->values()->toArray() : [],
+            'selected_seats' => $selectedSeats,
             'total_selected_seats' => $this->tripBookings->sum(fn($passenger) => $passenger->total_passengers),
-            'total_seat' => is_array($seats = $this->vehicle?->seats) ? count($seats) : 0,
+            'total_seat' => $totalSeats,
             'available_seat_count' => $availableSeats,
-            'available_seats' => collect($this->vehicle?->seats)->filter(fn($seat) => !in_array($seat, $selected_seats))->values(),
+            'available_seats' => collect($seats)->reject(fn($s) => in_array($s, $selectedSeats))->values(),
             'manifest_fee' => getFee('manifest'),
         ];
     }
