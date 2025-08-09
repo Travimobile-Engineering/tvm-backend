@@ -24,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'impersonation.throttle' => \App\Http\Middleware\ImpersonationThrottle::class,
             'verify.pin' => \App\Http\Middleware\VerifyPinChange::class,
             'login.attempt' => \App\Http\Middleware\LoginAttempt::class,
+            'tx.replay' => \App\Http\Middleware\TransactionReplayShield::class,
+            'burst.guard' => \App\Http\Middleware\BurstGuard::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
