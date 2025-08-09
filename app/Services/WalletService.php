@@ -21,6 +21,7 @@ use App\Services\Paystack\PaystackService;
 use Unicodeveloper\Paystack\Facades\Paystack;
 use App\Services\Notification\NotificationDispatcher;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Models\Wallet;
 
 class WalletService
 {
@@ -99,36 +100,68 @@ class WalletService
 
     public function transfer($request)
     {
-        $user = User::where('agent_id', $request->agent_id)
-            ->first();
+        $sender = $this->user;
 
-        if(!$user) {
+        $recipient = User::where('agent_id', $request->agent_id)->first();
+        if (! $recipient) {
             return $this->error(null, "You are not authorized to perform this action", 403);
         }
-
-        if($this->user->wallet_amount < $request->amount) {
-            return $this->error(null, "Insufficient wallet balance", 400);
+        if ($sender->id === $recipient->id) {
+            return $this->error(null, "Cannot transfer to self", 400);
         }
 
-        $this->userDecrementBalance($this->user, $request->amount);
-        $this->userIncrementBalance($user, $request->amount);
+        $amount = (float) $request->amount;
 
-        $reference = generateReference('TRF', 'transactions');
+        try {
+            DB::transaction(function () use ($sender, $recipient, $amount) {
+                // Lock both wallet rows in a consistent order to prevent deadlocks
+                [$firstUser, $secondUser] = $sender->id < $recipient->id
+                    ? [$sender, $recipient]
+                    : [$recipient, $sender];
 
-        $this->user->createTransaction(
-            TransactionTitle::TRANSFER_WALLET->value,
-            $request->amount,
-            'DR',
-            $reference,
-            $user->id,
-        );
+                // Lock first wallet
+                $firstWallet = Wallet::where('user_id', $firstUser->id)->lockForUpdate()->first();
 
-        $user->createTransaction(
-            TransactionTitle::CREDIT->value,
-            $request->amount,
-            'CR',
-            $reference,
-        );
+                // Lock second wallet
+                $secondWallet = Wallet::where('user_id', $secondUser->id)->lockForUpdate()->first();
+
+                // Map locked wallets back to sender/recipient
+                $senderWallet = $sender->id === $firstUser->id ? $firstWallet : $secondWallet;
+                $recipientWallet = $recipient->id === $firstUser->id ? $firstWallet : $secondWallet;
+
+                // Balance check using the LOCKED sender wallet
+                if ($amount > (float) $senderWallet->balance) {
+                    throw new \RuntimeException("Insufficient wallet balance");
+                }
+
+                // Move funds atomically while locks are held
+                $this->userDecrementBalance($sender, $amount, $senderWallet);
+                $this->userIncrementBalance($recipient, $amount, $recipientWallet);
+
+                // Single reference for both sides
+                $reference = generateReference('TRF', 'transactions');
+
+                // Ledger entries
+                $sender->createTransaction(
+                    TransactionTitle::TRANSFER_WALLET->value,
+                    $amount,
+                    'DR',
+                    $reference,
+                    $recipient->id,
+                );
+
+                $recipient->createTransaction(
+                    TransactionTitle::CREDIT->value,
+                    $amount,
+                    'CR',
+                    $reference,
+                );
+            }, attempts: 3);
+        } catch (\RuntimeException $e) {
+            return $this->error(null, $e->getMessage(), 400);
+        } catch (\Throwable $e) {
+            return $this->error(null, "Something went wrong: " . $e->getMessage(), 400);
+        }
 
         return $this->success(null, "Funds tranfered successfully");
     }
@@ -321,31 +354,42 @@ class WalletService
             return $this->error(null,  "Set your transaction pin!", 400);
         }
 
-        if($request->amount > $user->earning_balance) {
-            return $this->error(null, "Insufficient earning balance", 400);
+        try {
+            DB::transaction(function () use ($user, $request) {
+                $wallet = $user->walletAccount()
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $current = $wallet->earnings;
+                $amount  = (float) $request->amount;
+
+                if ($amount > $current) {
+                    throw new \RuntimeException("Insufficient earning balance");
+                }
+
+                $newBalance = $current - $amount;
+
+                $wallet->update(['earnings' => $newBalance]);
+
+                $user->userWithdrawLogs()->create([
+                    'amount' => $request->amount,
+                    'previous_balance' => $user->earning_balance,
+                    'new_balance' => $newBalance,
+                    'status' => General::PENDING,
+                    'ip_address' => $request->ip(),
+                    'device' => $request->header('User-Agent'),
+                ]);
+
+                $user->createEarning(TransactionTitle::WITHDRAWAL->value, $request->amount, 'DR', General::PAID);
+
+                // Admin Charge
+                app(ChargeService::class)->adminCharge($user);
+            }, attempts: 3);
+        } catch (\RuntimeException $e) {
+            return $this->error(null, $e->getMessage(), 400);
+        } catch (\Throwable $e) {
+            return $this->error(null, "Something went wrong: " . $e->getMessage(), 400);
         }
-
-        DB::transaction(function () use ($user, $request) {
-            $newBalance = $user->earning_balance - $request->amount;
-
-            $user->userWithdrawLogs()->create([
-                'amount' => $request->amount,
-                'previous_balance' => $user->earning_balance,
-                'new_balance' => $newBalance,
-                'status' => General::PENDING,
-                'ip_address' => $request->ip(),
-                'device' => $request->header('User-Agent'),
-            ]);
-
-            $user->walletAccount()->update([
-                'earnings' => $newBalance,
-            ]);
-
-            $user->createEarning(TransactionTitle::WITHDRAWAL->value, $request->amount, 'DR', General::PAID);
-
-            // Admin Charge
-            app(ChargeService::class)->adminCharge($user);
-        });
 
         return $this->success(null, "Request sent successfully");
     }
@@ -363,22 +407,41 @@ class WalletService
             return $this->error(null,  "Set your transaction pin!", 400);
         }
 
-        if($request->amount > $user->earning_balance) {
-            return $this->error(null, "Insufficient earning balance", 400);
+        try {
+            DB::transaction(function () use ($user, $request) {
+                // Lock wallet row and re-read fresh
+                /** @var \App\Models\Wallet $wallet */
+                $wallet = $user->walletAccount()->lockForUpdate()->firstOrFail();
+
+                $amount = (float) $request->amount;
+                if ($amount <= 0) {
+                    throw new \RuntimeException("Invalid amount");
+                }
+                if ($amount > (float) $wallet->earnings) {
+                    throw new \RuntimeException("Insufficient earning balance");
+                }
+
+                // Now you can keep your original calls, but they’ll act on the locked row
+                $this->driverDecrementEarning($user, $amount, $wallet);
+
+                $user->createEarning(
+                    TransactionTitle::WITHDRAWAL->value,
+                    $amount,
+                    'DR',
+                    General::PAID,
+                    "Withdrawal to wallet successful"
+                );
+
+                $this->userIncrementBalance($user, $amount, $wallet);
+
+                // If adminCharge mutates balances/fees, keep it inside the TX
+                app(ChargeService::class)->adminCharge($user);
+            }, attempts: 3);
+        } catch (\RuntimeException $e) {
+            return $this->error(null, $e->getMessage(), 400);
+        } catch (\Throwable $e) {
+            return $this->error(null, "Something went wrong: " . $e->getMessage(), 400);
         }
-
-        $this->driverDecrementEarning($user, $request->amount);
-        $user->createEarning(
-            TransactionTitle::WITHDRAWAL->value,
-            $request->amount,
-            'DR',
-            General::PAID,
-            "Withdrawal to wallet successful"
-        );
-        $this->userIncrementBalance($user, $request->amount);
-
-        // Admin Charge
-        app(ChargeService::class)->adminCharge($user);
 
         return $this->success(null, "Withdrawal to wallet successful");
     }

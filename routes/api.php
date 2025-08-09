@@ -188,9 +188,9 @@ Route::middleware('validate.header')
                         Route::post('/verify-pin', 'verifyPin');
                         Route::post('/set-transaction-pin', 'setTransactionPin');
                         Route::post('/withdraw', 'withdraw')
-                            ->middleware('transaction.pin');
+                            ->middleware(['transaction.pin', 'burst.guard', 'tx.replay']);
                         Route::post('/balance/withdraw', 'balanceWithdraw')
-                            ->middleware('transaction.pin');
+                            ->middleware(['transaction.pin', 'burst.guard', 'tx.replay']);
                         Route::post('/topup', 'walletTopUp');
                         Route::post('/change-bank', 'changeBank')
                             ->middleware('transaction.pin');
@@ -340,9 +340,10 @@ Route::middleware('validate.header')
                 Route::prefix('wallet')
                     ->group(function () {
                         Route::get('/get-balance', [WalletController::class, 'getBalance']);
-                        Route::post('/fund-wallet', [WalletController::class, 'fundWallet']);
+                        Route::post('/fund-wallet', [WalletController::class, 'fundWallet'])
+                            ->middleware(['burst.guard', 'tx.replay']);
                         Route::post('/transfer', [WalletController::class, 'transfer'])
-                            ->middleware('transaction.pin');
+                            ->middleware(['transaction.pin', 'burst.guard', 'tx.replay']);
                         Route::get('/transactions', [WalletController::class, 'getTransactions']);
                     });
 
@@ -407,7 +408,7 @@ Route::middleware('validate.header')
                 Route::match(['get', 'post'], '/scan-ticket/{booking_id?}/{seat_no?}', 'scanTicket');
 
                 // Passenger Management
-                Route::post('/search/passenger', 'searchPassenger');
+                Route::post('/search/passenger', 'searchPassenger')->withoutMiddleware('agent.auth');
                 Route::get('/{user_id}/booking-history', 'bookingHistory');
                 Route::get('/booking-detail/{booking_id}', 'bookingDetail');
                 Route::put('/cancel-trip/{trip_id}', 'cancelTrip');

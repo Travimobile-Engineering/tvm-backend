@@ -8,6 +8,7 @@ use App\Enum\PaymentType;
 use App\Enum\TransitCompanyType;
 use App\Enum\TransactionTitle;
 use App\Models\TransitCompany;
+use App\Models\Wallet;
 use App\Services\Admin\AccountService;
 
 trait DriverTrait
@@ -161,56 +162,44 @@ trait DriverTrait
         }
     }
 
-    protected function driverIncrementEarning($user, $amount)
+    protected function driverIncrementEarning($user, $amount, ?Wallet $lockedWallet = null)
     {
-        $wallet = $user->walletAccount()->firstOrCreate(
+        $wallet = $lockedWallet ?? $user->walletAccount()->firstOrCreate(
             ['user_id' => $user->id],
-            [
-                'balance' => 0.00,
-                'earnings' => 0.00,
-            ]
+            ['balance' => 0.00, 'earnings' => 0.00],
         );
 
         $wallet->increment('earnings', $amount);
     }
 
-    protected function driverDecrementEarning($user, $amount)
+    protected function userDecrementBalance($user, $amount, ?Wallet $lockedWallet = null)
     {
-        $wallet = $user->walletAccount()->firstOrCreate(
+        $wallet = $lockedWallet ?? $user->walletAccount()->firstOrCreate(
             ['user_id' => $user->id],
-            [
-                'balance' => 0.00,
-                'earnings' => 0.00,
-            ]
+            ['balance' => 0.00, 'earnings' => 0.00],
+        );
+
+        $wallet->decrement('balance', $amount);
+    }
+
+    protected function driverDecrementEarning($user, $amount, ?Wallet $lockedWallet = null): void
+    {
+        $wallet = $lockedWallet ?? $user->walletAccount()->firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0.00, 'earnings' => 0.00],
         );
 
         $wallet->decrement('earnings', $amount);
     }
 
-    protected function userIncrementBalance($user, $amount)
+    protected function userIncrementBalance($user, $amount, ?Wallet $lockedWallet = null): void
     {
-        $wallet = $user->walletAccount()->firstOrCreate(
+        $wallet = $lockedWallet ?? $user->walletAccount()->firstOrCreate(
             ['user_id' => $user->id],
-            [
-                'balance' => 0.00,
-                'earnings' => 0.00,
-            ]
+            ['balance' => 0.00, 'earnings' => 0.00],
         );
 
         $wallet->increment('balance', $amount);
-    }
-
-    protected function userDecrementBalance($user, $amount)
-    {
-        $wallet = $user->walletAccount()->firstOrCreate(
-            ['user_id' => $user->id],
-            [
-                'balance' => 0.00,
-                'earnings' => 0.00,
-            ]
-        );
-
-        $wallet->decrement('balance', $amount);
     }
 }
 

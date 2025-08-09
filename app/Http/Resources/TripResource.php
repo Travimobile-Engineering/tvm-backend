@@ -31,17 +31,6 @@ class TripResource extends JsonResource
             ->values()
             ->toArray();
 
-        // $filteredBookings = $this->tripBookings->where('payment_status', 1);
-
-        // $seats = $this->vehicle?->seats;
-        // $totalSeats = is_array($seats) ? count($seats) : 0;
-        // $totalSelectedSeats = $this->tripBookings->sum(fn($passenger) => $passenger->total_passengers);
-        // $availableSeats = $totalSeats - $totalSelectedSeats;
-
-        // $selected_seats = $filteredBookings ? $this->tripBookings->flatMap(function ($passenger) {
-        //     return $passenger->selected_seat;
-        // })->toArray() : [];
-
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
