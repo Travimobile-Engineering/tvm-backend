@@ -159,9 +159,12 @@ Route::middleware('validate.header')
                     ->controller(UserController::class)
                     ->group(function () {
                         Route::post('/change-password', 'changePassword');
-                        Route::get('/{user_id}/notifications', 'getNotifications');
-                        Route::get('/{user_id}/notification/{id}', 'getNotification');
-                        Route::patch('/notification', 'updateNotification');
+                        Route::prefix('{user_id}')->group(function () {
+                            Route::get('notifications', 'getNotifications');
+                            Route::get('notification/{id}', 'getNotification');
+                            Route::delete('notification/{id}', 'deleteNotification');
+                        });
+                        Route::patch('notification', 'updateNotification');
                         Route::post('/save-fcm-token', 'saveFCMToken');
                         Route::patch('remove-fcm-token', 'removeFCMToken');
                         Route::delete('/delete-account', 'deleteAccount');
@@ -351,6 +354,8 @@ Route::middleware('validate.header')
                     ->controller(NotificationController::class)
                     ->group(function () {
                         Route::get('/', 'all');
+                        Route::get('/{notification}', 'show');
+                        Route::delete('/{notification}', 'delete');
                     });
 
                 Route::prefix('manifest-checker')
