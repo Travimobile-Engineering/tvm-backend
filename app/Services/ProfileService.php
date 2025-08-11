@@ -42,6 +42,7 @@ class ProfileService
             'first_name' => $first_name ?? $user->first_name,
             'last_name' => $last_name ?? $user->last_name,
             'phone_number' => $request->phone_number ?? $user->phone_number,
+            'email' => $request->email ?? $user->email,
             'gender' => $request->gender ?? $user->gender,
             'nin' => encryptData($request->nin) ?? $user->nin,
             'next_of_kin_full_name' => $request->next_of_kin_full_name ?? $user->next_of_kin_full_name,
