@@ -33,7 +33,7 @@ class UserSettingsService
         } else {
             $this->validateEmail($request);
         }
-        
+
         $user = User::where($field, $value)->first();
 
         if (!$user) {
@@ -59,7 +59,7 @@ class UserSettingsService
                 'name' => $user->first_name,
                 'verification_code' => $code
             ];
-    
+
             mailSend(
                 MailingEnum::VERIFY_OTP,
                 $user,
@@ -83,7 +83,7 @@ class UserSettingsService
         } else {
             $this->validateEmail($request);
         }
-        
+
         $user = User::where($field, $value)->first();
 
         if (!$user) {
@@ -136,17 +136,25 @@ class UserSettingsService
 
     public function getUserQuestion()
     {
-        $inputs = request()->only(['email', 'phone']);
-        $email = $inputs['email'] ?? null;
-        $phone = $inputs['phone'] ?? null;
+        $input = trim((string) request()->input('email', ''));
 
-        if (! $email && ! $phone) {
+        if ($input === '') {
             return $this->error(null, 'Email or phone is required', 400);
         }
 
-        $isEmail = filter_var($email, FILTER_VALIDATE_EMAIL);
-        $field = $isEmail ? 'email' : 'phone_number';
-        $value = $isEmail ? $email : formatPhoneNumber($phone);
+        // Check if it's a valid email
+        if (filter_var($input, FILTER_VALIDATE_EMAIL)) {
+            $field = 'email';
+            $value = strtolower($input);
+        } else {
+            // Treat as phone number
+            try {
+                $field = 'phone_number';
+                $value = formatPhoneNumber($input);
+            } catch (\Throwable $e) {
+                return $this->error(null, 'Invalid phone number', 400);
+            }
+        }
 
         $user = User::where($field, $value)->first();
 
@@ -154,7 +162,7 @@ class UserSettingsService
             return $this->error(null, 'User not found', 404);
         }
 
-        if (! $user->security_question_id || ! $user->securityQuestion) {
+        if (empty($user->security_question_id) || ! $user->securityQuestion) {
             return $this->error(null, 'No security question set for this user', 400);
         }
 
@@ -174,7 +182,7 @@ class UserSettingsService
         } else {
             $this->validateEmail($request);
         }
-        
+
         $user = User::where($field, $value)->first();
 
         if (! $user) {
