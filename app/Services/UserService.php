@@ -38,16 +38,18 @@ class UserService
 
     public function getNotifications($userId)
     {
-        $user = User::with('userNotifications:id,user_id,title,description,additional_data,read,created_at')
-            ->find($userId);
+        $user = User::find($userId);
 
         if (! $user) {
             return $this->error(null, 'User not found', 404);
         }
 
-        $data = $user->userNotifications;
+        $notifications = $user->userNotifications()
+            ->select('id', 'user_id', 'title', 'description', 'additional_data', 'read', 'created_at')
+            ->orderByDesc('created_at')
+            ->paginate(25);
 
-        return $this->success($data, 'Notifications retrieved successfully');
+        return $this->withPagination($notifications, 'Notifications retrieved successfully');
     }
 
     public function getNotification($userId, $id)
@@ -78,6 +80,28 @@ class UserService
     public function updateNotification($request)
     {
         return $this->agentService->updateNotification($request);
+    }
+
+    public function deleteNotification($userId, $id)
+    {
+        $user = User::with('userNotifications')
+            ->find($userId);
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        $data = $user->userNotifications()
+            ->where('id', $id)
+            ->first();
+
+        if (! $data) {
+            return $this->error(null, 'Notification not found', 404);
+        }
+
+        $data->delete();
+
+        return $this->success(null, 'Notification deleted successfully');
     }
 
     public function saveFCMToken($request)
