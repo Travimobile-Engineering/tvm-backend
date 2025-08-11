@@ -372,7 +372,7 @@ class PremiumHireService
 
         $reviewsList = $reviews->map(function ($review) {
             return [
-                'name' => $review->vehicle?->user?->first_name . ' ' . $review->vehicle?->user?->last_name,
+                'name' => "{$review->vehicle?->user?->first_name} {$review->vehicle?->user?->last_name}",
                 'date' => $review->created_at->diffForHumans(),
                 'comment' => $review->comment,
                 'rating' => $review->rating,
@@ -406,7 +406,7 @@ class PremiumHireService
 
         $reviewsList = $reviews->map(function ($review) {
             return [
-                'name' => optional($review->user)->first_name . ' ' . optional($review->user)->last_name,
+                'name' => "{$review->user?->first_name} {$review->user?->last_name}",
                 'date' => $review->created_at->diffForHumans(),
                 'comment' => $review->comment,
                 'rating' => $review->rating,
@@ -611,8 +611,4 @@ class PremiumHireService
             return $this->error(null, "Failed to start trip: " . $e->getMessage(), 400);
         }
     }
-
 }
-
-
-
