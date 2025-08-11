@@ -49,7 +49,7 @@ class UserService
             ->orderByDesc('created_at')
             ->paginate(25);
 
-        return $this->success($notifications, 'Notifications retrieved successfully');
+        return $this->withPagination($notifications, 'Notifications retrieved successfully');
     }
 
     public function getNotification($userId, $id)
