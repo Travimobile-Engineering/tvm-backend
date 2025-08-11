@@ -10,11 +10,16 @@ class PaymentDetailService
     public static function paystackPayDetails($request, $trip)
     {
         $user = Auth::user();
+
+        if ($user->email === null) {
+            return self::error('User email not found, please update your email address', 404);
+        }
+
         $amount = $request->input('amount_paid') * 100;
 
         $callbackUrl = $request->input('payment_redirect_url');
         if (!filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
-            return response()->json(['error' => 'Invalid callback URL'], 400);
+            return self::error('Invalid callback URL', 400);
         }
 
         return [
@@ -36,6 +41,15 @@ class PaymentDetailService
             ]),
             'callback_url' => $request->input('payment_redirect_url')
         ];
+    }
+
+    private static function error($message, $code)
+    {
+        return response()->json([
+			'status' => false,
+			'message' => $message,
+			'data' => null
+		], $code);
     }
 }
 
