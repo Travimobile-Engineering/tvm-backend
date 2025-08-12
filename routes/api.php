@@ -163,6 +163,7 @@ Route::middleware(['validate.header'])
                             Route::get('notifications', 'getNotifications');
                             Route::get('notification/{id}', 'getNotification');
                             Route::delete('notification/{id}', 'deleteNotification');
+                            Route::post('notifications/mark-all-read', 'markAllNotificationsAsRead');
                         });
                         Route::patch('notification', 'updateNotification');
                         Route::post('/save-fcm-token', 'saveFCMToken');

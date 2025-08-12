@@ -133,7 +133,8 @@ class DriverUsageService
             TransactionTitle::DRIVER_CHARGE->value,
             $fee->amount,
             PaymentType::DR,
-            "wallet"
+            generateReference('TXN', 'transactions'),
+            "Driver charge for trip activity done."
         );
     }
 }

@@ -248,7 +248,7 @@ class User extends Authenticatable implements JWTSubject
         ]);
     }
 
-    public function createTransaction($title, $amount, $type, $reference, ?int $receiverId = null)
+    public function createTransaction($title, $amount, $type, $reference, ?int $receiverId = null, ?string $description = null)
     {
         $this->transactions()->create([
             'title' => $title,
@@ -256,6 +256,7 @@ class User extends Authenticatable implements JWTSubject
             'type' => $type,
             'receiver_id' => $receiverId,
             'txn_reference' => $reference,
+            'description' => $description,
         ]);
     }
 }

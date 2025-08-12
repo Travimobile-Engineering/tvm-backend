@@ -80,18 +80,19 @@ trait DriverTrait
         }
     }
 
-    protected function chargeWallet($user, $amount = null)
+    protected function chargeWallet($user, $amount = null, $trip = null)
     {
         $amount = $amount ?: getFee('manifest');
-
         $this->driverDecrementEarning($user, $amount);
-
         $user->save();
 
         $title = TransactionTitle::CHARGE_WALLET->value;
         $type = PaymentType::DR;
 
-        $this->createTransaction($user, $amount, $title, $type);
+        $departure = "{$trip->departureRegion?->state?->name} > {$trip->departureRegion?->name}";
+        $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
+
+        $this->createTransaction($user, $amount, $title, $type, "Manifest fee for trip from {$departure} to {$destination}");
     }
 
     protected function topUpWallet($user)
@@ -101,24 +102,26 @@ trait DriverTrait
         if ($pendingAmount > 0) {
             $this->driverIncrementEarning($user, $pendingAmount);
 
-            $user->driverTripPayments->where('status', General::PENDING)->each(function ($payment) {
-                $payment->update(['status' => General::PAID]);
-            });
+            $user->driverTripPayments->where('status', General::PENDING)
+                ->each(function ($payment) {
+                    $payment->update(['status' => General::PAID]);
+                });
 
             $title = TransactionTitle::CREDIT_WALLET->value;
             $type = PaymentType::CR;
 
-            $this->createTransaction($user, $pendingAmount, $title, $type);
+            $this->createTransaction($user, $pendingAmount, $title, $type, "Earnings top-up from trip payments.");
         }
     }
 
-    protected function createTransaction($user, $amount, $title, $type)
+    protected function createTransaction($user, $amount, $title, $type, $description = null)
     {
         $user->transactions()->create([
             'title' => $title,
             'amount' => $amount,
             'type' => $type,
-            'txn_reference' => getRandomNumber()
+            'txn_reference' => generateReference('TXN', 'transactions'),
+            'description' => $description,
         ]);
 
         if (app()->environment('production')) {
