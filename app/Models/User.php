@@ -143,6 +143,7 @@ class User extends Authenticatable implements JWTSubject
         static::bootDeletesUserRelationships();
     }
 
+    // Attributes
     public function totalTrips(): Attribute
     {
         return Attribute::get(fn () => $this->trips()

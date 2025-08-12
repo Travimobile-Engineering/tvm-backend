@@ -16,7 +16,7 @@ Schedule::everyMinute()
 
 Schedule::command('app:rotate-security-questions')->monthly();
 
-Schedule::everyTenMinutes()
+Schedule::everyThirtySeconds()
     ->withoutOverlapping()
     ->group(function () {
         Schedule::command('app:account-payout');
