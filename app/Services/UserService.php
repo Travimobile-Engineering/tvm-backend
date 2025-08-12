@@ -104,6 +104,24 @@ class UserService
         return $this->success(null, 'Notification deleted successfully');
     }
 
+    public function markAllNotificationsAsRead($userId)
+    {
+        $user = User::with('userNotifications')
+            ->find($userId);
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        $user->userNotifications()
+            ->where('read', false)
+            ->update([
+                'read' => true,
+            ]);
+
+        return $this->success(null, 'Notifications marked as read successfully');
+    }
+
     public function saveFCMToken($request)
     {
         $user = User::find($request->user_id);

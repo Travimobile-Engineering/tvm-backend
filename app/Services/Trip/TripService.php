@@ -459,7 +459,11 @@ class TripService
                     $query->where('payment_status', 1)
                         ->with('tripBookingPassengers');
                 },
-                'manifest'
+                'manifest',
+                'departureRegion',
+                'destinationRegion',
+                'departureRegion.state',
+                'destinationRegion.state',
             ])->find($request->trip_id);
 
         if (!$trip) {
@@ -504,7 +508,7 @@ class TripService
                 'status' => ManifestStatus::COMPLETED,
             ]);
 
-            $this->chargeWallet($user);
+            $this->chargeWallet($user, null, $trip);
 
             $trip->update(['status' => TripStatus::INPROGRESS]);
 

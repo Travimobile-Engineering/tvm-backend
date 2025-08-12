@@ -40,6 +40,11 @@ class UserController extends Controller
         return $this->service->deleteNotification($userId, $id);
     }
 
+    public function markAllNotificationsAsRead($userId)
+    {
+        return $this->service->markAllNotificationsAsRead($userId);
+    }
+
     public function saveFCMToken(SaveFCMTokenRequest $request)
     {
         return $this->service->saveFCMToken($request);
