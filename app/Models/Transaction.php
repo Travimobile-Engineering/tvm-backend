@@ -14,7 +14,8 @@ class Transaction extends Model
         'sender_id',
         'receiver_id',
         'txn_reference',
-        'status'
+        'status',
+        'description',
     ];
 
     protected function casts(): array
