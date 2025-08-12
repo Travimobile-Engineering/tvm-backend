@@ -35,7 +35,7 @@ class ChargeService
             app(AccountService::class)->initiateTransfer($feeAmount);
 
             $reference = generateReference('SMS', 'transactions');
-            $user->createTransaction(TransactionTitle::SMS_CHARGE->value, $feeAmount, 'DR', $reference, 'SMS charge');
+            $user->createTransaction(TransactionTitle::SMS_CHARGE->value, $feeAmount, 'DR', $reference, 'You have received an SMS charge.');
         });
     }
 
@@ -64,7 +64,7 @@ class ChargeService
             app(AccountService::class)->initiateTransfer($feeAmount);
 
             $reference = generateReference('ADMIN', 'transactions');
-            $user->createTransaction(TransactionTitle::ADMIN_CHARGE->value, $feeAmount, 'DR', $reference, 'Admin charge');
+            $user->createTransaction(TransactionTitle::ADMIN_CHARGE->value, $feeAmount, 'DR', $reference, 'You have received an admin charge.');
         });
     }
 
@@ -93,7 +93,7 @@ class ChargeService
             app(AccountService::class)->initiateTransfer($feeAmount);
 
             $reference = generateReference('VAT', 'transactions');
-            $user->createTransaction(TransactionTitle::VAT_CHARGE->value, $feeAmount, 'DR', $reference, 'VAT charge');
+            $user->createTransaction(TransactionTitle::VAT_CHARGE->value, $feeAmount, 'DR', $reference, 'You have received a VAT charge.');
         });
     }
 
