@@ -96,6 +96,10 @@ class AuthService
         $value = $request->email;
         $field = filter_var($value, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
 
+        if (blank($value)) {
+            return $this->error(null, 'Either email or phone number is required.', 422);
+        }
+
         if ($field === 'phone_number') {
             $value = formatPhoneNumber($value);
             $this->validatePhone($value);
