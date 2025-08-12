@@ -132,29 +132,30 @@ class TripService
         $departure = request()->query('departure');
         $destination = request()->query('destination');
 
+        // Treat empty strings as nulls
+        $hasDate = filled($date);
+        $hasTime = filled($time);
+
         $trips = Trip::where('status', TripStatus::UPCOMING)
             ->defaultWithRelations()
-            ->when($departure, function ($query, $departure) {
-                $query->where('departure', $departure);
-            })
-            ->when($destination, function ($query, $destination) {
-                $query->where('destination', $destination);
-            })
-            ->when($date && $time, function ($query) use ($date, $time) {
-                $query->where(function ($q) use ($date, $time) {
-                    $q->whereDate('departure_date', '>=', $date)
-                    ->whereTime('departure_time', '>=', $time);
-                });
-            }, function ($query) use ($date) {
-                $query->when($date, function ($q) use ($date) {
-                    $q->whereDate('departure_date', $date);
+            ->when(filled($departure), fn ($q) => $q->where('departure', $departure))
+            ->when(filled($destination), fn ($q) => $q->where('destination', $destination))
+            ->when($hasDate && !$hasTime, fn ($q) => $q->whereDate('departure_date', $date))
+            ->when(!$hasDate && $hasTime, fn ($q) => $q->whereTime('departure_time', '>=', $time))
+            ->when($hasDate && $hasTime, function ($q) use ($date, $time) {
+                $q->where(function ($qq) use ($date, $time) {
+                    $qq->whereDate('departure_date', '>', $date)
+                    ->orWhere(function ($qqq) use ($date, $time) {
+                        $qqq->whereDate('departure_date', $date)
+                            ->whereTime('departure_time', '>=', $time);
+                    });
                 });
             })
             ->paginate(25);
 
         $data = TripResource::collection($trips);
 
-        return $this->withPagination($data, "Available trips", 200);
+        return $this->withPagination($data, 'Available trips', 200);
     }
 
     public function getOneTime($id)

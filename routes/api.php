@@ -57,7 +57,7 @@ Route::post('/seed/run', function () {
 
 Route::get('/', fn() => response('Welcome to the API', 200));
 
-Route::middleware('validate.header')
+Route::middleware(['validate.header'])
     ->group(function () {
         Route::controller(OtherController::class)
             ->group(function () {
@@ -93,11 +93,11 @@ Route::middleware('validate.header')
             });
 
         Route::post('/payment/webhook', [PaymentController::class, 'webhook'])
-            ->withoutMiddleware('validate.header');
+            ->withoutMiddleware(['validate.header']);
 
         // Approval URL
         Route::post('/payment/paystack/transfer/approve', [PaymentController::class, 'approveTransfer'])
-            ->withoutMiddleware('validate.header');
+            ->withoutMiddleware(['validate.header']);
 
         // Google Auth
         Route::controller(GoogleAuthController::class)

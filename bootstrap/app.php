@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'login.attempt' => \App\Http\Middleware\LoginAttempt::class,
             'tx.replay' => \App\Http\Middleware\TransactionReplayShield::class,
             'burst.guard' => \App\Http\Middleware\BurstGuard::class,
+            'decrypt.ids' => \App\Http\Middleware\DecryptIds::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
