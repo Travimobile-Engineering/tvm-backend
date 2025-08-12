@@ -104,10 +104,10 @@ class UserService
         return $this->success(null, 'Notification deleted successfully');
     }
 
-    public function markAllNotificationsAsRead($request)
+    public function markAllNotificationsAsRead($userId)
     {
         $user = User::with('userNotifications')
-            ->find($request->user_id);
+            ->find($userId);
 
         if (! $user) {
             return $this->error(null, 'User not found', 404);
