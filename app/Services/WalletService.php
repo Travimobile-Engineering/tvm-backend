@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Bank;
 use App\Models\User;
 use App\Enum\General;
+use App\Enum\UserType;
+use App\Models\Wallet;
 use App\Models\Earning;
 use App\Enum\PaymentType;
 use App\Trait\DriverTrait;
@@ -21,7 +23,6 @@ use App\Services\Paystack\PaystackService;
 use Unicodeveloper\Paystack\Facades\Paystack;
 use App\Services\Notification\NotificationDispatcher;
 use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Models\Wallet;
 
 class WalletService
 {
@@ -352,7 +353,7 @@ class WalletService
             return $this->error(null, "Wallet not found", 404);
         }
 
-        if ((float) $user->earning_balance < 5000) {
+        if ($user->user_category === UserType::AGENT->value && (float) $user->earning_balance < 5000) {
             return $this->error(null, "You must have at least ₦5,000 in your earning balance to withdraw", 400);
         }
 
@@ -413,7 +414,7 @@ class WalletService
             return $this->error(null, "Wallet not found", 404);
         }
 
-        if ((float) $user->earning_balance < 5000) {
+        if ($user->user_category === UserType::AGENT->value && (float) $user->earning_balance < 5000) {
             return $this->error(null, "You must have at least ₦5,000 in your earning balance to withdraw", 400);
         }
 
