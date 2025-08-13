@@ -8,5 +8,5 @@ enum ChargeType: string
     case SMS = "SMS";
     case VAT = "VAT";
     case INSURANCE = "Insurance";
-    case UNION = "Union";
+    case UNION = "Union Remittance";
 }

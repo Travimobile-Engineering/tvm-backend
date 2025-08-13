@@ -23,7 +23,10 @@ class UserWithdrawLog extends Model
     protected function casts(): array
     {
         return [
-            'data' => 'array'
+            'data' => 'array',
+            'amount' => 'decimal:2',
+            'previous_balance' => 'decimal:2',
+            'new_balance' => 'decimal:2',
         ];
     }
 

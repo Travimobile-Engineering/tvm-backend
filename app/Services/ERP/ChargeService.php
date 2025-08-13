@@ -98,8 +98,42 @@ class ChargeService
     }
 
     public function insuranceCharge()
-    {}
+    {
+        $feeAmount = Fee::where('name', ChargeType::INSURANCE->value)->value('amount') ?? 200.00;
+    }
 
-    public function unionCharge()
-    {}
+    public function unionCharge($user)
+    {
+        $user->loadMissing(['walletAccount', 'transitCompany']);
+        $feeAmount = Fee::where('name', ChargeType::UNION->value)->value('amount') ?? 50.00;
+
+        $wallet = $user->walletAccount;
+        $union = $user->transitCompany;
+
+        if (! $wallet) {
+            logger()->error("User does not have a wallet account.", ['user_id' => $user->id]);
+            return;
+        }
+
+        if (! $union) {
+            logger()->error("User does not have a transit company.", ['user_id' => $user->id]);
+            return;
+        }
+
+        if ($wallet->balance < $feeAmount) {
+            logger()->error(
+                "Insufficient wallet balance for Union Remittance charge.",
+                ['user_id' => $user->id, 'wallet_balance' => $wallet->balance, 'fee_amount' => $feeAmount]
+            );
+            return;
+        }
+
+        DB::transaction(function () use ($wallet, $feeAmount, $user, $union) {
+            $wallet->decrement('balance', $feeAmount);
+            //app(AccountService::class)->initiateTransfer($feeAmount);
+
+            $reference = generateReference('UNION', 'transactions');
+            $user->createTransaction(TransactionTitle::UNION_CHARGE->value, $feeAmount, 'DR', $reference, 'You have received a Union Remittance charge.');
+        });
+    }
 }
