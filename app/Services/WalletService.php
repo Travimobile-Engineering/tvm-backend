@@ -365,6 +365,10 @@ class WalletService
                 $current = $wallet->earnings;
                 $amount  = (float) $request->amount;
 
+                if ($amount < 100.00) {
+                    throw new \RuntimeException("Minimum withdrawal amount is 100");
+                }
+
                 if ($amount > $current) {
                     throw new \RuntimeException("Insufficient earning balance");
                 }
