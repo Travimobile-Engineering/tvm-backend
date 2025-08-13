@@ -35,7 +35,14 @@ class ChargeService
             app(AccountService::class)->initiateTransfer($feeAmount);
 
             $reference = generateReference('SMS', 'transactions');
-            $user->createTransaction(TransactionTitle::SMS_CHARGE->value, $feeAmount, 'DR', $reference, 'You have received an SMS charge.');
+            $user->createTransaction(
+                TransactionTitle::SMS_CHARGE->value,
+                $feeAmount,
+                'DR',
+                $reference,
+                null,
+                'You have received an SMS charge.'
+            );
         });
     }
 
@@ -64,7 +71,14 @@ class ChargeService
             app(AccountService::class)->initiateTransfer($feeAmount);
 
             $reference = generateReference('ADMIN', 'transactions');
-            $user->createTransaction(TransactionTitle::ADMIN_CHARGE->value, $feeAmount, 'DR', $reference, 'You have received an admin charge.');
+            $user->createTransaction(
+                TransactionTitle::ADMIN_CHARGE->value,
+                $feeAmount,
+                'DR',
+                $reference,
+                null,
+                'You have received an admin charge.'
+            );
         });
     }
 
@@ -93,7 +107,14 @@ class ChargeService
             app(AccountService::class)->initiateTransfer($feeAmount);
 
             $reference = generateReference('VAT', 'transactions');
-            $user->createTransaction(TransactionTitle::VAT_CHARGE->value, $feeAmount, 'DR', $reference, 'You have received a VAT charge.');
+            $user->createTransaction(
+                TransactionTitle::VAT_CHARGE->value,
+                $feeAmount,
+                'DR',
+                $reference,
+                null,
+                'You have received a VAT charge.'
+            );
         });
     }
 
@@ -133,7 +154,14 @@ class ChargeService
             //app(AccountService::class)->initiateTransfer($feeAmount);
 
             $reference = generateReference('UNION', 'transactions');
-            $user->createTransaction(TransactionTitle::UNION_CHARGE->value, $feeAmount, 'DR', $reference, 'You have received a Union Remittance charge.');
+            $user->createTransaction(
+                TransactionTitle::UNION_CHARGE->value,
+                $feeAmount,
+                'DR',
+                $reference,
+                null,
+                'You have received a Union Remittance charge.'
+            );
         });
     }
 }
