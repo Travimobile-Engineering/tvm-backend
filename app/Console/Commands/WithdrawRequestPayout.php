@@ -34,7 +34,6 @@ class WithdrawRequestPayout extends Command
     private function processPayout()
     {
         $this->info('Processing payout(s)...');
-
         $requests = $this->collectWithdrawRequests();
 
         if (empty($requests)) {
