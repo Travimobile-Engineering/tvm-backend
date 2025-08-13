@@ -603,6 +603,10 @@ class WalletService
             ]);
         }
 
+        UserBank::where('is_default', false)->update([
+            'is_default' => true,
+        ]);
+
         return $this->success(null, "Recipient code updated successfully.");
     }
 }
