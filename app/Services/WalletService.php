@@ -215,6 +215,7 @@ class WalletService
                 'bank_name' => $request->bank_name,
                 'account_number' => $request->account_number,
                 'account_name' => $request->account_name,
+                'is_default' => true,
             ]);
 
             $bank = Bank::where([
@@ -270,6 +271,7 @@ class WalletService
             'bank_name' => $request->bank_name,
             'account_number' => $request->account_number,
             'account_name' => $request->account_name,
+            'is_default' => true,
         ]);
 
         $bank = Bank::where([

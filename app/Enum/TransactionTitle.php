@@ -27,6 +27,7 @@ enum TransactionTitle: string
     case SMS_CHARGE = 'SMS Charge';
     case ADMIN_CHARGE = 'Admin Charge';
     case VAT_CHARGE = 'VAT Charge';
+    case UNION_CHARGE = 'Union Remittance Charge';
 
     public static function getValues(): array
     {
