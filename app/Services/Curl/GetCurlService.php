@@ -43,7 +43,7 @@ class GetCurlService
         }
 
         if (!isset($result['data'])) {
-            return $this->error(null, "API response does not contain 'data' field: " . json_encode($result));
+            return $this->error(null, $result['message'] ?? 'An error occurred while processing your request.', 400);
         }
 
         return $result['data'];
