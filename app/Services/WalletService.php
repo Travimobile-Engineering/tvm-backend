@@ -597,6 +597,10 @@ class WalletService
 
             $data = (new PostCurlService($url, $headers, $fields))->execute();
 
+            if (!$data['recipient_code']) {
+                continue;
+            }
+
             $userBank->update([
                 'recipient_code' => $data['recipient_code'],
                 'data' => $data,
