@@ -352,6 +352,10 @@ class WalletService
             return $this->error(null, "Wallet not found", 404);
         }
 
+        if ((float) $user->earning_balance < 5000) {
+            return $this->error(null, "You must have at least ₦5,000 in your earning balance to withdraw", 400);
+        }
+
         if(empty($user?->userPin?->pin)) {
             return $this->error(null,  "Set your transaction pin!", 400);
         }
@@ -407,6 +411,10 @@ class WalletService
 
         if (!$user->walletAccount) {
             return $this->error(null, "Wallet not found", 404);
+        }
+
+        if ((float) $user->earning_balance < 5000) {
+            return $this->error(null, "You must have at least ₦5,000 in your earning balance to withdraw", 400);
         }
 
         if(empty($user?->userPin?->pin)) {
