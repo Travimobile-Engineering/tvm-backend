@@ -23,6 +23,8 @@ use App\Services\Paystack\PaystackService;
 use Unicodeveloper\Paystack\Facades\Paystack;
 use App\Services\Notification\NotificationDispatcher;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Models\UserBank;
+use App\Services\Curl\PostCurlService;
 
 class WalletService
 {
@@ -563,5 +565,44 @@ class WalletService
         });
 
         return $this->success($statistics, "Transaction statistics retrieved successfully.");
+    }
+
+    public function updateRecipientCode()
+    {
+        $url = "https://api.paystack.co/transferrecipient";
+        $token = config('app.paystack_secret_key');
+
+        $headers = [
+            'Accept' => 'application/json',
+            'Authorization' => "Bearer {$token}",
+        ];
+
+        $banks = Bank::all()->keyBy('name');
+        $userBanks = UserBank::whereNull('recipient_code')->get();
+
+        foreach($userBanks as $userBank) {
+            $bank = $banks->get($userBank->bank_name);
+
+            if(! $bank) {
+                continue;
+            }
+
+            $fields = [
+                'type' => "nuban",
+                'name' => $userBank->account_name,
+                'account_number' => $userBank->account_number,
+                'bank_code' => $bank->code,
+                'currency' => $bank->currency
+            ];
+
+            $data = (new PostCurlService($url, $headers, $fields))->execute();
+
+            $userBank->update([
+                'recipient_code' => $data['recipient_code'],
+                'data' => $data,
+            ]);
+        }
+
+        return $this->success(null, "Recipient code updated successfully.");
     }
 }
