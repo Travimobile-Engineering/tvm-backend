@@ -56,9 +56,6 @@ Route::post('/seed/run', function () {
 });
 
 Route::get('/', fn() => response('Welcome to the API', 200));
-
-Route::post('/update-code', [WalletController::class, 'updateRecipientCode']);
-
 Route::middleware(['validate.header'])
     ->group(function () {
         Route::controller(OtherController::class)
