@@ -215,6 +215,7 @@ class WalletService
                 'bank_name' => $request->bank_name,
                 'account_number' => $request->account_number,
                 'account_name' => $request->account_name,
+                'is_default' => true,
             ]);
 
             $bank = Bank::where([
@@ -270,6 +271,7 @@ class WalletService
             'bank_name' => $request->bank_name,
             'account_number' => $request->account_number,
             'account_name' => $request->account_name,
+            'is_default' => true,
         ]);
 
         $bank = Bank::where([
@@ -362,6 +364,10 @@ class WalletService
 
                 $current = $wallet->earnings;
                 $amount  = (float) $request->amount;
+
+                if ($amount < 100.00) {
+                    throw new \RuntimeException("Minimum withdrawal amount is 100");
+                }
 
                 if ($amount > $current) {
                     throw new \RuntimeException("Insufficient earning balance");
