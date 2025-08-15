@@ -139,6 +139,10 @@ trait Transfer
         $request = AccountTransfer::where('reference', $reference)->first();
 
         if (!$request) {
+            $request = UserWithdrawLog::where('reference', $reference)->first();
+        }
+
+        if (!$request) {
             return false;
         }
 
@@ -171,7 +175,7 @@ trait Transfer
 
     protected function extractWithdrawAccountRequests($user, array &$requests): void
     {
-        $bank = $user->userBank->where('is_default', true)->first();
+        $bank = $user->userBank;
 
         if (! $bank) {
             return;
