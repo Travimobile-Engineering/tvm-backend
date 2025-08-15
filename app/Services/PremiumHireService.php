@@ -36,6 +36,7 @@ class PremiumHireService
         $longitude = $request->lng;
         $seatCount = $request->vehicle_seat;
         $radius = 10;
+        $distanceFromRequest = $request->distance;
 
         $nearbyUsers = User::select('id')
             ->selectRaw(DB::raw("(
@@ -60,8 +61,8 @@ class PremiumHireService
             ])
             ->get();
 
-        $data = $vehicles->flatMap(function ($vehicle) {
-            return $vehicle->premiumUpgrades->map(function ($premium) use ($vehicle) {
+        $data = $vehicles->flatMap(function ($vehicle) use ($distanceFromRequest) {
+            return $vehicle->premiumUpgrades->map(function ($premium) use ($vehicle, $distanceFromRequest) {
                 return [
                     'vehicle_id' => $vehicle->id,
                     'vehicle_model' => $vehicle->model,
@@ -70,6 +71,7 @@ class PremiumHireService
                     'seats' => is_array($seats = $vehicle->seats) ? count($seats) : 0,
                     'image' => $vehicle->vehicleImages->value('url'),
                     'rating' => $premium->vehicle?->premiumHireRatings?->avg('rating') ?? 0,
+                    'amount' => $distanceFromRequest * 10.00,
                 ];
             });
         });
@@ -87,7 +89,7 @@ class PremiumHireService
             ->where('vehicle_id', $id)
             ->first();
 
-        if (!$vehicle) {
+        if (! $vehicle) {
             return $this->error("Vehicle not found", 404);
         }
 
