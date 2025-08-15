@@ -70,7 +70,7 @@ trait UserRelationships
 
     public function userBank()
     {
-        return $this->hasOne(UserBank::class, 'user_id');
+        return $this->hasOne(UserBank::class, 'user_id')->where('is_default', true);
     }
 
     public function userPin()

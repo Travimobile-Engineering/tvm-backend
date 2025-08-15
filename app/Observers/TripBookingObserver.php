@@ -18,37 +18,37 @@ class TripBookingObserver implements ShouldHandleEventsAfterCommit
         if (! app()->environment('production')) {
             return;
         }
-        
+
         $user = $tripBooking->user;
-        
+
         if (! $user || ! $user->phone_number) {
             return;
         }
-        
+
         $trip = $tripBooking->trip;
-        
+
         if (! $trip) {
             return;
         }
-        
+
         $trip->loadMissing(['departureRegion', 'destinationRegion']);
-        
+
         $from = $trip->departureRegion?->name;
         $to = $trip->destinationRegion?->name;
-        
+
         if (! $from || ! $to) {
             return;
         }
-        
+
         $name = Str::limit($user->first_name ?? 'User', 15);
         $from = Str::limit($from, 12);
         $to = Str::limit($to, 12);
         $duration = $trip->trip_duration ?? 'N/A';
         $amount = number_format($tripBooking->amount_paid ?? 0, 2);
         $bookingId = $tripBooking->booking_id ?? 'N/A';
-        
+
         $message = "Hi $name, your trip from $from to $to is booked. Booking ID: $bookingId. Duration: $duration. Amount paid: ₦$amount. Powered by Travi.";
-        
+
         if ($user->inbox_notifications) {
             // Send SMS
             app(SMS::class)->sendSms(
