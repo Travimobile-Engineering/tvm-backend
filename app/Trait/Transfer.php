@@ -171,9 +171,9 @@ trait Transfer
 
     protected function extractWithdrawAccountRequests($user, array &$requests): void
     {
-        $bank = $user->userBank->first();
+        $bank = $user->userBank->where('is_default', true)->first();
 
-        if (!$bank) {
+        if (! $bank) {
             return;
         }
 
