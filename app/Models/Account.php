@@ -15,6 +15,7 @@ class Account extends Model
         'data',
         'is_default',
         'active',
+        'type',
     ];
 
     protected function casts(): array

@@ -395,6 +395,7 @@ class WalletService
                     'status' => General::PENDING,
                     'ip_address' => $request->ip(),
                     'device' => $request->header('User-Agent'),
+                    'description' => "User account withdrawal",
                 ]);
 
                 $user->createEarning(
