@@ -18,6 +18,7 @@ class UserWithdrawLog extends Model
         'new_balance',
         'reference',
         'response',
+        'description',
     ];
 
     protected function casts(): array

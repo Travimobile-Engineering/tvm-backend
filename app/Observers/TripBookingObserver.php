@@ -61,7 +61,7 @@ class TripBookingObserver implements ShouldHandleEventsAfterCommit
         }
 
         // Admin Charge
-        app(ChargeService::class)->adminCharge($user);
+        app(ChargeService::class)->adminCharge($user, 'balance');
 
         // VAT Charge
         app(ChargeService::class)->vatCharge($user);

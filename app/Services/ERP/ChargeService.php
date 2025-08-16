@@ -46,7 +46,7 @@ class ChargeService
         });
     }
 
-    public function adminCharge($user)
+    public function adminCharge($user, string $chargeFrom, float $extraCharge = 0.00)
     {
         $user->loadMissing(['walletAccount']);
         $feeAmount = Fee::where('name', ChargeType::ADMIN->value)->value('amount') ?? 10.00;
@@ -58,27 +58,31 @@ class ChargeService
             return;
         }
 
-        if ($wallet->balance < $feeAmount) {
-            logger()->error(
-                "Insufficient wallet balance for Admin charge.",
-                ['user_id' => $user->id, 'wallet_balance' => $wallet->balance, 'fee_amount' => $feeAmount]
-            );
-            return;
-        }
-
-        DB::transaction(function () use ($wallet, $feeAmount, $user) {
-            $wallet->decrement('balance', $feeAmount);
-            app(AccountService::class)->initiateTransfer($feeAmount);
+        DB::transaction(function () use ($wallet, $feeAmount, $user, $chargeFrom, $extraCharge) {
+            $wallet->decrement($chargeFrom, $feeAmount);
+            $amount = $feeAmount + $extraCharge;
+            app(AccountService::class)->initiateTransfer($amount);
 
             $reference = generateReference('ADMIN', 'transactions');
-            $user->createTransaction(
-                TransactionTitle::ADMIN_CHARGE->value,
-                $feeAmount,
-                'DR',
-                $reference,
-                null,
-                'You have received an admin charge.'
-            );
+
+            if ($chargeFrom === 'balance') {
+                $user->createTransaction(
+                    TransactionTitle::ADMIN_CHARGE->value,
+                    $feeAmount,
+                    'DR',
+                    $reference,
+                    null,
+                    'You have received an admin charge.'
+                );
+            } else {
+                $user->createEarning(
+                    TransactionTitle::ADMIN_CHARGE->value,
+                    $feeAmount,
+                    'DR',
+                    General::PAID,
+                    'You have received an admin charge.'
+                );
+            }
         });
     }
 

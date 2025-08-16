@@ -37,25 +37,24 @@ trait Transfer
 
     protected function extractAccountRequests($account, array &$requests): void
     {
-        $paymentMethod = $account->where('is_default', true)->first();
-
-        if (!$paymentMethod) {
+        // Guard clause: must be default, must have recipient_code, must be admin type
+        if (! $account->is_default || ! $account->recipient_code || $account->type !== 'admin') {
             return;
         }
 
-        foreach ($account->accountTransfers as $request) {
-            if ($request->status !== AccountTransferStatus::PENDING->value) {
+        foreach ($account->accountTransfers as $transfer) {
+            if ($transfer->status !== AccountTransferStatus::PENDING->value) {
                 continue;
             }
 
-            $amount = intval($request->amount * 100);
-            if ($amount <= 0 || !$paymentMethod->recipient_code) {
+            $amount = intval($transfer->amount * 100);
+            if ($amount <= 0) {
                 continue;
             }
 
             $reference = (string) Str::uuid();
 
-            $request->update([
+            $transfer->update([
                 'status' => AccountTransferStatus::PROCESSING->value,
                 'reference' => $reference,
             ]);
@@ -63,9 +62,9 @@ trait Transfer
             $requests[] = [
                 'reference' => $reference,
                 'amount' => $amount,
-                'recipient' => $paymentMethod->recipient_code,
-                'reason' => 'Withdrawal',
-                'request_id' => $request->id,
+                'recipient' => $account->recipient_code,
+                'reason' => "Admin charges transfer",
+                'request_id' => $transfer->id,
                 'account_id' => $account->id,
             ];
         }
@@ -181,19 +180,19 @@ trait Transfer
             return;
         }
 
-        foreach ($user->userWithdrawLogs as $request) {
-            if ($request->status !== General::PENDING) {
+        foreach ($user->userWithdrawLogs as $withdraw) {
+            if ($withdraw->status !== General::PENDING) {
                 continue;
             }
 
-            $amount = intval($request->amount * 100);
-            if ($amount <= 0 || !$bank->recipient_code) {
+            $amount = intval($withdraw->amount * 100);
+            if ($amount <= 0 || ! $bank->recipient_code) {
                 continue;
             }
 
             $reference = (string) Str::uuid();
 
-            $request->update([
+            $withdraw->update([
                 'status' => General::PROCESSING,
                 'reference' => $reference,
             ]);
@@ -202,8 +201,8 @@ trait Transfer
                 'reference' => $reference,
                 'amount' => $amount,
                 'recipient' => $bank->recipient_code,
-                'reason' => 'Withdrawal',
-                'request_id' => $request->id,
+                'reason' => $withdraw->description ?? "User account withdrawal",
+                'request_id' => $withdraw->id,
                 'user_id' => $user->id,
             ];
         }
@@ -236,35 +235,35 @@ trait Transfer
 
     private function handleResultItem(array $item, bool $success, $errorMessage = null, $data = null): void
     {
-        $request = UserWithdrawLog::find($item['request_id']);
+        $withdraw = UserWithdrawLog::find($item['request_id']);
         $user = User::with(['walletAccount'])->find($item['user_id']);
 
         if ($success) {
-            Log::info("Bulk transfer queued: Withdrawal ID {$request->id}, Ref: {$item['reference']}");
+            Log::info("Bulk transfer queued: Withdrawal ID {$withdraw->id}, Ref: {$item['reference']}");
             foreach ($data as $transfer) {
                 $transferCode = $transfer['transfer_code'];
-                $request->update([
+                $withdraw->update([
                     'transfer_code' => $transferCode,
                 ]);
             }
         } else {
-            $this->markWithdrawRequestFailed($request->id, $user->id, $errorMessage);
-            $user->walletAccount->increment('balance', $request->amount);
+            $this->markWithdrawRequestFailed($withdraw->id, $user->id, $errorMessage);
+            $user->walletAccount->increment('balance', $withdraw->amount);
             Log::error("Failed to queue Paystack bulk transfer: " . json_encode($errorMessage));
         }
     }
 
     private function markWithdrawRequestFailed(int $requestId, int $userId, $errorMessage = null): void
     {
-        $request = UserWithdrawLog::find($requestId);
+        $withdraw = UserWithdrawLog::find($requestId);
         $user = User::find($userId);
 
-        $request->update([
+        $withdraw->update([
             'status' => General::FAILED,
             'response' => $errorMessage,
         ]);
 
-        $user->notify(new WithdrawalNotification($request, 'failed'));
+        $user->notify(new WithdrawalNotification($withdraw, 'failed'));
     }
 }
 

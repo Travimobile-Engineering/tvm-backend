@@ -485,3 +485,10 @@ if (! function_exists('generateReference')) {
         return $reference;
     }
 }
+
+if (! function_exists('getCharge')) {
+    function getCharge($type)
+    {
+        return Fee::where('name', $type)->value('amount') ?? 10.00;
+    }
+}

@@ -8,6 +8,7 @@ use App\Enum\General;
 use App\Enum\UserType;
 use App\Models\Wallet;
 use App\Models\Earning;
+use App\Enum\ChargeType;
 use App\Enum\PaymentType;
 use App\Trait\DriverTrait;
 use App\Models\Transaction;
@@ -23,11 +24,12 @@ use App\Services\Paystack\PaystackService;
 use Unicodeveloper\Paystack\Facades\Paystack;
 use App\Services\Notification\NotificationDispatcher;
 use App\Http\Controllers\Payment\PaystackPaymentController;
-use App\Models\UserBank;
-use App\Services\Curl\PostCurlService;
 
 class WalletService
 {
+    const TRANSFER_FEE = 10.00;
+    const MIN_WITHDRAWAL = 100.00;
+
     use HttpResponse, DriverTrait;
 
     protected $user;
@@ -359,28 +361,30 @@ class WalletService
             return $this->error(null, "You must have at least ₦5,000 in your earning balance to withdraw", 400);
         }
 
-        if(empty($user?->userPin?->pin)) {
+        if (empty($user?->userPin?->pin)) {
             return $this->error(null,  "Set your transaction pin!", 400);
         }
 
+        $adminCharge = getCharge(ChargeType::ADMIN->value);
+
         try {
-            DB::transaction(function () use ($user, $request) {
+            DB::transaction(function () use ($user, $request, $adminCharge) {
                 $wallet = $user->walletAccount()
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                $current = $wallet->earnings;
-                $amount  = (float) $request->amount;
+                $totalDeduction = $request->amount + self::TRANSFER_FEE + $adminCharge;
 
-                if ($amount < 100.00) {
-                    throw new \RuntimeException("Minimum withdrawal amount is 100");
+                if ($request->amount < self::MIN_WITHDRAWAL) {
+                    throw new \RuntimeException("Minimum withdrawal amount is " . self::MIN_WITHDRAWAL);
                 }
 
-                if ($amount > $current) {
+                if ($totalDeduction > $wallet->earnings) {
                     throw new \RuntimeException("Insufficient earning balance");
                 }
 
-                $newBalance = $current - $amount;
+                $bal = $request->amount + self::TRANSFER_FEE;
+                $newBalance = $wallet->earnings - $bal;
 
                 $wallet->update(['earnings' => $newBalance]);
 
@@ -391,12 +395,26 @@ class WalletService
                     'status' => General::PENDING,
                     'ip_address' => $request->ip(),
                     'device' => $request->header('User-Agent'),
+                    'description' => "User account withdrawal",
                 ]);
 
-                $user->createEarning(TransactionTitle::WITHDRAWAL->value, $request->amount, 'DR', General::PAID);
+                $user->createEarning(
+                    TransactionTitle::WITHDRAWAL->value,
+                    $request->amount,
+                    'DR',
+                    General::PAID,
+                    "Withdrawal amount charged from your earnings."
+                );
+                $user->createEarning(
+                    TransactionTitle::TRANSFER_FEE->value,
+                    self::TRANSFER_FEE,
+                    'DR',
+                    General::PAID,
+                    "Transfer fee charged from your earnings."
+                );
 
                 // Admin Charge
-                app(ChargeService::class)->adminCharge($user);
+                app(ChargeService::class)->adminCharge($user, 'earnings', self::TRANSFER_FEE);
             }, attempts: 3);
         } catch (\RuntimeException $e) {
             return $this->error(null, $e->getMessage(), 400);
@@ -424,21 +442,25 @@ class WalletService
             return $this->error(null,  "Set your transaction pin!", 400);
         }
 
+        $adminCharge = getCharge(ChargeType::ADMIN->value);
+
         try {
-            DB::transaction(function () use ($user, $request) {
+            DB::transaction(function () use ($user, $request, $adminCharge) {
                 // Lock wallet row and re-read fresh
                 /** @var \App\Models\Wallet $wallet */
                 $wallet = $user->walletAccount()->lockForUpdate()->firstOrFail();
+
+                $totalDeduction = $request->amount + $adminCharge;
 
                 $amount = (float) $request->amount;
                 if ($amount <= 0) {
                     throw new \RuntimeException("Invalid amount");
                 }
-                if ($amount > (float) $wallet->earnings) {
+
+                if ($totalDeduction > (float) $wallet->earnings) {
                     throw new \RuntimeException("Insufficient earning balance");
                 }
 
-                // Now you can keep your original calls, but they’ll act on the locked row
                 $this->driverDecrementEarning($user, $amount, $wallet);
 
                 $user->createEarning(
@@ -451,8 +473,16 @@ class WalletService
 
                 $this->userIncrementBalance($user, $amount, $wallet);
 
-                // If adminCharge mutates balances/fees, keep it inside the TX
-                app(ChargeService::class)->adminCharge($user);
+                $user->createTransaction(
+                    TransactionTitle::TOP_UP->value,
+                    $amount,
+                    'CR',
+                    generateReference('TRF', 'transactions'),
+                    null,
+                    'Withdrawal to wallet successful'
+                );
+
+                app(ChargeService::class)->adminCharge($user, 'earnings');
             }, attempts: 3);
         } catch (\RuntimeException $e) {
             return $this->error(null, $e->getMessage(), 400);
