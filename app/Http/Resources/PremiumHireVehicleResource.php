@@ -14,6 +14,8 @@ class PremiumHireVehicleResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $distance = (float) $request->query('distance', 0);
+
         return [
             'id' => $this->id,
             'vehicle_id' => $this->vehicle?->id,
@@ -21,7 +23,7 @@ class PremiumHireVehicleResource extends JsonResource
             'company_logo' => $this->user?->profile_photo,
             'ac' => $this->vehicle?->ac,
             'description' => $this->vehicle?->description,
-            'amount' => 250000,
+            'amount' => $distance * 10.00,
             'seats' => is_array($seats = $this->vehicle?->seats) ? count($seats) : 0,
             'interior_images' => $this->vehicle?->vehicleImages()
                 ->where('type', 'interior')
