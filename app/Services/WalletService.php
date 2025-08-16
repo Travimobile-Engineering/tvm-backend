@@ -10,6 +10,7 @@ use App\Models\Wallet;
 use App\Models\Earning;
 use App\Enum\ChargeType;
 use App\Enum\PaymentType;
+use App\Trait\ChargeTrait;
 use App\Trait\DriverTrait;
 use App\Models\Transaction;
 use App\Trait\HttpResponse;
@@ -27,10 +28,9 @@ use App\Http\Controllers\Payment\PaystackPaymentController;
 
 class WalletService
 {
-    const TRANSFER_FEE = 10.00;
     const MIN_WITHDRAWAL = 100.00;
 
-    use HttpResponse, DriverTrait;
+    use HttpResponse, DriverTrait, ChargeTrait;
 
     protected $user;
 
@@ -365,15 +365,18 @@ class WalletService
             return $this->error(null,  "Set your transaction pin!", 400);
         }
 
-        $adminCharge = getCharge(ChargeType::ADMIN->value);
+        $charges = getCharge([
+            ChargeType::ADMIN->value,
+            ChargeType::WITHDRAW_FEE->value,
+        ]);
 
         try {
-            DB::transaction(function () use ($user, $request, $adminCharge) {
+            DB::transaction(function () use ($user, $request, $charges) {
                 $wallet = $user->walletAccount()
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                $totalDeduction = $request->amount + self::TRANSFER_FEE + $adminCharge;
+                $totalDeduction = $request->amount + $charges[ChargeType::WITHDRAW_FEE->value] + $charges[ChargeType::ADMIN->value];
 
                 if ($request->amount < self::MIN_WITHDRAWAL) {
                     throw new \RuntimeException("Minimum withdrawal amount is " . self::MIN_WITHDRAWAL);
@@ -383,8 +386,8 @@ class WalletService
                     throw new \RuntimeException("Insufficient earning balance");
                 }
 
-                $bal = $request->amount + self::TRANSFER_FEE;
-                $newBalance = $wallet->earnings - $bal;
+                $fees = $request->amount + $charges[ChargeType::WITHDRAW_FEE->value];
+                $newBalance = $wallet->earnings - $fees;
 
                 $wallet->update(['earnings' => $newBalance]);
 
@@ -406,15 +409,19 @@ class WalletService
                     "Withdrawal amount charged from your earnings."
                 );
                 $user->createEarning(
-                    TransactionTitle::TRANSFER_FEE->value,
-                    self::TRANSFER_FEE,
+                    TransactionTitle::WITHDRAW_FEE->value,
+                    $charges[ChargeType::WITHDRAW_FEE->value],
                     'DR',
                     General::PAID,
-                    "Transfer fee charged from your earnings."
+                    "Withdraw fee charged from your earnings."
                 );
 
                 // Admin Charge
-                app(ChargeService::class)->adminCharge($user, 'earnings', self::TRANSFER_FEE);
+                app(ChargeService::class)->adminCharge(
+                    $user,
+                    'earnings',
+                    [ChargeType::ADMIN->value]
+                );
             }, attempts: 3);
         } catch (\RuntimeException $e) {
             return $this->error(null, $e->getMessage(), 400);
@@ -442,15 +449,15 @@ class WalletService
             return $this->error(null,  "Set your transaction pin!", 400);
         }
 
-        $adminCharge = getCharge(ChargeType::ADMIN->value);
+        $charges = getCharge([ChargeType::ADMIN->value]);
 
         try {
-            DB::transaction(function () use ($user, $request, $adminCharge) {
+            DB::transaction(function () use ($user, $request, $charges) {
                 // Lock wallet row and re-read fresh
                 /** @var \App\Models\Wallet $wallet */
                 $wallet = $user->walletAccount()->lockForUpdate()->firstOrFail();
 
-                $totalDeduction = $request->amount + $adminCharge;
+                $totalDeduction = $request->amount + $charges[ChargeType::ADMIN->value];
 
                 $amount = (float) $request->amount;
                 if ($amount <= 0) {
@@ -482,7 +489,11 @@ class WalletService
                     'Withdrawal to wallet successful'
                 );
 
-                app(ChargeService::class)->adminCharge($user, 'earnings');
+                app(ChargeService::class)->adminCharge(
+                    $user,
+                    'earnings',
+                    [ChargeType::ADMIN->value]
+                );
             }, attempts: 3);
         } catch (\RuntimeException $e) {
             return $this->error(null, $e->getMessage(), 400);
@@ -595,5 +606,22 @@ class WalletService
         });
 
         return $this->success($statistics, "Transaction statistics retrieved successfully.");
+    }
+
+    public function getCharges()
+    {
+        $type = request()->query('type', null);
+        $userId = request()->query('user_id', null);
+
+        if (! $type || ! $userId) {
+            return $this->error("Please provide a charge type and user ID.", 400);
+        }
+
+        return match($type) {
+            'booking' => $this->bookingCharge($userId),
+            'bank_withdrawal' => $this->bankWithdrawalCharge(),
+            'wallet_withdrawal' => $this->walletWithdrawalCharge(),
+            default => $this->error(null, "Invalid charge type.", 400),
+        };
     }
 }

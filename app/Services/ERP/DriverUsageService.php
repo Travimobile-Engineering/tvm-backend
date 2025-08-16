@@ -2,19 +2,20 @@
 
 namespace App\Services\ERP;
 
-use App\Enum\CommissionEnum;
-use App\Enum\General;
-use App\Enum\PaymentStatus;
-use App\Enum\PaymentType;
-use App\Enum\TransactionTitle;
-use App\Enum\TripStatus;
-use App\Enum\UserType;
 use App\Models\Fee;
 use App\Models\Trip;
+use App\Enum\General;
+use App\Enum\UserType;
+use App\Enum\ChargeType;
+use App\Enum\TripStatus;
+use App\Enum\PaymentType;
 use App\Models\UserCharge;
+use App\Enum\PaymentStatus;
+use App\Enum\CommissionEnum;
+use App\Enum\TransactionTitle;
+use Illuminate\Support\Facades\DB;
 use App\Services\Admin\AccountService;
 use App\Services\ERP\CommissionBreakdownService;
-use Illuminate\Support\Facades\DB;
 
 class DriverUsageService
 {
@@ -112,7 +113,9 @@ class DriverUsageService
 
             // Company share
             if (app()->environment(['production', 'staging'])) {
-                app(AccountService::class)->initiateTransfer($breakdown['company_share']);
+                app(AccountService::class)->initiateTransfer([
+                    ChargeType::DRIVER_CHARGE => $breakdown['company_share'],
+                ]);
             }
         });
     }

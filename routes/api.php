@@ -465,6 +465,9 @@ Route::middleware(['validate.header'])
             });
 
         Route::get('/send-test-mail', [SendTestMailController::class, 'sendTestMail']);
+
+        // Get charges
+        Route::get('/charges', [WalletController::class, 'getCharges']);
     });
 Route::fallback(function () {
     return response('page not found', 400);

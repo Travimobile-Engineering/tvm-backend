@@ -9,6 +9,13 @@ class Fee extends Model
 {
     protected $table = "fees";
 
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2'
+        ];
+    }
+
     protected function name(): Attribute
     {
         return Attribute::make(

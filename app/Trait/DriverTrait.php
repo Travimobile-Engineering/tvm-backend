@@ -2,6 +2,7 @@
 
 namespace App\Trait;
 
+use App\Enum\ChargeType;
 use App\Enum\DocumentStatus;
 use App\Enum\General;
 use App\Enum\PaymentType;
@@ -125,7 +126,9 @@ trait DriverTrait
         ]);
 
         if (app()->environment('production')) {
-            app(AccountService::class)->initiateTransfer($amount);
+            app(AccountService::class)->initiateTransfer(
+                [ChargeType::MANIFEST->value => $amount]
+            );
         }
     }
 

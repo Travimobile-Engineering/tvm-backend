@@ -15,11 +15,17 @@ class PaymentDetailService
             return self::error('User email not found, please update your email address', 404);
         }
 
-        $amount = $request->input('amount_paid') * 100;
+        $totalAmount = $request->input('amount_paid');
+
+        if ($totalAmount <= 0) {
+            return self::error("Amount must be greater than 0");
+        }
+
+        $amount = $totalAmount * 100;
 
         $callbackUrl = $request->input('payment_redirect_url');
         if (!filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
-            return self::error('Invalid callback URL', 400);
+            return self::error('Invalid callback URL');
         }
 
         return [
@@ -43,13 +49,13 @@ class PaymentDetailService
         ];
     }
 
-    private static function error($message, $code)
+    private static function error($message)
     {
-        return response()->json([
+        return [
 			'status' => false,
 			'message' => $message,
 			'data' => null
-		], $code);
+		];
     }
 }
 
