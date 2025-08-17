@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Contracts\SMS;
+use App\Enum\ChargeType;
 use App\Models\TripBooking;
 use Illuminate\Support\Str;
 use App\Services\ERP\ChargeService;
@@ -57,14 +58,14 @@ class TripBookingObserver implements ShouldHandleEventsAfterCommit
             );
 
             // Charge user for SMS
-            app(ChargeService::class)->smsCharge($user);
+            app(ChargeService::class)->smsCharge($user, [ChargeType::SMS->value]);
         }
 
         // Admin Charge
-        app(ChargeService::class)->adminCharge($user, 'balance');
+        app(ChargeService::class)->adminCharge($user, 'balance', [ChargeType::ADMIN->value]);
 
         // VAT Charge
-        app(ChargeService::class)->vatCharge($user);
+        app(ChargeService::class)->vatCharge($user, [ChargeType::VAT->value]);
     }
 
     /**

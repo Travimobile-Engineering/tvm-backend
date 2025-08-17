@@ -120,4 +120,9 @@ class WalletController extends Controller
     {
         return $this->agentService->changePin($request);
     }
+
+    public function getCharges()
+    {
+        return $this->service->getCharges();
+    }
 }

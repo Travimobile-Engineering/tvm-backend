@@ -487,8 +487,23 @@ if (! function_exists('generateReference')) {
 }
 
 if (! function_exists('getCharge')) {
-    function getCharge($type)
+    /**
+     * Get charges for the given types.
+     *
+     * @param array $types
+     * @param float $default
+     * @return array
+     */
+    function getCharge(array $types, float $default = 10.00): array
     {
-        return Fee::where('name', $type)->value('amount') ?? 10.00;
+        // Fetch charges in one query
+        $charges = Fee::whereIn('name', $types)
+            ->pluck('amount', 'name')
+            ->toArray();
+
+        // Ensure all requested types exist, fall back to default
+        return collect($types)
+            ->mapWithKeys(fn($type) => [$type => (float) ($charges[$type] ?? $default)])
+            ->toArray();
     }
 }

@@ -11,8 +11,8 @@ use App\Events\TripBooked;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
 use App\Models\TripBooking;
-use App\Enum\TransactionTitle;
 use App\Models\Notification;
+use App\Enum\TransactionTitle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -52,6 +52,10 @@ trait TripBookingTrait
             $paymentService = new HandlePaymentService($paymentProcessor);
             $paymentDetails = PaymentDetailService::paystackPayDetails($request, $trip);
 
+            if (isset($paymentDetails['status']) && $paymentDetails['status'] === false) {
+                return $this->error(null, $paymentDetails['message'], 400);
+            }
+
             $response = $paymentService->process($paymentDetails);
 
             DB::commit();
@@ -87,7 +91,7 @@ trait TripBookingTrait
             return $this->error(null, "Amount must be greater than 0", 400);
         }
 
-        if ($amount_paid > $user->wallet_amount) {
+        if ($user->wallet_amount < $amount_paid) {
             return $this->error(null, "Your balance is insufficient to complete your request", 400);
         }
 

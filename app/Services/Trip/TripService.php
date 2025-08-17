@@ -509,7 +509,6 @@ class TripService
             ]);
 
             $this->chargeWallet($user, null, $trip);
-
             $trip->update(['status' => TripStatus::INPROGRESS]);
 
             TripLog::create([
