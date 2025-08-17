@@ -2,14 +2,15 @@
 
 namespace App\Services\ERP;
 
-use App\Enum\CommissionEnum;
-use App\Enum\PaymentStatus;
-use App\Models\AgentCommission;
-use App\Models\Commission;
 use App\Models\User;
+use App\Enum\ChargeType;
+use App\Models\Commission;
+use App\Enum\PaymentStatus;
+use App\Enum\CommissionEnum;
 use App\Enum\TransactionTitle;
-use App\Services\Admin\AccountService;
+use App\Models\AgentCommission;
 use Illuminate\Support\Facades\DB;
+use App\Services\Admin\AccountService;
 use App\Services\ERP\CommissionBreakdownService;
 
 class AgentCommissionService
@@ -84,7 +85,9 @@ class AgentCommissionService
         $this->topUpEarnings($agent, $breakdown['agent_share'], $bookingId);
 
         // Send the company share to the company account
-        app(AccountService::class)->initiateTransfer($breakdown['company_share']);
+        app(AccountService::class)->initiateTransfer([
+            ChargeType::AGENT_COMMISSION->value => $breakdown['company_share'],
+        ]);
     }
 
     /**
@@ -146,7 +149,9 @@ class AgentCommissionService
         $this->topUpEarnings($agent, $breakdown['agent_share'], $bookingId);
 
         // Send the company share to the company account
-        app(AccountService::class)->initiateTransfer($breakdown['company_share']);
+        app(AccountService::class)->initiateTransfer([
+            ChargeType::AGENT_COMMISSION->value => $breakdown['company_share'],
+        ]);
     }
 
     /**

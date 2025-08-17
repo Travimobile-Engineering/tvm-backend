@@ -10,10 +10,11 @@ use App\Services\Admin\AccountService;
 
 class ChargeService
 {
-    public function smsCharge($user)
+    public function smsCharge($user, array $chargeTypes)
     {
         $user->loadMissing(['walletAccount']);
-        $feeAmount = Fee::where('name', ChargeType::SMS->value)->value('amount') ?? 4.00;
+        $charges = getCharge($chargeTypes);
+        $amount = array_sum($charges);
 
         $wallet = $user->walletAccount;
 
@@ -22,22 +23,30 @@ class ChargeService
             return;
         }
 
-        if ($wallet->balance < $feeAmount) {
-            logger()->error(
-                "Insufficient wallet balance for SMS charge.",
-                ['user_id' => $user->id, 'wallet_balance' => $wallet->balance, 'fee_amount' => $feeAmount]
-            );
-            return;
+        foreach ($chargeTypes as $type) {
+            if ($wallet->balance < $charges[$type]) {
+                logger()->error(
+                    "Insufficient wallet balance for {$type} charge.",
+                    [
+                        'user_id'        => $user->id,
+                        'wallet_balance' => $wallet->balance,
+                        'fee_amount'     => $charges[$type],
+                        'fee_type'       => $type
+                    ]
+                );
+                return;
+            }
         }
 
-        DB::transaction(function () use ($wallet, $feeAmount, $user) {
-            $wallet->decrement('balance', $feeAmount);
-            app(AccountService::class)->initiateTransfer($feeAmount);
+        DB::transaction(function () use ($wallet, $charges, $user, $amount) {
+            $wallet->decrement('balance', $amount);
+
+            app(AccountService::class)->initiateTransfer($charges);
 
             $reference = generateReference('SMS', 'transactions');
             $user->createTransaction(
                 TransactionTitle::SMS_CHARGE->value,
-                $feeAmount,
+                $amount,
                 'DR',
                 $reference,
                 null,
@@ -46,10 +55,13 @@ class ChargeService
         });
     }
 
-    public function adminCharge($user, string $chargeFrom, float $extraCharge = 0.00)
+    public function adminCharge($user, string $chargeFrom, array $chargeTypes)
     {
         $user->loadMissing(['walletAccount']);
-        $feeAmount = Fee::where('name', ChargeType::ADMIN->value)->value('amount') ?? 10.00;
+        $charges = getCharge($chargeTypes);
+
+        // Calculate total fee (sum of all charges + extra charge)
+        $totalAmount = array_sum($charges);
 
         $wallet = $user->walletAccount;
 
@@ -58,38 +70,39 @@ class ChargeService
             return;
         }
 
-        DB::transaction(function () use ($wallet, $feeAmount, $user, $chargeFrom, $extraCharge) {
-            $wallet->decrement($chargeFrom, $feeAmount);
-            $amount = $feeAmount + $extraCharge;
-            app(AccountService::class)->initiateTransfer($amount);
+        DB::transaction(function () use ($wallet, $charges, $user, $chargeFrom, $totalAmount) {
+            $wallet->decrement($chargeFrom, $totalAmount);
+
+            app(AccountService::class)->initiateTransfer($charges);
 
             $reference = generateReference('ADMIN', 'transactions');
 
             if ($chargeFrom === 'balance') {
                 $user->createTransaction(
                     TransactionTitle::ADMIN_CHARGE->value,
-                    $feeAmount,
+                    $totalAmount,
                     'DR',
                     $reference,
                     null,
-                    'You have received an admin charge.'
+                    'You have received system charges.'
                 );
             } else {
                 $user->createEarning(
                     TransactionTitle::ADMIN_CHARGE->value,
-                    $feeAmount,
+                    $totalAmount,
                     'DR',
                     General::PAID,
-                    'You have received an admin charge.'
+                    'You have received system charges.'
                 );
             }
         });
     }
 
-    public function vatCharge($user)
+    public function vatCharge($user, array $chargeTypes)
     {
         $user->loadMissing(['walletAccount']);
-        $feeAmount = Fee::where('name', ChargeType::VAT->value)->value('amount') ?? 20.00;
+        $charges = getCharge($chargeTypes);
+        $amount = array_sum($charges);
 
         $wallet = $user->walletAccount;
 
@@ -98,22 +111,30 @@ class ChargeService
             return;
         }
 
-        if ($wallet->balance < $feeAmount) {
-            logger()->error(
-                "Insufficient wallet balance for VAT charge.",
-                ['user_id' => $user->id, 'wallet_balance' => $wallet->balance, 'fee_amount' => $feeAmount]
-            );
-            return;
+        foreach ($chargeTypes as $type) {
+            if ($wallet->balance < $charges[$type]) {
+                logger()->error(
+                    "Insufficient wallet balance for {$type} charge.",
+                    [
+                        'user_id'        => $user->id,
+                        'wallet_balance' => $wallet->balance,
+                        'fee_amount'     => $charges[$type],
+                        'fee_type'       => $type
+                    ]
+                );
+                return;
+            }
         }
 
-        DB::transaction(function () use ($wallet, $feeAmount, $user) {
-            $wallet->decrement('balance', $feeAmount);
-            app(AccountService::class)->initiateTransfer($feeAmount);
+        DB::transaction(function () use ($wallet, $charges, $user, $amount) {
+            $wallet->decrement('balance', $amount);
+
+            app(AccountService::class)->initiateTransfer($charges);
 
             $reference = generateReference('VAT', 'transactions');
             $user->createTransaction(
                 TransactionTitle::VAT_CHARGE->value,
-                $feeAmount,
+                $amount,
                 'DR',
                 $reference,
                 null,

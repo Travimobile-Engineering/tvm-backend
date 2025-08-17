@@ -9,23 +9,25 @@ use App\Services\Curl\PostCurlService;
 
 class AccountService
 {
-    public function initiateTransfer($amount)
+    public function initiateTransfer(array $typesAndAmounts)
     {
-        $account = $this->findAccountByFeeIds();
+        foreach ($typesAndAmounts as $type => $amount) {
+            $account = $this->findAccountByFeeType($type);
 
-        if (!empty($account->recipient_code)) {
+            if (!empty($account->recipient_code)) {
+                $this->transferToAccount($account, $amount);
+                continue;
+            }
+
+            $bank = $this->findBankByAccount($account);
+            $data = $this->createPaystackRecipient($account, $bank);
+
+            $account->update([
+                'recipient_code' => $data['recipient_code'] ?? null,
+            ]);
+
             $this->transferToAccount($account, $amount);
-            return;
         }
-
-        $bank = $this->findBankByAccount($account);
-        $data = $this->createPaystackRecipient($account, $bank);
-
-        $account->update([
-            'recipient_code' => $data['recipient_code'] ?? null,
-        ]);
-
-        $this->transferToAccount($account, $amount);
     }
 
     public function transferToAccount($account, $amount)
@@ -38,9 +40,9 @@ class AccountService
         logger()->info('Transfer initiated successfully for processing');
     }
 
-    private function findAccountByFeeIds(): Account
+    private function findAccountByFeeType($type): Account
     {
-        $feeIds = Fee::pluck('id');
+        $feeIds = Fee::where('name', $type)->pluck('id');
 
         return Account::where(function ($query) use ($feeIds) {
             foreach ($feeIds as $id) {
@@ -74,5 +76,4 @@ class AccountService
 
         return (new PostCurlService($url, $headers, $fields))->execute();
     }
-
 }
