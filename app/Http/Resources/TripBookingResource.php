@@ -76,6 +76,7 @@ class TripBookingResource extends JsonResource
                 'park' => $this->user?->transitCompany?->park,
                 'type' => $this->user?->transitCompany?->type,
             ],
+            'charges' => $this->charges,
         ];
     }
 

@@ -3,15 +3,16 @@
 namespace App\Services\ERP;
 
 use App\Models\Fee;
-use App\Enum\ChargeType;
 use App\Enum\General;
+use App\DTO\ChargeData;
+use App\Enum\ChargeType;
 use App\Enum\TransactionTitle;
 use Illuminate\Support\Facades\DB;
 use App\Services\Admin\AccountService;
 
 class ChargeService
 {
-    public function smsCharge($user, array $chargeTypes)
+    public function smsCharge($user, string $chargeFrom, array $chargeTypes, ?string $source = "wallet")
     {
         $user->loadMissing(['walletAccount']);
         $charges = getCharge($chargeTypes);
@@ -24,39 +25,37 @@ class ChargeService
             return;
         }
 
-        foreach ($chargeTypes as $type) {
-            if ($wallet->balance < $charges[$type]) {
-                logger()->error(
-                    "Insufficient wallet balance for {$type} charge.",
-                    [
-                        'user_id' => $user->id,
-                        'wallet_balance' => $wallet->balance,
-                        'fee_amount' => $charges[$type],
-                        'fee_type' => $type
-                    ]
-                );
-                return;
+        if ($source === 'wallet') {
+            foreach ($chargeTypes as $type) {
+                if ($wallet->balance < $charges[$type]) {
+                    logger()->error(
+                        "Insufficient wallet balance for {$type} charge.",
+                        [
+                            'user_id' => $user->id,
+                            'wallet_balance' => $wallet->balance,
+                            'fee_amount' => $charges[$type],
+                            'fee_type' => $type
+                        ]
+                    );
+                    return;
+                }
             }
         }
 
-        DB::transaction(function () use ($wallet, $charges, $user, $amount) {
-            $wallet->decrement('balance', $amount);
-
-            app(AccountService::class)->initiateTransfer($charges);
-
-            $reference = generateReference('SMS', 'transactions');
-            $user->createTransaction(
-                TransactionTitle::SMS_CHARGE->value,
-                $amount,
-                'DR',
-                $reference,
-                null,
-                'You have received an SMS charge.'
-            );
-        });
+        $this->processCharge(new ChargeData(
+            user: $user,
+            wallet: $wallet,
+            charges: $charges,
+            amount: $amount,
+            title: TransactionTitle::SMS_CHARGE->value,
+            referencePrefix: 'SMS',
+            source: $source,
+            chargeFrom: $chargeFrom,
+            message: 'You have received an SMS charge.'
+        ));
     }
 
-    public function adminCharge($user, string $chargeFrom, array $chargeTypes)
+    public function adminCharge($user, string $chargeFrom, array $chargeTypes, ?string $source = "wallet")
     {
         $user->loadMissing(['walletAccount']);
         $charges = getCharge($chargeTypes);
@@ -65,41 +64,25 @@ class ChargeService
         $totalAmount = array_sum($charges);
 
         $wallet = $user->walletAccount;
-
         if (! $wallet) {
             logger()->error("User does not have a wallet account.", ['user_id' => $user->id]);
             return;
         }
 
-        DB::transaction(function () use ($wallet, $charges, $user, $chargeFrom, $totalAmount) {
-            $wallet->decrement($chargeFrom, $totalAmount);
-
-            app(AccountService::class)->initiateTransfer($charges);
-
-            $reference = generateReference('ADMIN', 'transactions');
-
-            if ($chargeFrom === 'balance') {
-                $user->createTransaction(
-                    TransactionTitle::ADMIN_CHARGE->value,
-                    $totalAmount,
-                    'DR',
-                    $reference,
-                    null,
-                    'You have received system charges.'
-                );
-            } else {
-                $user->createEarning(
-                    TransactionTitle::ADMIN_CHARGE->value,
-                    $totalAmount,
-                    'DR',
-                    General::PAID,
-                    'You have received system charges.'
-                );
-            }
-        });
+        $this->processCharge(new ChargeData(
+            user: $user,
+            wallet: $wallet,
+            charges: $charges,
+            amount: $totalAmount,
+            title: TransactionTitle::ADMIN_CHARGE->value,
+            referencePrefix: 'ADMIN',
+            source: $source,
+            chargeFrom: $chargeFrom,
+            message: 'You have received system charges.'
+        ));
     }
 
-    public function vatCharge($user, array $chargeTypes)
+    public function vatCharge($user, string $chargeFrom, array $chargeTypes, ?string $source = 'wallet')
     {
         $user->loadMissing(['walletAccount']);
         $charges = getCharge($chargeTypes);
@@ -112,36 +95,39 @@ class ChargeService
             return;
         }
 
-        foreach ($chargeTypes as $type) {
-            if ($wallet->balance < $charges[$type]) {
-                logger()->error(
-                    "Insufficient wallet balance for {$type} charge.",
-                    [
-                        'user_id' => $user->id,
-                        'wallet_balance' => $wallet->balance,
-                        'fee_amount' => $charges[$type],
-                        'fee_type' => $type
-                    ]
-                );
-                return;
+        if ($source === 'wallet') {
+            foreach ($chargeTypes as $type) {
+                if ($wallet->balance < $charges[$type]) {
+                    logger()->error(
+                        "Insufficient wallet balance for {$type} charge.",
+                        [
+                            'user_id' => $user->id,
+                            'wallet_balance' => $wallet->balance,
+                            'fee_amount' => $charges[$type],
+                            'fee_type' => $type
+                        ]
+                    );
+                    return;
+                }
             }
         }
 
-        DB::transaction(function () use ($wallet, $charges, $user, $amount) {
-            $wallet->decrement('balance', $amount);
+        $this->processCharge(new ChargeData(
+            user: $user,
+            wallet: $wallet,
+            charges: $charges,
+            amount: $amount,
+            title: TransactionTitle::VAT_CHARGE->value,
+            referencePrefix: 'VAT',
+            source: $source,
+            chargeFrom: $chargeFrom,
+            message: 'You have received system charges.'
+        ));
+    }
 
-            app(AccountService::class)->initiateTransfer($charges);
-
-            $reference = generateReference('VAT', 'transactions');
-            $user->createTransaction(
-                TransactionTitle::VAT_CHARGE->value,
-                $amount,
-                'DR',
-                $reference,
-                null,
-                'You have received a VAT charge.'
-            );
-        });
+    public function withdrawalCharge($charges)
+    {
+        app(AccountService::class)->initiateTransfer($charges);
     }
 
     public function insuranceCharge()
@@ -188,6 +174,38 @@ class ChargeService
                 null,
                 'You have received a Union Remittance charge.'
             );
+        });
+    }
+
+    private function processCharge(ChargeData $data)
+    {
+        DB::transaction(function () use ($data) {
+            if ($data->source === 'wallet') {
+                $data->wallet->decrement($data->chargeFrom, $data->amount);
+
+                $reference = generateReference($data->referencePrefix, 'transactions');
+
+                if ($data->chargeFrom === 'balance') {
+                    $data->user->createTransaction(
+                        $data->title,
+                        $data->amount,
+                        'DR',
+                        $reference,
+                        null,
+                        $data->message ?? "You have received a {$data->referencePrefix} charge."
+                    );
+                } else {
+                    $data->user->createEarning(
+                        $data->title,
+                        $data->amount,
+                        'DR',
+                        General::PAID,
+                        'You have received system charges.'
+                    );
+                }
+            }
+
+            app(AccountService::class)->initiateTransfer($data->charges);
         });
     }
 }

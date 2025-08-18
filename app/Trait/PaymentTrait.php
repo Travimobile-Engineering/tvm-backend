@@ -4,6 +4,7 @@ namespace App\Trait;
 
 use App\Models\Trip;
 use App\Models\User;
+use App\Enum\ChargeType;
 use App\Enum\TripStatus;
 use App\Enum\PaymentType;
 use App\Events\TripBooked;
@@ -17,6 +18,7 @@ use App\Enum\TransactionTitle;
 use App\Models\Vehicle\Vehicle;
 use App\Models\PremiumHireBooking;
 use Illuminate\Support\Facades\DB;
+use App\Services\ERP\ChargeService;
 use App\DTO\NotificationDispatchData;
 use App\Services\Notification\NotificationDispatcher;
 
@@ -288,6 +290,7 @@ trait PaymentTrait
             'amount_paid' => $amount,
             'passengers' => $passengers,
             'raw_travelling_with' => $travellingWith,
+            'charges' => $meta['charges'] ?? null,
         ];
     }
 
@@ -382,6 +385,8 @@ trait PaymentTrait
         ]);
 
         $this->driverIncrementEarning($trip->user, $amount);
+
+        $this->recordCharges($paymentData, $user);
     }
 
     private function dispatchTripBookedEvent(User $user): void
@@ -405,5 +410,24 @@ trait PaymentTrait
         ));
     }
 
+    private function recordCharges($paymentData, $user): void
+    {
+        $charges = $paymentData['metadata']['charges'] ?? [];
+
+        foreach ($charges as $type => $amount) {
+            if ($amount <= 0) {
+                continue; // skip zero charges
+            }
+
+            match ($type) {
+                ChargeType::ADMIN->value => app(ChargeService::class)->adminCharge($user, 'balance', [$type], null),
+                ChargeType::VAT->value => app(ChargeService::class)->vatCharge($user, '', [$type], null),
+                ChargeType::SMS->value => app(ChargeService::class)->smsCharge($user, '', [$type], null),
+                default => logger()->warning("Unknown charge type: {$type}", [
+                    'user_id' => $user->id,
+                ]),
+            };
+        }
+    }
 }
 

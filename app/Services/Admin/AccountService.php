@@ -14,6 +14,11 @@ class AccountService
         foreach ($typesAndAmounts as $type => $amount) {
             $account = $this->findAccountByFeeType($type);
 
+            if (!$account) {
+                logger()->warning("No account found for fee type: {$type}, skipping transfer.");
+                continue;
+            }
+
             if (!empty($account->recipient_code)) {
                 $this->transferToAccount($account, $amount);
                 continue;
@@ -40,7 +45,7 @@ class AccountService
         logger()->info('Transfer initiated successfully for processing');
     }
 
-    private function findAccountByFeeType($type): Account
+    private function findAccountByFeeType($type): ?Account
     {
         $feeIds = Fee::where('name', $type)->pluck('id');
 
@@ -48,7 +53,7 @@ class AccountService
             foreach ($feeIds as $id) {
                 $query->orWhereJsonContains('fees', $id);
             }
-        })->firstOrFail();
+        })->first();
     }
 
     private function findBankByAccount(Account $account): Bank
