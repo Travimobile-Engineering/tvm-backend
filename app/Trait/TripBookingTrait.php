@@ -247,12 +247,15 @@ trait TripBookingTrait
 
     protected function sendBookingNotification($user, $booking_id, $trip, $ref)
     {
-        $destination = $trip->destinationRegion?->state?->name . ' > ' . $trip->destinationRegion?->name;
+        $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
+        $date = \Carbon\Carbon::parse($trip->departure_date)->format('Y-m-d');
+        $time = $trip->departure_time;
+        $description = "Your bus ticket to {$destination} on {$date} {$time} has been successfully booked";
 
         Notification::create([
             'user_id' => $user->id,
             'title' => 'Booking Successful',
-            'description' => "Your bus ticket to {$destination} on " . date("M jS Y h:iA", strtotime($trip->departure_at)) . ' has been successfully booked',
+            'description' => $description,
             'additional_data' => [
                 'booking_id' => $booking_id,
                 'note' => 'Please arrive at least 30 minutes early to ensure a smooth boarding experience.',
