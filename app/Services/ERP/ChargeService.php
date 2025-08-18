@@ -28,10 +28,10 @@ class ChargeService
                 logger()->error(
                     "Insufficient wallet balance for {$type} charge.",
                     [
-                        'user_id'        => $user->id,
+                        'user_id' => $user->id,
                         'wallet_balance' => $wallet->balance,
-                        'fee_amount'     => $charges[$type],
-                        'fee_type'       => $type
+                        'fee_amount' => $charges[$type],
+                        'fee_type' => $type
                     ]
                 );
                 return;
@@ -116,10 +116,10 @@ class ChargeService
                 logger()->error(
                     "Insufficient wallet balance for {$type} charge.",
                     [
-                        'user_id'        => $user->id,
+                        'user_id' => $user->id,
                         'wallet_balance' => $wallet->balance,
-                        'fee_amount'     => $charges[$type],
-                        'fee_type'       => $type
+                        'fee_amount' => $charges[$type],
+                        'fee_type' => $type
                     ]
                 );
                 return;
