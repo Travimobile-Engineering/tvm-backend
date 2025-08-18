@@ -32,6 +32,7 @@ class TripBooking extends Model
         'on_seat',
         'reason',
         'date_canceled',
+        'charges',
     ];
 
     protected $hidden = ['id'];
@@ -44,6 +45,7 @@ class TripBooking extends Model
             'receive_sms' => 'boolean',
             'on_seat' => 'boolean',
             'selected_seat' => 'array',
+            'charges' => 'array',
         ];
     }
 

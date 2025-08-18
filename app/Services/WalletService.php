@@ -408,6 +408,7 @@ class WalletService
                     General::PAID,
                     "Withdrawal amount charged from your earnings."
                 );
+
                 $user->createEarning(
                     TransactionTitle::WITHDRAW_FEE->value,
                     $charges[ChargeType::WITHDRAW_FEE->value],
@@ -417,11 +418,7 @@ class WalletService
                 );
 
                 // Admin Charge
-                app(ChargeService::class)->adminCharge(
-                    $user,
-                    'earnings',
-                    [ChargeType::ADMIN->value]
-                );
+                $this->recordCharges($request, $user, 'earnings');
             }, attempts: 3);
         } catch (\RuntimeException $e) {
             return $this->error(null, $e->getMessage(), 400);
@@ -489,11 +486,8 @@ class WalletService
                     'Withdrawal to wallet successful'
                 );
 
-                app(ChargeService::class)->adminCharge(
-                    $user,
-                    'earnings',
-                    [ChargeType::ADMIN->value]
-                );
+                // Admin charge
+                $this->recordCharges($request, $user, 'earnings');
             }, attempts: 3);
         } catch (\RuntimeException $e) {
             return $this->error(null, $e->getMessage(), 400);

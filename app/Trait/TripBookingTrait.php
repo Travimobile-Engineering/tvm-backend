@@ -5,6 +5,7 @@ namespace App\Trait;
 use App\Models\Trip;
 use App\Models\User;
 use App\Enum\UserType;
+use App\Enum\ChargeType;
 use App\Enum\TripStatus;
 use App\Enum\PaymentType;
 use App\Events\TripBooked;
@@ -15,6 +16,7 @@ use App\Models\Notification;
 use App\Enum\TransactionTitle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use App\Services\ERP\ChargeService;
 use Illuminate\Support\Facades\Hash;
 use App\DTO\NotificationDispatchData;
 use App\Services\ERP\AgentCommissionService;
@@ -53,7 +55,7 @@ trait TripBookingTrait
             $paymentDetails = PaymentDetailService::paystackPayDetails($request, $trip);
 
             if (isset($paymentDetails['status']) && $paymentDetails['status'] === false) {
-                return $this->error(null, $paymentDetails['message'], 400);
+                return $this->error(null, $paymentDetails['message'], $paymentDetails['code']);
             }
 
             $response = $paymentService->process($paymentDetails);
@@ -83,6 +85,12 @@ trait TripBookingTrait
 
     protected function validatePayment($request, $amount_paid, $user)
     {
+        $chargesSum = array_sum($request->charges) ?? 0.00;
+
+        if ($chargesSum != $this->getCharges()) {
+            return $this->error(null, "Charges paid does not match the total charges", 400);
+        }
+
         if ($response = $this->checkPin($request, $user)) {
             return $response;
         }
@@ -136,6 +144,8 @@ trait TripBookingTrait
                 // After the booking is completed, automatically check for level upgrade
                 $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
             }
+
+            $this->recordCharges($request, $user);
 
             DB::commit();
 
@@ -419,6 +429,7 @@ trait TripBookingTrait
             'payment_method' => $data['payment_method'],
             'payment_status' => $data['payment_status'],
             'receive_sms' => $data['receive_sms'],
+            'charges' => $data['request']['charges'],
         ]);
 
         if ((int) $data['third_party_booking'] === 0) {
@@ -435,6 +446,37 @@ trait TripBookingTrait
                     'on_seat' => false,
                 ]);
             }
+        }
+    }
+
+    private function getCharges()
+    {
+        $chargeTypes = [
+            ChargeType::ADMIN->value,
+            ChargeType::VAT->value,
+        ];
+
+        $charges = getCharge($chargeTypes);
+        return array_sum($charges);
+    }
+
+    private function recordCharges($data, $user): void
+    {
+        $charges = $data->charges ?? [];
+
+        foreach ($charges as $type => $amount) {
+            if ($amount <= 0) {
+                continue; // skip zero charges
+            }
+
+            match ($type) {
+                ChargeType::ADMIN->value => app(ChargeService::class)->adminCharge($user, 'balance', [$type], "wallet"),
+                ChargeType::VAT->value => app(ChargeService::class)->vatCharge($user, 'balance', [$type], "wallet"),
+                ChargeType::SMS->value => app(ChargeService::class)->smsCharge($user, 'balance', [$type], "wallet"),
+                default => logger()->warning("Unknown charge type: {$type}", [
+                    'user_id' => $user->id,
+                ]),
+            };
         }
     }
 }

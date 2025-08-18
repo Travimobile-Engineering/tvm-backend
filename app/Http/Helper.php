@@ -494,7 +494,7 @@ if (! function_exists('getCharge')) {
      * @param float $default
      * @return array
      */
-    function getCharge(array $types, float $default = 10.00): array
+    function getCharge(array $types, float $default = 0.00): array
     {
         // Fetch charges in one query
         $charges = Fee::whereIn('name', $types)
