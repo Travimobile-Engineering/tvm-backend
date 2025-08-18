@@ -26,7 +26,10 @@ class ProcessMail implements ShouldQueue
      */
     public function handle(): void
     {
-        $email = Mailing::find($this->mailingId);
+        $email = Mailing::where('id', $this->mailingId)
+            ->where('status', MailingEnum::PENDING)
+            ->where('attempts', '<', 3)
+            ->first();
 
         if (!$email) {
             Log::error("Mailing record not found for ID: {$this->mailingId}");
