@@ -23,6 +23,7 @@ use App\Services\ERP\AgentCommissionService;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
 use App\Services\Notification\NotificationDispatcher;
+use Illuminate\Support\Facades\Auth;
 
 trait TripBookingTrait
 {
@@ -42,6 +43,7 @@ trait TripBookingTrait
         try {
             DB::beginTransaction();
 
+            $user ??= Auth::user();
             $tripCheck = $this->tripCheck($request, $user, lock: true);
 
             if ($tripCheck instanceof JsonResponse && $tripCheck->getStatusCode() !== 200) {
