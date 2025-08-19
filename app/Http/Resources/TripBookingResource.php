@@ -25,7 +25,9 @@ class TripBookingResource extends JsonResource
             'trip_type' => $this->trip_type,
             'travelling_with' => $this->travelling_with,
             'third_party_passenger_details' => $this->third_party_passenger_details,
-            'amount_paid' => $this->amount_paid,
+            'trip_amount' => $this->amount_paid,
+            'amount_paid' => $this->total_amount_paid,
+            'charges' => $this->charges,
             'on_seat' => $this->on_seat,
             'status' => $this->status,
             'reason' => $this->reason,
@@ -75,8 +77,7 @@ class TripBookingResource extends JsonResource
                 'email' => $this->user?->transitCompany?->email,
                 'park' => $this->user?->transitCompany?->park,
                 'type' => $this->user?->transitCompany?->type,
-            ],
-            'charges' => $this->charges,
+            ]
         ];
     }
 

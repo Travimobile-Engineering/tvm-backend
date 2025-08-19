@@ -86,6 +86,13 @@ class TripBooking extends Model
         );
     }
 
+    protected function totalAmountPaid(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->amount_paid + array_sum((array) $this->charges)
+        );
+    }
+
     public function scopeOnlySuccessful(Builder $query): void
     {
         $query->where('status', 1);
