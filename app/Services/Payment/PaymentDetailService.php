@@ -24,7 +24,7 @@ class PaymentDetailService
 
         $chargesSum = array_sum((array) $request->input('charges'));
 
-        if ($chargesSum != self::getCharges()) {
+        if ($chargesSum != self::getCharges($user)) {
             return self::error("Charges paid does not match the total charges", 400);
         }
 
@@ -66,12 +66,16 @@ class PaymentDetailService
 		];
     }
 
-    private static function getCharges()
+    private static function getCharges($user)
     {
         $chargeTypes = [
             ChargeType::ADMIN->value,
             ChargeType::VAT->value,
         ];
+
+        if ($user->inbox_notifications) {
+            $chargeTypes[] = ChargeType::SMS->value;
+        }
 
         $charges = getCharge($chargeTypes);
         return array_sum($charges);
