@@ -7,6 +7,7 @@ use App\Enum\General;
 use App\DTO\ChargeData;
 use App\Enum\ChargeType;
 use App\Enum\TransactionTitle;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Services\Admin\AccountService;
 
@@ -186,7 +187,7 @@ class ChargeService
      * @param string|null $source
      * @return void
      */
-    public function transferCharges($charges, $user, ?string $chargeFrom = "", ?string $source = null): void
+    public function transferCharges(array $charges, User $user, ?string $chargeFrom = "", ?string $source = null): void
     {
         $charges ??= [];
 
