@@ -22,7 +22,7 @@ class PaymentDetailService
             return self::error("Amount must be greater than 0");
         }
 
-        $chargesSum = array_sum($request->input('charges')) ?? 0.00;
+        $chargesSum = array_sum((array) $request->input('charges'));
 
         if ($chargesSum != self::getCharges()) {
             return self::error("Charges paid does not match the total charges", 400);
