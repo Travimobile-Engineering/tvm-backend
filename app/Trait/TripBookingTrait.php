@@ -87,7 +87,7 @@ trait TripBookingTrait
     {
         $chargesSum = array_sum((array) $request->charges);
 
-        if ($chargesSum != $this->getCharges()) {
+        if ($chargesSum != $this->getCharges($user)) {
             return $this->error(null, "Charges paid does not match the total charges", 400);
         }
 
@@ -449,12 +449,16 @@ trait TripBookingTrait
         }
     }
 
-    private function getCharges()
+    private function getCharges($user)
     {
         $chargeTypes = [
             ChargeType::ADMIN->value,
             ChargeType::VAT->value,
         ];
+
+        if ($user->inbox_notifications) {
+            $chargeTypes[] = ChargeType::SMS->value;
+        }
 
         $charges = getCharge($chargeTypes);
         return array_sum($charges);
