@@ -147,7 +147,8 @@ trait TripBookingTrait
                 $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
             }
 
-            $this->recordCharges($request, $user);
+            $charges = $request->charges ?? [];
+            app(ChargeService::class)->transferCharges($charges, $user, "balance", "wallet");
 
             DB::commit();
 
@@ -464,26 +465,6 @@ trait TripBookingTrait
 
         $charges = getCharge($chargeTypes);
         return array_sum($charges);
-    }
-
-    private function recordCharges($data, $user): void
-    {
-        $charges = $data->charges ?? [];
-
-        foreach ($charges as $type => $amount) {
-            if ($amount <= 0) {
-                continue; // skip zero charges
-            }
-
-            match ($type) {
-                ChargeType::ADMIN->value => app(ChargeService::class)->adminCharge($user, 'balance', [$type], "wallet"),
-                ChargeType::VAT->value => app(ChargeService::class)->vatCharge($user, 'balance', [$type], "wallet"),
-                ChargeType::SMS->value => app(ChargeService::class)->smsCharge($user, 'balance', [$type], "wallet"),
-                default => logger()->warning("Unknown charge type: {$type}", [
-                    'user_id' => $user->id,
-                ]),
-            };
-        }
     }
 }
 

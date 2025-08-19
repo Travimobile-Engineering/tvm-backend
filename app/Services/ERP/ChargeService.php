@@ -7,6 +7,7 @@ use App\Enum\General;
 use App\DTO\ChargeData;
 use App\Enum\ChargeType;
 use App\Enum\TransactionTitle;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Services\Admin\AccountService;
 
@@ -175,6 +176,34 @@ class ChargeService
                 'You have received a Union Remittance charge.'
             );
         });
+    }
+
+    /**
+     * Transfer charges from payment data.
+     *
+     * @param array $charges
+     * @param User $user
+     * @param string|null $chargeFrom
+     * @param string|null $source
+     * @return void
+     */
+    public function transferCharges(array $charges, User $user, ?string $chargeFrom = "", ?string $source = null): void
+    {
+        foreach ($charges as $type => $amount) {
+            if ($amount <= 0) {
+                continue; // skip zero charges
+            }
+
+            match ($type) {
+                ChargeType::ADMIN->value => $this->adminCharge($user, $chargeFrom, [$type], $source),
+                ChargeType::VAT->value => $this->vatCharge($user, $chargeFrom, [$type], $source),
+                ChargeType::SMS->value => $this->smsCharge($user, $chargeFrom, [$type], $source),
+                ChargeType::WITHDRAW_FEE->value => $this->withdrawalCharge([$type => $amount]),
+                default => logger()->warning("Unknown charge type: {$type}", [
+                    'user_id' => $user->id,
+                ]),
+            };
+        }
     }
 
     private function processCharge(ChargeData $data)

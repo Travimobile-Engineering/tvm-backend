@@ -43,12 +43,14 @@ trait PaymentTrait
 
             $this->userIncrementBalance($user, $formattedAmount);
 
-            $user->transactions()->create([
-                'title' => TransactionTitle::CREDIT_WALLET->value,
-                'amount' => $formattedAmount,
-                'type' => PaymentType::CR,
-                'txn_reference' => $ref
-            ]);
+            $user->createTransaction(
+                TransactionTitle::CREDIT_WALLET->value,
+                $formattedAmount,
+                PaymentType::CR,
+                $ref,
+                null,
+                "Wallet funded successfully"
+            );
 
             DB::commit();
 
@@ -386,7 +388,8 @@ trait PaymentTrait
 
         $this->driverIncrementEarning($trip->user, $amount);
 
-        $this->recordCharges($paymentData, $user);
+        $charges = $paymentData['metadata']['charges'] ?? [];
+        app(ChargeService::class)->transferCharges($charges, $user, "balance", null);
     }
 
     private function dispatchTripBookedEvent(User $user): void
@@ -408,26 +411,6 @@ trait PaymentTrait
                 'type' => 'trip_booking',
             ]
         ));
-    }
-
-    private function recordCharges($paymentData, $user): void
-    {
-        $charges = $paymentData['metadata']['charges'] ?? [];
-
-        foreach ($charges as $type => $amount) {
-            if ($amount <= 0) {
-                continue; // skip zero charges
-            }
-
-            match ($type) {
-                ChargeType::ADMIN->value => app(ChargeService::class)->adminCharge($user, 'balance', [$type], null),
-                ChargeType::VAT->value => app(ChargeService::class)->vatCharge($user, '', [$type], null),
-                ChargeType::SMS->value => app(ChargeService::class)->smsCharge($user, '', [$type], null),
-                default => logger()->warning("Unknown charge type: {$type}", [
-                    'user_id' => $user->id,
-                ]),
-            };
-        }
     }
 }
 
