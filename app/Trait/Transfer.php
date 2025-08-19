@@ -37,8 +37,8 @@ trait Transfer
 
     protected function extractAccountRequests($account, array &$requests): void
     {
-        // Guard clause: must be default, must have recipient_code, must be admin type
-        if (! $account->is_default || ! $account->recipient_code || $account->type !== 'admin') {
+        // Guard clause: must have recipient_code, must be admin type
+        if (! $account->recipient_code || $account->type !== 'admin') {
             return;
         }
 
