@@ -85,7 +85,7 @@ trait TripBookingTrait
 
     protected function validatePayment($request, $amount_paid, $user)
     {
-        $chargesSum = array_sum($request->charges) ?? 0.00;
+        $chargesSum = array_sum((array) $request->charges);
 
         if ($chargesSum != $this->getCharges()) {
             return $this->error(null, "Charges paid does not match the total charges", 400);
