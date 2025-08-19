@@ -388,7 +388,7 @@ trait PaymentTrait
 
         $this->driverIncrementEarning($trip->user, $amount);
 
-        $charges = $paymentData['metadata']['charges'];
+        $charges = $paymentData['metadata']['charges'] ?? [];
         app(ChargeService::class)->transferCharges($charges, $user, "balance", null);
     }
 

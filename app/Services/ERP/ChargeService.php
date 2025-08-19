@@ -189,8 +189,6 @@ class ChargeService
      */
     public function transferCharges(array $charges, User $user, ?string $chargeFrom = "", ?string $source = null): void
     {
-        $charges ??= [];
-
         foreach ($charges as $type => $amount) {
             if ($amount <= 0) {
                 continue; // skip zero charges

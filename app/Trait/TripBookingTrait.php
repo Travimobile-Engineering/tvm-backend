@@ -147,7 +147,8 @@ trait TripBookingTrait
                 $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
             }
 
-            app(ChargeService::class)->transferCharges($request->charges, $user, "balance", "wallet");
+            $charges = $request->charges ?? [];
+            app(ChargeService::class)->transferCharges($charges, $user, "balance", "wallet");
 
             DB::commit();
 
