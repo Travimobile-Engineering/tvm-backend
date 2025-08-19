@@ -34,7 +34,7 @@ trait TripBookingTrait
     )
     {}
 
-    public function processPayment($request, $result, $paymentProcessor = null, $user =null )
+    public function processPayment($request, $result, $paymentProcessor = null, $user = null)
     {
         if (! isset($paymentProcessor)) {
             return $result;
