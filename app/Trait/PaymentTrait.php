@@ -43,12 +43,14 @@ trait PaymentTrait
 
             $this->userIncrementBalance($user, $formattedAmount);
 
-            $user->transactions()->create([
-                'title' => TransactionTitle::CREDIT_WALLET->value,
-                'amount' => $formattedAmount,
-                'type' => PaymentType::CR,
-                'txn_reference' => $ref
-            ]);
+            $user->createTransaction(
+                TransactionTitle::CREDIT_WALLET->value,
+                $formattedAmount,
+                PaymentType::CR,
+                $ref,
+                null,
+                "Wallet funded successfully"
+            );
 
             DB::commit();
 
@@ -386,7 +388,8 @@ trait PaymentTrait
 
         $this->driverIncrementEarning($trip->user, $amount);
 
-        $this->recordCharges($paymentData, $user);
+        $charges = $paymentData['metadata']['charges'];
+        app(ChargeService::class)->transferCharges($charges, $user, "balance", null);
     }
 
     private function dispatchTripBookedEvent(User $user): void

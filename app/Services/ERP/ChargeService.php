@@ -177,6 +177,36 @@ class ChargeService
         });
     }
 
+    /**
+     * Transfer charges from payment data.
+     *
+     * @param array $charges
+     * @param User $user
+     * @param string|null $chargeFrom
+     * @param string|null $source
+     * @return void
+     */
+    public function transferCharges($charges, $user, ?string $chargeFrom = "", ?string $source = null): void
+    {
+        $charges ??= [];
+
+        foreach ($charges as $type => $amount) {
+            if ($amount <= 0) {
+                continue; // skip zero charges
+            }
+
+            match ($type) {
+                ChargeType::ADMIN->value => $this->adminCharge($user, $chargeFrom, [$type], $source),
+                ChargeType::VAT->value => $this->vatCharge($user, $chargeFrom, [$type], $source),
+                ChargeType::SMS->value => $this->smsCharge($user, $chargeFrom, [$type], $source),
+                ChargeType::WITHDRAW_FEE->value => $this->withdrawalCharge([$type => $amount]),
+                default => logger()->warning("Unknown charge type: {$type}", [
+                    'user_id' => $user->id,
+                ]),
+            };
+        }
+    }
+
     private function processCharge(ChargeData $data)
     {
         DB::transaction(function () use ($data) {
