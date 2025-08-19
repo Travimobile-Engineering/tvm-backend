@@ -876,7 +876,7 @@ class AgentService
             return $this->error(null, "Too many attempts. You are blocked", 429);
         }
 
-        return $this->error(null, "Invalid credentials", 400);
+        return $this->error(null, "Invalid credentials entered.", 400);
     }
 }
 
