@@ -16,6 +16,11 @@ class TripBookService
     public function store($request)
     {
         $user = Auth::user();
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
         $amount_paid = $request->amount_paid;
         $result = null;
         $paymentProcessor = null;
