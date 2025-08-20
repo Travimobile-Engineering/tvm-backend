@@ -50,10 +50,10 @@ class PayoutService
             'source' => 'balance',
             'transfers' => array_map(function ($t) {
                 return [
-                    'reference' => $t['reference'],
                     'amount' => $t['amount'],
-                    'recipient' => $t['recipient'],
+                    'reference' => $t['reference'],
                     'reason' => $t['reason'],
+                    'recipient' => $t['recipient'],
                 ];
             }, $transfers),
         ];
