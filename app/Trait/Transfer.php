@@ -170,7 +170,7 @@ trait Transfer
     {
         $bank = $user->userBank;
 
-        if (! $bank) {
+        if (! $bank || ! $bank->recipient_code) {
             return;
         }
 
@@ -180,7 +180,7 @@ trait Transfer
             }
 
             $amount = intval($withdraw->amount * 100);
-            if ($amount <= 0 || ! $bank->recipient_code) {
+            if ($amount <= 0) {
                 continue;
             }
 
