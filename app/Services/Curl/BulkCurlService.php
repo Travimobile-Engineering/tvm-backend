@@ -19,13 +19,11 @@ class BulkCurlService
 
     public function execute()
     {
-        $url = "https://api.paystack.co/transfer/bulk";
-
         $fields_string = http_build_query($this->fields);
 
         $ch = curl_init();
 
-        curl_setopt($ch,CURLOPT_URL, $url);
+        curl_setopt($ch,CURLOPT_URL, $this->url);
         curl_setopt($ch,CURLOPT_POST, true);
         curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
