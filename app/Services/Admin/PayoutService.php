@@ -58,21 +58,25 @@ class PayoutService
             }, $transfers),
         ];
 
-        $response = (new BulkCurlService($url, $headers, $body))->execute();
+        try {
+            $response = (new BulkCurlService($url, $headers, $body))->execute();
 
-        if (!isset($response['status']) || $response['status'] === false) {
+            if (!isset($response['status']) || $response['status'] === false) {
+                return [
+                    'status' => false,
+                    'message' => $response['message'],
+                    'data' => $response
+                ];
+            }
+
             return [
-                'status' => false,
-                'message' => $response['message'],
-                'data' => $response
+                'status' => true,
+                'message' => $response['message'] ?? 'Bulk transfer queued',
+                'data' => $response['data']
             ];
+        } catch (\Throwable $th) {
+            throw $th;
         }
-
-        return [
-            'status' => true,
-            'message' => $response['message'] ?? 'Bulk transfer queued',
-            'data' => $response['data']
-        ];
     }
 }
 
