@@ -60,19 +60,21 @@ class PayoutService
 
         $response = (new BulkCurlService($url, $headers, $body))->execute();
 
-        if (!isset($response['status']) || $response['status'] === false) {
-            return [
-                'status' => false,
-                'message' => $response['message'],
-                'data' => $response
-            ];
-        }
+        throw new \Exception(json_encode($response));
 
-        return [
-            'status' => true,
-            'message' => $response['message'] ?? 'Bulk transfer queued',
-            'data' => $response['data']
-        ];
+        // if (!isset($response['status']) || $response['status'] === false) {
+        //     return [
+        //         'status' => false,
+        //         'message' => $response['message'],
+        //         'data' => $response
+        //     ];
+        // }
+
+        // return [
+        //     'status' => true,
+        //     'message' => $response['message'] ?? 'Bulk transfer queued',
+        //     'data' => $response['data']
+        // ];
     }
 }
 

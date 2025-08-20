@@ -184,7 +184,7 @@ trait Transfer
                 continue;
             }
 
-            $reference = Str::uuid()->getHex();
+            $reference = (string) Str::uuid()->getHex();
 
             if (!preg_match('/^[a-z0-9_-]+$/', $reference)) {
                 throw new \Exception("Invalid reference format: {$reference}");
@@ -196,10 +196,10 @@ trait Transfer
             ]);
 
             $requests[] = [
-                'reference' => $reference,
                 'amount' => $amount,
-                'recipient' => $bank->recipient_code,
+                'reference' => $reference,
                 'reason' => $withdraw->description ?? "User account withdrawal",
+                'recipient' => $bank->recipient_code,
                 'request_id' => $withdraw->id,
                 'user_id' => $user->id,
             ];
