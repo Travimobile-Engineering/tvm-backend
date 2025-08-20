@@ -291,6 +291,7 @@ class AgentService
 
         $bookingData = $booking->toArray();
         unset($bookingData['trip']['vehicle']);
+        $bookingData['amount_paid'] = $booking->total_amount_paid;
         $bookingData = array_merge($bookingData, $driver, $vehicle);
 
         return $this->success($bookingData, 'Booking History Fetched Successfully');
