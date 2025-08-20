@@ -5,7 +5,6 @@ namespace App\Trait;
 use App\Enum\AccountTransferStatus;
 use App\Enum\General;
 use Illuminate\Support\Str;
-use App\Models\Account;
 use App\Models\AccountTransfer;
 use App\Models\User;
 use App\Models\UserWithdrawLog;
@@ -20,54 +19,49 @@ trait Transfer
     {
         $requests = [];
 
-        Account::with(['accountTransfers' => function ($query) {
-            $query->where('status', AccountTransferStatus::PENDING->value)->limit(1);
-        }])
-        ->whereHas('accountTransfers', function ($query) {
-            $query->where('status', AccountTransferStatus::PENDING->value);
-        })
-        ->chunk(100, function ($accounts) use (&$requests) {
-            foreach ($accounts as $account) {
-                $this->extractAccountRequests($account, $requests);
-            }
-        });
+        AccountTransfer::with('account')->where('status', AccountTransferStatus::PENDING->value)
+            ->chunkById(100, function ($transfers) use (&$requests) {
+                foreach ($transfers as $transfer) {
+                    $this->extractAccountRequests($transfer, $requests);
+                }
+            });
 
         return $requests;
     }
 
-    protected function extractAccountRequests($account, array &$requests): void
+    protected function extractAccountRequests($transfer, array &$requests): void
     {
+        $account = $transfer->account;
+
         // Guard clause: must have recipient_code, must be admin type
-        if (! $account->recipient_code || $account->type !== 'admin') {
+        if (! $account || ! $account->recipient_code || $account->type !== 'admin') {
             return;
         }
 
-        foreach ($account->accountTransfers as $transfer) {
-            if ($transfer->status !== AccountTransferStatus::PENDING->value) {
-                continue;
-            }
-
-            $amount = intval($transfer->amount * 100);
-            if ($amount <= 0) {
-                continue;
-            }
-
-            $reference = (string) Str::uuid();
-
-            $transfer->update([
-                'status' => AccountTransferStatus::PROCESSING->value,
-                'reference' => $reference,
-            ]);
-
-            $requests[] = [
-                'reference' => $reference,
-                'amount' => $amount,
-                'recipient' => $account->recipient_code,
-                'reason' => "Admin charges transfer",
-                'request_id' => $transfer->id,
-                'account_id' => $account->id,
-            ];
+        if ($transfer->status !== AccountTransferStatus::PENDING->value) {
+            return;
         }
+
+        $amount = intval($transfer->amount * 100);
+        if ($amount <= 0) {
+            return;
+        }
+
+        $reference = (string) Str::uuid();
+
+        $transfer->update([
+            'status' => AccountTransferStatus::PROCESSING->value,
+            'reference' => $reference,
+        ]);
+
+        $requests[] = [
+            'reference'   => $reference,
+            'amount'      => $amount,
+            'recipient'   => $account->recipient_code,
+            'reason'      => "Admin charges transfer",
+            'request_id'  => $transfer->id,
+            'account_id'  => $account->id,
+        ];
     }
 
     protected function handleChunk(array $chunk): void
