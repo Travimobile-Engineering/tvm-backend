@@ -17,11 +17,9 @@ Schedule::everyMinute()
 Schedule::command('app:rotate-security-questions')->monthly();
 
 Schedule::command('app:account-payout')
-    ->everyThirtySeconds()
-    ->withoutOverlapping();
+    ->everyThirtySeconds();
 
 Schedule::command('app:withdraw-request-payout')
-    ->everyThirtySeconds()
-    ->withoutOverlapping();
+    ->everyThirtySeconds();
 
 Schedule::command('drivers:charge-usage')->dailyAt('23:00');
