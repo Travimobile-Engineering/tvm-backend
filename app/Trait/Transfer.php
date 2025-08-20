@@ -208,13 +208,14 @@ trait Transfer
             $result = PayoutService::paystackBulkTransfer($chunk);
 
             $success = $result['status'] === true;
+            $message = $result['message'];
             $data = $result['data'];
 
             foreach ($chunk as $item) {
                 $this->handleResultItem(
                     $item,
                     $success,
-                    $success ? null : $result,
+                    $success ? null : $message,
                     $data,
                 );
             }
