@@ -55,12 +55,12 @@ trait Transfer
         ]);
 
         $requests[] = [
-            'reference'   => $reference,
-            'amount'      => $amount,
-            'recipient'   => $account->recipient_code,
-            'reason'      => "Admin charges transfer",
-            'request_id'  => $transfer->id,
-            'account_id'  => $account->id,
+            'reference' => $reference,
+            'amount' => $amount,
+            'recipient' => $account->recipient_code,
+            'reason' => "Admin charges transfer",
+            'request_id' => $transfer->id,
+            'account_id' => $account->id,
         ];
     }
 
