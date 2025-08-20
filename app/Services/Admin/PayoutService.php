@@ -60,7 +60,7 @@ class PayoutService
 
         $response = (new BulkCurlService($url, $headers, $body))->execute();
 
-        throw new \Exception($response);
+        throw new \Exception(json_encode($response));
 
         // if (!isset($response['status']) || $response['status'] === false) {
         //     return [
