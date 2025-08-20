@@ -136,6 +136,7 @@ class DriverUsageService
             TransactionTitle::DRIVER_CHARGE->value,
             $fee->amount,
             PaymentType::DR,
+            null,
             generateReference('TXN', 'transactions'),
             "Driver charge for trip activity done."
         );

@@ -47,8 +47,8 @@ trait PaymentTrait
                 TransactionTitle::CREDIT_WALLET->value,
                 $formattedAmount,
                 PaymentType::CR,
-                $ref,
                 null,
+                $ref,
                 "Wallet funded successfully"
             );
 
