@@ -32,6 +32,7 @@ class TripBooking extends Model
         'on_seat',
         'reason',
         'date_canceled',
+        'charges',
     ];
 
     protected $hidden = ['id'];
@@ -44,6 +45,7 @@ class TripBooking extends Model
             'receive_sms' => 'boolean',
             'on_seat' => 'boolean',
             'selected_seat' => 'array',
+            'charges' => 'array',
         ];
     }
 
@@ -81,6 +83,13 @@ class TripBooking extends Model
                 + (is_array($this->third_party_passenger_details)
                     ? count($this->third_party_passenger_details)
                     : 0),
+        );
+    }
+
+    protected function totalAmountPaid(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->amount_paid + array_sum((array) $this->charges)
         );
     }
 

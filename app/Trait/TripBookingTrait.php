@@ -5,6 +5,7 @@ namespace App\Trait;
 use App\Models\Trip;
 use App\Models\User;
 use App\Enum\UserType;
+use App\Enum\ChargeType;
 use App\Enum\TripStatus;
 use App\Enum\PaymentType;
 use App\Events\TripBooked;
@@ -15,12 +16,14 @@ use App\Models\Notification;
 use App\Enum\TransactionTitle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use App\Services\ERP\ChargeService;
 use Illuminate\Support\Facades\Hash;
 use App\DTO\NotificationDispatchData;
 use App\Services\ERP\AgentCommissionService;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
 use App\Services\Notification\NotificationDispatcher;
+use Illuminate\Support\Facades\Auth;
 
 trait TripBookingTrait
 {
@@ -40,6 +43,7 @@ trait TripBookingTrait
         try {
             DB::beginTransaction();
 
+            $user ??= Auth::user();
             $tripCheck = $this->tripCheck($request, $user, lock: true);
 
             if ($tripCheck instanceof JsonResponse && $tripCheck->getStatusCode() !== 200) {
@@ -53,7 +57,7 @@ trait TripBookingTrait
             $paymentDetails = PaymentDetailService::paystackPayDetails($request, $trip);
 
             if (isset($paymentDetails['status']) && $paymentDetails['status'] === false) {
-                return $this->error(null, $paymentDetails['message'], 400);
+                return $this->error(null, $paymentDetails['message'], $paymentDetails['code']);
             }
 
             $response = $paymentService->process($paymentDetails);
@@ -83,6 +87,12 @@ trait TripBookingTrait
 
     protected function validatePayment($request, $amount_paid, $user)
     {
+        $chargesSum = array_sum((array) $request->charges);
+
+        if ($chargesSum != $this->getCharges($user)) {
+            return $this->error(null, "Charges paid does not match the total charges", 400);
+        }
+
         if ($response = $this->checkPin($request, $user)) {
             return $response;
         }
@@ -136,6 +146,9 @@ trait TripBookingTrait
                 // After the booking is completed, automatically check for level upgrade
                 $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
             }
+
+            $charges = $request->charges ?? [];
+            app(ChargeService::class)->transferCharges($charges, $user, "balance", "wallet");
 
             DB::commit();
 
@@ -419,6 +432,7 @@ trait TripBookingTrait
             'payment_method' => $data['payment_method'],
             'payment_status' => $data['payment_status'],
             'receive_sms' => $data['receive_sms'],
+            'charges' => $data['request']['charges'],
         ]);
 
         if ((int) $data['third_party_booking'] === 0) {
@@ -436,6 +450,21 @@ trait TripBookingTrait
                 ]);
             }
         }
+    }
+
+    private function getCharges($user)
+    {
+        $chargeTypes = [
+            ChargeType::ADMIN->value,
+            ChargeType::VAT->value,
+        ];
+
+        if ($user->inbox_notifications) {
+            $chargeTypes[] = ChargeType::SMS->value;
+        }
+
+        $charges = getCharge($chargeTypes);
+        return array_sum($charges);
     }
 }
 

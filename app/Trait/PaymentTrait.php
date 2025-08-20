@@ -4,6 +4,7 @@ namespace App\Trait;
 
 use App\Models\Trip;
 use App\Models\User;
+use App\Enum\ChargeType;
 use App\Enum\TripStatus;
 use App\Enum\PaymentType;
 use App\Events\TripBooked;
@@ -17,6 +18,7 @@ use App\Enum\TransactionTitle;
 use App\Models\Vehicle\Vehicle;
 use App\Models\PremiumHireBooking;
 use Illuminate\Support\Facades\DB;
+use App\Services\ERP\ChargeService;
 use App\DTO\NotificationDispatchData;
 use App\Services\Notification\NotificationDispatcher;
 
@@ -41,12 +43,14 @@ trait PaymentTrait
 
             $this->userIncrementBalance($user, $formattedAmount);
 
-            $user->transactions()->create([
-                'title' => TransactionTitle::CREDIT_WALLET->value,
-                'amount' => $formattedAmount,
-                'type' => PaymentType::CR,
-                'txn_reference' => $ref
-            ]);
+            $user->createTransaction(
+                TransactionTitle::CREDIT_WALLET->value,
+                $formattedAmount,
+                PaymentType::CR,
+                $ref,
+                null,
+                "Wallet funded successfully"
+            );
 
             DB::commit();
 
@@ -288,6 +292,7 @@ trait PaymentTrait
             'amount_paid' => $amount,
             'passengers' => $passengers,
             'raw_travelling_with' => $travellingWith,
+            'charges' => $meta['charges'] ?? null,
         ];
     }
 
@@ -382,6 +387,9 @@ trait PaymentTrait
         ]);
 
         $this->driverIncrementEarning($trip->user, $amount);
+
+        $charges = $paymentData['metadata']['charges'] ?? [];
+        app(ChargeService::class)->transferCharges($charges, $user, "balance", null);
     }
 
     private function dispatchTripBookedEvent(User $user): void
@@ -404,6 +412,5 @@ trait PaymentTrait
             ]
         ));
     }
-
 }
 

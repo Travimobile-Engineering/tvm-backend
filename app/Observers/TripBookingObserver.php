@@ -56,16 +56,7 @@ class TripBookingObserver implements ShouldHandleEventsAfterCommit
                 formatPhoneNumber($user->phone_number),
                 $message
             );
-
-            // Charge user for SMS
-            app(ChargeService::class)->smsCharge($user, [ChargeType::SMS->value]);
         }
-
-        // Admin Charge
-        app(ChargeService::class)->adminCharge($user, 'balance', [ChargeType::ADMIN->value]);
-
-        // VAT Charge
-        app(ChargeService::class)->vatCharge($user, [ChargeType::VAT->value]);
     }
 
     /**
