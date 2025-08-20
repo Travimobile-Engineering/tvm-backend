@@ -36,7 +36,7 @@ class WithdrawalNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $defaultPaymentMethod = $notifiable->userBank->first();
+        $defaultPaymentMethod = $notifiable->userBank;
         $accountNumber = $defaultPaymentMethod ? $defaultPaymentMethod->account_number : 'N/A';
         $accountName = $defaultPaymentMethod ? $defaultPaymentMethod->account_name : 'N/A';
 
