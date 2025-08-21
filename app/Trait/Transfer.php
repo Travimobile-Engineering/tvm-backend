@@ -259,7 +259,7 @@ trait Transfer
         }
     }
 
-    private function markWithdrawRequestFailed(int $requestId, int $userId, ?string $errorMessage = null): void
+    private function markWithdrawRequestFailed(int $requestId, int $userId, ?array $errorMessage = null): void
     {
         DB::transaction(function () use ($requestId, $userId, $errorMessage) {
             // Use lockForUpdate to prevent race conditions
