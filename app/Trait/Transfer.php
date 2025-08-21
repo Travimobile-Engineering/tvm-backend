@@ -212,7 +212,7 @@ trait Transfer
             $result = PayoutService::paystackBulkTransfer($chunk);
 
             $success = $result['status'] === true;
-            $message = $result['message'];
+            $message = $result;
             $data = $result['data'];
 
             foreach ($chunk as $item) {
@@ -247,7 +247,7 @@ trait Transfer
             }
         } else {
             $this->markWithdrawRequestFailed($withdraw->id, $user->id, $errorMessage);
-            $user->walletAccount->increment('balance', $withdraw->amount);
+            //$user->walletAccount->increment('balance', $withdraw->amount);
             Log::error("Failed to queue Paystack bulk transfer: " . json_encode($errorMessage));
         }
     }
