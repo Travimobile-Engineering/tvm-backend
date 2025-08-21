@@ -63,6 +63,8 @@ trait Transfer
             'request_id' => $transfer->id,
             'account_id' => $account->id,
         ];
+
+        $this->sendToSlack($requests, 'Admin Paystack Transfer');
     }
 
     protected function handleChunk(array $chunk): void
