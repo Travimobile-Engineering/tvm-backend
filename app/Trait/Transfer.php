@@ -9,8 +9,10 @@ use App\Enum\TransactionTitle;
 use App\Models\AccountTransfer;
 use App\Models\UserWithdrawLog;
 use App\Enum\AccountTransferStatus;
-use Illuminate\Support\Facades\Log;
+use App\Notifications\WithdrawalNotification;
 use App\Services\Admin\PayoutService;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use App\Notifications\WithdrawalRefundNotification;
 use Illuminate\Support\Facades\DB;
 
@@ -64,6 +66,8 @@ trait Transfer
             'request_id' => $transfer->id,
             'account_id' => $account->id,
         ];
+
+        $this->sendToSlack($requests, 'Admin Paystack Transfer');
     }
 
     protected function handleChunk(array $chunk): void
@@ -205,6 +209,8 @@ trait Transfer
                 'request_id' => $withdraw->id,
                 'user_id' => $user->id,
             ];
+
+            $this->sendToSlack($requests, 'Paystack Transfer');
         }
     }
 
@@ -319,6 +325,22 @@ trait Transfer
             // Send refund notification
             $freshUser->notify(new WithdrawalRefundNotification($freshWithdraw, General::REFUNDED));
         });
+    }
+
+    protected function sendToSlack($payload, $title = 'Payload')
+    {
+        $webhookUrl = config('logging.slack.url');
+
+        if (!$webhookUrl) {
+            return;
+        }
+
+        $message = [
+            'text' => "*{$title}*\n```" . json_encode($payload, JSON_PRETTY_PRINT) . '```',
+            'mrkdwn' => true
+        ];
+
+        Http::timeout(10)->post($webhookUrl, $message);
     }
 }
 
