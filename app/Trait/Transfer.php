@@ -2,16 +2,19 @@
 
 namespace App\Trait;
 
-use App\Enum\AccountTransferStatus;
+use App\Models\User;
 use App\Enum\General;
 use Illuminate\Support\Str;
+use App\Enum\TransactionTitle;
 use App\Models\AccountTransfer;
-use App\Models\User;
 use App\Models\UserWithdrawLog;
+use App\Enum\AccountTransferStatus;
 use App\Notifications\WithdrawalNotification;
 use App\Services\Admin\PayoutService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\WithdrawalRefundNotification;
+use Illuminate\Support\Facades\DB;
 
 trait Transfer
 {
@@ -252,27 +255,76 @@ trait Transfer
             }
         } else {
             $this->markWithdrawRequestFailed($withdraw->id, $user->id, $errorMessage);
-            //$user->walletAccount->increment('balance', $withdraw->amount);
             Log::error("Failed to queue Paystack bulk transfer: " . json_encode($errorMessage));
         }
     }
 
-    private function markWithdrawRequestFailed(int $requestId, int $userId, $errorMessage = null): void
+    private function markWithdrawRequestFailed(int $requestId, int $userId, ?string $errorMessage = null): void
     {
-        $withdraw = UserWithdrawLog::find($requestId);
-        $user = User::find($userId);
+        DB::transaction(function () use ($requestId, $userId, $errorMessage) {
+            // Use lockForUpdate to prevent race conditions
+            $withdraw = UserWithdrawLog::where('id', $requestId)
+                ->where('user_id', $userId)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $withdraw || ! $user) {
-            Log::error("Failed to mark withdraw request failed: Withdrawal ID {$requestId}, User ID {$userId}");
-            return;
-        }
+            $user = User::where('id', $userId)
+                ->lockForUpdate()
+                ->with('walletAccount')
+                ->first();
 
-        $withdraw->update([
-            'status' => General::FAILED,
-            'response' => $errorMessage,
-        ]);
+            if (!$withdraw || !$user) {
+                Log::error("Failed to mark withdraw request failed: Withdrawal ID {$requestId}, User ID {$userId}");
+                return;
+            }
 
-        $user->notify(new WithdrawalNotification($withdraw, General::FAILED));
+            // Update withdrawal status only once
+            $withdraw->update([
+                'status' => General::FAILED,
+                'response' => $errorMessage,
+            ]);
+
+            // Refund the user
+            $this->refundUser($user, $withdraw);
+
+            // Send notifications
+            $user->notify(new WithdrawalNotification($withdraw, General::FAILED));
+        });
+    }
+
+    private function refundUser(User $user, UserWithdrawLog $withdraw): void
+    {
+        DB::transaction(function () use ($user, $withdraw) {
+            // Reload fresh instances with locks
+            $freshUser = User::where('id', $user->id)
+                ->lockForUpdate()
+                ->with('walletAccount')
+                ->first();
+
+            $freshWithdraw = UserWithdrawLog::where('id', $withdraw->id)
+                ->lockForUpdate()
+                ->first();
+
+            // Increment earnings balance
+            $freshUser->walletAccount->increment('earnings', $freshWithdraw->amount);
+
+            // Create earning record
+            $freshUser->createEarning(
+                TransactionTitle::REFUND,
+                $freshWithdraw->amount,
+                'CR',
+                "Refund for failed withdrawal",
+                General::REFUNDED
+            );
+
+            // Update withdrawal status to REFUNDED
+            $freshWithdraw->update([
+                'status' => General::REFUNDED,
+            ]);
+
+            // Send refund notification
+            $freshUser->notify(new WithdrawalRefundNotification($freshWithdraw, General::REFUNDED));
+        });
     }
 
     protected function sendToSlack($payload, $title = 'Payload')
