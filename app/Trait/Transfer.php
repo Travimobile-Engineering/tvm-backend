@@ -257,12 +257,17 @@ trait Transfer
         $withdraw = UserWithdrawLog::find($requestId);
         $user = User::find($userId);
 
+        if (! $withdraw || ! $user) {
+            Log::error("Failed to mark withdraw request failed: Withdrawal ID {$requestId}, User ID {$userId}");
+            return;
+        }
+
         $withdraw->update([
             'status' => General::FAILED,
             'response' => $errorMessage,
         ]);
 
-        $user->notify(new WithdrawalNotification($withdraw, 'failed'));
+        $user->notify(new WithdrawalNotification($withdraw, General::FAILED));
     }
 }
 
