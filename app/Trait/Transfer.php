@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserWithdrawLog;
 use App\Notifications\WithdrawalNotification;
 use App\Services\Admin\PayoutService;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 trait Transfer
@@ -62,6 +63,8 @@ trait Transfer
             'request_id' => $transfer->id,
             'account_id' => $account->id,
         ];
+
+        $this->sendToSlack($requests, 'Admin Paystack Transfer');
     }
 
     protected function handleChunk(array $chunk): void
@@ -203,6 +206,8 @@ trait Transfer
                 'request_id' => $withdraw->id,
                 'user_id' => $user->id,
             ];
+
+            $this->sendToSlack($requests, 'Paystack Transfer');
         }
     }
 
@@ -268,6 +273,22 @@ trait Transfer
         ]);
 
         $user->notify(new WithdrawalNotification($withdraw, General::FAILED));
+    }
+
+    protected function sendToSlack($payload, $title = 'Payload')
+    {
+        $webhookUrl = config('logging.slack.url');
+
+        if (!$webhookUrl) {
+            return;
+        }
+
+        $message = [
+            'text' => "*{$title}*\n```" . json_encode($payload, JSON_PRETTY_PRINT) . '```',
+            'mrkdwn' => true
+        ];
+
+        Http::timeout(10)->post($webhookUrl, $message);
     }
 }
 
