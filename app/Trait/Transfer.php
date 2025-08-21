@@ -214,7 +214,7 @@ trait Transfer
             $result = PayoutService::paystackBulkTransfer($chunk);
 
             $success = $result['status'] === true;
-            $message = $result;
+            $message = $result['message'];
             $data = $result['data'];
 
             foreach ($chunk as $item) {
