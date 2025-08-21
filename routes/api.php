@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\JobController;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\TripController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AgentController;
@@ -27,6 +27,7 @@ use App\Http\Controllers\ManifestCheckerController;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Http\Controllers\TransportRouteManagementController;
 
 Route::post('/seed/run', function () {
     $seederClass = Str::studly(request()->input('seeder_class'));
@@ -56,6 +57,8 @@ Route::post('/seed/run', function () {
 });
 
 Route::get('/', fn() => response('Welcome to the API', 200));
+
+Route::resource('transport-route-management', TransportRouteManagementController::class);
 Route::middleware(['validate.header'])
     ->group(function () {
         Route::controller(OtherController::class)
