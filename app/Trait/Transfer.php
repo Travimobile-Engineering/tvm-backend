@@ -179,7 +179,7 @@ trait Transfer
                 continue;
             }
 
-            $amount = intval($withdraw->amount * 100);
+            $amount = (int) round($withdraw->amount * 100);
             if ($amount <= 0) {
                 continue;
             }
