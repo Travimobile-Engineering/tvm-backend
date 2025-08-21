@@ -247,7 +247,7 @@ trait Transfer
             }
         } else {
             $this->markWithdrawRequestFailed($withdraw->id, $user->id, $errorMessage);
-            $user->walletAccount->increment('balance', $withdraw->amount);
+            //$user->walletAccount->increment('balance', $withdraw->amount);
             Log::error("Failed to queue Paystack bulk transfer: " . json_encode($errorMessage));
         }
     }
