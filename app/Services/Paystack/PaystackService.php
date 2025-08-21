@@ -2,13 +2,15 @@
 
 namespace App\Services\Paystack;
 
-use App\Enum\AccountTransferStatus;
+use App\Models\User;
+use App\Trait\HttpResponse;
 use App\Models\AccountTransfer;
 use App\Models\UserWithdrawLog;
-use App\Services\Curl\PostCurlService;
-use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
+use App\Enum\AccountTransferStatus;
 use Illuminate\Support\Facades\Log;
+use App\Services\Curl\PostCurlService;
+use App\Notifications\WithdrawalNotification;
 
 class PaystackService
 {
@@ -97,11 +99,11 @@ class PaystackService
             return;
         }
 
-        DB::beginTransaction();
         try {
+            DB::beginTransaction();
+
             // Try to update AccountTransfer
             $adminTransfer = AccountTransfer::where('transfer_code', $transferCode)->first();
-
             if ($adminTransfer) {
                 $adminTransfer->update([
                     'status' => $status->value,
@@ -115,12 +117,21 @@ class PaystackService
 
             // Try to update UserWithdrawLog
             $userWithdraw = UserWithdrawLog::where('transfer_code', $transferCode)->first();
-
             if ($userWithdraw) {
                 $userWithdraw->update([
                     'status' => $status->value,
                     'response' => $reason,
                 ]);
+
+                $user = User::find($userWithdraw->user_id);
+
+                if (! $user) {
+                    Log::error("{$logPrefix}: User not found for UserWithdrawLog ID {$userWithdraw->id}");
+                    DB::commit();
+                    return;
+                }
+
+                $user->notify(new WithdrawalNotification($userWithdraw, $status->value));
 
                 Log::info("{$logPrefix} for UserWithdrawLog ID {$userWithdraw->id} - Ref: {$reference}");
                 DB::commit();
