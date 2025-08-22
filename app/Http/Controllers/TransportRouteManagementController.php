@@ -15,7 +15,7 @@ class TransportRouteManagementController extends Controller
      */
     public function index()
     {
-        $routeManagements = TransportRouteManagement::select('id', 'park_name', 'address', 'state', 'zone', 'originating_route', 'terminating_route', 'estimated_trip', 'key_man', 'estimated_distance', 'estimated_time', 'cost_of_transportation', 'road_safety_rating', 'field_officer', 'occasioned_by')
+        $routeManagements = TransportRouteManagement::select('id', 'park_name', 'address', 'state', 'zone', 'originating_route', 'terminating_route', 'estimated_trip', 'key_man', 'estimated_distance', 'estimated_time', 'cost_of_transportation', 'road_safety_rating', 'field_officer', 'occasioned_by', 'lng', 'lat')
             ->paginate(25);
 
         return $this->withPagination($routeManagements, "Transport Route Management");
@@ -41,6 +41,8 @@ class TransportRouteManagementController extends Controller
             'road_safety_rating' => $request->road_safety_rating,
             'field_officer' => $request->field_officer,
             'occasioned_by' => $request->occasioned_by,
+            'lng' => $request->lng,
+            'lat' => $request->lat,
         ]);
 
         return $this->success($routeManagement, "Transport Route Management Created Successfully", 201);
@@ -57,8 +59,14 @@ class TransportRouteManagementController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, TransportRouteManagement $routeManagement)
+    public function update(Request $request, $id)
     {
+        $routeManagement = TransportRouteManagement::find($id);
+
+        if (! $routeManagement) {
+            return $this->error(null, "Transport Route Management Not Found", 404);
+        }
+
         $routeManagement->update([
             'park_name' => $request->park_name,
             'address' => $request->address,
@@ -74,6 +82,8 @@ class TransportRouteManagementController extends Controller
             'road_safety_rating' => $request->road_safety_rating,
             'field_officer' => $request->field_officer,
             'occasioned_by' => $request->occasioned_by,
+            'lng' => $request->lng,
+            'lat' => $request->lat,
         ]);
 
         return $this->success($routeManagement, "Transport Route Management Updated Successfully");
@@ -82,8 +92,14 @@ class TransportRouteManagementController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TransportRouteManagement $routeManagement)
+    public function destroy($id)
     {
+        $routeManagement = TransportRouteManagement::find($id);
+
+        if (! $routeManagement) {
+            return $this->error(null, "Transport Route Management Not Found", 404);
+        }
+
         $routeManagement->delete();
         return $this->success(null, "Transport Route Management Deleted Successfully");
     }
