@@ -153,7 +153,7 @@ class WalletService
                     'DR',
                     $reference,
                     $recipient->id,
-                    "Transfer from {$sender->name} to {$recipient->name}"
+                    "Transfer from {$sender->first_name} to {$recipient->first_name}"
                 );
 
                 $recipient->createTransaction(
@@ -162,7 +162,7 @@ class WalletService
                     'CR',
                     $reference,
                     null,
-                    "Transfer from {$sender->name} to {$recipient->name}"
+                    "Transfer from {$sender->first_name} to {$recipient->first_name}"
                 );
             }, attempts: 3);
         } catch (\RuntimeException $e) {
