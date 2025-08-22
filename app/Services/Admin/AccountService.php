@@ -119,10 +119,10 @@ class AccountService
                         $data = $this->createPaystackUserRecipient($userbank, $bank);
 
                         $userbank->update([
-                            'recipient_code' => $data['recipient_code'] ?? null,
+                            'recipient_code' => $data['recipient_code'],
                         ]);
                     } catch (\Exception $e) {
-                        continue;
+                        throw new \Exception("Failed to update recipient code for user bank ID: {$userbank->id}. Error: {$e->getMessage()}");
                     }
                 }
             });
