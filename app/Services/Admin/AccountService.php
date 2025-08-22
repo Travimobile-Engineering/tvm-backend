@@ -83,27 +83,6 @@ class AccountService
         return (new PostCurlService($url, $headers, $fields))->execute();
     }
 
-    private function createPaystackUserRecipient(UserBank $userbank, Bank $bank): array
-    {
-        $url = config('app.paystack_transfer_url');
-        $token = config('app.paystack_secret_key');
-
-        $headers = [
-            'Accept' => 'application/json',
-            'Authorization' => "Bearer {$token}",
-        ];
-
-        $fields = [
-            'type' => "nuban",
-            'name' => $userbank->account_name,
-            'account_number' => $userbank->account_number,
-            'bank_code' => $bank->code,
-            'currency' => $bank->currency,
-        ];
-
-        return (new PostCurlService($url, $headers, $fields))->execute();
-    }
-
     public function updateAccountRecipient()
     {
         UserBank::whereNull('recipient_code')
@@ -128,5 +107,26 @@ class AccountService
             });
 
         return response()->json(['message' => 'Recipient update process completed.']);
+    }
+
+    private function createPaystackUserRecipient(UserBank $userbank, Bank $bank): array
+    {
+        $url = config('app.paystack_transfer_url');
+        $token = config('app.paystack_secret_key');
+
+        $headers = [
+            'Accept' => 'application/json',
+            'Authorization' => "Bearer {$token}",
+        ];
+
+        $fields = [
+            'type' => "nuban",
+            'name' => $userbank->account_name,
+            'account_number' => $userbank->account_number,
+            'bank_code' => $bank->code,
+            'currency' => $bank->currency,
+        ];
+
+        return (new PostCurlService($url, $headers, $fields))->execute();
     }
 }
