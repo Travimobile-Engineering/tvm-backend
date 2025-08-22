@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Models\Fee;
 use App\Models\Bank;
 use App\Models\Account;
+use App\Models\UserBank;
 use App\Services\Curl\PostCurlService;
 
 class AccountService
@@ -82,20 +83,44 @@ class AccountService
         return (new PostCurlService($url, $headers, $fields))->execute();
     }
 
+    private function createPaystackUserRecipient(UserBank $userbank, Bank $bank): array
+    {
+        $url = config('app.paystack_transfer_url');
+        $token = config('app.paystack_secret_key');
+
+        $headers = [
+            'Accept' => 'application/json',
+            'Authorization' => "Bearer {$token}",
+        ];
+
+        $fields = [
+            'type' => "nuban",
+            'name' => $userbank->account_name,
+            'account_number' => $userbank->account_number,
+            'bank_code' => $bank->code,
+            'currency' => $bank->currency,
+        ];
+
+        return (new PostCurlService($url, $headers, $fields))->execute();
+    }
+
     public function updateAccountRecipient()
     {
-        Account::whereNull('recipient_code')
-            ->chunk(100, function ($accounts) {
-                foreach ($accounts as $account) {
+        UserBank::chunk(100, function ($userbanks) {
+                foreach ($userbanks as $userbank) {
                     try {
-                        $bank = $this->findBankByAccount($account);
-                        $data = $this->createPaystackRecipient($account, $bank);
+                        $bank = Bank::where('name', $userbank->bank_name)->first();
 
-                        $account->update([
+                        if (!$bank) {
+                            continue;
+                        }
+
+                        $data = $this->createPaystackUserRecipient($userbank, $bank);
+
+                        $userbank->update([
                             'recipient_code' => $data['recipient_code'] ?? null,
                         ]);
                     } catch (\Exception $e) {
-                        \Log::error("Failed to update recipient for account {$account->id}: " . $e->getMessage());
                         continue;
                     }
                 }
