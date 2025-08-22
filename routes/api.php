@@ -59,7 +59,6 @@ Route::post('/seed/run', function () {
 Route::get('/', fn() => response('Welcome to the API', 200));
 
 Route::resource('transport-route-management', TransportRouteManagementController::class);
-Route::post('/update-account-recipient', [WalletController::class, 'updateAccountRecipient']);
 Route::middleware(['validate.header'])
     ->group(function () {
         Route::controller(OtherController::class)
