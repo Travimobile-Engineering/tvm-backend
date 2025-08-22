@@ -25,7 +25,8 @@ class UpdateUserBankRecipientsJob implements ShouldQueue
      */
     public function handle(): void
     {
-        UserBank::chunk(100, function ($userbanks) {
+        UserBank::whereNull('recipient_code')
+            ->chunk(100, function ($userbanks) {
                 foreach ($userbanks as $userbank) {
                     try {
                         $bank = Bank::where('name', $userbank->bank_name)->first();
