@@ -127,9 +127,4 @@ class WalletController extends Controller
     {
         return $this->service->getCharges();
     }
-
-    public function updateAccountRecipient()
-    {
-        return $this->accountService->updateAccountRecipient();
-    }
 }

@@ -21,6 +21,8 @@ class TransportRouteManagement extends Model
         'road_safety_rating',
         'field_officer',
         'occasioned_by',
+        'lng',
+        'lat',
     ];
 
     protected $casts = [
