@@ -14,6 +14,7 @@ use App\Http\Requests\WalletTransferRequest;
 use App\Http\Requests\DriverWalletSetupequest;
 use App\Http\Requests\SendPinOtpRequest;
 use App\Http\Requests\VerifyPinRequest;
+use App\Services\Admin\AccountService;
 use App\Services\AgentService;
 
 class WalletController extends Controller
@@ -23,6 +24,7 @@ class WalletController extends Controller
     public function __construct(
         protected WalletService $service,
         protected AgentService $agentService,
+        protected AccountService $accountService,
     )
     {}
 
@@ -124,5 +126,10 @@ class WalletController extends Controller
     public function getCharges()
     {
         return $this->service->getCharges();
+    }
+
+    public function updateAccountRecipient()
+    {
+        return $this->accountService->updateAccountRecipient();
     }
 }
