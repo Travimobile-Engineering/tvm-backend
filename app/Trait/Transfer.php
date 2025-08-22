@@ -8,13 +8,13 @@ use Illuminate\Support\Str;
 use App\Enum\TransactionTitle;
 use App\Models\AccountTransfer;
 use App\Models\UserWithdrawLog;
+use Illuminate\Support\Facades\DB;
 use App\Enum\AccountTransferStatus;
 use App\Notifications\WithdrawalNotification;
 use App\Services\Admin\PayoutService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Notifications\WithdrawalRefundNotification;
-use Illuminate\Support\Facades\DB;
 
 trait Transfer
 {
