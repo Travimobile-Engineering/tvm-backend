@@ -5,7 +5,6 @@ namespace App\Services\Admin;
 use App\Models\Fee;
 use App\Models\Bank;
 use App\Models\Account;
-use App\Models\UserBank;
 use App\Services\Curl\PostCurlService;
 
 class AccountService
@@ -29,7 +28,7 @@ class AccountService
             $data = $this->createPaystackRecipient($account, $bank);
 
             $account->update([
-                'recipient_code' => $data['recipient_code'] ?? null,
+                'recipient_code' => $data['recipient_code'],
             ]);
 
             $this->transferToAccount($account, $amount);
@@ -76,53 +75,6 @@ class AccountService
             'type' => "nuban",
             'name' => $account->account_name,
             'account_number' => $account->account_number,
-            'bank_code' => $bank->code,
-            'currency' => $bank->currency,
-        ];
-
-        return (new PostCurlService($url, $headers, $fields))->execute();
-    }
-
-    public function updateAccountRecipient()
-    {
-        UserBank::whereNull('recipient_code')
-            ->chunk(100, function ($userbanks) {
-                foreach ($userbanks as $userbank) {
-                    try {
-                        $bank = Bank::where('name', $userbank->bank_name)->first();
-
-                        if (!$bank) {
-                            continue;
-                        }
-
-                        $data = $this->createPaystackUserRecipient($userbank, $bank);
-
-                        $userbank->update([
-                            'recipient_code' => $data['recipient_code'],
-                        ]);
-                    } catch (\Exception $e) {
-                        throw new \Exception("Failed to update recipient code for user bank ID: {$userbank->id}. Error: {$e->getMessage()}");
-                    }
-                }
-            });
-
-        return response()->json(['message' => 'Recipient update process completed.']);
-    }
-
-    private function createPaystackUserRecipient(UserBank $userbank, Bank $bank): array
-    {
-        $url = config('app.paystack_transfer_url');
-        $token = config('app.paystack_secret_key');
-
-        $headers = [
-            'Accept' => 'application/json',
-            'Authorization' => "Bearer {$token}",
-        ];
-
-        $fields = [
-            'type' => "nuban",
-            'name' => $userbank->account_name,
-            'account_number' => $userbank->account_number,
             'bank_code' => $bank->code,
             'currency' => $bank->currency,
         ];
