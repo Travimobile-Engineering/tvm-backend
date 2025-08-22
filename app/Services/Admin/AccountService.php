@@ -81,4 +81,26 @@ class AccountService
 
         return (new PostCurlService($url, $headers, $fields))->execute();
     }
+
+    public function updateAccountRecipient()
+    {
+        Account::whereNull('recipient_code')
+            ->chunk(100, function ($accounts) {
+                foreach ($accounts as $account) {
+                    try {
+                        $bank = $this->findBankByAccount($account);
+                        $data = $this->createPaystackRecipient($account, $bank);
+
+                        $account->update([
+                            'recipient_code' => $data['recipient_code'] ?? null,
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error("Failed to update recipient for account {$account->id}: " . $e->getMessage());
+                        continue;
+                    }
+                }
+            });
+
+        return response()->json(['message' => 'Recipient update process completed.']);
+    }
 }
