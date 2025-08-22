@@ -83,6 +83,32 @@ class AccountService
         return (new PostCurlService($url, $headers, $fields))->execute();
     }
 
+    public function updateAccountRecipient()
+    {
+        UserBank::whereNull('recipient_code')
+            ->chunk(100, function ($userbanks) {
+                foreach ($userbanks as $userbank) {
+                    try {
+                        $bank = Bank::where('name', $userbank->bank_name)->first();
+
+                        if (!$bank) {
+                            continue;
+                        }
+
+                        $data = $this->createPaystackUserRecipient($userbank, $bank);
+
+                        $userbank->update([
+                            'recipient_code' => $data['recipient_code'],
+                        ]);
+                    } catch (\Exception $e) {
+                        throw new \Exception("Failed to update recipient code for user bank ID: {$userbank->id}. Error: {$e->getMessage()}");
+                    }
+                }
+            });
+
+        return response()->json(['message' => 'Recipient update process completed.']);
+    }
+
     private function createPaystackUserRecipient(UserBank $userbank, Bank $bank): array
     {
         $url = config('app.paystack_transfer_url');
@@ -102,31 +128,5 @@ class AccountService
         ];
 
         return (new PostCurlService($url, $headers, $fields))->execute();
-    }
-
-    public function updateAccountRecipient()
-    {
-        UserBank::whereNull('recipient_code')
-            ->chunk(100, function ($userbanks) {
-                foreach ($userbanks as $userbank) {
-                    try {
-                        $bank = Bank::where('name', $userbank->bank_name)->first();
-
-                        if (!$bank) {
-                            continue;
-                        }
-
-                        $data = $this->createPaystackUserRecipient($userbank, $bank);
-
-                        $userbank->update([
-                            'recipient_code' => $data['recipient_code'] ?? null,
-                        ]);
-                    } catch (\Exception $e) {
-                        continue;
-                    }
-                }
-            });
-
-        return response()->json(['message' => 'Recipient update process completed.']);
     }
 }
