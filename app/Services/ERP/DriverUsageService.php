@@ -114,7 +114,7 @@ class DriverUsageService
             // Company share
             if (app()->environment(['production', 'staging'])) {
                 app(AccountService::class)->initiateTransfer([
-                    ChargeType::DRIVER_CHARGE => $breakdown['company_share'],
+                    ChargeType::DRIVER_CHARGE->value => $breakdown['company_share'],
                 ]);
             }
         });
