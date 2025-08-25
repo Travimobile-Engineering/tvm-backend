@@ -35,6 +35,8 @@ return [
         'https://api.staging.travimobile.com',
         'https://admin.staging.travimobile.com',
         'https://www.travimobile.com',
+        'https://route.manager.travimobile.com',
+        'https://admin.travimobile.com',
     ],
 
     'allowed_origins_patterns' => [],
@@ -47,5 +49,4 @@ return [
     'max_age' => 0,
 
     'supports_credentials' => true,
-
 ];
