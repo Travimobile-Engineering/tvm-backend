@@ -67,8 +67,6 @@ trait Transfer
             'request_id' => $transfer->id,
             'account_id' => $account->id,
         ];
-
-        $this->sendToSlack($requests, 'Admin Paystack Transfer');
     }
 
     protected function handleChunk(array $chunk): void
@@ -210,8 +208,6 @@ trait Transfer
                 'request_id' => $withdraw->id,
                 'user_id' => $user->id,
             ];
-
-            $this->sendToSlack($requests, 'Paystack Transfer');
         }
     }
 
@@ -311,6 +307,7 @@ trait Transfer
                 ChargeType::WITHDRAW_FEE->value,
             ];
 
+            // Refund charges
             $charges = getCharge($chargeTypes);
             $chargeAmount = array_sum($charges);
 
