@@ -10,6 +10,7 @@ use App\Models\AccountTransfer;
 use App\Models\UserWithdrawLog;
 use Illuminate\Support\Facades\DB;
 use App\Enum\AccountTransferStatus;
+use App\Enum\ChargeType;
 use App\Notifications\WithdrawalNotification;
 use App\Services\Admin\PayoutService;
 use Illuminate\Support\Facades\Http;
@@ -305,13 +306,23 @@ trait Transfer
                 ->lockForUpdate()
                 ->first();
 
+            $chargeTypes = [
+                ChargeType::ADMIN->value,
+                ChargeType::WITHDRAW_FEE->value,
+            ];
+
+            $charges = getCharge($chargeTypes);
+            $chargeAmount = array_sum($charges);
+
+            $amount = $freshWithdraw->amount + $chargeAmount;
+
             // Increment earnings balance
-            $freshUser->walletAccount->increment('earnings', $freshWithdraw->amount);
+            $freshUser->walletAccount->increment('earnings', $amount);
 
             // Create earning record
             $freshUser->createEarning(
                 TransactionTitle::REFUND,
-                $freshWithdraw->amount,
+                $amount,
                 'CR',
                 "Refund for failed withdrawal",
                 General::REFUNDED
@@ -325,22 +336,6 @@ trait Transfer
             // Send refund notification
             $freshUser->notify(new WithdrawalRefundNotification($freshWithdraw, General::REFUNDED));
         });
-    }
-
-    protected function sendToSlack($payload, $title = 'Payload')
-    {
-        $webhookUrl = config('logging.slack.url');
-
-        if (!$webhookUrl) {
-            return;
-        }
-
-        $message = [
-            'text' => "*{$title}*\n```" . json_encode($payload, JSON_PRETTY_PRINT) . '```',
-            'mrkdwn' => true
-        ];
-
-        Http::timeout(10)->post($webhookUrl, $message);
     }
 }
 
