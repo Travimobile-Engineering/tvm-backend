@@ -101,9 +101,7 @@ trait DriverTrait
 
     protected function tripPaymentTopUp($user)
     {
-        $usersWithPendingPayments = $user->driverTripPayments()
-            ->where('status', General::PENDING)
-            ->sum('amount');
+        $usersWithPendingPayments = $user->pending_balance;
 
         if ($usersWithPendingPayments > 0) {
             $this->driverIncrementEarning($user, $usersWithPendingPayments);
