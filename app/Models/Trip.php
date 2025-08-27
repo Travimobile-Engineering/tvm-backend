@@ -8,6 +8,7 @@ use App\Trait\ClearsResponseCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Trip extends Model
 {
@@ -93,7 +94,7 @@ class Trip extends Model
         return $this->hasMany(TripBooking::class, 'trip_id');
     }
 
-    public function manifest()
+    public function manifest(): HasOne
     {
         return $this->hasOne(Manifest::class, 'trip_id');
     }

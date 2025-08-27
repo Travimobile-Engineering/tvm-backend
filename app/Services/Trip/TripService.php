@@ -508,7 +508,6 @@ class TripService
                 'status' => ManifestStatus::COMPLETED,
             ]);
 
-            $this->chargeWallet($user, null, $trip);
             $trip->update(['status' => TripStatus::INPROGRESS]);
 
             TripLog::create([
@@ -519,6 +518,8 @@ class TripService
                 'status' => 'success',
                 'message' => 'Trip started successfully and manifest created.',
             ]);
+
+            $this->chargeWallet($user, null, $trip);
 
             DB::commit();
 

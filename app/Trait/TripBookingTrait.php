@@ -226,16 +226,8 @@ trait TripBookingTrait
             'trip_id' => $request->trip_id,
             'title' => TransactionTitle::TRIP_BOOKING->value,
             'amount' => $amount_paid,
-            'status' => PaymentStatus::PAID->value,
+            'status' => PaymentStatus::PENDING->value,
         ]);
-
-        $trip->user->createEarning(
-            TransactionTitle::TRIP_BOOKING->value,
-            $amount_paid,
-            'CR',
-            PaymentStatus::PAID->value,
-            "Earning with Booking ID: {$booking_id}"
-        );
 
         $user->transactions()->create([
             'title' => TransactionTitle::TRIP_BOOKING->value,
@@ -244,7 +236,8 @@ trait TripBookingTrait
             'txn_reference' => "wallet"
         ]);
 
-        $this->driverIncrementEarning($trip->user, $amount_paid);
+        // Disabled for now
+        //$this->driverIncrementEarning($trip->user, $amount_paid);
 
         return [
             'booking_id' => $booking_id,
