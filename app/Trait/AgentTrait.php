@@ -13,8 +13,8 @@ trait AgentTrait
             'password' => ['required', 'string'],
         ]);
 
-        $userKey = 'login_attempts:' . $user->id;
-        $blockKey = 'login_blocked:' . $user->id;
+        $userKey = "login_attempts: {$user->id}";
+        $blockKey = "login_blocked: {$user->id}";
 
         if (Cache::has($blockKey)) {
             return $this->error(null, "Too many attempts. Try again later.", 429);
