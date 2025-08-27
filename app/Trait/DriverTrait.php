@@ -5,6 +5,7 @@ namespace App\Trait;
 use App\Enum\ChargeType;
 use App\Enum\DocumentStatus;
 use App\Enum\General;
+use App\Enum\PaymentStatus;
 use App\Enum\PaymentType;
 use App\Enum\TransitCompanyType;
 use App\Enum\TransactionTitle;
@@ -88,7 +89,7 @@ trait DriverTrait
         $user->save();
 
         // Top up earnings with payments from trips
-        $this->tripPaymentTopUp($user);
+        $this->topUpEarning($user);
 
         $title = TransactionTitle::CHARGE_WALLET->value;
         $type = PaymentType::DR;
@@ -99,16 +100,7 @@ trait DriverTrait
         $this->createTransaction($user, $amount, $title, $type, "Manifest fee for trip from {$departure} to {$destination}");
     }
 
-    protected function tripPaymentTopUp($user)
-    {
-        $usersWithPendingPayments = $user->pending_balance;
-
-        if ($usersWithPendingPayments > 0) {
-            $this->driverIncrementEarning($user, $usersWithPendingPayments);
-        }
-    }
-
-    protected function topUpWallet($user)
+    protected function topUpEarning($user)
     {
         $pendingAmount = $user->pending_balance;
 
@@ -120,10 +112,13 @@ trait DriverTrait
                     $payment->update(['status' => General::PAID]);
                 });
 
-            $title = TransactionTitle::CREDIT_WALLET->value;
-            $type = PaymentType::CR;
-
-            $this->createTransaction($user, $pendingAmount, $title, $type, "Earnings top-up from trip payments.");
+            $user->createEarning(
+                TransactionTitle::TRIP_BOOKING->value,
+                $pendingAmount,
+                'CR',
+                PaymentStatus::PAID->value,
+                "Earnings top-up from trip payments."
+            );
         }
     }
 

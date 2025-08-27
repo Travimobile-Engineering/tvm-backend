@@ -229,14 +229,6 @@ trait TripBookingTrait
             'status' => PaymentStatus::PENDING->value,
         ]);
 
-        $trip->user->createEarning(
-            TransactionTitle::TRIP_BOOKING->value,
-            $amount_paid,
-            'CR',
-            PaymentStatus::PAID->value,
-            "Earning with Booking ID: {$booking_id}"
-        );
-
         $user->transactions()->create([
             'title' => TransactionTitle::TRIP_BOOKING->value,
             'amount' => $amount_paid,
