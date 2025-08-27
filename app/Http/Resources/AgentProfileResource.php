@@ -57,6 +57,7 @@ class AgentProfileResource extends JsonResource
             'wallet_info' => (object) [
                 'earnings' => (object) [
                     'available' => $this->earning_balance,
+                    'pending' => $this->pending_earning_balance,
                 ],
                 'available_balance' => $this->wallet_amount,
             ],

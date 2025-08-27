@@ -172,6 +172,7 @@ class User extends Authenticatable implements JWTSubject
         return Attribute::make(
             get: fn () => $this->driverTripPayments()
                 ->where('status', General::PENDING)
+                ->getQuery()
                 ->sum('amount'),
         );
     }

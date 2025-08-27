@@ -4,7 +4,6 @@ namespace App\Trait;
 
 use App\Models\Trip;
 use App\Models\User;
-use App\Enum\ChargeType;
 use App\Enum\TripStatus;
 use App\Enum\PaymentType;
 use App\Events\TripBooked;
@@ -368,7 +367,7 @@ trait PaymentTrait
             'trip_id' => $trip->id,
             'title' => TransactionTitle::TRIP_BOOKING->value,
             'amount' => $amount,
-            'status' => PaymentStatus::PAID->value,
+            'status' => PaymentStatus::PENDING->value,
         ]);
 
         $trip->user->createEarning(
@@ -386,7 +385,8 @@ trait PaymentTrait
             'txn_reference' => $paymentData['reference'],
         ]);
 
-        $this->driverIncrementEarning($trip->user, $amount);
+        // Disabled for now
+        //$this->driverIncrementEarning($trip->user, $amount);
 
         $charges = $paymentData['metadata']['charges'] ?? [];
         app(ChargeService::class)->transferCharges($charges, $user, "balance", null);

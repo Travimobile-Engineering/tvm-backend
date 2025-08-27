@@ -87,6 +87,9 @@ trait DriverTrait
         $this->driverDecrementEarning($user, $amount);
         $user->save();
 
+        // Top up earnings with payments from trips
+        $this->tripPaymentTopUp($user);
+
         $title = TransactionTitle::CHARGE_WALLET->value;
         $type = PaymentType::DR;
 
@@ -94,6 +97,17 @@ trait DriverTrait
         $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
 
         $this->createTransaction($user, $amount, $title, $type, "Manifest fee for trip from {$departure} to {$destination}");
+    }
+
+    protected function tripPaymentTopUp($user)
+    {
+        $usersWithPendingPayments = $user->driverTripPayments()
+            ->where('status', General::PENDING)
+            ->sum('amount');
+
+        if ($usersWithPendingPayments > 0) {
+            $this->driverIncrementEarning($user, $usersWithPendingPayments);
+        }
     }
 
     protected function topUpWallet($user)
