@@ -19,7 +19,6 @@ use App\Enum\TransactionTitle;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Services\ERP\ChargeService;
 use App\DTO\NotificationDispatchData;
 use App\Services\Paystack\PaystackService;
 use Unicodeveloper\Paystack\Facades\Paystack;
@@ -358,6 +357,10 @@ class WalletService
 
         if (! $user->walletAccount) {
             return $this->error(null, "Wallet not found", 404);
+        }
+
+        if ($user->user_category === UserType::AGENT->value) {
+            return $this->error(null, "Sorry you can't withdraw funds at this time", 400);
         }
 
         if ($user->user_category === UserType::AGENT->value && (float) $user->earning_balance < 5000) {
