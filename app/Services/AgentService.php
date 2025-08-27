@@ -686,10 +686,6 @@ class AgentService
                 'status' => ManifestStatus::COMPLETED,
             ]);
 
-            if (in_array($request->payment_method, [PaymentMethod::DRIVERWALLET, PaymentMethod::WALLET])) {
-                $this->chargeWallet($user, $request->amount, $trip);
-            }
-
             $trip->update(['status' => TripStatus::INPROGRESS]);
 
             TripLog::create([
@@ -700,6 +696,10 @@ class AgentService
                 'status' => 'success',
                 'message' => 'Trip started successfully and manifest created.',
             ]);
+
+            if (in_array($request->payment_method, [PaymentMethod::DRIVERWALLET, PaymentMethod::WALLET])) {
+                $this->chargeWallet($user, $request->amount, $trip);
+            }
 
             DB::commit();
 
