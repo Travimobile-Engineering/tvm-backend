@@ -9,9 +9,11 @@ use App\Enum\PaymentStatus;
 use App\Enum\PaymentType;
 use App\Enum\TransitCompanyType;
 use App\Enum\TransactionTitle;
+use App\Enum\UserType;
 use App\Models\TransitCompany;
 use App\Models\Wallet;
 use App\Services\Admin\AccountService;
+use Illuminate\Support\Facades\DB;
 
 trait DriverTrait
 {
@@ -82,36 +84,64 @@ trait DriverTrait
         }
     }
 
-    protected function chargeWallet($user, $amount = null, $trip = null)
+    protected function chargeWallet($user, $amount = null, $trip = null, $driver = null)
     {
-        $amount = $amount ?: getFee('manifest');
-        $this->driverDecrementEarning($user, $amount);
-        $user->save();
+        $recipient = $this->determineEarningRecipient($user, $driver);
 
-        // Top up earnings with payments from trips
-        $this->topUpEarning($user);
+        if (! $recipient) {
+            return;
+        }
 
-        $title = TransactionTitle::CHARGE_WALLET->value;
-        $type = PaymentType::DR;
+        try {
+            DB::transaction(function () use ($recipient, $amount, $trip) {
+                // First, top up any pending earnings
+                $this->topUpEarning($recipient);
 
-        $departure = "{$trip->departureRegion?->state?->name} > {$trip->departureRegion?->name}";
-        $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
+                // Then charge the wallet (manifest fee or specified amount)
+                $chargeAmount = $amount ?: getFee('manifest');
 
-        $this->createTransaction($user, $amount, $title, $type, "Manifest fee for trip from {$departure} to {$destination}");
+                if ($chargeAmount > 0) {
+                    $this->driverDecrementEarning($recipient, $chargeAmount);
+
+                    $title = TransactionTitle::CHARGE_WALLET->value;
+                    $type = PaymentType::DR;
+
+                    $departure = "{$trip->departureRegion?->state?->name} > {$trip->departureRegion?->name}";
+                    $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
+
+                    $this->createTransaction(
+                        $recipient,
+                        $chargeAmount,
+                        $title,
+                        $type,
+                        "Manifest fee for trip from {$departure} to {$destination}"
+                    );
+                }
+            });
+
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to charge wallet: ' . $e->getMessage());
+        }
     }
 
     protected function topUpEarning($user)
     {
-        $pendingAmount = $user->pending_balance;
+        if (! $user || $user->pending_balance <= 0) {
+            return;
+        }
 
-        if ($pendingAmount > 0) {
+        $pendingAmount = (float) $user->pending_balance;
+
+        DB::transaction(function () use ($user, $pendingAmount) {
+            // Increment driver earnings
             $this->driverIncrementEarning($user, $pendingAmount);
 
-            $user->driverTripPayments->where('status', General::PENDING)
-                ->each(function ($payment) {
-                    $payment->update(['status' => General::PAID]);
-                });
+            // Update pending payments status (using query builder for efficiency)
+            $user->driverTripPayments()
+                ->where('status', General::PENDING)
+                ->update(['status' => General::PAID]);
 
+            // Create earning record
             $user->createEarning(
                 TransactionTitle::TRIP_BOOKING->value,
                 $pendingAmount,
@@ -119,7 +149,7 @@ trait DriverTrait
                 PaymentStatus::PAID->value,
                 "Earnings top-up from trip payments."
             );
-        }
+        });
     }
 
     protected function createTransaction($user, $amount, $title, $type, $description = null)
@@ -213,6 +243,22 @@ trait DriverTrait
         );
 
         $wallet->increment('balance', $amount);
+    }
+
+    /**
+     * Determine the appropriate recipient for earnings
+     */
+    private function determineEarningRecipient($user, $driver): ?object
+    {
+        if ($user->user_category !== UserType::DRIVER->value && $driver) {
+            return $driver;
+        }
+
+        if ($user->user_category === UserType::DRIVER->value) {
+            return $user;
+        }
+
+        return null;
     }
 }
 
