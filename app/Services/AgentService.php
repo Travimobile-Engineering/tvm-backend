@@ -654,12 +654,12 @@ class AgentService
         $user = User::with(['transactions', 'driverTripPayments'])
             ->findOrFail($request->user_id);
 
-        $trip = Trip::with(['tripBookings' => function ($query) {
+        $trip = Trip::with(relations: ['user', 'tripBookings' => function ($query) {
                 $query->where('payment_status', 1);
             }, 'manifest', 'departureRegion', 'destinationRegion', 'departureRegion.state', 'destinationRegion.state'])
             ->find($request->trip_id);
 
-        if (!$trip) {
+        if (! $trip) {
             return $this->error(null, "Trip not found!", 404);
         }
 
@@ -698,7 +698,7 @@ class AgentService
             ]);
 
             if (in_array($request->payment_method, [PaymentMethod::DRIVERWALLET, PaymentMethod::WALLET])) {
-                $this->chargeWallet($user, $request->amount, $trip);
+                $this->chargeWallet($user, $request->amount, $trip, $trip->user);
             }
 
             DB::commit();

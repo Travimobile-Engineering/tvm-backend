@@ -9,6 +9,7 @@ use App\Enum\PaymentStatus;
 use App\Enum\PaymentType;
 use App\Enum\TransitCompanyType;
 use App\Enum\TransactionTitle;
+use App\Enum\UserType;
 use App\Models\TransitCompany;
 use App\Models\Wallet;
 use App\Services\Admin\AccountService;
@@ -82,14 +83,14 @@ trait DriverTrait
         }
     }
 
-    protected function chargeWallet($user, $amount = null, $trip = null)
+    protected function chargeWallet($user, $amount = null, $trip = null, $driver = null)
     {
         $amount = $amount ?: getFee('manifest');
         $this->driverDecrementEarning($user, $amount);
         $user->save();
 
         // Top up earnings with payments from trips
-        $this->topUpEarning($user);
+        $this->topUpEarning($user, $driver);
 
         $title = TransactionTitle::CHARGE_WALLET->value;
         $type = PaymentType::DR;
@@ -100,19 +101,30 @@ trait DriverTrait
         $this->createTransaction($user, $amount, $title, $type, "Manifest fee for trip from {$departure} to {$destination}");
     }
 
-    protected function topUpEarning($user)
+    protected function topUpEarning($user, $driver = null)
     {
+        if (! $user || $user->pending_balance <= 0) {
+            return;
+        }
+
         $pendingAmount = $user->pending_balance;
 
         if ($pendingAmount > 0) {
-            $this->driverIncrementEarning($user, $pendingAmount);
 
-            $user->driverTripPayments->where('status', General::PENDING)
+            $recipient = $this->determineEarningRecipient($user, $driver);
+
+            if (! $recipient) {
+                return;
+            }
+
+            $this->driverIncrementEarning($recipient, $pendingAmount);
+
+            $recipient->driverTripPayments->where('status', General::PENDING)
                 ->each(function ($payment) {
                     $payment->update(['status' => General::PAID]);
                 });
 
-            $user->createEarning(
+            $recipient->createEarning(
                 TransactionTitle::TRIP_BOOKING->value,
                 $pendingAmount,
                 'CR',
@@ -213,6 +225,22 @@ trait DriverTrait
         );
 
         $wallet->increment('balance', $amount);
+    }
+
+    /**
+     * Determine the appropriate recipient for earnings
+     */
+    private function determineEarningRecipient($user, $driver): ?object
+    {
+        if ($user->user_category !== UserType::DRIVER->value && $driver) {
+            return $driver;
+        }
+
+        if ($user->user_category === UserType::DRIVER->value) {
+            return $user;
+        }
+
+        return null;
     }
 }
 
