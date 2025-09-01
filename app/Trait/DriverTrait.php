@@ -85,12 +85,17 @@ trait DriverTrait
 
     protected function chargeWallet($user, $amount = null, $trip = null, $driver = null)
     {
-        $amount = $amount ?: getFee('manifest');
-        $this->driverDecrementEarning($user, $amount);
-        $user->save();
+        $recipient = $this->determineEarningRecipient($user, $driver);
+
+        if (! $recipient) {
+            return;
+        }
 
         // Top up earnings with payments from trips
-        $this->topUpEarning($user, $driver);
+        $this->topUpEarning($recipient);
+
+        $amount = $amount ?: getFee('manifest');
+        $this->driverDecrementEarning($recipient, $amount);
 
         $title = TransactionTitle::CHARGE_WALLET->value;
         $type = PaymentType::DR;
@@ -98,32 +103,26 @@ trait DriverTrait
         $departure = "{$trip->departureRegion?->state?->name} > {$trip->departureRegion?->name}";
         $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
 
-        $this->createTransaction($user, $amount, $title, $type, "Manifest fee for trip from {$departure} to {$destination}");
+        $this->createTransaction($recipient, $amount, $title, $type, "Manifest fee for trip from {$departure} to {$destination}");
     }
 
-    protected function topUpEarning($user, $driver = null)
+    protected function topUpEarning($user)
     {
         if (! $user || $user->pending_balance <= 0) {
             return;
         }
 
-        $recipient = $this->determineEarningRecipient($user, $driver);
-
-        if (! $recipient) {
-            return;
-        }
-
-        $pendingAmount = $recipient->pending_balance;
+        $pendingAmount = $user->pending_balance;
 
         if ($pendingAmount > 0) {
-            $this->driverIncrementEarning($recipient, $pendingAmount);
+            $this->driverIncrementEarning($user, $pendingAmount);
 
-            $recipient->driverTripPayments->where('status', General::PENDING)
+            $user->driverTripPayments->where('status', General::PENDING)
                 ->each(function ($payment) {
                     $payment->update(['status' => General::PAID]);
                 });
 
-            $recipient->createEarning(
+            $user->createEarning(
                 TransactionTitle::TRIP_BOOKING->value,
                 $pendingAmount,
                 'CR',
