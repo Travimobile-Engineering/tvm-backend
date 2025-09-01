@@ -107,16 +107,15 @@ trait DriverTrait
             return;
         }
 
-        $pendingAmount = $user->pending_balance;
+        $recipient = $this->determineEarningRecipient($user, $driver);
+
+        if (! $recipient) {
+            return;
+        }
+
+        $pendingAmount = $recipient->pending_balance;
 
         if ($pendingAmount > 0) {
-
-            $recipient = $this->determineEarningRecipient($user, $driver);
-
-            if (! $recipient) {
-                return;
-            }
-
             $this->driverIncrementEarning($recipient, $pendingAmount);
 
             $recipient->driverTripPayments->where('status', General::PENDING)

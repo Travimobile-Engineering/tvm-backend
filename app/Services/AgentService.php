@@ -654,7 +654,7 @@ class AgentService
         $user = User::with(['transactions', 'driverTripPayments'])
             ->findOrFail($request->user_id);
 
-        $trip = Trip::with(relations: ['user', 'tripBookings' => function ($query) {
+        $trip = Trip::with(['user', 'tripBookings' => function ($query) {
                 $query->where('payment_status', 1);
             }, 'manifest', 'departureRegion', 'destinationRegion', 'departureRegion.state', 'destinationRegion.state'])
             ->find($request->trip_id);
@@ -664,7 +664,7 @@ class AgentService
         }
 
         if ($trip->status !== TripStatus::UPCOMING) {
-            return $this->error(null, "Sorry " . $trip->status, 400);
+            return $this->error(null, "Sorry {$trip->status}", 400);
         }
 
         if ($request->payment_method === 'driver_wallet' && $user->wallet_amount < $request->amount) {
@@ -698,7 +698,7 @@ class AgentService
             ]);
 
             if (in_array($request->payment_method, [PaymentMethod::DRIVERWALLET, PaymentMethod::WALLET])) {
-                $this->chargeWallet($user, $request->amount, $trip, $trip->user);
+                $this->chargeWallet($user, $request->amount, $trip, $trip?->user);
             }
 
             DB::commit();
