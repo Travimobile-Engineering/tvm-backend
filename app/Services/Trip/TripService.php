@@ -2,32 +2,33 @@
 
 namespace App\Services\Trip;
 
-use App\DTO\NotificationDispatchData;
-use App\Enum\ManifestStatus;
+use Carbon\Carbon;
 use App\Models\Trip;
+use App\Models\User;
 use App\Enum\TripType;
+use App\Enum\UserType;
+use App\Models\BusStop;
+use App\Models\TripLog;
 use App\Enum\TripStatus;
-use App\Events\PassengerTripStart;
-use App\Events\TripCancelled;
-use App\Events\TripCreated;
+use App\Models\Manifest;
 use App\Events\TripStart;
+use App\Trait\DriverTrait;
+use App\Events\TripCreated;
+use App\Models\TripBooking;
 use App\Trait\HttpResponse;
+use App\Enum\ManifestStatus;
+use App\Events\TripCancelled;
+use App\Models\RouteSubregion;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Events\PassengerTripStart;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Resources\TripResource;
+use App\DTO\NotificationDispatchData;
 use App\Http\Resources\OneTimeTripResource;
 use App\Http\Resources\RecurringTripResource;
-use App\Models\BusStop;
-use App\Models\Manifest;
-use App\Models\RouteSubregion;
-use App\Models\TripBooking;
-use App\Models\TripLog;
-use App\Models\User;
-use App\Services\Notification\NotificationDispatcher;
-use App\Trait\DriverTrait;
-use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Log;
 use Spatie\ResponseCache\Facades\ResponseCache;
+use App\Services\Notification\NotificationDispatcher;
 
 class TripService
 {
@@ -447,6 +448,10 @@ class TripService
     public function startTrip($request)
     {
         $user = User::with(['transactions', 'driverTripPayments'])->findOrFail($request->user_id);
+
+        if ($user->user_category !== UserType::DRIVER->value) {
+            return $this->error(null, "Only drivers can start trips.", 403);
+        }
 
         $existingTrip = Trip::hasOngoingTrip($request->trip_id, $user->id);
 
