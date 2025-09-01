@@ -93,7 +93,7 @@ trait DriverTrait
         }
 
         try {
-            DB::transaction(function () use ($recipient, $amount, $trip, $user) {
+            DB::transaction(function () use ($recipient, $amount, $trip) {
                 // First, top up any pending earnings
                 $this->topUpEarning($recipient);
 
