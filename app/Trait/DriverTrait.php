@@ -13,6 +13,7 @@ use App\Enum\UserType;
 use App\Models\TransitCompany;
 use App\Models\Wallet;
 use App\Services\Admin\AccountService;
+use Illuminate\Support\Facades\DB;
 
 trait DriverTrait
 {
@@ -91,19 +92,36 @@ trait DriverTrait
             return;
         }
 
-        // Top up earnings with payments from trips
-        $this->topUpEarning($recipient);
+        try {
+            DB::transaction(function () use ($recipient, $amount, $trip, $user) {
+                // First, top up any pending earnings
+                $this->topUpEarning($recipient);
 
-        $amount = $amount ?: getFee('manifest');
-        $this->driverDecrementEarning($recipient, $amount);
+                // Then charge the wallet (manifest fee or specified amount)
+                $chargeAmount = $amount ?: getFee('manifest');
 
-        $title = TransactionTitle::CHARGE_WALLET->value;
-        $type = PaymentType::DR;
+                if ($chargeAmount > 0) {
+                    $this->driverDecrementEarning($recipient, $chargeAmount);
 
-        $departure = "{$trip->departureRegion?->state?->name} > {$trip->departureRegion?->name}";
-        $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
+                    $title = TransactionTitle::CHARGE_WALLET->value;
+                    $type = PaymentType::DR;
 
-        $this->createTransaction($recipient, $amount, $title, $type, "Manifest fee for trip from {$departure} to {$destination}");
+                    $departure = "{$trip->departureRegion?->state?->name} > {$trip->departureRegion?->name}";
+                    $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
+
+                    $this->createTransaction(
+                        $recipient,
+                        $chargeAmount,
+                        $title,
+                        $type,
+                        "Manifest fee for trip from {$departure} to {$destination}"
+                    );
+                }
+            });
+
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to charge wallet: ' . $e->getMessage());
+        }
     }
 
     protected function topUpEarning($user)
@@ -112,16 +130,18 @@ trait DriverTrait
             return;
         }
 
-        $pendingAmount = $user->pending_balance;
+        $pendingAmount = (float) $user->pending_balance;
 
-        if ($pendingAmount > 0) {
+        DB::transaction(function () use ($user, $pendingAmount) {
+            // Increment driver earnings
             $this->driverIncrementEarning($user, $pendingAmount);
 
-            $user->driverTripPayments->where('status', General::PENDING)
-                ->each(function ($payment) {
-                    $payment->update(['status' => General::PAID]);
-                });
+            // Update pending payments status (using query builder for efficiency)
+            $user->driverTripPayments()
+                ->where('status', General::PENDING)
+                ->update(['status' => General::PAID]);
 
+            // Create earning record
             $user->createEarning(
                 TransactionTitle::TRIP_BOOKING->value,
                 $pendingAmount,
@@ -129,7 +149,7 @@ trait DriverTrait
                 PaymentStatus::PAID->value,
                 "Earnings top-up from trip payments."
             );
-        }
+        });
     }
 
     protected function createTransaction($user, $amount, $title, $type, $description = null)
