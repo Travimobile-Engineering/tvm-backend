@@ -7,8 +7,6 @@ use App\Models\Trip;
 use App\Models\User;
 use App\Enum\TripStatus;
 use App\Enum\PaymentMethod;
-use App\Events\BookingCancelled;
-use App\Events\DriverBookingCancelled;
 use App\Models\Transaction;
 use App\Models\TripBooking;
 use App\Models\TripPayment;
@@ -315,24 +313,7 @@ class TripBookingService
         ]);
 
         $this->notifier->send(new NotificationDispatchData(
-            events: [
-                [
-                    'class' => BookingCancelled::class,
-                    'payload' => [
-                        'type' => 'booking_cancelled',
-                        'message' => 'Your booking has been cancelled',
-                        'bookingId' => $booking->booking_id,
-                    ],
-                ],
-                [
-                    'class' => DriverBookingCancelled::class,
-                    'payload' => [
-                        'type' => 'booking_cancelled',
-                        'message' => 'User cancelled booking',
-                        'bookingId' => $booking->booking_id,
-                    ],
-                ],
-            ],
+            events: [],
             recipients: collect([$booking->user, $booking->trip->user])->filter()->unique('id'),
             title: 'Booking Cancelled',
             body: "Booking ID {$booking->booking_id} has been cancelled.",

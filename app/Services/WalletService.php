@@ -14,7 +14,6 @@ use App\Trait\ChargeTrait;
 use App\Trait\DriverTrait;
 use App\Models\Transaction;
 use App\Trait\HttpResponse;
-use App\Events\WalletFunded;
 use App\Enum\TransactionTitle;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -76,17 +75,7 @@ class WalletService
             $this->userIncrementBalance($user, $formattedAmount);
 
             $this->notifier->send(new NotificationDispatchData(
-                events: [
-                    [
-                        'class' => WalletFunded::class,
-                        'payload' => [
-                            'type' => 'wallet_funded',
-                            'message' => "₦{$formattedAmount} has been added to your wallet.",
-                            'userId' => $user->id,
-                            'amount' => $request->amount,
-                        ],
-                    ],
-                ],
+                events: [],
                 recipients: $user,
                 title: 'Wallet Funded',
                 body: "₦{$formattedAmount} has been added to your wallet.",

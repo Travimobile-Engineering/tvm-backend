@@ -11,16 +11,12 @@ use App\Models\BusStop;
 use App\Models\TripLog;
 use App\Enum\TripStatus;
 use App\Models\Manifest;
-use App\Events\TripStart;
 use App\Trait\DriverTrait;
-use App\Events\TripCreated;
 use App\Models\TripBooking;
 use App\Trait\HttpResponse;
 use App\Enum\ManifestStatus;
-use App\Events\TripCancelled;
 use App\Models\RouteSubregion;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Events\PassengerTripStart;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Resources\TripResource;
@@ -72,16 +68,7 @@ class TripService
             ]);
 
             $this->notifier->send(new NotificationDispatchData(
-                events: [
-                    [
-                        'class' => TripCreated::class,
-                        'payload' => [
-                            'type' => 'trip_create',
-                            'message' => 'Trip created successfully',
-                            'userId' => $user->id,
-                        ],
-                    ]
-                ],
+                events: [],
                 recipients: $user,
                 title: 'Trip Created',
                 body: 'Your trip has been created successfully',
@@ -289,16 +276,7 @@ class TripService
             }
 
             $this->notifier->send(new NotificationDispatchData(
-                events: [
-                    [
-                        'class' => TripCreated::class,
-                        'payload' => [
-                            'type' => 'trip_create',
-                            'message' => 'Trip created successfully',
-                            'userId' => $user->id,
-                        ],
-                    ]
-                ],
+                events: [],
                 recipients: $user,
                 title: 'Trip Created',
                 body: 'Your trip has been created successfully',
@@ -401,16 +379,7 @@ class TripService
         ]);
 
         $this->notifier->send(new NotificationDispatchData(
-            events: [
-                [
-                    'class' => TripCancelled::class,
-                    'payload' => [
-                        'type' => 'trip_cancelled',
-                        'message' => 'Your trip has been cancelled.',
-                        'tripId' => $trip->id,
-                    ],
-                ]
-            ],
+            events: [],
             recipients: $trip?->user,
             title: 'Trip Cancelled',
             body: 'Your trip has been cancelled.',
@@ -536,24 +505,7 @@ class TripService
             $recipients = collect([$user])->merge($passengerUsers);
 
             $this->notifier->send(new NotificationDispatchData(
-                events: [
-                    [
-                        'class' => TripStart::class,
-                        'payload' => [
-                            'type' => 'trip_start',
-                            'message' => 'Trip started successfully.',
-                            'tripId' => $trip->id
-                        ],
-                    ],
-                    [
-                        'class' => PassengerTripStart::class,
-                        'payload' => [
-                            'type' => 'trip_start',
-                            'message' => 'Trip started successfully.',
-                            'tripId' => $trip->id
-                        ],
-                    ],
-                ],
+                events: [],
                 recipients: $recipients,
                 title: 'Trip Started',
                 body: 'The trip has begun.',
