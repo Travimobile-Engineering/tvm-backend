@@ -8,7 +8,6 @@ use App\Enum\UserType;
 use App\Enum\ChargeType;
 use App\Enum\TripStatus;
 use App\Enum\PaymentType;
-use App\Events\TripBooked;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
 use App\Models\TripBooking;
@@ -274,16 +273,7 @@ trait TripBookingTrait
         ];
 
         $this->notifier->send(new NotificationDispatchData(
-            events: [
-                [
-                    'class' => TripBooked::class,
-                    'payload' => [
-                        'type' => 'trip_booking',
-                        'message' => 'Your bus ticket has been booked successfully!',
-                        'userId' => $user->id,
-                    ],
-                ]
-            ],
+            events: [],
             recipients: $user,
             title: 'Trip Booked',
             body: 'Your bus ticket has been booked successfully!',
