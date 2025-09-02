@@ -11,7 +11,6 @@ use App\Models\TripLog;
 use App\Enum\TripStatus;
 use App\DTO\SendCodeData;
 use App\Enum\MailingEnum;
-use App\Events\TripStart;
 use App\Trait\AgentTrait;
 use App\Trait\DriverTrait;
 use App\Enum\PaymentMethod;
@@ -20,17 +19,14 @@ use App\Models\TripBooking;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Str;
 use App\Enum\ManifestStatus;
-use App\Events\TripCancelled;
 use App\Models\RouteSubregion;
 use App\Trait\TripBookingTrait;
-use App\Events\PassengerTripStart;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Resources\TripResource;
 use Illuminate\Support\Facades\Hash;
 use App\DTO\NotificationDispatchData;
 use Illuminate\Support\Facades\Cache;
-use App\Events\TripDepartureNotification;
 use App\Http\Resources\TripBookingResource;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Http\Resources\AgentProfileResource;
@@ -311,16 +307,7 @@ class AgentService
         ]);
 
         $this->notifier->send(new NotificationDispatchData(
-            events: [
-                [
-                    'class' => TripCancelled::class,
-                    'payload' => [
-                        'type' => 'trip_cancelled',
-                        'message' => 'Your trip has been cancelled.',
-                        'tripId' => $trip->id,
-                    ],
-                ]
-            ],
+            events: [],
             recipients: $trip?->user,
             title: 'Trip Cancelled',
             body: 'Your trip has been cancelled.',
@@ -711,24 +698,7 @@ class AgentService
             $recipients = collect([$user])->merge($passengerUsers);
 
             $this->notifier->send(new NotificationDispatchData(
-                events: [
-                    [
-                        'class' => TripStart::class,
-                        'payload' => [
-                            'type' => 'trip_start',
-                            'message' => 'Trip started successfully.',
-                            'tripId' => $trip->id
-                        ],
-                    ],
-                    [
-                        'class' => PassengerTripStart::class,
-                        'payload' => [
-                            'type' => 'trip_start',
-                            'message' => 'Trip started successfully.',
-                            'tripId' => $trip->id
-                        ],
-                    ],
-                ],
+                events: [],
                 recipients: $recipients,
                 title: 'Trip Started',
                 body: 'The trip has begun.',
@@ -785,16 +755,7 @@ class AgentService
             ->unique('id');
 
         $this->notifier->send(new NotificationDispatchData(
-            events: [
-                [
-                    'class' => TripDepartureNotification::class,
-                    'payload' => [
-                        'type' => 'trip_departure',
-                        'message' => 'Your trip is about to depart.',
-                        'tripId' => $trip->id,
-                    ],
-                ]
-            ],
+            events: [],
             recipients: $passengerUsers,
             title: 'Trip Departure',
             body: 'Your trip is about to depart.',

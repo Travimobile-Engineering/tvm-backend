@@ -6,12 +6,10 @@ use App\Models\Trip;
 use App\Models\User;
 use App\Enum\TripStatus;
 use App\Enum\PaymentType;
-use App\Events\TripBooked;
 use App\Models\PaymentLog;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
 use App\Models\TripBooking;
-use App\Events\WalletFunded;
 use App\Models\Notification;
 use App\Enum\TransactionTitle;
 use App\Models\Vehicle\Vehicle;
@@ -54,17 +52,7 @@ trait PaymentTrait
             DB::commit();
 
             $this->notifier->send(new NotificationDispatchData(
-                events: [
-                    [
-                        'class' => WalletFunded::class,
-                        'payload' => [
-                            'type' => 'wallet_funded',
-                            'message' => "₦{$formattedAmount} has been added to your wallet.",
-                            'userId' => $user->id,
-                            'amount' => $formattedAmount,
-                        ],
-                    ],
-                ],
+                events: [],
                 recipients: $user,
                 title: 'Wallet Funded',
                 body: "₦{$formattedAmount} has been added to your wallet.",
@@ -388,14 +376,7 @@ trait PaymentTrait
     private function dispatchTripBookedEvent(User $user): void
     {
         $this->notifier->send(new NotificationDispatchData(
-            events: [[
-                'class' => TripBooked::class,
-                'payload' => [
-                    'type' => 'trip_booking',
-                    'message' => 'Your bus ticket has been booked successfully!',
-                    'userId' => $user->id,
-                ],
-            ]],
+            events: [],
             recipients: $user,
             title: 'Trip Booked',
             body: 'Your bus ticket has been booked successfully!',
