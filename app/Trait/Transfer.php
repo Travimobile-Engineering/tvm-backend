@@ -238,7 +238,16 @@ trait Transfer
         } catch (\Exception $e) {
             Log::error("Paystack bulk transfer exception: {$e->getMessage()}");
             foreach ($chunk as $item) {
-                $this->markWithdrawRequestFailed($item['request_id'], $item['user_id'], [$e]);
+                $this->markWithdrawRequestFailed(
+                    $item['request_id'],
+                    $item['user_id'],
+                    [
+                        'message' => $e->getMessage(),
+                        'line'    => $e->getLine(),
+                        'file'    => $e->getFile(),
+                        'trace'   => $e->getTraceAsString(),
+                    ]
+                );
             }
         }
     }
