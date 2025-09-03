@@ -274,7 +274,6 @@ trait Transfer
             // Use lockForUpdate to prevent race conditions
             $withdraw = UserWithdrawLog::where('id', $requestId)
                 ->where('user_id', $userId)
-                ->whereNotIn('status', [General::FAILED, General::REFUNDED])
                 ->lockForUpdate()
                 ->first();
 
@@ -321,7 +320,6 @@ trait Transfer
             }
 
             $freshWithdraw = UserWithdrawLog::where('id', $withdraw->id)
-                ->whereNotIn('status', [General::FAILED, General::REFUNDED])
                 ->lockForUpdate()
                 ->first();
 
