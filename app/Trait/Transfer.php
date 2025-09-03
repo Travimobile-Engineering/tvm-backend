@@ -285,6 +285,7 @@ trait Transfer
             // Use lockForUpdate to prevent race conditions
             $withdraw = UserWithdrawLog::where('id', $requestId)
                 ->where('user_id', $userId)
+                ->whereNotIn('status', [General::FAILED, General::REFUNDED])
                 ->lockForUpdate()
                 ->first();
 
@@ -321,21 +322,22 @@ trait Transfer
     {
         DB::transaction(function () use ($user, $withdraw) {
             // Reload fresh instances with locks
+            $freshWithdraw = UserWithdrawLog::where('id', $withdraw->id)
+                ->whereNotIn('status', [General::REFUNDED])
+                ->lockForUpdate()
+                ->first();
+
+            if (! $freshWithdraw) {
+                Log::warning("Withdrawal already refunded or not found: {$withdraw->id}");
+                return;
+            }
+
             $freshUser = User::where('id', $user->id)
                 ->with('walletAccount')
                 ->first();
 
             if (! $freshUser) {
                 Log::error("User not found for refund: {$user->id}");
-                return;
-            }
-
-            $freshWithdraw = UserWithdrawLog::where('id', $withdraw->id)
-                ->lockForUpdate()
-                ->first();
-
-            if (! $freshWithdraw) {
-                Log::warning("Withdrawal already refunded or not found: {$withdraw->id}");
                 return;
             }
 
