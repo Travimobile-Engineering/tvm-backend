@@ -273,13 +273,6 @@ trait Transfer
             $withdraw->update([
                 'transfer_code' => $data['transfer_code'],
             ]);
-
-            // foreach ($data as $transfer) {
-            //     $transferCode = $transfer['transfer_code'];
-            //     $withdraw->update([
-            //         'transfer_code' => $transferCode,
-            //     ]);
-            // }
         } else {
             $this->markWithdrawRequestFailed($withdraw->id, $user->id, $errorMessage);
             Log::error("Failed to queue Paystack bulk transfer: " . json_encode($errorMessage));
