@@ -348,8 +348,8 @@ trait Transfer
                 TransactionTitle::REFUND,
                 $amount,
                 'CR',
+                General::REFUNDED,
                 "Refund for failed withdrawal",
-                General::REFUNDED
             );
 
             // Update withdrawal status to REFUNDED
