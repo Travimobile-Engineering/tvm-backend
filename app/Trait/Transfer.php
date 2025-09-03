@@ -214,29 +214,21 @@ trait Transfer
     {
         try {
             $result = PayoutService::paystackBulkTransfer($chunk);
+
             $success = $result['status'] === true;
             $message = $result;
             $data = $result['data'];
 
-            // Create a map of reference to transfer data
-            $transferMap = [];
-            foreach ($data as $transfer) {
-                $transferMap[$transfer['reference']] = $transfer;
-            }
-
             foreach ($chunk as $item) {
-                // Find the matching transfer result for this specific item
-                $matchingTransfer = $transferMap[$item['reference']] ?? null;
-
                 $this->handleResultItem(
                     $item,
                     $success,
                     $success ? null : $message,
-                    $matchingTransfer, // Pass only the relevant transfer data
+                    $data,
                 );
             }
         } catch (\Exception $e) {
-            Log::error("Paystack bulk transfer exception: {$e}");
+            Log::error('Paystack bulk transfer exception: ' . $e);
 
             foreach ($chunk as $item) {
                 $this->markRequestFailed($item['request_id'], $item['user_id'], $e->getMessage());
@@ -249,19 +241,14 @@ trait Transfer
         $withdraw = UserWithdrawLog::find($item['request_id']);
         $user = User::with(['walletAccount'])->find($item['user_id']);
 
-        if ($success && $data) {
+        if ($success) {
             Log::info("Bulk transfer queued: Withdrawal ID {$withdraw->id}, Ref: {$item['reference']}");
-
-            $withdraw->update([
-                'transfer_code' => $data['transfer_code'],
-            ]);
-
-            // foreach ($data as $transfer) {
-            //     $transferCode = $transfer['transfer_code'];
-            //     $withdraw->update([
-            //         'transfer_code' => $transferCode,
-            //     ]);
-            // }
+            foreach ($data as $transfer) {
+                $transferCode = $transfer['transfer_code'];
+                $withdraw->update([
+                    'transfer_code' => $transferCode,
+                ]);
+            }
         } else {
             $this->markWithdrawRequestFailed($withdraw->id, $user->id, $errorMessage);
             Log::error("Failed to queue Paystack bulk transfer: " . json_encode($errorMessage));
@@ -274,20 +261,16 @@ trait Transfer
             // Use lockForUpdate to prevent race conditions
             $withdraw = UserWithdrawLog::where('id', $requestId)
                 ->where('user_id', $userId)
+                ->whereNotIn('status', [General::FAILED, General::REFUNDED])
                 ->lockForUpdate()
                 ->first();
-
-            if (!$withdraw) {
-                Log::error("Withdrawal already processed or not found: {$requestId}");
-                return;
-            }
 
             $user = User::where('id', $userId)
                 ->lockForUpdate()
                 ->with('walletAccount')
                 ->first();
 
-            if (!$user) {
+            if (!$withdraw || !$user) {
                 Log::error("Failed to mark withdraw request failed: Withdrawal ID {$requestId}, User ID {$userId}");
                 return;
             }
@@ -311,22 +294,14 @@ trait Transfer
         DB::transaction(function () use ($user, $withdraw) {
             // Reload fresh instances with locks
             $freshUser = User::where('id', $user->id)
+                ->lockForUpdate()
                 ->with('walletAccount')
                 ->first();
 
-            if (! $freshUser) {
-                Log::error("User not found for refund: {$user->id}");
-                return;
-            }
-
             $freshWithdraw = UserWithdrawLog::where('id', $withdraw->id)
+                ->whereNotIn('status', [General::FAILED, General::REFUNDED])
                 ->lockForUpdate()
                 ->first();
-
-            if (! $freshWithdraw) {
-                Log::warning("Withdrawal already refunded or not found: {$withdraw->id}");
-                return;
-            }
 
             $chargeTypes = [
                 ChargeType::ADMIN->value,
@@ -336,6 +311,7 @@ trait Transfer
             // Refund charges
             $charges = getCharge($chargeTypes);
             $chargeAmount = array_sum($charges);
+
             $amount = $freshWithdraw->amount + $chargeAmount;
 
             // Increment earnings balance
@@ -346,8 +322,8 @@ trait Transfer
                 TransactionTitle::REFUND,
                 $amount,
                 'CR',
-                General::REFUNDED,
                 "Refund for failed withdrawal",
+                General::REFUNDED
             );
 
             // Update withdrawal status to REFUNDED
