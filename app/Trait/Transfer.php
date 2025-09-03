@@ -216,12 +216,22 @@ trait Transfer
             $result = PayoutService::paystackBulkTransfer($chunk);
             $success = $result['status'] === true;
             $message = $result;
-            $data = $result['data'];
+
+            // Handle the case where data might not be present or might contain invalid elements
+            $data = $success ? ($result['data'] ?? []) : [];
 
             // Create a map of reference to transfer data
             $transferMap = [];
-            foreach ($data as $transfer) {
-                $transferMap[$transfer['reference']] = $transfer;
+            if (is_array($data)) {
+                foreach ($data as $transfer) {
+                    // Skip non-array elements and elements without reference
+                    if (!is_array($transfer) || !isset($transfer['reference'])) {
+                        Log::warning("Invalid transfer data in Paystack response: " . json_encode($transfer));
+                        continue;
+                    }
+
+                    $transferMap[$transfer['reference']] = $transfer;
+                }
             }
 
             foreach ($chunk as $item) {
