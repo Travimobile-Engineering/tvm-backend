@@ -348,6 +348,10 @@ class WalletService
             return $this->error(null, "Wallet not found", 404);
         }
 
+        if ($user->walletAccount->is_flagged) {
+            return $this->error(null, "You can't withdraw funds at this time, contact support.", 403);
+        }
+
         if ($user->user_category === UserType::AGENT->value) {
             return $this->error(null, "Sorry you can't withdraw funds at this time", 400);
         }
@@ -431,6 +435,10 @@ class WalletService
 
         if (!$user->walletAccount) {
             return $this->error(null, "Wallet not found", 404);
+        }
+
+        if ($user->walletAccount->is_flagged) {
+            return $this->error(null, "You can't withdraw at this time, contact support.", 403);
         }
 
         if ($user->user_category === UserType::AGENT->value && (float) $user->earning_balance < 5000) {

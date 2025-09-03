@@ -10,6 +10,7 @@ class Wallet extends Model
         'user_id',
         'balance',
         'earnings',
+        'is_flagged',
     ];
 
     protected function casts(): array
@@ -17,6 +18,7 @@ class Wallet extends Model
         return [
             'balance' => 'decimal:2',
             'earnings' => 'decimal:2',
+            'is_flagged' => 'boolean',
         ];
     }
 
