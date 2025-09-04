@@ -36,6 +36,8 @@ class Vehicle extends Model
         'seat_column',
         'description',
         'management_type',
+        'manufacturer',
+        'vehicle_type_id',
     ];
 
     protected function casts(): array
