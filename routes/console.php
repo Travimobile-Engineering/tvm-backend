@@ -16,8 +16,8 @@ Schedule::everyMinute()
 
 Schedule::command('app:rotate-security-questions')->monthly();
 
-Schedule::command('app:account-payout')
-    ->everyMinute();
+// Schedule::command('app:account-payout')
+//     ->everyMinute();
 
 Schedule::command('app:withdraw-request-payout')
     ->everyThirtySeconds();

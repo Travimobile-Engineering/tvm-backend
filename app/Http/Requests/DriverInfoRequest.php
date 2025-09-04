@@ -30,6 +30,7 @@ class DriverInfoRequest extends FormRequest
             'vehicle_color' => 'required|string',
             'plate_number' => 'required|string',
             'vehicle_type' => 'required|string',
+            'manufacturer' => 'nullable|string',
             'vehicle_capacity' => 'required|integer|min:1',
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'nin' => 'nullable|string',
