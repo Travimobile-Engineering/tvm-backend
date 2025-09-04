@@ -9,6 +9,7 @@ use App\Http\Resources\BusStopResource;
 use App\Models\Document;
 use App\Models\User;
 use App\Models\Vehicle\Vehicle;
+use App\Models\Vehicle\VehicleType;
 use App\Trait\DriverTrait;
 use App\Trait\HttpResponse;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -62,6 +63,7 @@ class DriverService
                 'color' => $request->vehicle_color,
                 'plate_no' => $request->plate_number,
                 'type' => $request->vehicle_type,
+                'manufacturer' => $request->manufacturer,
                 'capacity' => $request->vehicle_capacity,
                 'seats' => $seats,
                 'seat_row' => $request->seat_row,
@@ -347,9 +349,13 @@ class DriverService
 
     public function updateLayout($request)
     {
-        $vehicle = Vehicle::findOrFail($request->vehicle_id);
+        $user = User::with('vehicle')->findOrFail($request->user_id);
+        $vehicle = $user->vehicle()->where('id', $request->vehicle_id)->firstOrFail();
+        $vehicleType = VehicleType::findOrFail($request->vehicle_type_id);
 
         $vehicle->update([
+            'type' => $vehicleType->name,
+            'vehicle_type_id' => $vehicleType->id,
             'seat_row' => $request->seat_row,
             'seat_column' => $request->seat_column,
         ]);

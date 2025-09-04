@@ -9,6 +9,7 @@ use App\Enum\MailingEnum;
 use App\Enum\UserType;
 use App\Trait\HttpResponse;
 use App\Mail\ConfirmationEmail;
+use App\Mail\VerifyPinMail;
 
 class AuthService
 {
@@ -95,6 +96,13 @@ class AuthService
     {
         $value = $request->email;
         $field = filter_var($value, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
+        $type = $request->type;
+
+        $user = User::where($field, $value)->first();
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
 
         if (blank($value)) {
             return $this->error(null, 'Either email or phone number is required.', 422);
@@ -107,35 +115,18 @@ class AuthService
             $this->validateEmail($request);
         }
 
-        $user = User::where($field, $value)->first();
-
-        if (! $user) {
-            return $this->error(null, 'User not found', 404);
-        }
-
         $this->customvalidate($request, $user, $field, $value);
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
-
         $user->update([
             'verification_code' => $code,
             'verification_code_expires_at' => now()->addMinutes(10),
         ]);
 
-        if ($field === 'phone_number') {
-            sendSmS($value, "Your Travi verification OTP is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi");
-        } else {
-            $type = MailingEnum::RESEND_CODE;
-            $subject = "Resend code";
-            $mail_class = ConfirmationEmail::class;
-            $data = [
-                'name' => $user->first_name,
-                'verification_code' => $code
-            ];
-            mailSend($type, $user, $subject, $mail_class, $data);
-        }
-
-        return $this->success(null, 'Verification code sent successfully');
+        return match($type) {
+            'pin' => $this->sendPinOtp($field, $value, $code, $user),
+            default => $this->sendOtp($field, $value, $code, $user)
+        };
     }
 
     public function createDriver($request)
@@ -313,6 +304,47 @@ class AuthService
                 return $this->error(null, 'Phone number mismatch.', 400);
             }
         }
+    }
+
+    private function sendOtp($field, $value, $code, $user)
+    {
+        if ($field === 'phone_number') {
+            sendSmS($value, "Your Travi verification OTP is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi");
+        } else {
+            $type = MailingEnum::RESEND_CODE;
+            $subject = "Resend code";
+            $mail_class = ConfirmationEmail::class;
+            $data = [
+                'name' => $user->first_name,
+                'verification_code' => $code
+            ];
+            mailSend($type, $user, $subject, $mail_class, $data);
+        }
+
+        return $this->success(null, 'Verification code sent successfully');
+    }
+
+    private function sendPinOtp($field, $value, $code, $user)
+    {
+        $user->update([
+            'verification_code' => $code,
+            'verification_code_expires_at' => now()->addMinutes(10),
+        ]);
+
+        if ($field === 'phone_number') {
+            sendSmS($value, "Your Travi verification Pin is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi");
+        } else {
+            $type = MailingEnum::VERIFY_OTP;
+            $subject = "Verify OTP";
+            $mail_class = VerifyPinMail::class;
+            $data = [
+                'name' => $user->first_name,
+                'code' => $code
+            ];
+            mailSend($type, $user, $subject, $mail_class, $data);
+        }
+
+        return $this->success(null, 'Verification code sent successfully');
     }
 }
 

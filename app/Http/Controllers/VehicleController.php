@@ -111,9 +111,20 @@ class VehicleController extends Controller
 
     public function getVehicleTypes()
     {
-        $types = VehicleType::select('name', 'id' )->get();
+        $types = VehicleType::select('id', 'name', 'slug', 'rows', 'columns')->get();
 
         return $this->success($types, "Vehicle types retrieved successfully");
+    }
+
+    public function getVehicleType($vehicleType)
+    {
+        $type = VehicleType::select('id', 'name', 'slug', 'rows', 'columns')->find($vehicleType);
+
+        if (! $type) {
+            return $this->error(null, "Vehicle type not found", 404);
+        }
+
+        return $this->success($type, "Vehicle type retrieved successfully");
     }
 
     public function getVehicleBrands()

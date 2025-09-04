@@ -150,6 +150,7 @@ Route::middleware(['validate.header'])
                 Route::prefix('vehicle')
                     ->group(function () {
                         Route::get('/get-types', [VehicleController::class, 'getVehicleTypes']);
+                        Route::get('/get-types/{vehicleType}', [VehicleController::class, 'getVehicleType']);
                         Route::get('/get-brands', [VehicleController::class, 'getVehicleBrands']);
                         Route::post('/create', [VehicleController::class, 'store']);
                         Route::post('/edit/{vehicle}', [VehicleController::class, 'update']);
