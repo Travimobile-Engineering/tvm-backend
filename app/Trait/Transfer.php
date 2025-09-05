@@ -188,7 +188,7 @@ trait Transfer
                 continue;
             }
 
-            $reference = (string) Str::uuid()->getHex();
+            $reference = (string) Str::uuid();
 
             if (!preg_match('/^[a-z0-9_-]+$/', $reference)) {
                 throw new \Exception("Invalid reference format: {$reference}");
