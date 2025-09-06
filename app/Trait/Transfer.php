@@ -153,9 +153,16 @@ trait Transfer
     }
 
     // New implementation for admin accounts transfer
-    protected function processAccumulatedTransfers(AccountService $accountService)
+    protected function processPayout()
     {
-        $accumulated = $accountService->accumulateTransfersByAccount();
+        $this->info('Processing payout(s)...');
+        $this->processAccumulatedTransfers();
+        $this->info('Payout(s) processing done.');
+    }
+
+    protected function processAccumulatedTransfers()
+    {
+        $accumulated = $this->accountService->accumulateTransfersByAccount();
 
         if (empty($accumulated)) {
             $this->info('No transfers to process.');
@@ -178,7 +185,7 @@ trait Transfer
             }
 
             try {
-                $bulkTransfer = $accountService->createBulkTransferForAccount(
+                $bulkTransfer = $this->accountService->createBulkTransferForAccount(
                     $data['transfers'],
                     $data['total_amount']
                 );

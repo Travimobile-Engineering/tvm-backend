@@ -37,13 +37,11 @@ class AccountPayout extends Command
      */
     public function handle()
     {
-        $this->processPayout($this->accountService);
-    }
+        if (!app()->environment('production')) {
+            $this->info('This command can only run in production environment.');
+            return;
+        }
 
-    private function processPayout($accountService)
-    {
-        $this->info('Processing payout(s)...');
-        $this->processAccumulatedTransfers($accountService);
-        $this->info('Payout(s) processing done.');
+        $this->processPayout();
     }
 }
