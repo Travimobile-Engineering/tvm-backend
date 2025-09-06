@@ -4,18 +4,19 @@ namespace App\Trait;
 
 use App\Models\User;
 use App\Enum\General;
+use App\Enum\ChargeType;
 use Illuminate\Support\Str;
 use App\Enum\TransactionTitle;
 use App\Models\AccountTransfer;
 use App\Models\UserWithdrawLog;
+use App\Models\AdminBulkTransfer;
 use Illuminate\Support\Facades\DB;
 use App\Enum\AccountTransferStatus;
-use App\Enum\ChargeType;
-use App\Notifications\WithdrawalNotification;
-use App\Services\Admin\PayoutService;
 use Illuminate\Support\Facades\Log;
-use App\Notifications\WithdrawalRefundNotification;
+use App\Services\Admin\PayoutService;
 use App\Services\Admin\AccountService;
+use App\Notifications\WithdrawalNotification;
+use App\Notifications\WithdrawalRefundNotification;
 
 trait Transfer
 {
@@ -191,7 +192,7 @@ trait Transfer
         }
     }
 
-    protected function processBulkTransfer(BulkTransfer $bulkTransfer, array $data)
+    protected function processBulkTransfer(AdminBulkTransfer $bulkTransfer, array $data)
     {
         $amount = intval($data['total_amount'] * 100);
 
@@ -236,7 +237,7 @@ trait Transfer
         }
     }
 
-    protected function handleBulkTransferFailure(BulkTransfer $bulkTransfer, $errorResponse)
+    protected function handleBulkTransferFailure(AdminBulkTransfer $bulkTransfer, $errorResponse)
     {
         // Mark bulk transfer as failed
         $bulkTransfer->update([

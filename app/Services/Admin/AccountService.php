@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Models\Fee;
 use App\Models\Bank;
 use App\Models\Account;
+use App\Models\AccountTransfer;
 use App\Models\AdminBulkTransfer;
 use App\Enum\AccountTransferStatus;
 use App\Services\Curl\PostCurlService;
