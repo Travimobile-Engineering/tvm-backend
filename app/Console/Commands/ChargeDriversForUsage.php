@@ -26,6 +26,11 @@ class ChargeDriversForUsage extends Command
      */
     public function handle(DriverUsageService $driverUsageService)
     {
+        if (!app()->environment('production')) {
+            $this->info('This command can only run in production environment.');
+            return;
+        }
+
         $this->info('Charging drivers for usage...');
         $driverUsageService->execute();
         $this->info('Charging complete!');

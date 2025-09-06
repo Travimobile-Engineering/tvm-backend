@@ -4,21 +4,23 @@ namespace App\Trait;
 
 use App\Models\User;
 use App\Enum\General;
+use App\Enum\ChargeType;
 use Illuminate\Support\Str;
 use App\Enum\TransactionTitle;
 use App\Models\AccountTransfer;
 use App\Models\UserWithdrawLog;
+use App\Models\AdminBulkTransfer;
 use Illuminate\Support\Facades\DB;
 use App\Enum\AccountTransferStatus;
-use App\Enum\ChargeType;
-use App\Notifications\WithdrawalNotification;
-use App\Services\Admin\PayoutService;
 use Illuminate\Support\Facades\Log;
+use App\Services\Admin\PayoutService;
+use App\Services\Admin\AccountService;
+use App\Notifications\WithdrawalNotification;
 use App\Notifications\WithdrawalRefundNotification;
 
 trait Transfer
 {
-    // Requests from accounts
+    // Deprecated for admin transfer (Ignore, don't use - it will be removed once new implementation is confirmed to be working fine.)
     protected function collectRequests(): array
     {
         $requests = [];
@@ -150,7 +152,128 @@ trait Transfer
         return true;
     }
 
-    // Requests from withdrawals
+    // New implementation for admin accounts transfer
+    protected function processPayout()
+    {
+        $this->info('Processing payout(s)...');
+        $this->processAccumulatedTransfers();
+        $this->info('Payout(s) processing done.');
+    }
+
+    protected function processAccumulatedTransfers()
+    {
+        $accumulated = $this->accountService->accumulateTransfersByAccount();
+
+        if (empty($accumulated)) {
+            $this->info('No transfers to process.');
+            return;
+        }
+
+        foreach ($accumulated as $accountId => $data) {
+            $account = $data['account'];
+
+            // Validate account
+            if (! $account->recipient_code || $account->type !== 'admin') {
+                $this->error("Skipping invalid account: {$accountId}");
+                $this->markTransfersFailed($data['transfers'], 'Invalid account configuration');
+                continue;
+            }
+
+            if ($data['total_amount'] <= 0) {
+                $this->markTransfersFailed($data['transfers'], 'Invalid amount');
+                continue;
+            }
+
+            try {
+                $bulkTransfer = $this->accountService->createBulkTransferForAccount(
+                    $data['transfers'],
+                    $data['total_amount']
+                );
+
+                $this->processBulkTransfer($bulkTransfer, $data);
+
+            } catch (\Exception $e) {
+                $this->markTransfersFailed($data['transfers'], $e->getMessage());
+                Log::error('Bulk transfer creation failed: ' . $e->getMessage());
+            }
+        }
+    }
+
+    protected function processBulkTransfer(AdminBulkTransfer $bulkTransfer, array $data)
+    {
+        $amount = intval($data['total_amount'] * 100);
+
+        $request = [
+            'reference' => $bulkTransfer->reference,
+            'amount' => $amount,
+            'recipient' => $data['recipient_code'],
+            'reason' => "Admin charges bulk transfer",
+            'admin_bulk_transfer_id' => $bulkTransfer->id,
+        ];
+
+        try {
+            $result = PayoutService::paystackBulkTransfer([$request]);
+
+            if ($result['status'] === true) {
+                $transferCode = $result['data'][0]['transfer_code'] ?? null;
+
+                $bulkTransfer->update([
+                    'transfer_code' => $transferCode,
+                    'status' => AccountTransferStatus::PROCESSED->value,
+                    'processed_at' => now(),
+                    'response' => $result
+                ]);
+
+                // Update all individual transfers
+                AccountTransfer::where('admin_bulk_transfer_id', $bulkTransfer->id)
+                    ->update([
+                        'status' => AccountTransferStatus::PROCESSED->value,
+                        'transfer_code' => $transferCode,
+                        'response' => ['bulk_reference' => $bulkTransfer->reference]
+                    ]);
+
+                $this->info("Bulk transfer processed: {$bulkTransfer->reference}");
+
+            } else {
+                $this->handleBulkTransferFailure($bulkTransfer, $result);
+            }
+
+        } catch (\Exception $e) {
+            $this->handleBulkTransferFailure($bulkTransfer, ['error' => $e->getMessage()]);
+            Log::error('Paystack bulk transfer exception: ' . $e->getMessage());
+        }
+    }
+
+    protected function handleBulkTransferFailure(AdminBulkTransfer $bulkTransfer, $errorResponse)
+    {
+        // Mark bulk transfer as failed
+        $bulkTransfer->update([
+            'status' => AccountTransferStatus::FAILED->value,
+            'response' => $errorResponse
+        ]);
+
+        // Reset individual transfers back to PENDING so they get picked up again
+        AccountTransfer::where('admin_bulk_transfer_id', $bulkTransfer->id)
+            ->update([
+                'status' => AccountTransferStatus::PENDING->value,
+                'admin_bulk_transfer_id' => null, // Remove association with failed bulk transfer
+                'response' => $errorResponse
+            ]);
+
+        Log::error("Bulk transfer failed: {$bulkTransfer->reference} - " . json_encode($errorResponse));
+    }
+
+    protected function markTransfersFailed($transfers, $errorMessage)
+    {
+        foreach ($transfers as $transfer) {
+            $transfer->update([
+                'status' => AccountTransferStatus::FAILED->value,
+                'response' => ['error' => $errorMessage]
+            ]);
+        }
+    }
+
+    // Requests from user withdrawals
     protected function collectWithdrawRequests(): array
     {
         $requests = [];
