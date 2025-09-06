@@ -201,7 +201,7 @@ trait Transfer
             'amount' => $amount,
             'recipient' => $data['recipient_code'],
             'reason' => "Admin charges bulk transfer",
-            'bulk_transfer_id' => $bulkTransfer->id,
+            'admin_bulk_transfer_id' => $bulkTransfer->id,
         ];
 
         try {
@@ -218,7 +218,7 @@ trait Transfer
                 ]);
 
                 // Update all individual transfers
-                AccountTransfer::where('bulk_transfer_id', $bulkTransfer->id)
+                AccountTransfer::where('admin_bulk_transfer_id', $bulkTransfer->id)
                     ->update([
                         'status' => AccountTransferStatus::PROCESSED->value,
                         'transfer_code' => $transferCode,
@@ -246,10 +246,10 @@ trait Transfer
         ]);
 
         // Reset individual transfers back to PENDING so they get picked up again
-        AccountTransfer::where('bulk_transfer_id', $bulkTransfer->id)
+        AccountTransfer::where('admin_bulk_transfer_id', $bulkTransfer->id)
             ->update([
                 'status' => AccountTransferStatus::PENDING->value,
-                'bulk_transfer_id' => null, // Remove association with failed bulk transfer
+                'admin_bulk_transfer_id' => null, // Remove association with failed bulk transfer
                 'response' => $errorResponse
             ]);
 

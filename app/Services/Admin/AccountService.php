@@ -55,7 +55,7 @@ class AccountService
         // Get all pending transfers grouped by account
         AccountTransfer::with('account')
             ->where('status', AccountTransferStatus::PENDING->value)
-            ->whereNull('bulk_transfer_id')
+            ->whereNull('admin_bulk_transfer_id')
             ->chunkById(100, function ($transfers) use (&$accumulatedTransfers) {
                 foreach ($transfers as $transfer) {
                     $accountId = $transfer->account_id;
@@ -93,7 +93,7 @@ class AccountService
 
             AccountTransfer::whereIn('id', $transferIds)
                 ->update([
-                    'bulk_transfer_id' => $bulkTransfer->id,
+                    'admin_bulk_transfer_id' => $bulkTransfer->id,
                     'status' => AccountTransferStatus::PROCESSING->value,
                 ]);
 
