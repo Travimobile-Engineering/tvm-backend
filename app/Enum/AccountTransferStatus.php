@@ -12,4 +12,5 @@ enum AccountTransferStatus: string
     case COMPLETED = 'completed';
     case FAILED = 'failed';
     case REVERSED = 'reversed';
+    case PROCESSED = 'processed';
 }
