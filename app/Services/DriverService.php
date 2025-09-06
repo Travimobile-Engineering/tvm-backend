@@ -349,9 +349,23 @@ class DriverService
 
     public function updateLayout($request)
     {
-        $user = User::with('vehicle')->findOrFail($request->user_id);
-        $vehicle = $user->vehicle()->where('id', $request->vehicle_id)->firstOrFail();
-        $vehicleType = VehicleType::findOrFail($request->vehicle_type_id);
+        $user = User::with('vehicle')->find($request->user_id);
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        $vehicle = Vehicle::find($request->vehicle_id);
+
+        if (! $vehicle) {
+            return $this->error(null, 'Vehicle not found', 404);
+        }
+
+        $vehicleType = VehicleType::find($request->vehicle_type_id);
+
+        if (! $vehicleType) {
+            return $this->error(null, 'Vehicle type not found', 404);
+        }
 
         $vehicle->update([
             'type' => $vehicleType->name,
