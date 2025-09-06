@@ -2,12 +2,21 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Admin\AccountService;
 use App\Trait\Transfer;
 use Illuminate\Console\Command;
 
 class AccountPayout extends Command
 {
     use Transfer;
+
+    protected $accountService;
+
+    public function __construct(AccountService $accountService)
+    {
+        parent::__construct();
+        $this->accountService = $accountService;
+    }
 
     /**
      * The name and signature of the console command.
@@ -28,23 +37,13 @@ class AccountPayout extends Command
      */
     public function handle()
     {
-        $this->processPayout();
+        $this->processPayout($this->accountService);
     }
 
-    private function processPayout()
+    private function processPayout($accountService)
     {
         $this->info('Processing payout(s)...');
-        $requests = $this->collectRequests();
-
-        if (empty($requests)) {
-            $this->info('No transfers(s) to process.');
-            return;
-        }
-
-        foreach (array_chunk($requests, 100) as $chunk) {
-            $this->handleChunk($chunk);
-        }
-
+        $this->processAccumulatedTransfers($accountService);
         $this->info('Payout(s) processing done.');
     }
 }

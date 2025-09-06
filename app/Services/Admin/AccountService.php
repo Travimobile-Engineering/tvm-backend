@@ -5,6 +5,8 @@ namespace App\Services\Admin;
 use App\Models\Fee;
 use App\Models\Bank;
 use App\Models\Account;
+use App\Models\AdminBulkTransfer;
+use App\Enum\AccountTransferStatus;
 use App\Services\Curl\PostCurlService;
 
 class AccountService
@@ -43,6 +45,59 @@ class AccountService
         ]);
 
         logger()->info('Transfer initiated successfully for processing');
+    }
+
+    public function accumulateTransfersByAccount()
+    {
+        $accumulatedTransfers = [];
+
+        // Get all pending transfers grouped by account
+        AccountTransfer::with('account')
+            ->where('status', AccountTransferStatus::PENDING->value)
+            ->whereNull('bulk_transfer_id')
+            ->chunkById(100, function ($transfers) use (&$accumulatedTransfers) {
+                foreach ($transfers as $transfer) {
+                    $accountId = $transfer->account_id;
+
+                    if (!isset($accumulatedTransfers[$accountId])) {
+                        $accumulatedTransfers[$accountId] = [
+                            'account' => $transfer->account,
+                            'total_amount' => 0,
+                            'transfers' => [],
+                            'recipient_code' => $transfer->account->recipient_code
+                        ];
+                    }
+
+                    $accumulatedTransfers[$accountId]['total_amount'] += $transfer->amount;
+                    $accumulatedTransfers[$accountId]['transfers'][] = $transfer;
+                }
+            });
+
+        return $accumulatedTransfers;
+    }
+
+    public function createBulkTransferForAccount($transfers, $totalAmount)
+    {
+        return DB::transaction(function () use ($transfers, $totalAmount) {
+            // Create bulk transfer record
+            $bulkTransfer = AdminBulkTransfer::create([
+                'reference' => (string) Str::uuid(),
+                'total_amount' => $totalAmount,
+                'total_transfers' => count($transfers),
+                'status' => AccountTransferStatus::PROCESSING->value,
+            ]);
+
+            // Update individual transfers with bulk transfer ID
+            $transferIds = collect($transfers)->pluck('id');
+
+            AccountTransfer::whereIn('id', $transferIds)
+                ->update([
+                    'bulk_transfer_id' => $bulkTransfer->id,
+                    'status' => AccountTransferStatus::PROCESSING->value,
+                ]);
+
+            return $bulkTransfer;
+        });
     }
 
     private function findAccountByFeeType($type): ?Account
