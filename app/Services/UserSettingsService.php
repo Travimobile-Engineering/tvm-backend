@@ -86,7 +86,7 @@ class UserSettingsService
 
         $user = User::where($field, $value)->first();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error(null, 'User not found', 404);
         }
 
