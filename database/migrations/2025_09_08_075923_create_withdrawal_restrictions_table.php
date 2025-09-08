@@ -17,8 +17,7 @@ return new class extends Migration
             $table->json('user_types')->nullable()->comment('Array of user types affected');
             $table->decimal('min_balance', 15, 2)->default(0)->nullable();
             $table->text('message')->nullable();
-            $table->boolean('complete_block')->default(false)->after('is_active')
-                ->comment('Completely block withdrawal regardless of balance');
+            $table->boolean('complete_block')->default(false)->comment('Completely block withdrawal regardless of balance');
             $table->timestamps();
         });
     }
