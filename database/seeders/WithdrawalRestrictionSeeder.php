@@ -19,7 +19,7 @@ class WithdrawalRestrictionSeeder extends Seeder
             'user_types' => [UserType::AGENT->value],
             'min_balance' => 5000,
             'complete_block' => true,
-            'restriction_message' => 'Sorry, withdrawals are temporarily unavailable for agents.'
+            'message' => 'Sorry, withdrawals are temporarily unavailable for agents.'
         ]);
 
         WithdrawalRestriction::create([
@@ -27,7 +27,7 @@ class WithdrawalRestrictionSeeder extends Seeder
             'user_types' => [UserType::DRIVER->value],
             'min_balance' => 0,
             'complete_block' => false,
-            'restriction_message' => 'Sorry, withdrawals are temporarily unavailable for drivers'
+            'message' => 'Sorry, withdrawals are temporarily unavailable for drivers'
         ]);
     }
 }
