@@ -42,6 +42,6 @@ class AccountPayout extends Command
             return;
         }
 
-        $this->processPayout();
+        //$this->processPayout();
     }
 }

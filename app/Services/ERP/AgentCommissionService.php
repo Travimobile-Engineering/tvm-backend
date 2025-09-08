@@ -67,7 +67,7 @@ class AgentCommissionService
         $amount = $primaryCommission->amount * $passengerCount;
 
         Commission::create([
-            'agent_id' => $agent->id,    // Current agent earns full commission
+            'agent_id' => $agent->id, // Current agent earns full commission
             'passenger_id' => $passenger->id,
             'amount' => $amount,
             'is_first_time' => true,
