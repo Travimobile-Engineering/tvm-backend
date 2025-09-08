@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\DTO\NotificationDispatchData;
+use App\Models\WithdrawalRestriction;
 use App\Services\Paystack\PaystackService;
 use Unicodeveloper\Paystack\Facades\Paystack;
 use App\Services\Notification\NotificationDispatcher;
@@ -26,7 +27,7 @@ use App\Http\Controllers\Payment\PaystackPaymentController;
 
 class WalletService
 {
-    const MIN_WITHDRAWAL = 100.00;
+    const MIN_WITHDRAWAL = 100;
 
     use HttpResponse, DriverTrait, ChargeTrait;
 
@@ -352,16 +353,14 @@ class WalletService
             return $this->error(null, "You can't withdraw funds at this time, contact support.", 403);
         }
 
-        if ($user->user_category === UserType::AGENT->value) {
-            return $this->error(null, "Sorry you can't withdraw funds at this time", 400);
-        }
-
-        if ($user->user_category === UserType::AGENT->value && (float) $user->earning_balance < 5000) {
-            return $this->error(null, "You must have at least ₦5,000 in your earning balance to withdraw", 400);
-        }
-
         if (empty($user?->userPin?->pin)) {
             return $this->error(null,  "Set your transaction pin!", 400);
+        }
+
+        // Check withdrawal restrictions
+        $restrictionCheck = $this->checkWithdrawalRestrictions($user, $request->amount);
+        if (! $restrictionCheck['allowed']) {
+            return $this->error(null, $restrictionCheck['message'], 400);
         }
 
         $charges = getCharge([
@@ -620,5 +619,47 @@ class WalletService
             'wallet_withdrawal' => $this->walletWithdrawalCharge(),
             default => $this->error(null, "Invalid charge type.", 400),
         };
+    }
+
+    public function checkWithdrawalRestrictions(User $user, float $amount): array
+    {
+        // Global minimum withdrawal check
+        if ($amount < self::MIN_WITHDRAWAL) {
+            return [
+                'allowed' => false,
+                'message' => "Minimum withdrawal amount is ₦" . self::MIN_WITHDRAWAL
+            ];
+        }
+
+        // Check active restrictions for this user type
+        $restrictions = WithdrawalRestriction::getActiveRestrictions();
+
+        foreach ($restrictions as $restriction) {
+            if ($restriction->appliesToUserType($user->user_category)) {
+                // Complete block (regardless of balance)
+                if ($restriction->complete_block) {
+                    return [
+                        'allowed' => false,
+                        'message' => $restriction->restriction_message
+                    ];
+                }
+
+                // Minimum balance check
+                if ($user->earning_balance < $restriction->min_balance) {
+                    $message = str_replace(
+                        '{min_balance}',
+                        number_format($restriction->min_balance, 2),
+                        $restriction->restriction_message
+                    );
+
+                    return [
+                        'allowed' => false,
+                        'message' => $message
+                    ];
+                }
+            }
+        }
+
+        return ['allowed' => true, 'message' => null];
     }
 }
