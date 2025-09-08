@@ -640,7 +640,7 @@ class WalletService
                 if ($restriction->complete_block) {
                     return [
                         'allowed' => false,
-                        'message' => $restriction->restriction_message
+                        'message' => $restriction->message
                     ];
                 }
 
@@ -649,7 +649,7 @@ class WalletService
                     $message = str_replace(
                         '{min_balance}',
                         number_format($restriction->min_balance, 2),
-                        $restriction->restriction_message
+                        $restriction->message
                     );
 
                     return [
