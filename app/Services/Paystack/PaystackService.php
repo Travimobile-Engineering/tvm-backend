@@ -8,6 +8,7 @@ use App\Models\AccountTransfer;
 use App\Models\UserWithdrawLog;
 use Illuminate\Support\Facades\DB;
 use App\Enum\AccountTransferStatus;
+use App\Models\AdminBulkTransfer;
 use Illuminate\Support\Facades\Log;
 use App\Services\Curl\PostCurlService;
 use App\Notifications\WithdrawalNotification;
@@ -102,15 +103,22 @@ class PaystackService
         try {
             DB::beginTransaction();
 
-            // Try to update AccountTransfer
-            $adminTransfer = AccountTransfer::where('transfer_code', $transferCode)->first();
-            if ($adminTransfer) {
-                $adminTransfer->update([
+            $bulkTransfer = AdminBulkTransfer::where('transfer_code', $transferCode)->first();
+            if ($bulkTransfer) {
+                $bulkTransfer->update([
                     'status' => $status->value,
-                    'response' => $reason,
+                    'response' => $event,
                 ]);
 
-                Log::info("{$logPrefix} for AccountTransfer ID {$adminTransfer->id} - Ref: {$reference}");
+                // Update all associated individual transfers
+                AccountTransfer::where('bulk_transfer_id', $bulkTransfer->id)
+                    ->update([
+                        'status' => $status->value,
+                        'response' => ['bulk_reason' => $reason, 'bulk_reference' => $reference],
+                    ]);
+
+                Log::info("{$logPrefix} for AdminBulkTransfer ID {$bulkTransfer->id} - Ref: {$reference}, affecting " .
+                        $bulkTransfer->accountTransfers()->count() . " transfers");
                 DB::commit();
                 return;
             }
