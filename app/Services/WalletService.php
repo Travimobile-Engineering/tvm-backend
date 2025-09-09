@@ -448,6 +448,12 @@ class WalletService
             return $this->error(null,  "Set your transaction pin!", 400);
         }
 
+        // Check withdrawal restrictions
+        $restrictionCheck = $this->checkWithdrawalRestrictions($user, $request->amount);
+        if (! $restrictionCheck['allowed']) {
+            return $this->error(null, $restrictionCheck['message'], 400);
+        }
+
         $charges = getCharge([ChargeType::ADMIN->value]);
 
         try {
