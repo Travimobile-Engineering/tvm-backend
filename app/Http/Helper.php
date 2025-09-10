@@ -5,10 +5,12 @@ use App\Enum\General;
 use App\Contracts\SMS;
 use App\Models\Mailing;
 use App\DTO\SendCodeData;
+use App\Enum\CommissionEnum;
 use App\Enum\UserType;
 use App\Jobs\ProcessMail;
 use App\Libraries\Utility;
 use App\Models\Fee;
+use App\Models\FeesShareFormula;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -505,5 +507,23 @@ if (! function_exists('getCharge')) {
         return collect($types)
             ->mapWithKeys(fn($type) => [$type => (float) ($charges[$type] ?? $default)])
             ->toArray();
+    }
+}
+
+if (!function_exists('commissionValue')) {
+    /**
+     * Get commission value from database with fallback to enum defaults
+     */
+    function commissionValue(string $commissionType, CommissionEnum $commissionRole): float
+    {
+        try {
+            $percentage = FeesShareFormula::where('type', $commissionType)
+                ->where('slug', $commissionRole->slug())
+                ->value('percentage');
+
+            return $percentage ?? $commissionRole->value;
+        } catch (\Exception $e) {
+            return $commissionRole->value;
+        }
     }
 }
