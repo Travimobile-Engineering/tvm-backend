@@ -84,8 +84,8 @@ class DriverUsageService
 
             $breakdown = $this->commissionBreakdownService->getBreakdown(
                 $fee->amount,
-                CommissionEnum::ERP_AGENT_PERCENT->value,
-                CommissionEnum::ERP_COMPANY_PERCENT->value
+                commissionValue('erp', CommissionEnum::AGENT),
+                commissionValue('erp', CommissionEnum::COMPANY)
             );
 
             $agent = $trip->agent;

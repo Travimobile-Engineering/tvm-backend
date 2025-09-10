@@ -77,8 +77,8 @@ class AgentCommissionService
         // Get the breakdown of the commission
         $breakdown = $this->commissionBreakdownService->getBreakdown(
             $amount,
-            CommissionEnum::BOOKING_AGENT_PERCENT->value,
-            CommissionEnum::BOOKING_COMPANY_PERCENT->value
+            commissionValue('booking', CommissionEnum::AGENT),
+            commissionValue('booking', CommissionEnum::COMPANY)
         );
 
         // Top up the agent's earnings
@@ -141,8 +141,8 @@ class AgentCommissionService
         // Get the breakdown of the commission
         $breakdown = $this->commissionBreakdownService->getBreakdown(
             $amount,
-            CommissionEnum::BOOKING_AGENT_PERCENT->value,
-            CommissionEnum::BOOKING_COMPANY_PERCENT->value
+            commissionValue('booking', CommissionEnum::AGENT),
+            commissionValue('booking', CommissionEnum::COMPANY)
         );
 
         // Top up the agent's earnings
