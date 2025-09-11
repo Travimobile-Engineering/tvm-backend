@@ -151,6 +151,11 @@ class AgentService
         $amount_paid = $request->amount_paid;
         $result = null;
         $paymentProcessor = null;
+        $suspend = true;
+
+        if ($suspend) {
+            return $this->error(null, "Bookings are currently suspended", 400);
+        }
 
         $user = User::with(['transactions', 'walletAccount'])
                 ->findOrFail($user->id);
