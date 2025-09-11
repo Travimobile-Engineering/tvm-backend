@@ -102,6 +102,12 @@ class PremiumHireService
     {
         $user = Auth::user();
 
+        $suspend = true;
+
+        if ($suspend) {
+            return $this->error(null, "Bookings are currently suspended", 400);
+        }
+
         if ($user->id != $request->user_id) {
             return $this->error(null, 'Unauthorized action.', 401);
         }
@@ -159,6 +165,12 @@ class PremiumHireService
 
     public function payCharter($request)
     {
+        $suspend = true;
+
+        if ($suspend) {
+            return $this->error(null, "Bookings are currently suspended", 400);
+        }
+
         $amount = $request->input('amount') * 100;
 
         $callbackUrl = $request->input('redirect_url');
