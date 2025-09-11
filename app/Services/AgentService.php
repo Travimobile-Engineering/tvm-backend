@@ -151,14 +151,8 @@ class AgentService
         $amount_paid = $request->amount_paid;
         $result = null;
         $paymentProcessor = null;
-        $suspend = true;
 
-        if ($suspend) {
-            return $this->error(null, "Bookings are currently suspended", 400);
-        }
-
-        $user = User::with(['transactions', 'walletAccount'])
-                ->findOrFail($user->id);
+        $user = User::with(['transactions', 'walletAccount'])->findOrFail($user->id);
 
         if ($user->user_category == UserType::AGENT->value && $user->wallet_balance < 1000) {
             return $this->error(null, "Your wallet balance must be at least 1000 to make a booking", 400);

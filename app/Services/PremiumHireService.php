@@ -102,12 +102,6 @@ class PremiumHireService
     {
         $user = Auth::user();
 
-        $suspend = true;
-
-        if ($suspend) {
-            return $this->error(null, "Bookings are currently suspended", 400);
-        }
-
         if ($user->id != $request->user_id) {
             return $this->error(null, 'Unauthorized action.', 401);
         }

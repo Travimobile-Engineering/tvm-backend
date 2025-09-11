@@ -16,14 +16,9 @@ class TripBookService
     public function store($request)
     {
         $user = Auth::user();
-        $suspend = true;
 
         if (! $user) {
             return $this->error(null, 'User not found', 404);
-        }
-
-        if ($suspend) {
-            return $this->error(null, "Bookings are currently suspended", 400);
         }
 
         $amount_paid = $request->amount_paid;
