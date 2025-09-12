@@ -22,7 +22,7 @@ class TripBookService
             return $this->error(null, 'User not found', 404);
         }
 
-        if ($suspend) {
+        if (app()->environment('production') && $suspend) {
             return $this->error(null, "Booking has been temporarily suspended", 400);
         }
 

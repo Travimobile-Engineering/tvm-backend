@@ -159,7 +159,7 @@ class AgentService
             return $this->error(null, "Your wallet balance must be at least 1000 to make a booking", 400);
         }
 
-        if ($suspend) {
+        if (app()->environment('production') && $suspend) {
             return $this->error(null, "Booking has been temporarily suspended", 400);
         }
 
