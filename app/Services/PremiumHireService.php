@@ -107,7 +107,7 @@ class PremiumHireService
             return $this->error(null, 'Unauthorized action.', 401);
         }
 
-        if ($suspend) {
+        if (app()->environment('production') && $suspend) {
             return $this->error(null, "Booking has been temporarily suspended", 400);
         }
 
