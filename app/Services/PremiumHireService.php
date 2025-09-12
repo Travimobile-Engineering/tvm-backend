@@ -101,9 +101,14 @@ class PremiumHireService
     public function addCharter($request)
     {
         $user = Auth::user();
+        $suspend = true;
 
         if ($user->id != $request->user_id) {
             return $this->error(null, 'Unauthorized action.', 401);
+        }
+
+        if ($suspend) {
+            return $this->error(null, "Booking has been temporarily suspended", 400);
         }
 
         $vehicle = Vehicle::with('user')->findOrFail($request->vehicle_id);
