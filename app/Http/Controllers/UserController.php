@@ -12,8 +12,7 @@ class UserController extends Controller
 {
     public function __construct(
         protected UserService $service,
-    )
-    {}
+    ) {}
 
     public function changePassword(ChangePasswordRequest $request)
     {

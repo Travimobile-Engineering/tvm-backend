@@ -10,7 +10,7 @@ use Illuminate\Notifications\Notifiable;
 
 class TripBooking extends Model
 {
-    use Notifiable, HasFactory;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'payment_log_id',
@@ -78,8 +78,7 @@ class TripBooking extends Model
     protected function totalPassengers(): Attribute
     {
         return Attribute::make(
-            get: fn () =>
-                ($this->tripBookingPassengers()->count() ?? 0)
+            get: fn () => ($this->tripBookingPassengers()->count() ?? 0)
                 + (is_array($this->third_party_passenger_details)
                     ? count($this->third_party_passenger_details)
                     : 0),

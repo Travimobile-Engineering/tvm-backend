@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if(! Schema::hasTable('trips')) {
+        if (! Schema::hasTable('trips')) {
             Schema::create('trips', function (Blueprint $table) {
                 $table->id();
                 $table->string('uuid')->unique();
@@ -28,8 +28,8 @@ return new class extends Migration
             });
         }
 
-        if(! Schema::hasTable('trip_bookings')) {
-            Schema::create('trip_bookings', function(Blueprint $table){
+        if (! Schema::hasTable('trip_bookings')) {
+            Schema::create('trip_bookings', function (Blueprint $table) {
                 $table->id();
                 $table->string('booking_id')->unique();
                 $table->string('trip_id')->constrained('trips', 'uuid');

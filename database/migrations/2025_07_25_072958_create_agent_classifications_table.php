@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('agent_classifications')) {
+        if (! Schema::hasTable('agent_classifications')) {
             Schema::create('agent_classifications', function (Blueprint $table) {
                 $table->id();
                 $table->string('level');

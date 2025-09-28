@@ -25,8 +25,8 @@ class BurstGuard
     public function handle(Request $request, Closure $next): Response
     {
         $route = $request->route()?->getName() ?? $request->path();
-        $ip    = $request->ip();
-        $uid   = (string)($request->user()?->getAuthIdentifier() ?? 'guest');
+        $ip = $request->ip();
+        $uid = (string) ($request->user()?->getAuthIdentifier() ?? 'guest');
 
         // Check existing bans (Cache-based)
         foreach ([$this->banKey($route, "ip:$ip"), $this->banKey($route, "uid:$uid")] as $banKey) {
@@ -37,9 +37,10 @@ class BurstGuard
 
         // Rate-limit across two short windows using RateLimiter
         foreach (["ip:$ip", "uid:$uid"] as $dim) {
-            if (!$this->withinBudget($route, $dim)) {
+            if (! $this->withinBudget($route, $dim)) {
                 $banKey = $this->banKey($route, $dim);
                 Cache::put($banKey, now()->addSeconds($this->banSeconds)->timestamp, $this->banSeconds);
+
                 return $this->tooMany($this->banSeconds);
             }
         }
@@ -74,6 +75,7 @@ class BurstGuard
     private function banTtl(string $banKey): int
     {
         $ts = Cache::get($banKey);
+
         return $ts ? max(0, $ts - time()) : $this->banSeconds;
     }
 

@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Bank;
 use App\Services\Curl\GetCurlService;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class BankSeeder extends Seeder
@@ -20,7 +19,7 @@ class BankSeeder extends Seeder
 
             $headers = [
                 'Accept' => 'application/json',
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => 'Bearer '.$token,
             ];
 
             $banks = (new GetCurlService($url, $headers))->execute();

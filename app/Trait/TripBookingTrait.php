@@ -2,36 +2,35 @@
 
 namespace App\Trait;
 
-use App\Models\Trip;
-use App\Models\User;
-use App\Enum\UserType;
+use App\DTO\NotificationDispatchData;
 use App\Enum\ChargeType;
-use App\Enum\TripStatus;
-use App\Enum\PaymentType;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
-use App\Models\TripBooking;
-use App\Models\Notification;
+use App\Enum\PaymentType;
 use App\Enum\TransactionTitle;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use App\Services\ERP\ChargeService;
-use Illuminate\Support\Facades\Hash;
-use App\DTO\NotificationDispatchData;
+use App\Enum\TripStatus;
+use App\Enum\UserType;
+use App\Models\Notification;
+use App\Models\Trip;
+use App\Models\TripBooking;
+use App\Models\User;
 use App\Services\ERP\AgentCommissionService;
+use App\Services\ERP\ChargeService;
+use App\Services\Notification\NotificationDispatcher;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
-use App\Services\Notification\NotificationDispatcher;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 trait TripBookingTrait
 {
-    use HttpResponse, PaymentLogTrait, DriverTrait;
+    use DriverTrait, HttpResponse, PaymentLogTrait;
 
     public function __construct(
         protected NotificationDispatcher $notifier
-    )
-    {}
+    ) {}
 
     public function processPayment($request, $result, $paymentProcessor = null, $user = null)
     {
@@ -47,6 +46,7 @@ trait TripBookingTrait
 
             if ($tripCheck instanceof JsonResponse && $tripCheck->getStatusCode() !== 200) {
                 DB::rollBack();
+
                 return $tripCheck;
             }
 
@@ -62,6 +62,7 @@ trait TripBookingTrait
             $response = $paymentService->process($paymentDetails);
 
             DB::commit();
+
             return $response;
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -89,7 +90,7 @@ trait TripBookingTrait
         $chargesSum = array_sum((array) $request->charges);
 
         if ($chargesSum != $this->getCharges($user)) {
-            return $this->error(null, "Charges paid does not match the total charges", 400);
+            return $this->error(null, 'Charges paid does not match the total charges', 400);
         }
 
         if ($response = $this->checkPin($request, $user)) {
@@ -97,11 +98,11 @@ trait TripBookingTrait
         }
 
         if ($amount_paid <= 0) {
-            return $this->error(null, "Amount must be greater than 0", 400);
+            return $this->error(null, 'Amount must be greater than 0', 400);
         }
 
         if ($user->wallet_amount < $amount_paid) {
-            return $this->error(null, "Your balance is insufficient to complete your request", 400);
+            return $this->error(null, 'Your balance is insufficient to complete your request', 400);
         }
 
         return null;
@@ -115,15 +116,15 @@ trait TripBookingTrait
             $userId = $request->user_id ?? $user->id;
             $passenger = User::findOrFail($userId);
             $getTrip = Trip::with(
-                    [
-                        'user.transitCompany',
-                        'vehicle',
-                        'tripBookings.user',
-                        'departureRegion.state',
-                        'destinationRegion.state',
-                        'manifest'
-                    ]
-                )
+                [
+                    'user.transitCompany',
+                    'vehicle',
+                    'tripBookings.user',
+                    'departureRegion.state',
+                    'destinationRegion.state',
+                    'manifest',
+                ]
+            )
                 ->findOrFail($request->trip_id);
 
             // Process Wallet and Transactions
@@ -147,14 +148,15 @@ trait TripBookingTrait
             }
 
             $charges = $request->charges ?? [];
-            app(ChargeService::class)->transferCharges($charges, $user, "balance", "wallet");
+            app(ChargeService::class)->transferCharges($charges, $user, 'balance', 'wallet');
 
             DB::commit();
 
-            return $this->success($data, "Payment successful");
+            return $this->success($data, 'Payment successful');
         } catch (\Throwable $th) {
             DB::rollBack();
-            return $this->error(null, "An error occurred while processing your request: " . $th->getMessage(), 400);
+
+            return $this->error(null, 'An error occurred while processing your request: '.$th->getMessage(), 400);
         }
     }
 
@@ -172,7 +174,7 @@ trait TripBookingTrait
 
         do {
             $booking_id = getRandomNumber();
-        } while(TripBooking::where('booking_id', $booking_id)->exists());
+        } while (TripBooking::where('booking_id', $booking_id)->exists());
 
         $ref = getRandomString();
 
@@ -180,7 +182,7 @@ trait TripBookingTrait
 
         $selectedSeats = explode(',', str_replace(' ', '', $request->selected_seat));
         $travellingWith = collect($request->travelling_with)->filter(function ($passenger) {
-            return !empty($passenger['name']) || !empty($passenger['email']) || !empty($passenger['phone_number']) || !empty($passenger['gender']);
+            return ! empty($passenger['name']) || ! empty($passenger['email']) || ! empty($passenger['phone_number']) || ! empty($passenger['gender']);
         })->values();
 
         if ($travellingWith->isEmpty()) {
@@ -231,12 +233,12 @@ trait TripBookingTrait
         $user->transactions()->create([
             'title' => TransactionTitle::TRIP_BOOKING->value,
             'amount' => $amount_paid,
-            'type' => "DR",
-            'txn_reference' => "wallet"
+            'type' => 'DR',
+            'txn_reference' => 'wallet',
         ]);
 
         // Disabled for now
-        //$this->driverIncrementEarning($trip->user, $amount_paid);
+        // $this->driverIncrementEarning($trip->user, $amount_paid);
 
         return [
             'booking_id' => $booking_id,
@@ -265,7 +267,7 @@ trait TripBookingTrait
                 'booking_id' => $booking_id,
                 'note' => 'Please arrive at least 30 minutes early to ensure a smooth boarding experience.',
                 'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
-            ]
+            ],
         ]);
 
         $data = (object) [
@@ -307,10 +309,10 @@ trait TripBookingTrait
             'tripBookings.user',
             'departureRegion.state',
             'destinationRegion.state',
-            'manifest'
+            'manifest',
         ])
-        ->where('id', $request->trip_id)
-        ->where('status', TripStatus::UPCOMING);
+            ->where('id', $request->trip_id)
+            ->where('status', TripStatus::UPCOMING);
 
         if ($lock) {
             $query->lockForUpdate();
@@ -318,8 +320,8 @@ trait TripBookingTrait
 
         $trip = $query->first();
 
-        if(! $trip) {
-            return $this->error(null, "Invalid trip ID or trip is no longer available", 400);
+        if (! $trip) {
+            return $this->error(null, 'Invalid trip ID or trip is no longer available', 400);
         }
 
         if ($trip->user_id === $user->id) {
@@ -329,7 +331,7 @@ trait TripBookingTrait
         $seats = $trip->vehicle?->seats;
 
         if (! is_array($seats)) {
-            return $this->error(null, "Invalid seats data format", 400);
+            return $this->error(null, 'Invalid seats data format', 400);
         }
 
         $total_seats = count($seats ?? []);
@@ -341,14 +343,14 @@ trait TripBookingTrait
             return $seats;
         }, $selected_seats)));
 
-        if($bookings->count() >= $total_seats) {
-            return $this->error(null, "Number of passengers for this trip already complete", 400);
+        if ($bookings->count() >= $total_seats) {
+            return $this->error(null, 'Number of passengers for this trip already complete', 400);
         }
 
         $selectedSeats = explode(',', str_replace(' ', '', $request->selected_seat));
 
         $travellingWith = collect($request->travelling_with)->filter(function ($passenger) {
-            return !empty($passenger['name']) || !empty($passenger['email']) || !empty($passenger['phone_number']) || !empty($passenger['gender']);
+            return ! empty($passenger['name']) || ! empty($passenger['email']) || ! empty($passenger['phone_number']) || ! empty($passenger['gender']);
         })->values();
 
         if ($travellingWith->isEmpty()) {
@@ -379,7 +381,7 @@ trait TripBookingTrait
         $request_seats = array_map('ucfirst', array_map('trim', explode(',', $request->selected_seat)));
 
         foreach ($request_seats as $seat) {
-            if (!in_array($seat, $seats)) {
+            if (! in_array($seat, $seats)) {
                 return $this->error(null, "Invalid seat selection: $seat", 400);
             }
 
@@ -393,8 +395,8 @@ trait TripBookingTrait
 
     private function checkPin($request, $user)
     {
-        if (!$user->userPin || !Hash::check($request->pin, $user->userPin->pin)) {
-            return $this->error(null, "Invalid transaction pin", 400);
+        if (! $user->userPin || ! Hash::check($request->pin, $user->userPin->pin)) {
+            return $this->error(null, 'Invalid transaction pin', 400);
         }
     }
 
@@ -424,7 +426,7 @@ trait TripBookingTrait
                     'trip_booking_id' => $tripBooking->id,
                     'name' => $passenger['name'],
                     'email' => $passenger['email'] ?? null,
-                    'phone_number' => $passenger['phone_number'] ?? "nil",
+                    'phone_number' => $passenger['phone_number'] ?? 'nil',
                     'next_of_kin' => $passenger['next_of_kin'] ?? '',
                     'next_of_kin_phone_number' => $passenger['next_of_kin_phone_number'] ?? '',
                     'gender' => $passenger['gender'] ?? 'male',
@@ -447,9 +449,7 @@ trait TripBookingTrait
         }
 
         $charges = getCharge($chargeTypes);
+
         return array_sum($charges);
     }
 }
-
-
-

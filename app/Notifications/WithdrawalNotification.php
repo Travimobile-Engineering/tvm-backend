@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Models\UserWithdrawLog;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -18,8 +17,7 @@ class WithdrawalNotification extends Notification
     public function __construct(
         protected UserWithdrawLog $withdrawalLog,
         protected string $status
-    )
-    {}
+    ) {}
 
     /**
      * Get the notification's delivery channels.
@@ -44,7 +42,7 @@ class WithdrawalNotification extends Notification
             ->subject('Withdrawal Request Update')
             ->line("Your withdrawal request (ID: {$this->withdrawalLog->id}) has been {$this->status}.")
             ->line("Amount: {$this->withdrawalLog->amount}")
-            ->line("Sent to Account: {$accountName} (****" . substr($accountNumber, -4) . ")")
+            ->line("Sent to Account: {$accountName} (****".substr($accountNumber, -4).')')
             ->line('Thank you for using our service.');
     }
 

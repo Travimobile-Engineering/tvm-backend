@@ -2,15 +2,15 @@
 
 namespace App\Services\Admin;
 
-use App\Models\Fee;
-use App\Models\Bank;
+use App\Enum\AccountTransferStatus;
 use App\Models\Account;
-use Illuminate\Support\Str;
 use App\Models\AccountTransfer;
 use App\Models\AdminBulkTransfer;
-use Illuminate\Support\Facades\DB;
-use App\Enum\AccountTransferStatus;
+use App\Models\Bank;
+use App\Models\Fee;
 use App\Services\Curl\PostCurlService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AccountService
 {
@@ -19,13 +19,15 @@ class AccountService
         foreach ($typesAndAmounts as $type => $amount) {
             $account = $this->findAccountByFeeType($type);
 
-            if (!$account) {
+            if (! $account) {
                 logger()->warning("No account found for fee type: {$type}, skipping transfer.");
+
                 continue;
             }
 
-            if (!empty($account->recipient_code)) {
+            if (! empty($account->recipient_code)) {
                 $this->transferToAccount($account, $amount);
+
                 continue;
             }
 
@@ -44,7 +46,7 @@ class AccountService
     {
         $account->accountTransfers()->create([
             'amount' => $amount,
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
 
         logger()->info('Transfer initiated successfully for processing');
@@ -62,12 +64,12 @@ class AccountService
                 foreach ($transfers as $transfer) {
                     $accountId = $transfer->account_id;
 
-                    if (!isset($accumulatedTransfers[$accountId])) {
+                    if (! isset($accumulatedTransfers[$accountId])) {
                         $accumulatedTransfers[$accountId] = [
                             'account' => $transfer->account,
                             'total_amount' => 0,
                             'transfers' => [],
-                            'recipient_code' => $transfer->account->recipient_code
+                            'recipient_code' => $transfer->account->recipient_code,
                         ];
                     }
 
@@ -130,7 +132,7 @@ class AccountService
         ];
 
         $fields = [
-            'type' => "nuban",
+            'type' => 'nuban',
             'name' => $account->account_name,
             'account_number' => $account->account_number,
             'bank_code' => $bank->code,

@@ -13,7 +13,7 @@ enum CommissionEnum: int
      */
     public function slug(): string
     {
-        return match($this) {
+        return match ($this) {
             self::AGENT => 'agent',
             self::COMPANY => 'company',
         };

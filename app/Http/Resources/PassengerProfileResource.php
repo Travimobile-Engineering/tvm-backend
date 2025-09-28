@@ -14,14 +14,14 @@ class PassengerProfileResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return[
-            'id' => (int)$this->id,
+        return [
+            'id' => (int) $this->id,
             'uuid' => $this->uuid,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'email' => $this->email,
             'phone_number' => $this->phone_number,
-            'wallet' => (float)$this->wallet_amount,
+            'wallet' => (float) $this->wallet_amount,
             'address' => $this->address,
             'gender' => $this->gender,
             'is_admin' => $this->is_admin,
@@ -38,10 +38,10 @@ class PassengerProfileResource extends JsonResource
             'email_notification' => $this->email_notifications,
             'wallet_setup' => hasSetupWallet($this->id),
             'pin_setup' => hasSetupPin($this->id),
-            'wallet_info' => (object)[
-                'available_balance' => (float)$this->wallet_amount,
+            'wallet_info' => (object) [
+                'available_balance' => (float) $this->wallet_amount,
             ],
-            'bank' => (object)[
+            'bank' => (object) [
                 'id' => $this->userBank?->id,
                 'account_name' => $this->userBank?->account_name,
                 'account_number' => $this->userBank?->account_number,

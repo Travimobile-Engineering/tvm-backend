@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 class TransitCompany extends Model
 {
@@ -39,11 +38,12 @@ class TransitCompany extends Model
         'ver_code',
         'ver_code_expires_at',
         'ev',
-        'sv'
+        'sv',
     ];
 
-    protected function casts(){
-        return[
+    protected function casts()
+    {
+        return [
         ];
     }
 
@@ -52,7 +52,8 @@ class TransitCompany extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function parks(){
+    public function parks()
+    {
         return $this->hasMany(Park::class);
     }
 }

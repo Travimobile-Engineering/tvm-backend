@@ -4,6 +4,7 @@ namespace App\Enum;
 
 enum SmsProvider: string
 {
-    const TERMII = "termii";
-    const AFRICATALKING = "africastalking";
+    const TERMII = 'termii';
+
+    const AFRICATALKING = 'africastalking';
 }

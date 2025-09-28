@@ -9,8 +9,7 @@ class OtherController extends Controller
 {
     public function __construct(
         protected OtherService $service
-    )
-    {}
+    ) {}
 
     public function getStates()
     {

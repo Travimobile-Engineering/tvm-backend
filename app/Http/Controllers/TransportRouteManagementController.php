@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TransportRouteManagement;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
-use App\Models\TransportRouteManagement;
 
 class TransportRouteManagementController extends Controller
 {
@@ -18,7 +18,7 @@ class TransportRouteManagementController extends Controller
         $routeManagements = TransportRouteManagement::select('id', 'park_name', 'address', 'state', 'zone', 'originating_route', 'terminating_route', 'estimated_trip', 'key_man', 'estimated_distance', 'estimated_time', 'cost_of_transportation', 'road_safety_rating', 'field_officer', 'occasioned_by', 'lng', 'lat')
             ->paginate(25);
 
-        return $this->withPagination($routeManagements, "Transport Route Management");
+        return $this->withPagination($routeManagements, 'Transport Route Management');
     }
 
     /**
@@ -45,7 +45,7 @@ class TransportRouteManagementController extends Controller
             'lat' => $request->lat,
         ]);
 
-        return $this->success($routeManagement, "Transport Route Management Created Successfully", 201);
+        return $this->success($routeManagement, 'Transport Route Management Created Successfully', 201);
     }
 
     /**
@@ -53,7 +53,7 @@ class TransportRouteManagementController extends Controller
      */
     public function show(TransportRouteManagement $routeManagement)
     {
-        return $this->success($routeManagement, "Transport Route Management Retrieved Successfully");
+        return $this->success($routeManagement, 'Transport Route Management Retrieved Successfully');
     }
 
     /**
@@ -64,7 +64,7 @@ class TransportRouteManagementController extends Controller
         $routeManagement = TransportRouteManagement::find($id);
 
         if (! $routeManagement) {
-            return $this->error(null, "Transport Route Management Not Found", 404);
+            return $this->error(null, 'Transport Route Management Not Found', 404);
         }
 
         $routeManagement->update([
@@ -86,7 +86,7 @@ class TransportRouteManagementController extends Controller
             'lat' => $request->lat,
         ]);
 
-        return $this->success($routeManagement, "Transport Route Management Updated Successfully");
+        return $this->success($routeManagement, 'Transport Route Management Updated Successfully');
     }
 
     /**
@@ -97,10 +97,11 @@ class TransportRouteManagementController extends Controller
         $routeManagement = TransportRouteManagement::find($id);
 
         if (! $routeManagement) {
-            return $this->error(null, "Transport Route Management Not Found", 404);
+            return $this->error(null, 'Transport Route Management Not Found', 404);
         }
 
         $routeManagement->delete();
-        return $this->success(null, "Transport Route Management Deleted Successfully");
+
+        return $this->success(null, 'Transport Route Management Deleted Successfully');
     }
 }

@@ -32,5 +32,4 @@ class TripBookingPassenger extends Model
     {
         return $this->belongsTo(TripBooking::class);
     }
-
 }

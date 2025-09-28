@@ -5,14 +5,13 @@ namespace App\Models;
 use App\Enum\TripStatus;
 use App\Models\Vehicle\Vehicle;
 use App\Trait\ClearsResponseCache;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Trip extends Model
 {
-    use HasFactory, ClearsResponseCache;
+    use ClearsResponseCache, HasFactory;
 
     protected $fillable = [
         'user_id',
@@ -58,7 +57,7 @@ class Trip extends Model
             $trip->uuid = getRandomNumber();
         });
 
-        static::retrieved(function($model){
+        static::retrieved(function ($model) {
             $model->from = getRouteStateAndTownNameFromTownId($model->departure);
             $model->to = getRouteStateAndTownNameFromTownId($model->destination);
         });
@@ -146,5 +145,4 @@ class Trip extends Model
     {
         return $query->with(self::relationArray());
     }
-
 }

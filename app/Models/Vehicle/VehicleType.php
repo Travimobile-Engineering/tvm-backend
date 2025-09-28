@@ -10,7 +10,7 @@ class VehicleType extends Model
         'name',
         'slug',
         'rows',
-        'columns'
+        'columns',
     ];
 
     public function getTotalSeatsAttribute()

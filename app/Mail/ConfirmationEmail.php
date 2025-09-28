@@ -3,11 +3,10 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Queue\SerializesModels;
 
 class ConfirmationEmail extends Mailable
@@ -15,7 +14,9 @@ class ConfirmationEmail extends Mailable
     use Queueable, SerializesModels;
 
     protected $name;
+
     protected $verification_code;
+
     public $view;
 
     /**
@@ -34,7 +35,7 @@ class ConfirmationEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address('noreply@travimobile.com','Travi Mobile'),
+            from: new Address('noreply@travimobile.com', 'Travi Mobile'),
             subject: 'Your OTP Verification Code',
 
         );
@@ -47,7 +48,7 @@ class ConfirmationEmail extends Mailable
     {
         return new Content(
             view: 'email.confirmation',
-            with: ['name' => $this->name, 'verification_code' =>$this->verification_code]
+            with: ['name' => $this->name, 'verification_code' => $this->verification_code]
         );
     }
 

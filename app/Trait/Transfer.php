@@ -2,21 +2,20 @@
 
 namespace App\Trait;
 
-use App\Models\User;
-use App\Enum\General;
+use App\Enum\AccountTransferStatus;
 use App\Enum\ChargeType;
-use Illuminate\Support\Str;
+use App\Enum\General;
 use App\Enum\TransactionTitle;
 use App\Models\AccountTransfer;
-use App\Models\UserWithdrawLog;
 use App\Models\AdminBulkTransfer;
-use Illuminate\Support\Facades\DB;
-use App\Enum\AccountTransferStatus;
-use Illuminate\Support\Facades\Log;
-use App\Services\Admin\PayoutService;
-use App\Services\Admin\AccountService;
+use App\Models\User;
+use App\Models\UserWithdrawLog;
 use App\Notifications\WithdrawalNotification;
 use App\Notifications\WithdrawalRefundNotification;
+use App\Services\Admin\PayoutService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 trait Transfer
 {
@@ -64,7 +63,7 @@ trait Transfer
             'reference' => $reference,
             'amount' => $amount,
             'recipient' => $account->recipient_code,
-            'reason' => "Admin charges transfer",
+            'reason' => 'Admin charges transfer',
             'request_id' => $transfer->id,
             'account_id' => $account->id,
         ];
@@ -87,10 +86,10 @@ trait Transfer
                 );
             }
         } catch (\Exception $e) {
-            Log::error('Paystack bulk transfer exception: ' . $e);
+            Log::error('Paystack bulk transfer exception: '.$e);
 
             foreach ($chunk as $item) {
-                $this->markRequestFailed($item['request_id'], $item['user_id'], $e->getMessage());
+                $this->markRequestFailed($item['request_id'], $e->getMessage());
             }
         }
     }
@@ -109,7 +108,7 @@ trait Transfer
             }
         } else {
             $this->markRequestFailed($request->id, $errorMessage);
-            Log::error("Failed to queue Paystack bulk transfer: " . json_encode($errorMessage));
+            Log::error('Failed to queue Paystack bulk transfer: '.json_encode($errorMessage));
         }
     }
 
@@ -126,8 +125,8 @@ trait Transfer
     protected function isValidTransferRequest(array $payload): bool
     {
         if (
-            !isset($payload['reference']) ||
-            !isset($payload['amount'])
+            ! isset($payload['reference']) ||
+            ! isset($payload['amount'])
         ) {
             return false;
         }
@@ -137,11 +136,11 @@ trait Transfer
 
         $request = AccountTransfer::where('reference', $reference)->first();
 
-        if (!$request) {
+        if (! $request) {
             $request = UserWithdrawLog::where('reference', $reference)->first();
         }
 
-        if (!$request) {
+        if (! $request) {
             return false;
         }
 
@@ -166,6 +165,7 @@ trait Transfer
 
         if (empty($accumulated)) {
             $this->info('No transfers to process.');
+
             return;
         }
 
@@ -176,11 +176,13 @@ trait Transfer
             if (! $account->recipient_code || $account->type !== 'admin') {
                 $this->error("Skipping invalid account: {$accountId}");
                 $this->markTransfersFailed($data['transfers'], 'Invalid account configuration');
+
                 continue;
             }
 
             if ($data['total_amount'] <= 0) {
                 $this->markTransfersFailed($data['transfers'], 'Invalid amount');
+
                 continue;
             }
 
@@ -194,7 +196,7 @@ trait Transfer
 
             } catch (\Exception $e) {
                 $this->markTransfersFailed($data['transfers'], $e->getMessage());
-                Log::error('Bulk transfer creation failed: ' . $e->getMessage());
+                Log::error('Bulk transfer creation failed: '.$e->getMessage());
             }
         }
     }
@@ -207,7 +209,7 @@ trait Transfer
             'reference' => $bulkTransfer->reference,
             'amount' => $amount,
             'recipient' => $data['recipient_code'],
-            'reason' => "Admin charges bulk transfer",
+            'reason' => 'Admin charges bulk transfer',
             'admin_bulk_transfer_id' => $bulkTransfer->id,
         ];
 
@@ -221,7 +223,7 @@ trait Transfer
                     'transfer_code' => $transferCode,
                     'status' => AccountTransferStatus::PROCESSED->value,
                     'processed_at' => now(),
-                    'response' => $result
+                    'response' => $result,
                 ]);
 
                 // Update all individual transfers
@@ -229,7 +231,7 @@ trait Transfer
                     ->update([
                         'status' => AccountTransferStatus::PROCESSED->value,
                         'transfer_code' => $transferCode,
-                        'response' => ['bulk_reference' => $bulkTransfer->reference]
+                        'response' => ['bulk_reference' => $bulkTransfer->reference],
                     ]);
 
                 $this->info("Bulk transfer processed: {$bulkTransfer->reference}");
@@ -240,7 +242,7 @@ trait Transfer
 
         } catch (\Exception $e) {
             $this->handleBulkTransferFailure($bulkTransfer, ['error' => $e->getMessage()]);
-            Log::error('Paystack bulk transfer exception: ' . $e->getMessage());
+            Log::error('Paystack bulk transfer exception: '.$e->getMessage());
         }
     }
 
@@ -249,7 +251,7 @@ trait Transfer
         // Mark bulk transfer as failed
         $bulkTransfer->update([
             'status' => AccountTransferStatus::FAILED->value,
-            'response' => $errorResponse
+            'response' => $errorResponse,
         ]);
 
         // Reset individual transfers back to PENDING so they get picked up again
@@ -257,10 +259,10 @@ trait Transfer
             ->update([
                 'status' => AccountTransferStatus::PENDING->value,
                 'admin_bulk_transfer_id' => null, // Remove association with failed bulk transfer
-                'response' => $errorResponse
+                'response' => $errorResponse,
             ]);
 
-        Log::error("Bulk transfer failed: {$bulkTransfer->reference} - " . json_encode($errorResponse));
+        Log::error("Bulk transfer failed: {$bulkTransfer->reference} - ".json_encode($errorResponse));
     }
 
     protected function markTransfersFailed($transfers, $errorMessage)
@@ -268,7 +270,7 @@ trait Transfer
         foreach ($transfers as $transfer) {
             $transfer->update([
                 'status' => AccountTransferStatus::FAILED->value,
-                'response' => ['error' => $errorMessage]
+                'response' => ['error' => $errorMessage],
             ]);
         }
     }
@@ -281,14 +283,14 @@ trait Transfer
         User::with(['userWithdrawLogs' => function ($query) {
             $query->where('status', General::PENDING)->limit(1);
         }, 'userBank'])
-        ->whereHas('userWithdrawLogs', function ($query) {
-            $query->where('status', General::PENDING);
-        })
-        ->chunk(100, function ($users) use (&$requests) {
-            foreach ($users as $user) {
-                $this->extractWithdrawAccountRequests($user, $requests);
-            }
-        });
+            ->whereHas('userWithdrawLogs', function ($query) {
+                $query->where('status', General::PENDING);
+            })
+            ->chunk(100, function ($users) use (&$requests) {
+                foreach ($users as $user) {
+                    $this->extractWithdrawAccountRequests($user, $requests);
+                }
+            });
 
         return $requests;
     }
@@ -313,7 +315,7 @@ trait Transfer
 
             $reference = (string) Str::uuid();
 
-            if (!preg_match('/^[a-z0-9_-]+$/', $reference)) {
+            if (! preg_match('/^[a-z0-9_-]+$/', $reference)) {
                 throw new \Exception("Invalid reference format: {$reference}");
             }
 
@@ -325,7 +327,7 @@ trait Transfer
             $requests[] = [
                 'amount' => $amount,
                 'reference' => $reference,
-                'reason' => $withdraw->description ?? "User account withdrawal",
+                'reason' => $withdraw->description ?? 'User account withdrawal',
                 'recipient' => $bank->recipient_code,
                 'request_id' => $withdraw->id,
                 'user_id' => $user->id,
@@ -348,8 +350,9 @@ trait Transfer
             if (is_array($data)) {
                 foreach ($data as $transfer) {
                     // Skip non-array elements and elements without reference
-                    if (!is_array($transfer) || !isset($transfer['reference'])) {
-                        Log::warning("Invalid transfer data in Paystack response: " . json_encode($transfer));
+                    if (! is_array($transfer) || ! isset($transfer['reference'])) {
+                        Log::warning('Invalid transfer data in Paystack response: '.json_encode($transfer));
+
                         continue;
                     }
 
@@ -376,9 +379,9 @@ trait Transfer
                     $item['user_id'],
                     [
                         'message' => $e->getMessage(),
-                        'line'    => $e->getLine(),
-                        'file'    => $e->getFile(),
-                        'trace'   => $e->getTraceAsString(),
+                        'line' => $e->getLine(),
+                        'file' => $e->getFile(),
+                        'trace' => $e->getTraceAsString(),
                     ]
                 );
             }
@@ -398,7 +401,7 @@ trait Transfer
             ]);
         } else {
             $this->markWithdrawRequestFailed($withdraw->id, $user->id, $errorMessage);
-            Log::error("Failed to queue Paystack bulk transfer: " . json_encode($errorMessage));
+            Log::error('Failed to queue Paystack bulk transfer: '.json_encode($errorMessage));
         }
     }
 
@@ -412,8 +415,9 @@ trait Transfer
                 ->lockForUpdate()
                 ->first();
 
-            if (!$withdraw) {
+            if (! $withdraw) {
                 Log::error("Withdrawal already processed or not found: {$requestId}");
+
                 return;
             }
 
@@ -422,8 +426,9 @@ trait Transfer
                 ->with('walletAccount')
                 ->first();
 
-            if (!$user) {
+            if (! $user) {
                 Log::error("Failed to mark withdraw request failed: Withdrawal ID {$requestId}, User ID {$userId}");
+
                 return;
             }
 
@@ -452,6 +457,7 @@ trait Transfer
 
             if (! $freshWithdraw) {
                 Log::warning("Withdrawal already refunded or not found: {$withdraw->id}");
+
                 return;
             }
 
@@ -461,6 +467,7 @@ trait Transfer
 
             if (! $freshUser) {
                 Log::error("User not found for refund: {$user->id}");
+
                 return;
             }
 
@@ -483,7 +490,7 @@ trait Transfer
                 $amount,
                 'CR',
                 General::REFUNDED,
-                "Refund for failed withdrawal",
+                'Refund for failed withdrawal',
             );
 
             // Update withdrawal status to REFUNDED

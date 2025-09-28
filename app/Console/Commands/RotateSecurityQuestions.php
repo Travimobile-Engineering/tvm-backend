@@ -26,7 +26,7 @@ class RotateSecurityQuestions extends Command
      */
     public function handle()
     {
-        //(new SecurityQuestionsSeeder())->run();
+        // (new SecurityQuestionsSeeder())->run();
 
         $this->info('Security questions rotated successfully.');
     }

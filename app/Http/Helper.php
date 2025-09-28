@@ -1,54 +1,55 @@
 <?php
 
-use App\Models\User;
-use App\Enum\General;
 use App\Contracts\SMS;
-use App\Models\Mailing;
 use App\DTO\SendCodeData;
 use App\Enum\CommissionEnum;
+use App\Enum\General;
 use App\Enum\UserType;
 use App\Jobs\ProcessMail;
 use App\Libraries\Utility;
 use App\Models\Fee;
 use App\Models\FeesShareFormula;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Mailing;
+use App\Models\User;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use ImageKit\ImageKit;
 
-if (!function_exists('authUser')) {
-    function authUser() {
+if (! function_exists('authUser')) {
+    function authUser()
+    {
         return Auth::guard('api')->user();
     }
 }
 
-if (!function_exists('getRandomString')) {
+if (! function_exists('getRandomString')) {
     function getRandomString()
     {
         return Str::random(10);
     }
 }
 
-if (!function_exists('getRandomNumber')) {
+if (! function_exists('getRandomNumber')) {
     function getRandomNumber()
     {
-        return 'TVM-' . Str::random(11);
+        return 'TVM-'.Str::random(11);
     }
 }
 
-if (!function_exists('getCode')) {
+if (! function_exists('getCode')) {
     function getCode()
     {
         return str_pad(rand(0, 99999), 5, 0, STR_PAD_LEFT);
     }
 }
 
-if (!function_exists('uploadToImageKit')) {
+if (! function_exists('uploadToImageKit')) {
     function uploadToImageKit($file, $folder = 'uploads')
     {
         $imageKit = new ImageKit(
@@ -60,9 +61,9 @@ if (!function_exists('uploadToImageKit')) {
         $uploadFile = fopen($file->getRealPath(), 'r');
 
         $uploadResponse = $imageKit->upload([
-            "file" => $uploadFile,
-            "fileName" => $file->getClientOriginalName(),
-            "folder" => $folder
+            'file' => $uploadFile,
+            'fileName' => $file->getClientOriginalName(),
+            'folder' => $folder,
         ]);
 
         if (isset($uploadResponse->result->url)) {
@@ -76,10 +77,10 @@ if (!function_exists('uploadToImageKit')) {
     }
 }
 
-if (!function_exists('deleteOldFile')) {
+if (! function_exists('deleteOldFile')) {
     function deleteOldFile($publicId)
     {
-        if (!$publicId) {
+        if (! $publicId) {
             return;
         }
 
@@ -100,7 +101,7 @@ if (!function_exists('deleteOldFile')) {
     }
 }
 
-if (!function_exists('uploadFile')) {
+if (! function_exists('uploadFile')) {
     function uploadFile($request, $key, $folder, $oldPublicId = null)
     {
         deleteOldFile($oldPublicId);
@@ -109,6 +110,7 @@ if (!function_exists('uploadFile')) {
             $file = $request->file($key);
             try {
                 $image = $file->storeOnCloudinary($folder);
+
                 return [
                     'url' => $image->getSecurePath(),
                     'public_id' => $image->getPublicId(),
@@ -122,7 +124,7 @@ if (!function_exists('uploadFile')) {
     }
 }
 
-if (!function_exists('uploadFilesBatches')) {
+if (! function_exists('uploadFilesBatches')) {
     function uploadFilesBatches($request, $files, $folder, $oldPublicIds = [])
     {
         $results = [];
@@ -151,13 +153,13 @@ if (!function_exists('uploadFilesBatches')) {
     }
 }
 
-if (!function_exists('uploadFilesBatch')) {
+if (! function_exists('uploadFilesBatch')) {
     function uploadFilesBatch($files, $folder, $oldPublicIds = [])
     {
         $results = [];
 
         foreach ($files as $file) {
-            if (!($file instanceof \Illuminate\Http\UploadedFile)) {
+            if (! ($file instanceof \Illuminate\Http\UploadedFile)) {
                 continue;
             }
 
@@ -180,17 +182,19 @@ if (!function_exists('uploadFilesBatch')) {
     }
 }
 
-if(!function_exists('getRouteStateAndTownNameFromTownId')){
-    function getRouteStateAndTownNameFromTownId(int $id) :string{
+if (! function_exists('getRouteStateAndTownNameFromTownId')) {
+    function getRouteStateAndTownNameFromTownId(int $id): string
+    {
         $town = DB::table('route_subregions')->where('id', $id)->first();
         $state = DB::table('states')->where('id', $town->state_id)->first();
 
-        return $state->name." > ".$town->name;
+        return $state->name.' > '.$town->name;
     }
 }
 
-if (!function_exists('generateUniqueRandomString')) {
-    function generateUniqueRandomString($table, $column, $length = 16) {
+if (! function_exists('generateUniqueRandomString')) {
+    function generateUniqueRandomString($table, $column, $length = 16)
+    {
         do {
             $str = Str::random($length);
         } while (DB::table($table)->where($column, $str)->exists());
@@ -199,8 +203,9 @@ if (!function_exists('generateUniqueRandomString')) {
     }
 }
 
-if (!function_exists('generateUniqueNumber')) {
-    function generateUniqueNumber($table, $column, $length = 10) {
+if (! function_exists('generateUniqueNumber')) {
+    function generateUniqueNumber($table, $column, $length = 10)
+    {
         do {
             $number = str_pad(mt_rand(0, pow(10, $length) - 1), $length, '0', STR_PAD_LEFT);
         } while (DB::table($table)->where($column, $number)->exists());
@@ -209,13 +214,14 @@ if (!function_exists('generateUniqueNumber')) {
     }
 }
 
-if(!function_exists('generateVerificationCode')){
-    function generateVerificationCode($length = 5){
+if (! function_exists('generateVerificationCode')) {
+    function generateVerificationCode($length = 5)
+    {
         return str_pad(rand(10000, 99999), $length, 0);
     }
 }
 
-if (!function_exists('sendMail')) {
+if (! function_exists('sendMail')) {
     function sendMail($to, $mail)
     {
         Mail::to($to)->send($mail);
@@ -229,12 +235,12 @@ if (! function_exists('sendSmS')) {
     }
 }
 
-if (!function_exists('hasSetupWallet')) {
+if (! function_exists('hasSetupWallet')) {
     function hasSetupWallet(int $userId): bool
     {
         $user = User::with(['userBank', 'userPin'])->find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -245,12 +251,12 @@ if (!function_exists('hasSetupWallet')) {
     }
 }
 
-if (!function_exists('hasSetupPin')) {
+if (! function_exists('hasSetupPin')) {
     function hasSetupPin(int $userId): bool
     {
         $user = User::with(['userPin'])->find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -260,12 +266,12 @@ if (!function_exists('hasSetupPin')) {
     }
 }
 
-if (!function_exists('hasOnboarded')) {
+if (! function_exists('hasOnboarded')) {
     function hasOnboarded(int $userId): bool
     {
         $user = User::with(['vehicle', 'documents'])->find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -277,15 +283,16 @@ if (!function_exists('hasOnboarded')) {
 }
 
 if (! function_exists('mailSend')) {
-    function mailSend($type, $recipient, $subject, $mail_class, $payloadData = []) {
+    function mailSend($type, $recipient, $subject, $mail_class, $payloadData = [])
+    {
         $data = [
             'type' => $type,
             'email' => $recipient->email,
             'subject' => $subject,
-            'body' => "",
+            'body' => '',
             'mailable' => $mail_class,
             'scheduled_at' => now(),
-            'payload' => array_merge($payloadData)
+            'payload' => array_merge($payloadData),
         ];
 
         $mailing = Mailing::saveData($data);
@@ -294,15 +301,19 @@ if (! function_exists('mailSend')) {
 }
 
 if (! function_exists('encryptData')) {
-    function encryptData($data, $key = null) {
+    function encryptData($data, $key = null)
+    {
         $key ??= config('security.encoding_key');
+
         return Utility::encrypt($data, $key);
     }
 }
 
 if (! function_exists('decryptData')) {
-    function decryptData($data, $key = null) {
+    function decryptData($data, $key = null)
+    {
         $key ??= config('security.encoding_key');
+
         return Utility::decrypt($data, $key);
     }
 }
@@ -321,7 +332,7 @@ if (! function_exists('formatPhoneNumber')) {
         }
 
         if (preg_match('/^0[789][01]\d{8}$/', $phone_number)) {
-            return '234' . substr($phone_number, 1);
+            return '234'.substr($phone_number, 1);
         }
 
         if (preg_match('/^\+234[789][01]\d{8}$/', $phone_number)) {
@@ -333,7 +344,8 @@ if (! function_exists('formatPhoneNumber')) {
 }
 
 if (! function_exists('sendCode')) {
-    function sendCode($request, SendCodeData $payload) {
+    function sendCode($request, SendCodeData $payload)
+    {
         $channels = [
             'email' => function () use ($payload) {
                 mailSend(
@@ -362,21 +374,23 @@ if (! function_exists('sendCode')) {
     }
 }
 
-if (!function_exists('getUserTypes')){
-    function getUserTypes(?Model $user = null){
-        if(!$user){
+if (! function_exists('getUserTypes')) {
+    function getUserTypes(?Model $user = null)
+    {
+        if (! $user) {
             $user = Auth::user();
         }
+
         return explode(',', $user->user_category);
     }
 }
 
-if (!function_exists('hasSetSecurityAnswer')) {
+if (! function_exists('hasSetSecurityAnswer')) {
     function hasSetSecurityAnswer(int $userId): bool
     {
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -388,7 +402,7 @@ if (!function_exists('hasSetSecurityAnswer')) {
     }
 }
 
-if (!function_exists('getFee')) {
+if (! function_exists('getFee')) {
     function getFee(string $name): int|float
     {
         static $localCache = [];
@@ -408,16 +422,17 @@ if (!function_exists('getFee')) {
         }
 
         $localCache[$name] = $amount;
+
         return $amount;
     }
 }
 
-if (!function_exists('driversCreatedByAgent')) {
+if (! function_exists('driversCreatedByAgent')) {
     function driversCreatedByAgent(int $agentId)
     {
         $agent = User::find($agentId);
 
-        if (!$agent) {
+        if (! $agent) {
             return collect();
         }
 
@@ -427,12 +442,12 @@ if (!function_exists('driversCreatedByAgent')) {
     }
 }
 
-if (!function_exists('usersCreated')) {
+if (! function_exists('usersCreated')) {
     function usersCreated(int $userId)
     {
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return collect();
         }
 
@@ -464,17 +479,16 @@ if (! function_exists('generateReference')) {
     /**
      * Generate a unique reference.
      *
-     * @param string $prefix Optional prefix like 'TRF' or 'INV'
-     * @param string|null $table Optional table to check uniqueness
-     * @param string $column Column in the table to check (default: 'txn_reference')
-     * @return string
+     * @param  string  $prefix  Optional prefix like 'TRF' or 'INV'
+     * @param  string|null  $table  Optional table to check uniqueness
+     * @param  string  $column  Column in the table to check (default: 'txn_reference')
      */
     function generateReference(string $prefix = '', ?string $table = null, string $column = 'txn_reference'): string
     {
         do {
             $random = strtoupper(Str::random(10));
             $timestamp = now()->format('YmdHis');
-            $reference = $prefix . $timestamp . $random;
+            $reference = $prefix.$timestamp.$random;
 
             $exists = false;
 
@@ -491,10 +505,6 @@ if (! function_exists('generateReference')) {
 if (! function_exists('getCharge')) {
     /**
      * Get charges for the given types.
-     *
-     * @param array $types
-     * @param float $default
-     * @return array
      */
     function getCharge(array $types, float $default = 0.00): array
     {
@@ -505,12 +515,12 @@ if (! function_exists('getCharge')) {
 
         // Ensure all requested types exist, fall back to default
         return collect($types)
-            ->mapWithKeys(fn($type) => [$type => (float) ($charges[$type] ?? $default)])
+            ->mapWithKeys(fn ($type) => [$type => (float) ($charges[$type] ?? $default)])
             ->toArray();
     }
 }
 
-if (!function_exists('commissionValue')) {
+if (! function_exists('commissionValue')) {
     /**
      * Get commission value from database with fallback to enum defaults
      */

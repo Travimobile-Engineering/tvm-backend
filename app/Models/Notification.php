@@ -11,13 +11,13 @@ class Notification extends Model
         'title',
         'description',
         'read',
-        'additional_data'
+        'additional_data',
     ];
 
     public function casts()
     {
         return [
-            'additional_data' => 'array'
+            'additional_data' => 'array',
         ];
     }
 }

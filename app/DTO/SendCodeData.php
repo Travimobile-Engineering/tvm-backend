@@ -12,6 +12,5 @@ class SendCodeData
         public readonly ?string $message = null,
         public readonly ?string $subject = null,
         public readonly ?string $mailable = null,
-    )
-    {}
+    ) {}
 }

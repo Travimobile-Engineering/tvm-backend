@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Models\Trip;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -18,8 +17,7 @@ class PassengerTripNotification extends Notification
     public function __construct(
         protected Trip $trip,
         protected $request
-    )
-    {}
+    ) {}
 
     /**
      * Get the notification's delivery channels.
@@ -37,9 +35,9 @@ class PassengerTripNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-                    ->subject('Trip Notify')
-                    ->line('Your trip from ' . $this->trip->departure . ' to ' . $this->trip->destination . ' is departing soon!')
-                    ->line('Departure time: ' . $this->request->time);
+            ->subject('Trip Notify')
+            ->line('Your trip from '.$this->trip->departure.' to '.$this->trip->destination.' is departing soon!')
+            ->line('Departure time: '.$this->request->time);
     }
 
     /**

@@ -22,12 +22,12 @@ class RecurringTripResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'user' => (object)[
+            'user' => (object) [
                 'first_name' => $this->user->first_name,
                 'last_name' => $this->user->last_name,
             ],
             'vehicle_id' => $this->vehicle_id,
-            'vehicle' => (object)[
+            'vehicle' => (object) [
                 'name' => $this->vehicle?->name,
                 'year' => $this->vehicle?->year,
                 'model' => $this->vehicle?->model,
@@ -37,12 +37,12 @@ class RecurringTripResource extends JsonResource
                 'plate_number' => $this->vehicle?->plate_no,
                 'seats' => $this->vehicle?->seats,
                 'seat_row' => $this->vehicle?->seat_row,
-                'seat_column' => $this->vehicle?->seat_column
+                'seat_column' => $this->vehicle?->seat_column,
             ],
             'departure_id' => $this->departure,
             'destination_id' => $this->destination,
-            'departure' => $this->departureRegion?->state?->name . ' > ' . $this->departureRegion?->name,
-            'destination' => $this->destinationRegion?->state?->name . ' > ' . $this->destinationRegion?->name,
+            'departure' => $this->departureRegion?->state?->name.' > '.$this->departureRegion?->name,
+            'destination' => $this->destinationRegion?->state?->name.' > '.$this->destinationRegion?->name,
             'start_date' => $this->start_date,
             'trip_duration' => $this->trip_duration,
             'trip_days' => $this->trip_days,
@@ -61,7 +61,7 @@ class RecurringTripResource extends JsonResource
                     'id' => $passenger?->user?->id,
                     'first_name' => $passenger?->user?->first_name,
                     'booking_id' => $passenger?->booking_id,
-                    'seat' => (int)$passenger?->selected_seat,
+                    'seat' => (int) $passenger?->selected_seat,
                 ];
             })->toArray() : [],
             'selected_seats' => $this->tripBookings ? $this->tripBookings->map(function ($passenger) {

@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Models\UserWithdrawLog;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -18,8 +17,7 @@ class WithdrawalRefundNotification extends Notification
     public function __construct(
         protected UserWithdrawLog $withdrawalLog,
         protected string $status
-    )
-    {}
+    ) {}
 
     /**
      * Get the notification's delivery channels.

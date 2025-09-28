@@ -15,7 +15,7 @@ class FooProfileResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => (int)$this->id,
+            'id' => (int) $this->id,
             'uuid' => $this->uuid,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
@@ -39,7 +39,7 @@ class FooProfileResource extends JsonResource
             'email_notification' => $this->email_notifications,
             'has_setup_security_answer' => hasSetSecurityAnswer($this->id),
             'security_question' => $this->securityQuestion?->question,
-            'bank' => (object)[
+            'bank' => (object) [
                 'id' => $this->userBank?->id,
                 'account_name' => $this->userBank?->account_name,
                 'account_number' => $this->userBank?->account_number,
@@ -47,7 +47,7 @@ class FooProfileResource extends JsonResource
             ],
             'wallet_setup' => hasSetupWallet($this->id),
             'pin_setup' => hasSetupPin($this->id),
-            'wallet_info' => (object)[
+            'wallet_info' => (object) [
                 'earnings' => (object) [
                     'available' => $this->earning_balance,
                 ],

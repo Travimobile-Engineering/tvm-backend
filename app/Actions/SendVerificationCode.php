@@ -8,7 +8,7 @@ class SendVerificationCode
 {
     public function execute($user, $code)
     {
-        if (!empty($user->email) && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+        if (! empty($user->email) && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
             sendMail($user->email, new VerifyPinMail($user->first_name, $code));
         }
 

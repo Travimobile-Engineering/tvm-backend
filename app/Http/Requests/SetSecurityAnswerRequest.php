@@ -25,7 +25,7 @@ class SetSecurityAnswerRequest extends FormRequest
             'user_id' => 'required|integer|exists:users,id',
             'security_question_id' => 'required|integer|exists:security_questions,id',
             'answer' => 'required|string|min:3',
-            'password' => 'required|string'
+            'password' => 'required|string',
         ];
     }
 }

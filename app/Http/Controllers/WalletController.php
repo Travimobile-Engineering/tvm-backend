@@ -4,18 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Actions\SendVerificationCode;
 use App\Http\Requests\ChangePinRequest;
-use App\Trait\HttpResponse;
-use Illuminate\Http\Request;
-use App\Services\WalletService;
-use App\Http\Requests\FundWalletRequest;
-use App\Http\Requests\WalletTopUpRequest;
-use App\Http\Requests\DriverWithdrawRequest;
-use App\Http\Requests\WalletTransferRequest;
 use App\Http\Requests\DriverWalletSetupequest;
+use App\Http\Requests\DriverWithdrawRequest;
+use App\Http\Requests\FundWalletRequest;
 use App\Http\Requests\SendPinOtpRequest;
 use App\Http\Requests\VerifyPinRequest;
+use App\Http\Requests\WalletTopUpRequest;
+use App\Http\Requests\WalletTransferRequest;
 use App\Services\Admin\AccountService;
 use App\Services\AgentService;
+use App\Services\WalletService;
+use App\Trait\HttpResponse;
+use Illuminate\Http\Request;
 
 class WalletController extends Controller
 {
@@ -25,8 +25,7 @@ class WalletController extends Controller
         protected WalletService $service,
         protected AgentService $agentService,
         protected AccountService $accountService,
-    )
-    {}
+    ) {}
 
     public function getBalance()
     {

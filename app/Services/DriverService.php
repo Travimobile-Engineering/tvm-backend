@@ -18,25 +18,25 @@ use Illuminate\Support\Facades\DB;
 
 class DriverService
 {
-    use HttpResponse, DriverTrait;
+    use DriverTrait, HttpResponse;
 
     public function addDriverInfo($request)
     {
         $user = User::with(['vehicle', 'documents', 'transitCompany'])
             ->where([
                 'id' => $request->user_id,
-                'user_category' => UserType::DRIVER
+                'user_category' => UserType::DRIVER,
             ])
             ->first();
 
-        if(! $user) {
-            return $this->error(null, "User not found!", 404);
+        if (! $user) {
+            return $this->error(null, 'User not found!', 404);
         }
 
         $accountExist = hasOnboarded($request->user_id);
 
         if ($accountExist) {
-            return $this->error(null, "Account already exist!", 400);
+            return $this->error(null, 'Account already exist!', 400);
         }
 
         $fileKeys = ['profile_photo', 'license_photo', 'nin_photo', 'vehicle_insurance_photo'];
@@ -87,7 +87,7 @@ class DriverService
 
             DB::commit();
 
-            return $this->success($user, "Driver information added successfully", 201);
+            return $this->success($user, 'Driver information added successfully', 201);
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
@@ -113,7 +113,7 @@ class DriverService
             'stops' => $request->stops,
         ]);
 
-        return $this->success(null, "Added successfully", 201);
+        return $this->success(null, 'Added successfully', 201);
     }
 
     public function getAllBusStops($userId)
@@ -123,7 +123,7 @@ class DriverService
 
         $data = BusStopResource::collection($user->busStops);
 
-        return $this->success($data, "Bus Stops");
+        return $this->success($data, 'Bus Stops');
     }
 
     public function getStop($userId, $stateId)
@@ -148,7 +148,7 @@ class DriverService
 
         $document->delete();
 
-        return $this->success(null, "Document removed successfully");
+        return $this->success(null, 'Document removed successfully');
     }
 
     public function updateDriverDocuments($request)
@@ -206,7 +206,7 @@ class DriverService
 
             DB::commit();
 
-            return $this->success(null, "Documents updated successfully", 200);
+            return $this->success(null, 'Documents updated successfully', 200);
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
@@ -218,10 +218,10 @@ class DriverService
         $user = User::with('documents')->findOrFail($request->user_id);
 
         $user->update([
-            'transit_company_union_id' => $request->transit_company_union_id
+            'transit_company_union_id' => $request->transit_company_union_id,
         ]);
 
-        return $this->success(null, "Union updated successfully", 200);
+        return $this->success(null, 'Union updated successfully', 200);
     }
 
     public function setupVehicle($request)
@@ -229,7 +229,7 @@ class DriverService
         $user = User::with(['vehicle', 'vehicle'])
             ->findOrFail($request->user_id);
 
-        if (!$user->vehicle) {
+        if (! $user->vehicle) {
             return $this->error(null, 'Vehicle not found', 404);
         }
 
@@ -237,7 +237,7 @@ class DriverService
             'description' => $request->description,
         ]);
 
-        return $this->success(null, "Saved successfully");
+        return $this->success(null, 'Saved successfully');
     }
 
     public function premiumUpgrade($request)
@@ -246,10 +246,10 @@ class DriverService
             DB::beginTransaction();
 
             $user = User::with([
-                    'premiumUpgrades',
-                    'vehicle.vehicleImages',
-                    'vehicle.premiumUpgrades',
-                ])
+                'premiumUpgrades',
+                'vehicle.vehicleImages',
+                'vehicle.premiumUpgrades',
+            ])
                 ->findOrFail($request->user_id);
 
             if (! $user->vehicle) {
@@ -283,7 +283,8 @@ class DriverService
             }
 
             DB::commit();
-            return $this->success(null, "Saved successfully");
+
+            return $this->success(null, 'Saved successfully');
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
@@ -306,21 +307,21 @@ class DriverService
             'description' => $request->description,
         ]);
 
-        return $this->success(null, "Saved successfully");
+        return $this->success(null, 'Saved successfully');
     }
 
     public function setAvailability($request)
     {
         $user = User::with(['vehicle', 'unavailableDates'])->findOrFail($request->user_id);
 
-        if (!$user->vehicle) {
+        if (! $user->vehicle) {
             return $this->error(null, 'Vehicle not found', 404);
         }
 
         $user->update([
             'is_available' => $request->is_available,
-            "lng" => $request->lng,
-            "lat" => $request->lat,
+            'lng' => $request->lng,
+            'lat' => $request->lat,
         ]);
 
         if ($request->is_available) {
@@ -329,7 +330,7 @@ class DriverService
                 ->delete();
         }
 
-        if (!empty($request->unavailable_dates)) {
+        if (! empty($request->unavailable_dates)) {
             foreach ($request->unavailable_dates as $date) {
                 $dateFormatted = Carbon::parse($date)->toDateString();
 
@@ -344,7 +345,7 @@ class DriverService
             }
         }
 
-        return $this->success(null, "Saved successfully");
+        return $this->success(null, 'Saved successfully');
     }
 
     public function updateLayout($request)
@@ -374,8 +375,6 @@ class DriverService
             'seat_column' => $request->seat_column,
         ]);
 
-        return $this->success(null, "Updated successfully");
+        return $this->success(null, 'Updated successfully');
     }
-
 }
-

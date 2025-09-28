@@ -34,7 +34,7 @@ class TripBookingResource extends JsonResource
             'date_canceled' => $this->date_canceled,
             'payment_status' => $this->payment_status,
             'payment_method' => $this->payment_method,
-            'trip_detail' => (object)[
+            'trip_detail' => (object) [
                 'trip_id' => $this->trip?->id,
                 'departure_id' => $this->trip?->departure,
                 'destination_id' => $this->trip?->destination,
@@ -49,17 +49,17 @@ class TripBookingResource extends JsonResource
                 'bus_stops' => $this->trip?->bus_stops,
                 'status' => $this->trip?->status,
             ],
-            'user_detail' => (object)[
+            'user_detail' => (object) [
                 'first_name' => $this->user?->first_name,
                 'last_name' => $this->user?->last_name,
             ],
-            'driver_detail' => (object)[
+            'driver_detail' => (object) [
                 'first_name' => $this->trip?->user?->first_name,
                 'last_name' => $this->trip?->user?->last_name,
                 'phone_number' => $this->trip?->user?->phone_number,
                 'profile_photo' => $this->trip?->user?->profile_photo,
             ],
-            'vehicle_detail' => (object)[
+            'vehicle_detail' => (object) [
                 'name' => $this->trip?->vehicle?->model,
                 'plate_number' => $this->trip?->vehicle?->plate_no,
                 'type' => $this->trip?->vehicle?->type,
@@ -69,7 +69,7 @@ class TripBookingResource extends JsonResource
                 'seats' => $this->trip?->vehicle?->seats,
                 'air_conditioned' => $this->trip?->vehicle?->air_conditioned,
             ],
-            'transit_company_detail' => (object)[
+            'transit_company_detail' => (object) [
                 'name' => $this->user?->transitCompany?->name,
                 'reg_no' => $this->user?->transitCompany?->reg_no,
                 'address' => $this->user?->transitCompany?->address,
@@ -77,13 +77,13 @@ class TripBookingResource extends JsonResource
                 'email' => $this->user?->transitCompany?->email,
                 'park' => $this->user?->transitCompany?->park,
                 'type' => $this->user?->transitCompany?->type,
-            ]
+            ],
         ];
     }
 
     protected function calculateEstimatedArrivalTime($departureTime, $tripDuration): ?string
     {
-        if (!$departureTime || !$tripDuration) {
+        if (! $departureTime || ! $tripDuration) {
             return null;
         }
 
@@ -93,7 +93,8 @@ class TripBookingResource extends JsonResource
             // Try to parse as "H:i" format first
             if (preg_match('/^\d{1,2}:\d{2}$/', $tripDuration)) {
                 [$hours, $minutes] = explode(':', $tripDuration);
-                $arrival = $departure->copy()->addHours((int)$hours)->addMinutes((int)$minutes);
+                $arrival = $departure->copy()->addHours((int) $hours)->addMinutes((int) $minutes);
+
                 return $arrival->format('H:i');
             }
 
@@ -103,10 +104,11 @@ class TripBookingResource extends JsonResource
             // Match patterns like "2hours30mins", "1hour", "45mins"
             preg_match('/(?:(\d+)hour[s]?)?(?:(\d+)min[s]?)?/', $duration, $matches);
 
-            $hours = isset($matches[1]) ? (int)$matches[1] : 0;
-            $minutes = isset($matches[2]) ? (int)$matches[2] : 0;
+            $hours = isset($matches[1]) ? (int) $matches[1] : 0;
+            $minutes = isset($matches[2]) ? (int) $matches[2] : 0;
 
             $arrival = $departure->copy()->addHours($hours)->addMinutes($minutes);
+
             return $arrival->format('H:i');
         } catch (\Exception $e) {
             return null;

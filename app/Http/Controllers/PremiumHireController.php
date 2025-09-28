@@ -12,8 +12,7 @@ class PremiumHireController extends Controller
 {
     public function __construct(
         protected PremiumHireService $service
-    )
-    {}
+    ) {}
 
     public function vehicleLookup(Request $request)
     {
@@ -74,7 +73,7 @@ class PremiumHireController extends Controller
     {
         $request->validate([
             'ids' => 'required|array|min:1',
-            'ids.*' => 'integer|exists:premium_hire_booking_passengers,id'
+            'ids.*' => 'integer|exists:premium_hire_booking_passengers,id',
         ]);
 
         return $this->service->deletePassenger($request);

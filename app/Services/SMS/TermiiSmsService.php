@@ -16,20 +16,20 @@ class TermiiSmsService implements SMS
         $post_data = json_encode($data);
 
         try {
-            curl_setopt_array($curl, array(
-                CURLOPT_URL => "https://v3.api.termii.com/api/sms/send",
+            curl_setopt_array($curl, [
+                CURLOPT_URL => 'https://v3.api.termii.com/api/sms/send',
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => "",
+                CURLOPT_ENCODING => '',
                 CURLOPT_MAXREDIRS => 10,
                 CURLOPT_TIMEOUT => 0,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => "POST",
+                CURLOPT_CUSTOMREQUEST => 'POST',
                 CURLOPT_POSTFIELDS => $post_data,
-                CURLOPT_HTTPHEADER => array(
-                "Content-Type: application/json"
-                ),
-            ));
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json',
+                ],
+            ]);
 
             $response = curl_exec($curl);
             $this->logResponse($to, $message, $response, 'success');
@@ -40,13 +40,13 @@ class TermiiSmsService implements SMS
                 : [
                     'status' => false,
                     'message' => 'Invalid JSON response from Termii',
-                    'data' => $response
+                    'data' => $response,
                 ];
         } catch (\Exception $e) {
             return [
                 'status' => false,
                 'message' => $e->getMessage(),
-                'data'=> null
+                'data' => null,
             ];
         }
     }
@@ -54,13 +54,14 @@ class TermiiSmsService implements SMS
     protected function getData($to, $message): array
     {
         $channel = $this->determineSmsChannel();
+
         return [
             'to' => $to,
             'from' => config('services.termii.sender_id_default'),
             'sms' => $message,
             'type' => 'plain',
             'channel' => $channel,
-            'api_key' => config('services.termii.api_key')
+            'api_key' => config('services.termii.api_key'),
         ];
     }
 
@@ -80,5 +81,3 @@ class TermiiSmsService implements SMS
         ))->run();
     }
 }
-
-

@@ -1,9 +1,9 @@
 <?php
 
 use App\Enum\UserType;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->string('next_of_kin_full_name')->nullable();
             $table->string('next_of_kin_phone_number')->nullable();
             $table->string('next_of_kin_gender')->nullable();
-            
+
             $table->unsignedTinyInteger('email_verified')->default(0);
             $table->unsignedTinyInteger('sms_verified')->default(0);
             $table->timestamp('email_verified_at')->nullable();

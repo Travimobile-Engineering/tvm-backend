@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\RouteSubregion;
 use App\Models\Trip;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -32,7 +31,7 @@ class StateZoneSeeder extends Seeder
 
         Trip::chunk(100, function ($trips) {
             foreach ($trips as $trip) {
-                if (!$trip->destination) {
+                if (! $trip->destination) {
                     continue;
                 }
 

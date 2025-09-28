@@ -21,13 +21,15 @@ class ValidateHeader
 
         $receivedValue = $request->header($headerName);
 
-        if (!$receivedValue) {
+        if (! $receivedValue) {
             Log::warning("Missing required header: {$headerName}");
+
             return response()->json(['error' => 'Unauthorized access. Missing required header.'], 401);
         }
 
         if ($receivedValue !== $expectedValue) {
             Log::warning("Invalid header value for {$headerName}: {$receivedValue}");
+
             return response()->json(['error' => 'Unauthorized access. Invalid header value.'], 401);
         }
 

@@ -24,7 +24,7 @@ class DriverWithdrawRequest extends FormRequest
         return [
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'amount' => ['required', 'numeric'],
-            'pin' => ['required', 'numeric', 'digits:4']
+            'pin' => ['required', 'numeric', 'digits:4'],
         ];
     }
 }

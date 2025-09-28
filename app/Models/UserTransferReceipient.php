@@ -16,7 +16,7 @@ class UserTransferReceipient extends Model
     protected function casts(): array
     {
         return [
-            'data' => 'array'
+            'data' => 'array',
         ];
     }
 

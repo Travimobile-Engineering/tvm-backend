@@ -9,7 +9,7 @@ class BusStop extends Model
     protected $fillable = [
         'user_id',
         'state_id',
-        'stops'
+        'stops',
     ];
 
     protected function casts(): array

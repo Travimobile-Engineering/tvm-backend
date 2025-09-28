@@ -2,20 +2,19 @@
 
 namespace App\Services\ERP;
 
+use App\Enum\ChargeType;
+use App\Enum\CommissionEnum;
+use App\Enum\General;
+use App\Enum\PaymentStatus;
+use App\Enum\PaymentType;
+use App\Enum\TransactionTitle;
+use App\Enum\TripStatus;
+use App\Enum\UserType;
 use App\Models\Fee;
 use App\Models\Trip;
-use App\Enum\General;
-use App\Enum\UserType;
-use App\Enum\ChargeType;
-use App\Enum\TripStatus;
-use App\Enum\PaymentType;
 use App\Models\UserCharge;
-use App\Enum\PaymentStatus;
-use App\Enum\CommissionEnum;
-use App\Enum\TransactionTitle;
-use Illuminate\Support\Facades\DB;
 use App\Services\Admin\AccountService;
-use App\Services\ERP\CommissionBreakdownService;
+use Illuminate\Support\Facades\DB;
 
 class DriverUsageService
 {
@@ -26,18 +25,18 @@ class DriverUsageService
     public function execute()
     {
         $trips = Trip::with([
-                'user.walletAccount',
-                'agent.walletAccount',
-                'departureRegion',
-                'destinationRegion',
-            ])
+            'user.walletAccount',
+            'agent.walletAccount',
+            'departureRegion',
+            'destinationRegion',
+        ])
             ->whereToday('departure_date')
             ->where('status', TripStatus::COMPLETED)
             ->get();
 
         $fee = Fee::where('name', General::DRIVER_CHARGE)
             ->first() ??
-            (object)['amount' => 100]; // Default fee if not found
+            (object) ['amount' => 100]; // Default fee if not found
 
         foreach ($trips as $trip) {
             $driver = $trip->user;
@@ -45,6 +44,7 @@ class DriverUsageService
             // If the driver doesn't exist, skip the charge
             if (! $driver) {
                 logger()->warning("Trip ID {$trip->id} has no valid driver.");
+
                 continue;
             }
 
@@ -64,6 +64,7 @@ class DriverUsageService
         // If the driver has already been charged today, skip the charge
         if ($alreadyCharged) {
             logger()->info("Driver with ID {$driver->id} has already been charged today.");
+
             return;
         }
 
@@ -73,6 +74,7 @@ class DriverUsageService
 
             if (! $wallet) {
                 logger()->warning("Driver with ID {$driver->id} does not have a wallet.");
+
                 return;
             }
 
@@ -138,7 +140,7 @@ class DriverUsageService
             PaymentType::DR,
             generateReference('TXN', 'transactions'),
             null,
-            "Driver charge for trip activity done."
+            'Driver charge for trip activity done.'
         );
     }
 }

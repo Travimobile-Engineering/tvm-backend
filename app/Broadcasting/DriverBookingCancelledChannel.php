@@ -23,7 +23,7 @@ class DriverBookingCancelledChannel
     {
         $tripId = TripBooking::where('booking_id', $bookingId)->value('trip_id');
 
-        if (!$tripId) {
+        if (! $tripId) {
             return false;
         }
 

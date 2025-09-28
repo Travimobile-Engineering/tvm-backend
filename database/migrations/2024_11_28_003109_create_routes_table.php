@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
 
-        Schema::create('route_regions', function(Blueprint $table){
+        Schema::create('route_regions', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
             $table->timestamps();
         });
 
-        Schema::create('route_subregions', function(Blueprint $table){
+        Schema::create('route_subregions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('state_id')->constrained('states')->onDelete('cascade');
             $table->foreignId('region_id')->constrained('route_regions')->onDelete('cascade');

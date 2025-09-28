@@ -53,5 +53,4 @@ class TransitCompanyFactory extends Factory
             'union_states_chapter' => $state->id,
         ]);
     }
-
 }

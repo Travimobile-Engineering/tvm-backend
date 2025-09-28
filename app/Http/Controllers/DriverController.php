@@ -2,21 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Services\AgentService;
-use App\Services\DriverService;
 use App\Http\Requests\DriverInfoRequest;
 use App\Http\Requests\SetAvailabilityRequest;
 use App\Http\Requests\UpdateSeatLayoutRequest;
 use App\Http\Requests\VehicleRequirementRequest;
+use App\Services\AgentService;
+use App\Services\DriverService;
+use Illuminate\Http\Request;
 
 class DriverController extends Controller
 {
     public function __construct(
         protected DriverService $service,
         protected AgentService $agentService
-    )
-    {}
+    ) {}
 
     public function addDriverInfo(DriverInfoRequest $request)
     {
@@ -46,7 +45,7 @@ class DriverController extends Controller
     public function updateDriverDocuments(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id'
+            'user_id' => 'required|exists:users,id',
         ]);
 
         return $this->service->updateDriverDocuments($request);

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->longText('message');
             $table->longText('response')->nullable();
             $table->boolean('closeout')->default(false);
-            
+
             $table->timestamps();
         });
     }

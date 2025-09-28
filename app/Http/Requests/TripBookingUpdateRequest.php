@@ -23,14 +23,14 @@ class TripBookingUpdateRequest extends FormRequest
     {
         return [
             'trip_id' => 'required|string',
-                'third_party_booking' => 'nullable|int',
-                'selected_seat' => 'required|string',
-                'trip_type' => 'required|int',
-                'travelling_with' => 'nullable|string',
-                'third_party_passenger_details' => 'nullable|string',
-                'amount_paid' => 'nullable|int',
-                'payment_method' => 'nullable',
-                'payment_status' => 'required|integer',
+            'third_party_booking' => 'nullable|int',
+            'selected_seat' => 'required|string',
+            'trip_type' => 'required|int',
+            'travelling_with' => 'nullable|string',
+            'third_party_passenger_details' => 'nullable|string',
+            'amount_paid' => 'nullable|int',
+            'payment_method' => 'nullable',
+            'payment_status' => 'required|integer',
         ];
     }
 }

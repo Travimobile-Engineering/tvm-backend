@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Trip;
-use App\Trait\HttpResponse;
-use Illuminate\Http\Request;
-use App\Services\Trip\TripService;
 use App\Http\Requests\TransportOneTimeRequest;
 use App\Http\Requests\TransportRecurringRequest;
+use App\Models\Trip;
 use App\Services\AgentService;
+use App\Services\Trip\TripService;
+use App\Trait\HttpResponse;
+use Illuminate\Http\Request;
 
 class TripController extends Controller
 {
@@ -17,8 +17,7 @@ class TripController extends Controller
     public function __construct(
         protected TripService $service,
         protected AgentService $agentService,
-    )
-    {}
+    ) {}
 
     public function createOneTime(TransportOneTimeRequest $request)
     {
@@ -35,7 +34,8 @@ class TripController extends Controller
         return $this->service->getOneTime($id);
     }
 
-    public function getTrip(Trip $trip){
+    public function getTrip(Trip $trip)
+    {
         return $this->service->getTrip($trip);
     }
 
@@ -49,7 +49,8 @@ class TripController extends Controller
         return $this->service->editOneTime($request, $id);
     }
 
-    public function getTrips(Request $request){
+    public function getTrips(Request $request)
+    {
         return $this->service->getTrips($request);
     }
 
@@ -76,7 +77,7 @@ class TripController extends Controller
     public function cancelTrip(Request $request, $id)
     {
         $request->validate([
-            'reason' => 'required|string'
+            'reason' => 'required|string',
         ]);
 
         return $this->service->cancelTrip($request, $id);
@@ -167,5 +168,4 @@ class TripController extends Controller
 
         return $this->service->tripExtendTime($request);
     }
-
 }

@@ -18,8 +18,7 @@ class ProcessMail implements ShouldQueue
      */
     public function __construct(
         public int $mailingId
-    )
-    {}
+    ) {}
 
     /**
      * Execute the job.
@@ -31,8 +30,9 @@ class ProcessMail implements ShouldQueue
             ->where('attempts', '<', 3)
             ->first();
 
-        if (!$email) {
+        if (! $email) {
             Log::error("Mailing record not found for ID: {$this->mailingId}");
+
             return;
         }
 
@@ -46,13 +46,13 @@ class ProcessMail implements ShouldQueue
             $email->update(['status' => MailingEnum::SENT]);
 
         } catch (\Exception $e) {
-            Log::error("Email failed to send: " . $e->getMessage());
+            Log::error('Email failed to send: '.$e->getMessage());
             $email->increment('attempts');
 
             if ($email->attempts >= $email->max_attempts) {
                 $email->update([
                     'status' => MailingEnum::FAILED,
-                    'error_response' => $e->getMessage()
+                    'error_response' => $e->getMessage(),
                 ]);
             }
         }

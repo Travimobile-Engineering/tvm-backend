@@ -2,41 +2,41 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Http\Resources\SecurityAgentProfileResource;
 use App\Models\Incident;
 use App\Models\Manifest;
+use App\Models\User;
 use App\Models\WatchList;
-use App\Trait\HttpResponse;
 use App\Models\WatchlistUpdate;
-use Illuminate\Support\Facades\DB;
+use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use App\Http\Resources\SecurityAgentProfileResource;
 
 class ManifestCheckerService
 {
     use HttpResponse;
+
     /**
      * Create a new class instance.
      */
-    public function __construct()
-    {}
+    public function __construct() {}
 
     public function getManifestData($request)
     {
         $manifest = Manifest::with([
-                'trip.vehicle',
-                'trip.tripBookings.user',
-                'trip.transitCompany.parks'
-            ])
-            ->whereHas('trip.vehicle', function($query) use ($request) {
+            'trip.vehicle',
+            'trip.tripBookings.user',
+            'trip.transitCompany.parks',
+        ])
+            ->whereHas('trip.vehicle', function ($query) use ($request) {
                 $query->where('plate_no', $request->plate_no);
             })
             ->latest()
             ->first();
 
-        if (!$manifest) {
-            return $this->error(null, "No manifest data found");
+        if (! $manifest) {
+            return $this->error(null, 'No manifest data found');
         }
 
         return $this->success($manifest, null);
@@ -44,7 +44,7 @@ class ManifestCheckerService
 
     public function addIncident($request)
     {
-        if($request->hasFile('media')){
+        if ($request->hasFile('media')) {
             $file = uploadFile($request, 'media', 'incidents');
         }
 
@@ -61,91 +61,99 @@ class ManifestCheckerService
             'media_url' => $file['url'] ?? null,
             'severity_level' => $request->severity_level,
             'persons_of_interest' => $request->persons_of_interest,
-            'status' => 'new'
+            'status' => 'new',
         ]);
 
-        return $this->success($incident, "Incident created successfully");
+        return $this->success($incident, 'Incident created successfully');
     }
 
     public function getIncidentCategories()
     {
         $categories = DB::table('incident_categories')->pluck('name')->toArray();
-        return $this->success($categories, "Incident categories retrieved successfully");
+
+        return $this->success($categories, 'Incident categories retrieved successfully');
     }
 
     public function getIncidentTypes()
     {
         $types = DB::table('incident_types')->pluck('name')->toArray();
-        return $this->success($types, "Incident types retrieved successfully");
+
+        return $this->success($types, 'Incident types retrieved successfully');
     }
 
-    public function getIncidentSeverityLevels(){
+    public function getIncidentSeverityLevels()
+    {
         $severities = DB::table('incident_severity_levels')->pluck('name')->toArray();
-        return $this->success($severities, "Incident severities retrieved successfully");
+
+        return $this->success($severities, 'Incident severities retrieved successfully');
     }
 
-    public function getIncidents(){
+    public function getIncidents()
+    {
         $incidents = Incident::paginate(25);
+
         return $this->success($incidents, 'Incidents retrieved successfully');
     }
 
-    public function getIncident($request){
+    public function getIncident($request)
+    {
         $incident = Incident::where('id', $request->id)->get();
+
         return $this->success($incident, 'incident retrieved successfully');
     }
 
-    public function addUpdateWatchList($request, bool $update = false){
-        
-        try{
+    public function addUpdateWatchList($request, bool $update = false)
+    {
+
+        try {
             $document_links = [];
-    
-            if($request->hasFile('photo')){
+
+            if ($request->hasFile('photo')) {
                 $photo_url = uploadFile($request, 'photo', 'watch_list')['url'];
             }
-    
-            if($request->hasFile('documents')){
-    
+
+            if ($request->hasFile('documents')) {
+
                 $documents = $request->documents;
-                if(is_array($documents)){
-                    foreach($documents as $doc){
+                if (is_array($documents)) {
+                    foreach ($documents as $doc) {
                         $response = $request->file($doc)->storeOnCloudinary('watch_list');
                         $document_links[] = $response->getSecurePath();
                     }
-                }
-    
-                else {
+                } else {
                     $document_links[] = uploadFile($request, 'documents', 'watch_list')['url'];
                 }
             }
-    
+
             $data = [
-                "full_name" => $request->full_name,
-                "category" => $request->category,
-                "phone" => $request->phone,
-                "email" => $request->email,
-                "dob" => $request->dob,
-                "state_of_origin" => $request->state_of_origin,
-                "nin" => $request->nin,
-                "investigation_officer" => $request->investigation_officer,
-                "io_contact_number" => $request->io_contact_number,
-                "state_id" => $request->state_id,
-                "city" => $request->city,
-                "reason" => $request->reason,
-                "photo_url" => $photo_url ?? '',
-                "documents" => json_encode($document_links),
+                'full_name' => $request->full_name,
+                'category' => $request->category,
+                'phone' => $request->phone,
+                'email' => $request->email,
+                'dob' => $request->dob,
+                'state_of_origin' => $request->state_of_origin,
+                'nin' => $request->nin,
+                'investigation_officer' => $request->investigation_officer,
+                'io_contact_number' => $request->io_contact_number,
+                'state_id' => $request->state_id,
+                'city' => $request->city,
+                'reason' => $request->reason,
+                'photo_url' => $photo_url ?? '',
+                'documents' => json_encode($document_links),
             ];
 
             $record = WatchList::create($data);
-            return $this->success($record, "Record successfully added to watch list");
-        }
-        catch(\Exception $e){
+
+            return $this->success($record, 'Record successfully added to watch list');
+        } catch (\Exception $e) {
             return $this->error(null, $e->getMessage());
         }
     }
 
-    public function updateWatchList($request){
-        
-        try{
+    public function updateWatchList($request)
+    {
+
+        try {
             $columns = Schema::getColumnListing('watch_lists');
 
             WatchlistUpdate::create([
@@ -154,55 +162,62 @@ class ManifestCheckerService
                 'city' => $request->city,
                 'watchlist_id' => $request->watchlist_id,
             ]);
-            return $this->success(null, "Obeservation created successfully");
-        }
-        catch(\Exception $e){
+
+            return $this->success(null, 'Obeservation created successfully');
+        } catch (\Exception $e) {
             return $this->error(null, $e->getMessage());
         }
     }
 
-    public function getWatchListRecords(){
+    public function getWatchListRecords()
+    {
         $record = WatchList::paginate(25);
+
         return $this->success($record, null);
     }
 
-    public function getWatchListRecord($request){
+    public function getWatchListRecord($request)
+    {
         $record = WatchList::find($request->id);
-        if($record){
+        if ($record) {
             return $this->success($record, null);
         }
 
-        return $this->error(null, "Invalid watch list ID");
+        return $this->error(null, 'Invalid watch list ID');
     }
 
-    public function searchWatchList($request){
-        $records = WatchList::where('full_name', 'LIKE', "%".$request->name."%")->paginate(25);
-        if($records){
+    public function searchWatchList($request)
+    {
+        $records = WatchList::where('full_name', 'LIKE', '%'.$request->name.'%')->paginate(25);
+        if ($records) {
             return $this->success($records);
         }
+
         return $this->error(null, "No records found for '".$request->name."'");
     }
 
-    public function getProfile(){
+    public function getProfile()
+    {
         return new SecurityAgentProfileResource(Auth::user());
     }
 
-    public function editProfile($request){
+    public function editProfile($request)
+    {
         $columns = Schema::getColumnListing('users');
-        $data = array_filter($request->all(), function($key) use($columns){
+        $data = array_filter($request->all(), function ($key) use ($columns) {
             return in_array($key, $columns);
         }, ARRAY_FILTER_USE_KEY);
 
-        if(isset($request->full_name)){
+        if (isset($request->full_name)) {
             $names = explode(' ', $request->full_name, 2);
             $data['first_name'] = trim($names[0]);
             $data['last_name'] = trim($names[1] ??= null);
         }
-        try{
+        try {
             User::find(Auth::user()->id)->update($data);
+
             return $this->success(null, 'User account updated successfully');
-        }
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             return $this->error(null, $e->getMessage());
         }
     }

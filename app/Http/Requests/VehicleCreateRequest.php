@@ -30,7 +30,7 @@ class VehicleCreateRequest extends FormRequest
             'engine_no' => 'required|string',
             'chassis_no' => 'required|string',
             'color' => 'required|string',
-            'seats' => 'required|string'
+            'seats' => 'required|string',
         ];
     }
 }

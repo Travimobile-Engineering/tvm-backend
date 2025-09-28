@@ -40,7 +40,7 @@ class OtherService
 
     public function accountLookUp($request)
     {
-        $url = config('services.paystack_base_url') . "/resolve?account_number=". $request->account_number . "&bank_code=". $request->bank_code;
+        $url = config('services.paystack_base_url').'/resolve?account_number='.$request->account_number.'&bank_code='.$request->bank_code;
         $token = config('app.paystack_secret_key');
 
         $headers = [
@@ -51,6 +51,3 @@ class OtherService
         return (new GetCurlService($url, $headers))->execute();
     }
 }
-
-
-

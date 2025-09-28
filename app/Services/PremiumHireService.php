@@ -2,31 +2,31 @@
 
 namespace App\Services;
 
-use App\Models\User;
-use App\Models\Charter;
-use App\Enum\TripStatus;
-use App\Enum\PaymentType;
-use App\Models\PaymentLog;
-use App\Trait\DriverTrait;
 use App\Enum\BookingStatus;
-use App\Trait\HttpResponse;
-use App\Models\PremiumUpgrade;
-use App\Models\Vehicle\Vehicle;
-use App\Models\PremiumHireRating;
-use App\Models\PremiumHireBooking;
-use Illuminate\Support\Facades\DB;
-use App\Models\PremiumHireManifest;
-use Illuminate\Support\Facades\Auth;
+use App\Enum\PaymentType;
+use App\Enum\TripStatus;
 use App\Http\Resources\CharterResource;
-use App\Models\PremiumHireBookingPassenger;
-use Unicodeveloper\Paystack\Facades\Paystack;
-use App\Http\Resources\PremiumHireTripResource;
 use App\Http\Resources\PremiumHireBookingResource;
+use App\Http\Resources\PremiumHireTripResource;
 use App\Http\Resources\PremiumHireVehicleResource;
+use App\Models\Charter;
+use App\Models\PaymentLog;
+use App\Models\PremiumHireBooking;
+use App\Models\PremiumHireBookingPassenger;
+use App\Models\PremiumHireManifest;
+use App\Models\PremiumHireRating;
+use App\Models\PremiumUpgrade;
+use App\Models\User;
+use App\Models\Vehicle\Vehicle;
+use App\Trait\DriverTrait;
+use App\Trait\HttpResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Unicodeveloper\Paystack\Facades\Paystack;
 
 class PremiumHireService
 {
-    use HttpResponse, DriverTrait;
+    use DriverTrait, HttpResponse;
 
     const TRIP_CHARGE_AMOUNT = 50;
 
@@ -39,21 +39,21 @@ class PremiumHireService
         $distanceFromRequest = $request->distance;
 
         $nearbyUsers = User::select('id')
-            ->selectRaw(DB::raw("(
+            ->selectRaw(DB::raw('(
                 6371 * acos(
                     cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) +
                     sin(radians(?)) * sin(radians(lat))
                 )
-            ) AS distance"), [
+            ) AS distance'), [
                 $latitude,
                 $longitude,
-                $latitude
+                $latitude,
             ])
-            ->having("distance", "<", $radius)
+            ->having('distance', '<', $radius)
             ->pluck('id');
 
         $vehicles = Vehicle::whereIn('user_id', $nearbyUsers)
-            ->whereRaw("JSON_LENGTH(seats) = ?", [$seatCount])
+            ->whereRaw('JSON_LENGTH(seats) = ?', [$seatCount])
             ->with([
                 'user',
                 'premiumUpgrades.vehicle.vehicleImages',
@@ -76,26 +76,26 @@ class PremiumHireService
             });
         });
 
-        return $this->success($data, "Vehicle");
+        return $this->success($data, 'Vehicle');
     }
 
     public function vehicleDetail($id)
     {
         $vehicle = PremiumUpgrade::with([
-                'user',
-                'vehicle.vehicleImages',
-                'vehicle.premiumHireRatings',
-            ])
+            'user',
+            'vehicle.vehicleImages',
+            'vehicle.premiumHireRatings',
+        ])
             ->where('vehicle_id', $id)
             ->first();
 
         if (! $vehicle) {
-            return $this->error("Vehicle not found", 404);
+            return $this->error('Vehicle not found', 404);
         }
 
         $data = new PremiumHireVehicleResource($vehicle);
 
-        return $this->success($data, "Vehicle");
+        return $this->success($data, 'Vehicle');
     }
 
     public function addCharter($request)
@@ -108,16 +108,16 @@ class PremiumHireService
         }
 
         if (app()->environment('production') && $suspend) {
-            return $this->error(null, "Booking has been temporarily suspended", 400);
+            return $this->error(null, 'Booking has been temporarily suspended', 400);
         }
 
         $vehicle = Vehicle::with('user')->findOrFail($request->vehicle_id);
 
-        if (!$vehicle->user) {
+        if (! $vehicle->user) {
             return $this->error(null, 'Vehicle owner not found', 400);
         }
 
-        if (!$vehicle->user->is_available) {
+        if (! $vehicle->user->is_available) {
             return $this->error(null, 'Driver is not available', 400);
         }
 
@@ -132,10 +132,10 @@ class PremiumHireService
         );
 
         $data = (object) [
-            'id' => $charter->id
+            'id' => $charter->id,
         ];
 
-        return $this->success($data, "Vehicle added to charter");
+        return $this->success($data, 'Vehicle added to charter');
     }
 
     public function getCharter($userId)
@@ -151,7 +151,7 @@ class PremiumHireService
             ->first();
         $data = new CharterResource($items);
 
-        return $this->success($data, "Charter");
+        return $this->success($data, 'Charter');
     }
 
     public function removeCharter($id)
@@ -159,7 +159,7 @@ class PremiumHireService
         $item = Charter::findOrFail($id);
         $item->delete();
 
-        return $this->success(null, "Removed successfully");
+        return $this->success(null, 'Removed successfully');
     }
 
     public function payCharter($request)
@@ -167,13 +167,13 @@ class PremiumHireService
         $suspend = true;
 
         if ($suspend) {
-            return $this->error(null, "Bookings are currently suspended", 400);
+            return $this->error(null, 'Bookings are currently suspended', 400);
         }
 
         $amount = $request->input('amount') * 100;
 
         $callbackUrl = $request->input('redirect_url');
-        if (!filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
+        if (! filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
             return response()->json(['error' => 'Invalid callback URL'], 400);
         }
 
@@ -211,7 +211,7 @@ class PremiumHireService
             ->where('reference', $reference)
             ->first();
 
-        if(! $paymentLog) {
+        if (! $paymentLog) {
             return $this->error(null, 'Invalid payment reference', 400);
         }
 
@@ -227,15 +227,16 @@ class PremiumHireService
     public function userBookings($userId)
     {
         $user = User::with([
-                'vehicle',
-                'premiumHireBookingPassengers',
-                'premiumHireBookings',
-            ])
+            'vehicle',
+            'premiumHireBookingPassengers',
+            'premiumHireBookings',
+        ])
             ->findOrFail($userId);
         $bookings = $user->premiumHireBookings;
 
         $data = PremiumHireBookingResource::collection($bookings);
-        return $this->success($data, "Bookings");
+
+        return $this->success($data, 'Bookings');
     }
 
     public function addPassenger($request)
@@ -243,7 +244,7 @@ class PremiumHireService
         $user = User::with('premiumHireBookingPassengers')
             ->findOrFail($request->user_id);
 
-        if (!empty($request->passengers)) {
+        if (! empty($request->passengers)) {
             foreach ($request->passengers as $passenger) {
                 $user->premiumHireBookingPassengers()->create([
                     'premium_hire_booking_id' => $request->premium_hire_booking_id,
@@ -256,17 +257,16 @@ class PremiumHireService
                 ]);
             }
         } else {
-            return $this->error("No valid passengers provided", 400);
+            return $this->error('No valid passengers provided', 400);
         }
 
-        return $this->success(null, "Passenger(s) added successfully");
+        return $this->success(null, 'Passenger(s) added successfully');
     }
 
     public function getPassengers($userId, $bookingId)
     {
         $user = User::with(['premiumHireBookingPassengers', 'vehicle'])
             ->findOrFail($userId);
-
 
         $passengers = $user->premiumHireBookingPassengers()
             ->where('premium_hire_booking_id', $bookingId)
@@ -288,29 +288,29 @@ class PremiumHireService
 
         $data = [
             'passengers' => $pass->toArray(),
-            'vehicle_capacity' => (int)$user->vehicle?->capacity,
+            'vehicle_capacity' => (int) $user->vehicle?->capacity,
         ];
 
-        return $this->success($data, "Passengers");
+        return $this->success($data, 'Passengers');
     }
 
     public function editPassenger($request, $userId)
     {
         $user = User::with([
-                'premiumHireBookingPassengers',
-                'premiumHireBookings'
-            ])
+            'premiumHireBookingPassengers',
+            'premiumHireBookings',
+        ])
             ->findOrFail($userId);
 
         $premiumHireBooking = $user->premiumHireBookings()->find($request->booking_id);
 
-        if (!$premiumHireBooking) {
+        if (! $premiumHireBooking) {
             return $this->error(null, 'No premium hire booking found for this user.', 404);
         }
 
-        if (!empty($request->passengers)) {
+        if (! empty($request->passengers)) {
             foreach ($request->passengers as $passenger) {
-                if (!empty($passenger['id'])) {
+                if (! empty($passenger['id'])) {
                     $user->premiumHireBookingPassengers()
                         ->where('id', $passenger['id'])
                         ->where('premium_hire_booking_id', $request->booking_id)
@@ -336,19 +336,20 @@ class PremiumHireService
             }
         }
 
-        return $this->success(null, "Passenger(s) updated successfully");
+        return $this->success(null, 'Passenger(s) updated successfully');
     }
 
     public function deletePassenger($request)
     {
         $ids = $request->input('ids');
 
-        if (!is_array($ids) || empty($ids)) {
-            return $this->error("Invalid request: No passengers selected for deletion", 400);
+        if (! is_array($ids) || empty($ids)) {
+            return $this->error('Invalid request: No passengers selected for deletion', 400);
         }
 
         PremiumHireBookingPassenger::whereIn('id', $ids)->delete();
-        return $this->success(null, "Passenger deleted successfully");
+
+        return $this->success(null, 'Passenger deleted successfully');
     }
 
     public function cancelBooking($request)
@@ -356,10 +357,10 @@ class PremiumHireService
         $booking = PremiumHireBooking::findOrFail($request->id);
         $booking->update([
             'reason' => $request->reason,
-            'status' => TripStatus::CANCELLED
+            'status' => TripStatus::CANCELLED,
         ]);
 
-        return $this->success(null, "Booking cancelled successfully");
+        return $this->success(null, 'Booking cancelled successfully');
     }
 
     public function review($request)
@@ -374,7 +375,7 @@ class PremiumHireService
             'comment' => $request->comment,
         ]);
 
-        return $this->success(null, "Review added successfully");
+        return $this->success(null, 'Review added successfully');
     }
 
     public function getReviews()
@@ -405,7 +406,7 @@ class PremiumHireService
             'reviews' => $reviewsList,
         ];
 
-        return $this->success($data, "Reviews");
+        return $this->success($data, 'Reviews');
     }
 
     public function getSingleReview($vehicleId)
@@ -439,15 +440,15 @@ class PremiumHireService
             'reviews' => $reviewsList,
         ];
 
-        return $this->success($data, "Reviews retrieved successfully");
+        return $this->success($data, 'Reviews retrieved successfully');
     }
 
     public function getBookings($userId)
     {
         $query = request()->query('type', BookingStatus::COMPLETED->value);
 
-        if (!BookingStatus::isValid($query)) {
-            return $this->error(null, "Invalid type. Allowed values are: " . implode(', ', BookingStatus::values()), 400);
+        if (! BookingStatus::isValid($query)) {
+            return $this->error(null, 'Invalid type. Allowed values are: '.implode(', ', BookingStatus::values()), 400);
         }
 
         $bookings = PremiumHireBooking::with([
@@ -455,7 +456,7 @@ class PremiumHireService
         ])
             ->where(function ($q) use ($userId) {
                 $q->where('user_id', $userId)
-                ->orWhere('driver_id', $userId);
+                    ->orWhere('driver_id', $userId);
             })
             ->where('status', $query)
             ->get();
@@ -476,7 +477,7 @@ class PremiumHireService
             ];
         });
 
-        return $this->success($data, ucfirst($query) . " Bookings");
+        return $this->success($data, ucfirst($query).' Bookings');
     }
 
     public function bookingDetails($id)
@@ -490,20 +491,21 @@ class PremiumHireService
             ->findOrFail($id);
 
         $data = new PremiumHireBookingResource($booking);
-        return $this->success($data, "Booking Details");
+
+        return $this->success($data, 'Booking Details');
     }
 
     public function driverBookings($userId)
     {
         $query = request()->query('type', BookingStatus::COMPLETED->value);
 
-        if (!BookingStatus::isValid($query)) {
-            return $this->error(null, "Invalid type. Allowed values are: " . implode(', ', BookingStatus::values()), 400);
+        if (! BookingStatus::isValid($query)) {
+            return $this->error(null, 'Invalid type. Allowed values are: '.implode(', ', BookingStatus::values()), 400);
         }
 
         $bookings = PremiumHireBooking::with([
-                'vehicle',
-            ])
+            'vehicle',
+        ])
             ->where('driver_id', $userId)
             ->where('status', $query)
             ->get();
@@ -524,39 +526,39 @@ class PremiumHireService
             ];
         });
 
-        return $this->success($data, "Completed Bookings");
+        return $this->success($data, 'Completed Bookings');
     }
 
     public function driverTripDetails($id)
     {
         $trip = PremiumHireBooking::with([
-                'user',
-                'vehicle',
-                'premiumHireBookingPassengers',
-            ])
+            'user',
+            'vehicle',
+            'premiumHireBookingPassengers',
+        ])
             ->findOrFail($id);
 
         $data = new PremiumHireTripResource($trip);
 
-        return $this->success($data, "Trip Detail");
+        return $this->success($data, 'Trip Detail');
     }
 
     public function acceptTrip($id)
     {
         $booking = PremiumHireBooking::findOrFail($id);
         $booking->update([
-            'status' => TripStatus::UPCOMING
+            'status' => TripStatus::UPCOMING,
         ]);
 
-        return $this->success(null, "Trip accepted successfully");
+        return $this->success(null, 'Trip accepted successfully');
     }
 
     public function startTrip($id)
     {
         $booking = PremiumHireBooking::findOrFail($id);
 
-        if($booking->status == TripStatus::COMPLETED) {
-            return $this->error(null, "Trip already completed", 400);
+        if ($booking->status == TripStatus::COMPLETED) {
+            return $this->error(null, 'Trip already completed', 400);
         }
 
         $booking->update([
@@ -564,7 +566,7 @@ class PremiumHireService
             'start_trip_date' => now(),
         ]);
 
-        return $this->success(null, "Trip started successfully");
+        return $this->success(null, 'Trip started successfully');
     }
 
     public function cancelTrip($request)
@@ -572,10 +574,10 @@ class PremiumHireService
         $booking = PremiumHireBooking::findOrFail($request->id);
         $booking->update([
             'reason' => $request->reason,
-            'status' => TripStatus::CANCELLED
+            'status' => TripStatus::CANCELLED,
         ]);
 
-        return $this->success(null, "Booking cancelled successfully");
+        return $this->success(null, 'Booking cancelled successfully');
     }
 
     public function finishTrip($request)
@@ -585,14 +587,14 @@ class PremiumHireService
             ->findOrFail($request->premium_hire_booking_id);
 
         if ($user->wallet_amount < getFee('manifest')) {
-            return $this->error(null, "Insufficient wallet balance!", 400);
+            return $this->error(null, 'Insufficient wallet balance!', 400);
         }
 
         try {
             DB::beginTransaction();
 
             if ($booking->premiumHireBookingPassengers->isEmpty()) {
-                return $this->error(null, "No passengers available!", 400);
+                return $this->error(null, 'No passengers available!', 400);
             }
 
             foreach ($booking->premiumHireBookingPassengers as $passenger) {
@@ -618,10 +620,11 @@ class PremiumHireService
 
             DB::commit();
 
-            return $this->success(null, "Trip Started Successfully", 200);
+            return $this->success(null, 'Trip Started Successfully', 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error(null, "Failed to start trip: " . $e->getMessage(), 400);
+
+            return $this->error(null, 'Failed to start trip: '.$e->getMessage(), 400);
         }
     }
 }

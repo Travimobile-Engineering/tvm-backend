@@ -2,14 +2,14 @@
 
 namespace App\Services\Auth;
 
-use App\Enum\UserStatus;
-use App\Models\User;
 use App\Contracts\SMS;
 use App\Enum\MailingEnum;
+use App\Enum\UserStatus;
 use App\Enum\UserType;
-use App\Trait\HttpResponse;
 use App\Mail\ConfirmationEmail;
 use App\Mail\VerifyPinMail;
+use App\Models\User;
+use App\Trait\HttpResponse;
 
 class AuthService
 {
@@ -17,8 +17,7 @@ class AuthService
 
     public function __construct(
         protected SMS $smsService
-    )
-    {}
+    ) {}
 
     public function accountSignUp($request)
     {
@@ -38,7 +37,7 @@ class AuthService
 
             $this->sendCode($request, $existingUser);
 
-            return $this->success(null, "OTP has been resent to your email or phone number.");
+            return $this->success(null, 'OTP has been resent to your email or phone number.');
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
@@ -49,7 +48,7 @@ class AuthService
             if ($referrer) {
                 $createdBy = $referrer->id;
             } else {
-                return $this->error(null, "Invalid referral code.", 400);
+                return $this->error(null, 'Invalid referral code.', 400);
             }
         }
 
@@ -68,7 +67,7 @@ class AuthService
 
         $this->sendCode($request, $user);
 
-        return $this->success(null, "User created successfully", 201);
+        return $this->success(null, 'User created successfully', 201);
     }
 
     public function verifyAcount($request)
@@ -78,7 +77,7 @@ class AuthService
             ->first();
 
         if (! $user) {
-            return $this->error(null, "Invalid code!", 400);
+            return $this->error(null, 'Invalid code!', 400);
         }
 
         $user->update([
@@ -89,7 +88,7 @@ class AuthService
             'status' => UserStatus::ACTIVE->value,
         ]);
 
-        return $this->success($user, "Account verified successfully");
+        return $this->success($user, 'Account verified successfully');
     }
 
     public function resendCode($request)
@@ -123,7 +122,7 @@ class AuthService
             'verification_code_expires_at' => now()->addMinutes(10),
         ]);
 
-        return match($type) {
+        return match ($type) {
             'pin' => $this->sendPinOtp($field, $value, $code, $user),
             default => $this->sendOtp($field, $value, $code, $user)
         };
@@ -132,13 +131,13 @@ class AuthService
     public function createDriver($request)
     {
         $user = User::where([
-                'id' => $request->agent_id,
-                'user_category' => UserType::AGENT->value,
-            ])
+            'id' => $request->agent_id,
+            'user_category' => UserType::AGENT->value,
+        ])
             ->first();
 
-        if (!$user) {
-            return $this->error(null, "Agent not found", 404);
+        if (! $user) {
+            return $this->error(null, 'Agent not found', 404);
         }
 
         $existingUser = $this->findUserByEmailOrPhone($request);
@@ -147,7 +146,7 @@ class AuthService
             $this->validateUser($existingUser, $request);
             $this->sendCode($request, $existingUser);
 
-            return $this->success(null, "OTP has been resent to your email or phone number.");
+            return $this->success(null, 'OTP has been resent to your email or phone number.');
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
@@ -167,7 +166,7 @@ class AuthService
 
         $this->sendCode($request, $user);
 
-        return $this->success(null, "User created successfully", 201);
+        return $this->success(null, 'User created successfully', 201);
     }
 
     public function verifyDriverAccount($request)
@@ -178,7 +177,7 @@ class AuthService
             ->first();
 
         if (! $user) {
-            return $this->error(null, "Invalid code!", 400);
+            return $this->error(null, 'Invalid code!', 400);
         }
 
         $user->update([
@@ -189,7 +188,7 @@ class AuthService
             'status' => UserStatus::ACTIVE->value,
         ]);
 
-        return $this->success($user, "Account verified successfully");
+        return $this->success($user, 'Account verified successfully');
     }
 
     private function findUserByEmailOrPhone($request): ?User
@@ -221,13 +220,13 @@ class AuthService
         if ($request->filled('email')) {
             $data = [
                 'name' => $user->first_name,
-                'verification_code' => $code
+                'verification_code' => $code,
             ];
 
             mailSend(
                 MailingEnum::SIGN_UP_OTP,
                 $request,
-                "Verify Account",
+                'Verify Account',
                 "App\Mail\ConfirmationEmail",
                 $data
             );
@@ -244,14 +243,14 @@ class AuthService
     private function hasActiveCode(User $user): bool
     {
         return $user->verification_code_expires_at &&
-            !$user->email_verified &&
+            ! $user->email_verified &&
             $user->verification_code_expires_at >= now();
     }
 
     private function validateUser(User $existingUser, $request)
     {
         if ($this->hasActiveCode($existingUser)) {
-            return $this->error(null, "A verification code has already been sent. Please check your email or phone.", 400);
+            return $this->error(null, 'A verification code has already been sent. Please check your email or phone.', 400);
         }
 
         if (
@@ -259,14 +258,14 @@ class AuthService
             $existingUser->email === $request->email &&
             $existingUser->email_verified
         ) {
-            return $this->error(null, "Email address already in use.", 400);
+            return $this->error(null, 'Email address already in use.', 400);
         }
 
         if ($request->filled('phone_number')) {
             $normalized = formatPhoneNumber($request->phone_number);
 
             if ($existingUser->phone_number === $normalized) {
-                return $this->error(null, "Phone number already in use.", 400);
+                return $this->error(null, 'Phone number already in use.', 400);
             }
         }
 
@@ -276,7 +275,7 @@ class AuthService
     private function validateEmail($request)
     {
         $request->validate([
-            'email' => ['required', 'email', 'exists:users,email']
+            'email' => ['required', 'email', 'exists:users,email'],
         ]);
     }
 
@@ -312,11 +311,11 @@ class AuthService
             sendSmS($value, "Your Travi verification OTP is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi");
         } else {
             $type = MailingEnum::RESEND_CODE;
-            $subject = "Resend code";
+            $subject = 'Resend code';
             $mail_class = ConfirmationEmail::class;
             $data = [
                 'name' => $user->first_name,
-                'verification_code' => $code
+                'verification_code' => $code,
             ];
             mailSend($type, $user, $subject, $mail_class, $data);
         }
@@ -335,11 +334,11 @@ class AuthService
             sendSmS($value, "Your Travi verification Pin is: $code. Valid for 10 mins. Do not share with anyone. Powered By Travi");
         } else {
             $type = MailingEnum::VERIFY_OTP;
-            $subject = "Verify OTP";
+            $subject = 'Verify OTP';
             $mail_class = VerifyPinMail::class;
             $data = [
                 'name' => $user->first_name,
-                'code' => $code
+                'code' => $code,
             ];
             mailSend($type, $user, $subject, $mail_class, $data);
         }
@@ -347,4 +346,3 @@ class AuthService
         return $this->success(null, 'Verification code sent successfully');
     }
 }
-

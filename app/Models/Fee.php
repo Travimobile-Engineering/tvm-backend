@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Fee extends Model
 {
-    protected $table = "fees";
+    protected $table = 'fees';
 
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:2'
+            'amount' => 'decimal:2',
         ];
     }
 

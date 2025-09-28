@@ -4,11 +4,11 @@ namespace App\Enum;
 
 enum BookingStatus: string
 {
-    case REQUEST = "request";
-    case COMPLETED = "completed";
-    case CANCELLED = "cancelled";
-    case UPCOMING = "upcoming";
-    case INPROGRESS = "inprogress";
+    case REQUEST = 'request';
+    case COMPLETED = 'completed';
+    case CANCELLED = 'cancelled';
+    case UPCOMING = 'upcoming';
+    case INPROGRESS = 'inprogress';
 
     public static function isValid(string $value): bool
     {
@@ -17,6 +17,6 @@ enum BookingStatus: string
 
     public static function values(): array
     {
-        return array_map(fn($case) => $case->value, self::cases());
+        return array_map(fn ($case) => $case->value, self::cases());
     }
 }

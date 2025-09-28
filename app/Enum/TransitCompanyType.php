@@ -4,6 +4,7 @@ namespace App\Enum;
 
 enum TransitCompanyType: string
 {
-    const INDIVIDUAL = "individual";
-    const COOPERATE = "cooperate";
+    const INDIVIDUAL = 'individual';
+
+    const COOPERATE = 'cooperate';
 }

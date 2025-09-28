@@ -7,8 +7,8 @@ use App\Enum\DocumentStatus;
 use App\Enum\General;
 use App\Enum\PaymentStatus;
 use App\Enum\PaymentType;
-use App\Enum\TransitCompanyType;
 use App\Enum\TransactionTitle;
+use App\Enum\TransitCompanyType;
 use App\Enum\UserType;
 use App\Models\TransitCompany;
 use App\Models\Wallet;
@@ -42,24 +42,24 @@ trait DriverTrait
                 'extra_fields' => [
                     'number' => $request->license_number,
                     'expiration_date' => $request->license_expiration_date,
-                ]
+                ],
             ],
             'nin_photo' => [
                 'type' => 'nin',
                 'extra_fields' => [
                     'number' => $request->nin,
-                ]
+                ],
             ],
             'vehicle_insurance_photo' => [
                 'type' => 'vehicle_insurance',
                 'extra_fields' => [
                     'expiration_date' => $request->vehicle_insurance_expiration_date,
-                ]
+                ],
             ],
         ];
 
         foreach ($documentTypes as $key => $docDetails) {
-            $hasFile = !empty($fileUploads[$key]['url']);
+            $hasFile = ! empty($fileUploads[$key]['url']);
             $hasExtraField = false;
 
             foreach ($docDetails['extra_fields'] as $field => $value) {
@@ -69,7 +69,7 @@ trait DriverTrait
                 }
             }
 
-            if (!$hasFile && !$hasExtraField) {
+            if (! $hasFile && ! $hasExtraField) {
                 continue;
             }
 
@@ -120,7 +120,7 @@ trait DriverTrait
             });
 
         } catch (\Exception $e) {
-            throw new \RuntimeException('Failed to charge wallet: ' . $e->getMessage());
+            throw new \RuntimeException('Failed to charge wallet: '.$e->getMessage());
         }
     }
 
@@ -147,7 +147,7 @@ trait DriverTrait
                 $pendingAmount,
                 'CR',
                 PaymentStatus::PAID->value,
-                "Earnings top-up from trip payments."
+                'Earnings top-up from trip payments.'
             );
         });
     }
@@ -261,6 +261,3 @@ trait DriverTrait
         return null;
     }
 }
-
-
-
