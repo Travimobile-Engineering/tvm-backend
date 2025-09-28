@@ -8,7 +8,6 @@ use App\Models\Vehicle\Vehicle;
 use App\Models\Vehicle\VehicleBrand;
 use App\Models\Vehicle\VehicleType;
 use App\Trait\HttpResponse;
-use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class VehicleController extends Controller
@@ -21,6 +20,7 @@ class VehicleController extends Controller
     {
         $this->user = JWTAuth::user();
     }
+
     /**
      * Display a listing of the resource.
      */
@@ -36,12 +36,12 @@ class VehicleController extends Controller
     {
         $tCompany = TransitCompany::with('user')->find($request->company_id);
 
-        if (!$tCompany) {
-            return $this->error(null, "Company not found", 404);
+        if (! $tCompany) {
+            return $this->error(null, 'Company not found', 404);
         }
 
         if ($tCompany->user_id != $this->user->id) {
-            return $this->error(null, "You do not have permission to complete this request", 400);
+            return $this->error(null, 'You do not have permission to complete this request', 400);
         }
 
         $vehicle = Vehicle::create([
@@ -56,7 +56,7 @@ class VehicleController extends Controller
             'seats' => $request->seats,
         ]);
 
-        return $this->success($vehicle, "Vehicle created successfully", 201);
+        return $this->success($vehicle, 'Vehicle created successfully', 201);
     }
 
     /**
@@ -64,7 +64,7 @@ class VehicleController extends Controller
      */
     public function show(Vehicle $vehicle)
     {
-        return $this->success($vehicle, "Vehicle retrieved successfully");
+        return $this->success($vehicle, 'Vehicle retrieved successfully');
     }
 
     /**
@@ -74,16 +74,16 @@ class VehicleController extends Controller
     {
         $tCompany = TransitCompany::with('user')->find($request->company_id);
 
-        if (!$tCompany) {
-            return $this->error(null, "Company not found", 404);
+        if (! $tCompany) {
+            return $this->error(null, 'Company not found', 404);
         }
 
         if ($tCompany->user_id != $this->user->id) {
-            return $this->error(null, "You do not have permission to complete this request", 400);
+            return $this->error(null, 'You do not have permission to complete this request', 400);
         }
 
-        if($vehicle->company_id != $tCompany->id) {
-            return $this->error(null, "You do not have permission to complete this request", 400);
+        if ($vehicle->company_id != $tCompany->id) {
+            return $this->error(null, 'You do not have permission to complete this request', 400);
         }
 
         $vehicle->update([
@@ -98,7 +98,7 @@ class VehicleController extends Controller
             'seats' => $request->seats,
         ]);
 
-        return $this->success($vehicle, "Vehicle updated successfully");
+        return $this->success($vehicle, 'Vehicle updated successfully');
     }
 
     /**
@@ -113,7 +113,7 @@ class VehicleController extends Controller
     {
         $types = VehicleType::select('id', 'name', 'slug', 'rows', 'columns')->get();
 
-        return $this->success($types, "Vehicle types retrieved successfully");
+        return $this->success($types, 'Vehicle types retrieved successfully');
     }
 
     public function getVehicleType($vehicleType)
@@ -121,16 +121,16 @@ class VehicleController extends Controller
         $type = VehicleType::select('id', 'name', 'slug', 'rows', 'columns')->find($vehicleType);
 
         if (! $type) {
-            return $this->error(null, "Vehicle type not found", 404);
+            return $this->error(null, 'Vehicle type not found', 404);
         }
 
-        return $this->success($type, "Vehicle type retrieved successfully");
+        return $this->success($type, 'Vehicle type retrieved successfully');
     }
 
     public function getVehicleBrands()
     {
         $brands = VehicleBrand::select('name', 'id')->get();
 
-        return $this->success($brands, "Vehicle brands retrieved successfully");
+        return $this->success($brands, 'Vehicle brands retrieved successfully');
     }
 }

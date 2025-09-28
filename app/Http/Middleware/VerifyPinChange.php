@@ -19,7 +19,7 @@ class VerifyPinChange
     {
         $user = Auth::guard('api')->user();
 
-        if (!Cache::has('pin_change_verified_' . $user->id)) {
+        if (! Cache::has('pin_change_verified_'.$user->id)) {
             return response()->json(['message' => 'OTP verification required before changing PIN'], 403);
         }
 

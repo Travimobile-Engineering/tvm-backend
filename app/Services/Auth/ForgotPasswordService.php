@@ -28,7 +28,7 @@ class ForgotPasswordService
 
         $user->update([
             'verification_code' => $code,
-            'verification_code_expires_at' => now()->addMinutes(10)
+            'verification_code_expires_at' => now()->addMinutes(10),
         ]);
 
         if ($field === 'phone_number') {
@@ -52,10 +52,10 @@ class ForgotPasswordService
             ->first();
 
         if (! $verify) {
-            return $this->error(null, "Invalid code or expired.", 400);
+            return $this->error(null, 'Invalid code or expired.', 400);
         }
 
-        return $this->success(null, "OTP is correct");
+        return $this->success(null, 'OTP is correct');
     }
 
     public function resetPassword($request)
@@ -73,7 +73,7 @@ class ForgotPasswordService
             ->first();
 
         if (! $user) {
-            return $this->error(null, "Invalid code or expired time.", 404);
+            return $this->error(null, 'Invalid code or expired time.', 404);
         }
 
         $user->update([
@@ -91,7 +91,7 @@ class ForgotPasswordService
     private function validateEmail($request)
     {
         $request->validate([
-            'email' => ['required', 'email', 'exists:users,email']
+            'email' => ['required', 'email', 'exists:users,email'],
         ]);
     }
 
@@ -104,4 +104,3 @@ class ForgotPasswordService
         }
     }
 }
-

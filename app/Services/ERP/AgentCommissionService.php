@@ -2,16 +2,15 @@
 
 namespace App\Services\ERP;
 
-use App\Models\User;
 use App\Enum\ChargeType;
-use App\Models\Commission;
-use App\Enum\PaymentStatus;
 use App\Enum\CommissionEnum;
+use App\Enum\PaymentStatus;
 use App\Enum\TransactionTitle;
 use App\Models\AgentCommission;
-use Illuminate\Support\Facades\DB;
+use App\Models\Commission;
+use App\Models\User;
 use App\Services\Admin\AccountService;
-use App\Services\ERP\CommissionBreakdownService;
+use Illuminate\Support\Facades\DB;
 
 class AgentCommissionService
 {
@@ -22,32 +21,28 @@ class AgentCommissionService
     /**
      * Distribute the commission between the first agent and the current agent.
      *
-     * @param User $passenger
-     * @param User $agent
-     * @param int $passengerCount
-     * @param string|null $bookingId
      * @return void
      */
     public function distributeAgentCommission(User $passenger, User $agent, int $passengerCount, ?string $bookingId = null)
     {
         // Retrieve primary commission (for the first agent)
         $primaryCommission = AgentCommission::where('type', AgentCommission::PRIMARY)
-                                            ->first();
+            ->first();
 
         // Retrieve secondary commission (for subsequent bookings)
         $secondaryCommission = AgentCommission::where('type', AgentCommission::SECONDARY)
-                                              ->first();
+            ->first();
 
-        if (!$primaryCommission || !$secondaryCommission) {
+        if (! $primaryCommission || ! $secondaryCommission) {
             // Handle case where commission records are not found
-            throw new \Exception("Commission records not found.");
+            throw new \Exception('Commission records not found.');
         }
 
         // Check if the passenger has any previous commission records
         $commissionRecord = $passenger->commissionsAsPassenger()->first(); // Get the first commission record for the passenger
 
         // If it's the first-time booking, process the full commission for the current agent
-        if (!$commissionRecord) {
+        if (! $commissionRecord) {
             $this->createFirstTimeBookingCommission($passenger, $agent, $primaryCommission, $passengerCount, $bookingId);
         } else {
             // If it's a subsequent booking, process commission for both the first agent and the current agent
@@ -57,10 +52,6 @@ class AgentCommissionService
 
     /**
      * Handle the commission distribution for the first-time booking.
-     *
-     * @param User $passenger
-     * @param User $agent
-     * @param $primaryCommission
      */
     private function createFirstTimeBookingCommission(User $passenger, User $agent, $primaryCommission, int $passengerCount, $bookingId)
     {
@@ -92,11 +83,6 @@ class AgentCommissionService
 
     /**
      * Handle the commission distribution for subsequent bookings.
-     *
-     * @param User $passenger
-     * @param User $agent
-     * @param $commissionRecord
-     * @param $secondaryCommission
      */
     private function createSubsequentBookingCommission(
         User $passenger,
@@ -105,8 +91,7 @@ class AgentCommissionService
         $secondaryCommission,
         int $passengerCount,
         $bookingId
-    )
-    {
+    ) {
         $firstAgent = $commissionRecord->firstAgent; // The first agent who booked this passenger
 
         // If it's the same agent as the first one, only one commission record for the current agent
@@ -121,10 +106,6 @@ class AgentCommissionService
 
     /**
      * Create commission record for an agent.
-     *
-     * @param User $agent
-     * @param User $passenger
-     * @param $secondaryCommission
      */
     private function createCommission(User $agent, User $passenger, $secondaryCommission, int $passengerCount, $bookingId)
     {
@@ -157,8 +138,7 @@ class AgentCommissionService
     /**
      * Top up the earnings of the agent.
      *
-     * @param User $agent
-     * @param int $amount
+     * @param  int  $amount
      */
     private function topUpEarnings(User $agent, $amount, $bookingId)
     {
@@ -167,13 +147,13 @@ class AgentCommissionService
             $amount = (float) $amount;
 
             if ($amount <= 0) {
-                throw new \Exception("Invalid amount for earnings increment.");
+                throw new \Exception('Invalid amount for earnings increment.');
             }
 
             $wallet = $agent->walletAccount;
 
-            if (!$wallet) {
-                throw new \Exception("Agent wallet account not found.");
+            if (! $wallet) {
+                throw new \Exception('Agent wallet account not found.');
             }
 
             $wallet->increment('earnings', $amount);

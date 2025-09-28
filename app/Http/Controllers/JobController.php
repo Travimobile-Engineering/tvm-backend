@@ -11,24 +11,30 @@ class JobController extends Controller
 {
     public function __construct(
         protected JobService $service,
-    ){}
-    public function getJobs(){
+    ) {}
+
+    public function getJobs()
+    {
         return $this->service->getJobs();
     }
-    
-    public function getJob(Request $request){
+
+    public function getJob(Request $request)
+    {
         return $this->service->getJob($request);
     }
-    
-    public function apply(JobApplyRequest $request){
+
+    public function apply(JobApplyRequest $request)
+    {
         return $this->service->apply($request);
     }
 
-    public function addJob(AddJobRequest $request){
+    public function addJob(AddJobRequest $request)
+    {
         return $this->service->addJob($request);
     }
 
-    public function updateJob(Request $request){
+    public function updateJob(Request $request)
+    {
         return $this->service->updateJob($request);
     }
 }

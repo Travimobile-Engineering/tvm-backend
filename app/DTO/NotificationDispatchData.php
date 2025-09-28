@@ -7,8 +7,8 @@ use Illuminate\Support\Collection;
 
 class NotificationDispatchData
 {
-     /**
-     * @param array<array{class: string, payload: array}> $events
+    /**
+     * @param  array<array{class: string, payload: array}>  $events
      */
     public function __construct(
         public array $events,
@@ -18,6 +18,3 @@ class NotificationDispatchData
         public array $data = []
     ) {}
 }
-
-
-

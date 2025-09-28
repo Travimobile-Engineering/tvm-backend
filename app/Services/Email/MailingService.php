@@ -11,4 +11,3 @@ class MailingService
         dispatch(new ProcessMail($batchSize));
     }
 }
-

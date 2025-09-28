@@ -12,6 +12,6 @@ class FeesShareFormula extends Model
         'name',
         'slug',
         'type',
-        'percentage'
+        'percentage',
     ];
 }

@@ -2,9 +2,9 @@
 
 namespace App\Observers;
 
+use App\Enum\UserType;
 use App\Models\AgentClassification;
 use App\Models\User;
-use App\Enum\UserType;
 use App\Models\Wallet;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
@@ -24,7 +24,7 @@ class UserObserver implements ShouldHandleEventsAfterCommit
             $levelA = AgentClassification::where('level', 'D')->first();
 
             $user->updateQuietly([
-                'classification_id' => $levelA?->id
+                'classification_id' => $levelA?->id,
             ]);
         }
     }

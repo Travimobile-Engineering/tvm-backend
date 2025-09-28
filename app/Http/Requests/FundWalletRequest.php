@@ -23,7 +23,7 @@ class FundWalletRequest extends FormRequest
     {
         return [
             'reference' => 'required|string',
-            'amount' => 'required|int'
+            'amount' => 'required|int',
         ];
     }
 }

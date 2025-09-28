@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('trips', function (Blueprint $table) {
-            if (!Schema::hasColumn('trips', 'to')) {
+            if (! Schema::hasColumn('trips', 'to')) {
                 $table->string('to')->nullable()->after('price');
             }
 
-            if (!Schema::hasColumn('trips', 'from')) {
+            if (! Schema::hasColumn('trips', 'from')) {
                 $table->string('from')->nullable()->after('to');
             }
         });
@@ -28,8 +28,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('trips', function (Blueprint $table) {
-            $table->dropColumn("to");
-            $table->dropColumn("from");
+            $table->dropColumn('to');
+            $table->dropColumn('from');
         });
     }
 };

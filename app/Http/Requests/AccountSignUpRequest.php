@@ -26,7 +26,7 @@ class AccountSignUpRequest extends FormRequest
             'email' => ['nullable', 'string', 'email'],
             'phone_number' => ['required_if:email,null'],
             'user_category' => ['required', 'string', 'in:passenger,driver,agent'],
-            'password' => ['required', 'string', 'confirmed', 'min:8']
+            'password' => ['required', 'string', 'confirmed', 'min:8'],
         ];
 
         if (app()->environment('production')) {

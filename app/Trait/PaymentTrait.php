@@ -2,26 +2,26 @@
 
 namespace App\Trait;
 
-use App\Models\Trip;
-use App\Models\User;
-use App\Enum\TripStatus;
-use App\Enum\PaymentType;
-use App\Models\PaymentLog;
+use App\DTO\NotificationDispatchData;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
-use App\Models\TripBooking;
-use App\Models\Notification;
+use App\Enum\PaymentType;
 use App\Enum\TransactionTitle;
-use App\Models\Vehicle\Vehicle;
+use App\Enum\TripStatus;
+use App\Models\Notification;
+use App\Models\PaymentLog;
 use App\Models\PremiumHireBooking;
-use Illuminate\Support\Facades\DB;
+use App\Models\Trip;
+use App\Models\TripBooking;
+use App\Models\User;
+use App\Models\Vehicle\Vehicle;
 use App\Services\ERP\ChargeService;
-use App\DTO\NotificationDispatchData;
 use App\Services\Notification\NotificationDispatcher;
+use Illuminate\Support\Facades\DB;
 
 trait PaymentTrait
 {
-    use HttpResponse, PaymentLogTrait, DriverTrait;
+    use DriverTrait, HttpResponse, PaymentLogTrait;
 
     protected NotificationDispatcher $notifier;
 
@@ -46,7 +46,7 @@ trait PaymentTrait
                 PaymentType::CR,
                 $ref,
                 null,
-                "Wallet funded successfully"
+                'Wallet funded successfully'
             );
 
             DB::commit();
@@ -110,13 +110,13 @@ trait PaymentTrait
             $paymentData = $event['data'];
             $vehicleId = $paymentData['metadata']['vehicle_id'];
             $userId = $paymentData['metadata']['user_id'];
-            $vehicle =  Vehicle::with('user')->find($vehicleId);
+            $vehicle = Vehicle::with('user')->find($vehicleId);
             $type = PaymentType::PREMIUM_HIRE;
             $user = User::with([
-                    'transactions',
-                    'paymentLogs',
-                    'premiumHireBookings'
-                ])
+                'transactions',
+                'paymentLogs',
+                'premiumHireBookings',
+            ])
                 ->find($userId);
 
             $paymentLog = $this->logPayment($user, $event, $type);
@@ -172,7 +172,7 @@ trait PaymentTrait
                     'booking_id' => $uuid,
                     'note' => 'Please arrive atleast 30 minutes early to ensure a smooth boarding experience.',
                     'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
-                ])
+                ]),
             ]);
 
             $user->transactions()->create([
@@ -180,7 +180,7 @@ trait PaymentTrait
                 'title' => TransactionTitle::PREMIUM_HIRE->value,
                 'amount' => $formattedAmount,
                 'type' => PaymentType::CR,
-                'txn_reference' => $ref
+                'txn_reference' => $ref,
             ]);
 
             DB::commit();
@@ -202,8 +202,8 @@ trait PaymentTrait
             'user_id' => $userId,
             'type' => PaymentType::TRIP_BOOKING,
         ])
-        ->whereIn('channel', ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'])
-        ->exists();
+            ->whereIn('channel', ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'])
+            ->exists();
 
         $tripBookingExists = TripBooking::where([
             'trip_id' => $tripId,
@@ -211,21 +211,18 @@ trait PaymentTrait
             'payment_status' => 1,
             'payment_method' => PaymentType::TRIP_BOOKING,
         ])
-        ->where(function ($query) use ($selectedSeats) {
-            foreach ($selectedSeats as $seat) {
-                $query->orWhereJsonContains('selected_seat', $seat);
-            }
-        })
-        ->exists();
+            ->where(function ($query) use ($selectedSeats) {
+                foreach ($selectedSeats as $seat) {
+                    $query->orWhereJsonContains('selected_seat', $seat);
+                }
+            })
+            ->exists();
 
         return $paymentLogExists || $tripBookingExists;
     }
 
     /**
      * Get user with payment-related relationships loaded.
-     *
-     * @param int $userId
-     * @return \App\Models\User
      */
     private function getUserWithRelations(int $userId): User
     {
@@ -241,7 +238,7 @@ trait PaymentTrait
             'tripBookings.user',
             'departureRegion.state',
             'destinationRegion.state',
-            'manifest'
+            'manifest',
         ])->findOrFail($tripId);
     }
 
@@ -251,10 +248,9 @@ trait PaymentTrait
 
         $selectedSeats = explode(',', str_replace(' ', '', $meta['selected_seat']));
         $amount = number_format($paymentData['amount'] / 100, 2, '.', '');
-        $payStatus = $paymentData['status'] === "success" ? 1 : 0;
+        $payStatus = $paymentData['status'] === 'success' ? 1 : 0;
 
-        $travellingWith = collect($meta['travelling_with'] ?? [])->filter(fn ($p) =>
-            !empty($p['name']) || !empty($p['email']) || !empty($p['phone_number']) || !empty($p['gender'])
+        $travellingWith = collect($meta['travelling_with'] ?? [])->filter(fn ($p) => ! empty($p['name']) || ! empty($p['email']) || ! empty($p['phone_number']) || ! empty($p['gender'])
         )->values();
 
         if ($travellingWith->isEmpty()) {
@@ -263,7 +259,7 @@ trait PaymentTrait
 
         $passengers = collect($travellingWith ?? []);
         $passengers->prepend([
-            'name' => $user->first_name . ' ' . $user->last_name,
+            'name' => $user->first_name.' '.$user->last_name,
             'email' => $user->email,
             'phone_number' => $user->phone_number,
             'gender' => $user->gender ?? 'unknown',
@@ -288,6 +284,7 @@ trait PaymentTrait
         do {
             $bookingId = getRandomNumber();
         } while (TripBooking::where('booking_id', $bookingId)->exists());
+
         return $bookingId;
     }
 
@@ -342,7 +339,7 @@ trait PaymentTrait
                 'booking_id' => $bookingId,
                 'note' => 'Please arrive atleast 30 minutes early to ensure a smooth boarding experience.',
                 'help_desk' => 'If you have any questions or need assistance, feel free to contact our support team.',
-            ])
+            ]),
         ]);
     }
 
@@ -367,10 +364,10 @@ trait PaymentTrait
         ]);
 
         // Disabled for now
-        //$this->driverIncrementEarning($trip->user, $amount);
+        // $this->driverIncrementEarning($trip->user, $amount);
 
         $charges = $paymentData['metadata']['charges'] ?? [];
-        app(ChargeService::class)->transferCharges($charges, $user, "balance", null);
+        app(ChargeService::class)->transferCharges($charges, $user, 'balance', null);
     }
 
     private function dispatchTripBookedEvent(User $user): void
@@ -387,4 +384,3 @@ trait PaymentTrait
         ));
     }
 }
-

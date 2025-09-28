@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class TransitCompanyUnion extends Model
 {
     use HasFactory;
-    protected $table = "transit_company_unions";
+
+    protected $table = 'transit_company_unions';
 
     protected $fillable = [
         'name',

@@ -48,17 +48,14 @@ trait PaymentLogTrait
             'phone_number' => $user->phone_number,
             'amount' => $amount_paid,
             'reference' => $ref,
-            'channel' => "wallet",
-            'currency' => "NGN",
+            'channel' => 'wallet',
+            'currency' => 'NGN',
             'ip_address' => $request->ip(),
             'paid_at' => now(),
             'createdAt' => now(),
             'transaction_date' => now(),
-            'status' => "success",
+            'status' => 'success',
             'type' => $type,
         ]);
     }
 }
-
-
-

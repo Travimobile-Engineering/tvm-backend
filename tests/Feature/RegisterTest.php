@@ -2,24 +2,25 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\User;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class RegisterTest extends TestCase
 {
     use RefreshDatabase;
-    
+
     protected $headers;
 
-    public function setUp(): void{
+    protected function setUp(): void
+    {
         parent::setUp();
         $this->headers = [
             'Accept' => 'application/json',
             config('security.header_key') => config('security.header_value'),
         ];
     }
+
     public function test_account_signup(): void
     {
 
@@ -37,7 +38,7 @@ class RegisterTest extends TestCase
             'first_name' => 'Test',
             'email' => 'testuser@example.com',
         ]);
-        
+
         $response->assertStatus(201);
     }
 
@@ -47,14 +48,14 @@ class RegisterTest extends TestCase
         $user = User::where('email', 'testuser@example.com')
             ->where('verification_code_expires_at', '>=', now())
             ->first();
-        
+
         $response = $this->postJson('/api/auth/verify/account', ['code' => $user->verification_code], $this->headers);
-        
+
         $this->assertDatabaseHas('users', [
             'email' => 'testuser@example.com',
             'email_verified' => 1,
         ]);
-        
+
         $response->assertStatus(200);
     }
 }

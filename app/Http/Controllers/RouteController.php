@@ -2,28 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Route;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class RouteController extends Controller
 {
-    public function getCoveredRoutes(){
+    public function getCoveredRoutes()
+    {
         $coveredRoutes = DB::table('covered_routes')->get();
 
         $data = collect();
 
-        foreach($coveredRoutes as $key => $value){
+        foreach ($coveredRoutes as $key => $value) {
 
-            $route = array([
+            $route = [[
                 'from_region' => DB::table('states')->where('id', $value->from_region_id)->pluck('name')->first(),
                 'from_subregion' => DB::table('route_subregions')->where('id', $value->from_subregion_id)->pluck('name')->first(),
                 'to_region' => DB::table('states')->where('id', $value->to_region_id)->pluck('name')->first(),
                 'to_subregion' => DB::table('route_subregions')->where('id', $value->to_subregion_id)->pluck('name')->first(),
-            ]);
+            ]];
 
             $data->add($route);
         }
+
         return response()->json(compact('data'), 200);
     }
 
@@ -42,8 +42,8 @@ class RouteController extends Controller
         $regions = $subregions->map(function ($subregion) {
             return [
                 'id' => $subregion->id,
-                'name' => $subregion->state_name . ' > ' . $subregion->subregion_name,
-                'state_id' => $subregion->state_id
+                'name' => $subregion->state_name.' > '.$subregion->subregion_name,
+                'state_id' => $subregion->state_id,
             ];
         });
 

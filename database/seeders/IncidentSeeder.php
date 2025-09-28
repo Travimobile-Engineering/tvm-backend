@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class IncidentSeeder extends Seeder
 {
@@ -23,16 +22,16 @@ class IncidentSeeder extends Seeder
             'Vehicle Breakdown',
             'Kidnapping',
             'Bomb Threat',
-            'Natural Disaster'
+            'Natural Disaster',
         ];
 
         $data = [];
-        foreach($incidentTypes as $type){
-            $data[] = array(
+        foreach ($incidentTypes as $type) {
+            $data[] = [
                 'name' => $type,
                 'created_at' => now(),
                 'updated_at' => now(),
-            );
+            ];
         }
 
         DB::table('incident_types')->insert($data);
@@ -43,16 +42,16 @@ class IncidentSeeder extends Seeder
             'Medium Priority',
             'High Prority',
             'Critical Priority',
-            'Catastrophic'
+            'Catastrophic',
         ];
 
         $data = [];
-        foreach($severities as $severity){
-            $data[] = array(
+        foreach ($severities as $severity) {
+            $data[] = [
                 'name' => $severity,
                 'created_at' => now(),
                 'updated_at' => now(),
-            );
+            ];
         }
 
         DB::table('incident_severity_levels')->insert($data);
@@ -61,16 +60,16 @@ class IncidentSeeder extends Seeder
             'General Security Incident',
             'Safety Incidents',
             'Transportation Specific Incidents',
-            'Emergency Situations'
+            'Emergency Situations',
         ];
 
         $data = [];
-        foreach($incidentCategories as $categories){
-            $data[] = array(
+        foreach ($incidentCategories as $categories) {
+            $data[] = [
                 'name' => $categories,
                 'created_at' => now(),
                 'updated_at' => now(),
-            );
+            ];
         }
 
         DB::table('incident_categories')->insert($data);

@@ -3,7 +3,6 @@
 namespace App\Services\Notification;
 
 use App\DTO\NotificationDispatchData;
-use App\Services\Notification\FirebaseService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -28,7 +27,7 @@ class NotificationDispatcher
         foreach ($users as $user) {
             $tokens = [];
 
-            if (!empty($user->fcm_token)) {
+            if (! empty($user->fcm_token)) {
                 $tokens = [$user->fcm_token];
             }
 
@@ -41,13 +40,10 @@ class NotificationDispatcher
                         array_merge($dto->data, ['user_id' => $user->id])
                     );
                 } catch (\Exception $e) {
-                    
+
                     Log::error("FCM error for user {$user->id}: {$e->getMessage()}");
                 }
             }
         }
     }
-
 }
-
-

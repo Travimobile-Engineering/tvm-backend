@@ -3,7 +3,3 @@
 return [
     'credentials' => env('FIREBASE_CREDENTIALS'),
 ];
-
-
-
-

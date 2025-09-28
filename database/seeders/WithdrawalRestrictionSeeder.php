@@ -3,9 +3,8 @@
 namespace Database\Seeders;
 
 use App\Enum\UserType;
-use Illuminate\Database\Seeder;
 use App\Models\WithdrawalRestriction;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
 
 class WithdrawalRestrictionSeeder extends Seeder
 {
@@ -19,7 +18,7 @@ class WithdrawalRestrictionSeeder extends Seeder
             'user_types' => [UserType::AGENT->value],
             'min_balance' => 5000,
             'complete_block' => true,
-            'message' => 'Sorry, withdrawals are temporarily unavailable for agents.'
+            'message' => 'Sorry, withdrawals are temporarily unavailable for agents.',
         ]);
 
         WithdrawalRestriction::create([
@@ -27,7 +26,7 @@ class WithdrawalRestrictionSeeder extends Seeder
             'user_types' => [UserType::DRIVER->value],
             'min_balance' => 0,
             'complete_block' => false,
-            'message' => 'Sorry, withdrawals are temporarily unavailable for drivers'
+            'message' => 'Sorry, withdrawals are temporarily unavailable for drivers',
         ]);
     }
 }

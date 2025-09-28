@@ -2,18 +2,18 @@
 
 namespace App\Services\ERP;
 
-use App\Models\Fee;
-use App\Enum\General;
 use App\DTO\ChargeData;
 use App\Enum\ChargeType;
+use App\Enum\General;
 use App\Enum\TransactionTitle;
+use App\Models\Fee;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use App\Services\Admin\AccountService;
+use Illuminate\Support\Facades\DB;
 
 class ChargeService
 {
-    public function smsCharge($user, string $chargeFrom, array $chargeTypes, ?string $source = "wallet")
+    public function smsCharge($user, string $chargeFrom, array $chargeTypes, ?string $source = 'wallet')
     {
         $user->loadMissing(['walletAccount']);
         $charges = getCharge($chargeTypes);
@@ -22,7 +22,8 @@ class ChargeService
         $wallet = $user->walletAccount;
 
         if (! $wallet) {
-            logger()->error("User does not have a wallet account.", ['user_id' => $user->id]);
+            logger()->error('User does not have a wallet account.', ['user_id' => $user->id]);
+
             return;
         }
 
@@ -35,9 +36,10 @@ class ChargeService
                             'user_id' => $user->id,
                             'wallet_balance' => $wallet->balance,
                             'fee_amount' => $charges[$type],
-                            'fee_type' => $type
+                            'fee_type' => $type,
                         ]
                     );
+
                     return;
                 }
             }
@@ -56,7 +58,7 @@ class ChargeService
         ));
     }
 
-    public function adminCharge($user, string $chargeFrom, array $chargeTypes, ?string $source = "wallet")
+    public function adminCharge($user, string $chargeFrom, array $chargeTypes, ?string $source = 'wallet')
     {
         $user->loadMissing(['walletAccount']);
         $charges = getCharge($chargeTypes);
@@ -66,7 +68,8 @@ class ChargeService
 
         $wallet = $user->walletAccount;
         if (! $wallet) {
-            logger()->error("User does not have a wallet account.", ['user_id' => $user->id]);
+            logger()->error('User does not have a wallet account.', ['user_id' => $user->id]);
+
             return;
         }
 
@@ -92,7 +95,8 @@ class ChargeService
         $wallet = $user->walletAccount;
 
         if (! $wallet) {
-            logger()->error("User does not have a wallet account.", ['user_id' => $user->id]);
+            logger()->error('User does not have a wallet account.', ['user_id' => $user->id]);
+
             return;
         }
 
@@ -105,9 +109,10 @@ class ChargeService
                             'user_id' => $user->id,
                             'wallet_balance' => $wallet->balance,
                             'fee_amount' => $charges[$type],
-                            'fee_type' => $type
+                            'fee_type' => $type,
                         ]
                     );
+
                     return;
                 }
             }
@@ -145,26 +150,29 @@ class ChargeService
         $union = $user->transitCompany;
 
         if (! $wallet) {
-            logger()->error("User does not have a wallet account.", ['user_id' => $user->id]);
+            logger()->error('User does not have a wallet account.', ['user_id' => $user->id]);
+
             return;
         }
 
         if (! $union) {
-            logger()->error("User does not have a transit company.", ['user_id' => $user->id]);
+            logger()->error('User does not have a transit company.', ['user_id' => $user->id]);
+
             return;
         }
 
         if ($wallet->balance < $feeAmount) {
             logger()->error(
-                "Insufficient wallet balance for Union Remittance charge.",
+                'Insufficient wallet balance for Union Remittance charge.',
                 ['user_id' => $user->id, 'wallet_balance' => $wallet->balance, 'fee_amount' => $feeAmount]
             );
+
             return;
         }
 
-        DB::transaction(function () use ($wallet, $feeAmount, $user, $union) {
+        DB::transaction(function () use ($wallet, $feeAmount, $user) {
             $wallet->decrement('balance', $feeAmount);
-            //app(AccountService::class)->initiateTransfer($feeAmount);
+            // app(AccountService::class)->initiateTransfer($feeAmount);
 
             $reference = generateReference('UNION', 'transactions');
             $user->createTransaction(
@@ -180,14 +188,8 @@ class ChargeService
 
     /**
      * Transfer charges from payment data.
-     *
-     * @param array $charges
-     * @param User $user
-     * @param string|null $chargeFrom
-     * @param string|null $source
-     * @return void
      */
-    public function transferCharges(array $charges, User $user, ?string $chargeFrom = "", ?string $source = null): void
+    public function transferCharges(array $charges, User $user, ?string $chargeFrom = '', ?string $source = null): void
     {
         foreach ($charges as $type => $amount) {
             if ($amount <= 0) {

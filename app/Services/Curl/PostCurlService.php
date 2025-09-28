@@ -7,7 +7,9 @@ use Exception;
 class PostCurlService
 {
     protected $url;
+
     protected $headers = [];
+
     protected $fields;
 
     public function __construct(string $url, array $headers = [], array $fields = [])
@@ -43,10 +45,10 @@ class PostCurlService
         $result = json_decode($response, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('Invalid JSON response from API: ' . json_last_error_msg());
+            throw new Exception('Invalid JSON response from API: '.json_last_error_msg());
         }
 
-        if (!isset($result['data'])) {
+        if (! isset($result['data'])) {
             return $result;
         }
 

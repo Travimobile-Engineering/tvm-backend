@@ -22,19 +22,19 @@ class WatchListRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "full_name" => 'required',
-            "phone" => 'required',
-            "email" => 'required',
-            "dob" => 'required',
-            "state_of_origin" => 'required',
-            "nin" => ['required', 'integer'],
-            "investigation_officer" => 'required',
-            "io_contact_number" => 'required',
-            "state_id" => 'required',
-            "city" => 'required',
-            "photo" => ['nullable', 'mimes:jpg,jpeg,png'],
-            "documents" => ['nullable', 'mimes:png,jpeg,jpg,docx,txt,pdf'],
-            "status" => ["nullable", "in:active,in custody,closed"]
+            'full_name' => 'required',
+            'phone' => 'required',
+            'email' => 'required',
+            'dob' => 'required',
+            'state_of_origin' => 'required',
+            'nin' => ['required', 'integer'],
+            'investigation_officer' => 'required',
+            'io_contact_number' => 'required',
+            'state_id' => 'required',
+            'city' => 'required',
+            'photo' => ['nullable', 'mimes:jpg,jpeg,png'],
+            'documents' => ['nullable', 'mimes:png,jpeg,jpg,docx,txt,pdf'],
+            'status' => ['nullable', 'in:active,in custody,closed'],
         ];
     }
 }

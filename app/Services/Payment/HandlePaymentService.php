@@ -18,5 +18,3 @@ class HandlePaymentService
         return $this->paymentProcessor->processPayment($paymentDetails);
     }
 }
-
-

@@ -11,6 +11,7 @@ trait EncryptsIds
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $data[$key] = $this->encryptIdKeys($value);
+
                 continue;
             }
 
@@ -18,12 +19,15 @@ trait EncryptsIds
                 $data[$key] = Crypt::encryptString((string) $value);
             }
         }
+
         return $data;
     }
 
     protected function isEncryptableIdKey(string $key, $value): bool
     {
-        if ($value === null || $value === '') return false;
+        if ($value === null || $value === '') {
+            return false;
+        }
 
         // exact keys you want encrypted
         static $exact = [
@@ -32,11 +36,11 @@ trait EncryptsIds
             'zone_id', 'owner_id', 'security_question_id', 'transit_company_union_id', 'agent_id',
         ];
 
-        if (in_array($key, $exact, true)) return true;
+        if (in_array($key, $exact, true)) {
+            return true;
+        }
 
         // catch-all for *_id
         return str_ends_with($key, '_id');
     }
 }
-
-

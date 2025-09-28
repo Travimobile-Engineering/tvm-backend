@@ -35,13 +35,13 @@ class TripResource extends JsonResource
             'id' => $this->id,
             'uuid' => $this->uuid,
             'user_id' => $this->user_id,
-            'user' => (object)[
+            'user' => (object) [
                 'first_name' => $this->user?->first_name,
                 'last_name' => $this->user?->last_name,
                 'profile_photo' => $this->user?->profile_photo,
             ],
             'vehicle_id' => $this->vehicle_id,
-            'vehicle' => (object)[
+            'vehicle' => (object) [
                 'name' => $this->vehicle?->name,
                 'year' => $this->vehicle?->year,
                 'model' => $this->vehicle?->model,
@@ -51,7 +51,7 @@ class TripResource extends JsonResource
                 'plate_number' => $this->vehicle?->plate_no,
                 'seats' => $this->vehicle?->seats,
                 'seat_row' => $this->vehicle?->seat_row,
-                'seat_column' => $this->vehicle?->seat_column
+                'seat_column' => $this->vehicle?->seat_column,
             ],
             'departure_id' => $this->departure,
             'destination_id' => $this->destination,
@@ -75,31 +75,30 @@ class TripResource extends JsonResource
             'reason' => $this->reason,
             'date_cancelled' => $this->date_cancelled,
             'created_at' => $this->created_at,
-            'passengers' => $this->tripBookings->flatMap(fn($passenger) =>
-                $passenger->tripBookingPassengers->map(fn($p) => [
-                    'id' => $p->id,
-                    'booking_id' => $passenger->booking_id,
-                    'first_name' => $p->name,
-                    'phone_number' => $p->phone_number,
-                    'next_of_kin' => $p->next_of_kin,
-                    'next_of_kin_phone' => $p->next_of_kin_phone_number,
-                    'gender' => $p->gender,
-                    'seat' => $p->selected_seat,
-                    'on_seat' => $p->on_seat,
-                ])
+            'passengers' => $this->tripBookings->flatMap(fn ($passenger) => $passenger->tripBookingPassengers->map(fn ($p) => [
+                'id' => $p->id,
+                'booking_id' => $passenger->booking_id,
+                'first_name' => $p->name,
+                'phone_number' => $p->phone_number,
+                'next_of_kin' => $p->next_of_kin,
+                'next_of_kin_phone' => $p->next_of_kin_phone_number,
+                'gender' => $p->gender,
+                'seat' => $p->selected_seat,
+                'on_seat' => $p->on_seat,
+            ])
             )->values()->toArray(),
             'selected_seats' => $selectedSeats,
-            'total_selected_seats' => $this->tripBookings->sum(fn($passenger) => $passenger->total_passengers),
+            'total_selected_seats' => $this->tripBookings->sum(fn ($passenger) => $passenger->total_passengers),
             'total_seat' => $totalSeats,
             'available_seat_count' => $availableSeats,
-            'available_seats' => collect($seats)->reject(fn($s) => in_array($s, $selectedSeats))->values(),
+            'available_seats' => collect($seats)->reject(fn ($s) => in_array($s, $selectedSeats))->values(),
             'manifest_fee' => getFee('manifest'),
         ];
     }
 
     protected function calculateEstimatedArrivalTime($departureTime, $tripDuration): ?string
     {
-        if (!$departureTime || !$tripDuration) {
+        if (! $departureTime || ! $tripDuration) {
             return null;
         }
 
@@ -109,7 +108,8 @@ class TripResource extends JsonResource
             // Try to parse as "H:i" format first
             if (preg_match('/^\d{1,2}:\d{2}$/', $tripDuration)) {
                 [$hours, $minutes] = explode(':', $tripDuration);
-                $arrival = $departure->copy()->addHours((int)$hours)->addMinutes((int)$minutes);
+                $arrival = $departure->copy()->addHours((int) $hours)->addMinutes((int) $minutes);
+
                 return $arrival->format('H:i');
             }
 
@@ -119,10 +119,11 @@ class TripResource extends JsonResource
             // Match patterns like "2hours30mins", "1hour", "45mins"
             preg_match('/(?:(\d+)hour[s]?)?(?:(\d+)min[s]?)?/', $duration, $matches);
 
-            $hours = isset($matches[1]) ? (int)$matches[1] : 0;
-            $minutes = isset($matches[2]) ? (int)$matches[2] : 0;
+            $hours = isset($matches[1]) ? (int) $matches[1] : 0;
+            $minutes = isset($matches[2]) ? (int) $matches[2] : 0;
 
             $arrival = $departure->copy()->addHours($hours)->addMinutes($minutes);
+
             return $arrival->format('H:i');
         } catch (\Exception $e) {
             return null;

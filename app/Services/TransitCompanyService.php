@@ -3,14 +3,13 @@
 namespace App\Services;
 
 use App\Enum\MailingEnum;
-use App\Models\TransitCompany;
-use Illuminate\Support\Carbon;
 use App\Mail\ConfirmationEmail;
 use App\Models\State;
+use App\Models\TransitCompany;
 use App\Trait\HttpResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Mail;
 
 class TransitCompanyService
 {
@@ -22,6 +21,7 @@ class TransitCompanyService
     {
         $this->user = JWTAuth::user();
     }
+
     /**
      * Display a listing of the resource.
      */
@@ -57,11 +57,11 @@ class TransitCompanyService
         ]);
 
         $type = MailingEnum::EMAIL_VERIFICATION;
-        $subject = "Email Verification";
+        $subject = 'Email Verification';
         $mail_class = ConfirmationEmail::class;
         $data = [
             'name' => $request->name,
-            'verification_code' => $v_code
+            'verification_code' => $v_code,
         ];
 
         mailSend($type, $this->user, $subject, $mail_class, $data);
@@ -75,10 +75,10 @@ class TransitCompanyService
     public function show(TransitCompany $transitCompany)
     {
         if (! $transitCompany) {
-            return $this->error(null, "Not found", 404);
+            return $this->error(null, 'Not found', 404);
         }
 
-        return $this->success($transitCompany, "Transit company retrieved successfully");
+        return $this->success($transitCompany, 'Transit company retrieved successfully');
     }
 
     /**
@@ -87,8 +87,8 @@ class TransitCompanyService
     public function update($request, $transitCompany)
     {
 
-        if($transitCompany->user_id != $this->user->id) {
-            return $this->error(null, "You are not authorized to update this account", 401);
+        if ($transitCompany->user_id != $this->user->id) {
+            return $this->error(null, 'You are not authorized to update this account', 401);
         }
 
         $company = $transitCompany->update([
@@ -100,10 +100,10 @@ class TransitCompanyService
             'lga' => $request->lga,
             'phone' => $request->phone,
             'address' => $request->address,
-            'about_details' => $request->about_details
+            'about_details' => $request->about_details,
         ]);
 
-        return $this->success($company, "Transit company updated successfully");
+        return $this->success($company, 'Transit company updated successfully');
     }
 
     public function getUnions()
@@ -112,7 +112,7 @@ class TransitCompanyService
             ->select('id', 'name')
             ->get();
 
-        return $this->success($data, "Transit company unions");
+        return $this->success($data, 'Transit company unions');
     }
 
     /**
@@ -122,6 +122,4 @@ class TransitCompanyService
     {
         //
     }
-
-
 }

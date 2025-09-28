@@ -12,19 +12,34 @@ class PaymentService
 {
     use HttpResponse, PaymentTrait, Transfer;
 
+    // Deprecated
     public function webhook($request)
     {
         $secretKey = config('paystack.secretKey');
         $signature = $request->header('x-paystack-signature');
         $payload = $request->getContent();
 
-        if (!$signature || $signature !== hash_hmac('sha512', $payload, $secretKey)) {
+        if (! $signature || $signature !== hash_hmac('sha512', $payload, $secretKey)) {
             return $this->error(null, 'Invalid signature', 400);
         }
 
         $event = json_decode($payload, true);
 
-        if (!isset($event['event']) || !isset($event['data'])) {
+        if (! isset($event['event']) || ! isset($event['data'])) {
+            return $this->error(null, 'Invalid payload', 400);
+        }
+
+        app(PaystackEventHandler::class)->handle($event);
+
+        return response()->json(['status' => true], 200);
+    }
+
+    // Current webhook
+    public function callback($request)
+    {
+        $event = $request->all();
+
+        if (! isset($event['data'])) {
             return $this->error(null, 'Invalid payload', 400);
         }
 
@@ -41,6 +56,7 @@ class PaymentService
 
         if (empty($transfers)) {
             Log::warning('No transfers found in approval payload:', $payload);
+
             return response()->json(['message' => 'Invalid transfer request'], 400);
         }
 
@@ -59,5 +75,3 @@ class PaymentService
         return response()->json(['message' => 'Transfer approved'], 200);
     }
 }
-
-

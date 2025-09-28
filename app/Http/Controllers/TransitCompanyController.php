@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Trait\HttpResponse;
-use App\Models\TransitCompany;
-use Illuminate\Http\JsonResponse;
-use App\Services\TransitCompanyService;
 use App\Http\Requests\TransitCompany\StoreRequest;
 use App\Http\Requests\TransitCompany\UpdateRequest;
+use App\Models\TransitCompany;
+use App\Services\TransitCompanyService;
+use App\Trait\HttpResponse;
+use Illuminate\Http\JsonResponse;
 
 class TransitCompanyController extends Controller
 {
@@ -15,8 +15,7 @@ class TransitCompanyController extends Controller
 
     public function __construct(
         protected TransitCompanyService $service
-    )
-    {}
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -50,7 +49,8 @@ class TransitCompanyController extends Controller
         return $this->service->update($request, $transitCompany);
     }
 
-    public function getUnions(){
+    public function getUnions()
+    {
         return $this->service->getUnions();
     }
 

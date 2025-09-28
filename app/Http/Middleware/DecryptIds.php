@@ -6,7 +6,6 @@ use App\Trait\HttpResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
-use Symfony\Component\HttpFoundation\Response;
 
 class DecryptIds
 {
@@ -48,11 +47,12 @@ class DecryptIds
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $data[$key] = $this->strictDecryptIds($value);
+
                 continue;
             }
 
             if ($this->shouldDecryptKey($key)) {
-                if (!is_string($value) || $value === '') {
+                if (! is_string($value) || $value === '') {
                     abort(422, "Field '$key' must be a string.");
                 }
                 $data[$key] = $this->strictDecrypt($value); // aborts on invalid ciphertext
@@ -76,6 +76,7 @@ class DecryptIds
                 if ($pad) {
                     $v .= str_repeat('=', 4 - $pad);
                 }
+
                 return Crypt::decryptString($v);
             } catch (\Throwable $e2) {
                 abort(404, 'Not found');
@@ -88,6 +89,7 @@ class DecryptIds
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $data[$key] = $this->decryptIds($value);
+
                 continue;
             }
 

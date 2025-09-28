@@ -1,12 +1,13 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
-use App\Trait\HttpResponse;
-use Illuminate\Http\Request;
+
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AccountSignUpRequest;
 use App\Http\Requests\CreateDriverRequest;
 use App\Services\Auth\AuthService;
+use App\Trait\HttpResponse;
+use Illuminate\Http\Request;
 
 class RegisterController extends Controller
 {
@@ -14,7 +15,7 @@ class RegisterController extends Controller
 
     public function __construct(
         protected AuthService $service
-    ){}
+    ) {}
 
     public function accountSignUp(AccountSignUpRequest $request)
     {
@@ -41,4 +42,3 @@ class RegisterController extends Controller
         return $this->service->verifyDriverAccount($request);
     }
 }
-

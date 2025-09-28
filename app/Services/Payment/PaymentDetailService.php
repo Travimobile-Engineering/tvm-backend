@@ -19,26 +19,26 @@ class PaymentDetailService
         $totalAmount = $request->input('amount_paid');
 
         if ($totalAmount <= 0) {
-            return self::error("Amount must be greater than 0");
+            return self::error('Amount must be greater than 0');
         }
 
         $chargesSum = array_sum((array) $request->input('charges'));
 
         if ($chargesSum != self::getCharges($user)) {
-            return self::error("Charges paid does not match the total charges", 400);
+            return self::error('Charges paid does not match the total charges', 400);
         }
 
         $amount = ($totalAmount + $chargesSum) * 100;
 
         $callbackUrl = $request->input('payment_redirect_url');
-        if (!filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
+        if (! filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
             return self::error('Invalid callback URL');
         }
 
         return [
             'email' => $user->email,
             'amount' => $amount,
-            'currency' => "NGN",
+            'currency' => 'NGN',
             'metadata' => json_encode([
                 'user_id' => $user->id,
                 'user' => $user,
@@ -52,18 +52,20 @@ class PaymentDetailService
                 'payment_method' => $request->input('payment_method'),
                 'charges' => $request->input('charges'),
                 'payment_type' => PaymentType::TRIP_BOOKING,
+                'service' => 'transport',
             ]),
-            'callback_url' => $request->input('payment_redirect_url')
+            'payment_method' => $request->input('payment_method'),
+            'callback_url' => $request->input('payment_redirect_url'),
         ];
     }
 
     private static function error($message, $code = 400)
     {
         return [
-			'status' => false,
-			'message' => $message,
-			'code' => $code
-		];
+            'status' => false,
+            'message' => $message,
+            'code' => $code,
+        ];
     }
 
     private static function getCharges($user)
@@ -78,8 +80,7 @@ class PaymentDetailService
         }
 
         $charges = getCharge($chargeTypes);
+
         return array_sum($charges);
     }
 }
-
-

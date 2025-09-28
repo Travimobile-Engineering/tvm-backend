@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Log;
-use Illuminate\Foundation\Application;
 use App\Http\Middleware\TransactionPinMiddleware;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->reportable(function (Throwable $e): void {
-            Log::channel('slack')->error($e->getMessage(),[
+            Log::channel('slack')->error($e->getMessage(), [
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'code' => $e->getCode(),

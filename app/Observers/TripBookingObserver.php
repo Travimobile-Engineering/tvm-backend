@@ -3,11 +3,9 @@
 namespace App\Observers;
 
 use App\Contracts\SMS;
-use App\Enum\ChargeType;
 use App\Models\TripBooking;
-use Illuminate\Support\Str;
-use App\Services\ERP\ChargeService;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
+use Illuminate\Support\Str;
 
 class TripBookingObserver implements ShouldHandleEventsAfterCommit
 {

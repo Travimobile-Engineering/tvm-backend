@@ -15,7 +15,7 @@ return new class extends Migration
             Schema::rename('issued_item', 'issued_items');
         }
 
-        if (!Schema::hasTable('inventory_categories')) {
+        if (! Schema::hasTable('inventory_categories')) {
             Schema::create('inventory_categories', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');

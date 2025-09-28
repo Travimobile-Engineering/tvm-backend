@@ -29,7 +29,7 @@ class Mailing extends Model
 
     public static function saveData($data)
     {
-        $mail = new self();
+        $mail = new self;
         $mail->type = $data['type'];
         $mail->email = $data['email'];
         $mail->subject = $data['subject'];

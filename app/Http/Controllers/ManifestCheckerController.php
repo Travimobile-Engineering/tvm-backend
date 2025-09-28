@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 class ManifestCheckerController extends Controller
 {
     use HttpResponse;
+
     public function __construct(
         protected ManifestCheckerService $service
     ) {}
@@ -73,7 +74,7 @@ class ManifestCheckerController extends Controller
     public function searchWatchList(Request $request)
     {
         $request->validate([
-            'name' => 'required|string'
+            'name' => 'required|string',
         ]);
 
         return $this->service->searchWatchList($request);

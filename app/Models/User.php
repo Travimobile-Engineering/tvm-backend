@@ -7,13 +7,13 @@ namespace App\Models;
 use App\Enum\General;
 use App\Enum\TripStatus;
 use App\Enum\UserStatus;
-use Illuminate\Support\Str;
 use App\Trait\UserRelationships;
-use Tymon\JWTAuth\Contracts\JWTSubject;
-use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -186,7 +186,7 @@ class User extends Authenticatable implements JWTSubject
             'next_of_kin_gender',
         ];
 
-        return collect($fields)->every(fn($field) => !empty($this->$field));
+        return collect($fields)->every(fn ($field) => ! empty($this->$field));
     }
 
     public function getTotalBookingsAmount()
@@ -208,8 +208,8 @@ class User extends Authenticatable implements JWTSubject
         $currentClassification = $this->classification;
 
         $highestLevel = AgentClassification::orderByRaw("FIELD(level, 'A', 'B', 'C', 'D')")
-                            ->orderBy('amount', 'desc')
-                            ->first();
+            ->orderBy('amount', 'desc')
+            ->first();
 
         if ($currentClassification->level == $highestLevel->level) {
             // Agent is already at the highest level, so no upgrade is possible
@@ -233,8 +233,8 @@ class User extends Authenticatable implements JWTSubject
     {
         // Find the next level (this could be more dynamic based on your business rules)
         return AgentClassification::where('level', '>', $currentClassification->level)
-                                  ->orderBy('level', 'asc')
-                                  ->first();
+            ->orderBy('level', 'asc')
+            ->first();
     }
 
     public function createEarning($title, $amount, $type, $status, $description = null)

@@ -23,7 +23,7 @@ class ChangePinRequest extends FormRequest
     {
         return [
             'user_id' => 'required|integer|exists:users,id',
-            'pin' => 'required|numeric|digits:4|confirmed'
+            'pin' => 'required|numeric|digits:4|confirmed',
         ];
     }
 }

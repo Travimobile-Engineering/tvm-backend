@@ -11,7 +11,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 trait LoginTrait
 {
-    use HttpResponse, DriverTrait;
+    use DriverTrait, HttpResponse;
 
     public function authUserLogin($request, array $allowedCategories): JsonResponse
     {
@@ -31,7 +31,7 @@ trait LoginTrait
             if (JWTAuth::attempt($credentials)) {
                 $user = JWTAuth::user();
 
-                if (!in_array($user->user_category, $allowedCategories)) {
+                if (! in_array($user->user_category, $allowedCategories)) {
                     return $this->error(null, 'Unauthorized access.', 403);
                 }
 
@@ -49,7 +49,7 @@ trait LoginTrait
                 if ($user->classification_id === null || $user->classification_id === 0) {
                     $levelD = AgentClassification::where('level', 'D')->first();
                     $user->updateQuietly([
-                        'classification_id' => $levelD?->id
+                        'classification_id' => $levelD?->id,
                     ]);
                 }
 
@@ -66,7 +66,7 @@ trait LoginTrait
             return $this->error(null, 'Credentials do not match', 401);
 
         } catch (JWTException $e) {
-            return $this->error(null, 'An error occurred: ' . $e->getMessage(), 500);
+            return $this->error(null, 'An error occurred: '.$e->getMessage(), 500);
         }
     }
 
@@ -76,7 +76,7 @@ trait LoginTrait
             return $this->error(null, 'Email has not been verified!', 400);
         }
 
-        if ($user->status === null && !in_array($user->status, UserStatus::cases())) {
+        if ($user->status === null && ! in_array($user->status, UserStatus::cases())) {
             return $this->error(null, 'Account status is unknown!', 400);
         }
 
@@ -99,7 +99,7 @@ trait LoginTrait
 
     protected function additionalData($user): array
     {
-        return match($user->user_category) {
+        return match ($user->user_category) {
             UserType::SECURITY->value => [],
             UserType::AGENT->value => [],
             UserType::PASSENGER->value => [],
