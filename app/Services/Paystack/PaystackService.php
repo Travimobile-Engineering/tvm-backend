@@ -19,7 +19,7 @@ class PaystackService
 {
     use HttpResponse;
 
-    public static function createRecipient($user, array $fields)
+    public static function createRecipient(array $fields)
     {
         try {
             $url = config('services.payment.url').'/paystack/recipient';
@@ -32,7 +32,7 @@ class PaystackService
                 )
             );
 
-            if (! in_array($response->status(), [201, 200])) {
+            if ($response->status() !== 200) {
                 return [
                     'status' => false,
                     'message' => 'Failed',
@@ -40,12 +40,7 @@ class PaystackService
                 ];
             }
 
-            $data = $response->json();
-
-            $user->userBank()->update([
-                'recipient_code' => $data['recipient_code'],
-                'data' => $data,
-            ]);
+            return $response->json();
         } catch (\Exception $e) {
             logger()->info("Error: {$e->getMessage()}");
         }

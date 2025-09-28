@@ -4,37 +4,9 @@ namespace App\Services\Admin;
 
 use App\Services\Client\HttpService;
 use App\Services\Client\RequestOptions;
-use App\Services\Curl\PostCurlService;
 
 class PayoutService
 {
-    public static function paystackTransfer($fields)
-    {
-        $url = 'https://api.paystack.co/transfer';
-        $token = config('paystack.secretKey');
-
-        $headers = [
-            'Accept' => 'application/json',
-            'Authorization' => "Bearer {$token}",
-        ];
-
-        $data = (new PostCurlService($url, $headers, $fields))->execute();
-
-        if ($data['status'] === false) {
-            return [
-                'status' => false,
-                'message' => null,
-                'data' => null,
-            ];
-        }
-
-        return [
-            'status' => true,
-            'message' => null,
-            'data' => $data,
-        ];
-    }
-
     public static function paystackBulkTransfer(array $transfers)
     {
         $url = config('services.payment.url').'/paystack/bulk-transfer';
@@ -61,7 +33,7 @@ class PayoutService
                 )
             );
 
-            if (! in_array($response->status(), [201, 200])) {
+            if ($response === null && ! isset($response['data'])) {
                 return [
                     'status' => false,
                     'message' => 'Failed',

@@ -104,7 +104,7 @@ Route::middleware(['validate.header'])
                     ->withoutMiddleware(['validate.header']);
             });
 
-        // Approval URL
+        // Approval URL (Deprecating soon)
         Route::post('/payment/paystack/transfer/approve', [PaymentController::class, 'approveTransfer'])
             ->withoutMiddleware(['validate.header']);
 

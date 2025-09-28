@@ -200,7 +200,9 @@ class WalletService
                         'verification_code_expires_at' => now()->addMinutes(30),
                     ]);
 
-                    $sendVerificationCode->execute($user, $code);
+                    if (app()->environment('production')) {
+                        $sendVerificationCode->execute($user, $code);
+                    }
 
                     DB::commit();
 
@@ -233,7 +235,11 @@ class WalletService
                 'currency' => $bank->currency,
             ];
 
-            PaystackService::createRecipient($user, $fields);
+            $recipientData = PaystackService::createRecipient($fields);
+
+            if ($recipientData === null && ! isset($recipientData['data'])) {
+                return $this->error(null, 'Unexpected error occured, try again later.', 400);
+            }
 
             if (empty($user->userPin)) {
                 $user->userPin()->create([
@@ -249,14 +255,20 @@ class WalletService
                 'verification_code_expires_at' => now()->addMinutes(30),
             ]);
 
+            $user->userBank()->update([
+                'recipient_code' => $recipientData['data']['recipient_code'],
+                'data' => $recipientData['data'],
+            ]);
+
             DB::commit();
 
-            $sendVerificationCode->execute($user, $code);
+            if (app()->environment('production')) {
+                $sendVerificationCode->execute($user, $code);
+            }
 
             return $this->success(null, 'Created successfully', 201);
         } catch (\Throwable $th) {
             DB::rollBack();
-
             throw $th;
         }
     }
@@ -520,13 +532,13 @@ class WalletService
             ->orderByDesc('created_at')
             ->paginate(25)
             ->through(fn ($transaction) => [
-            'id' => $transaction->id,
-            'title' => $transaction->title,
-            'amount' => $transaction->amount,
-            'type' => $transaction->type,
-            'status' => $transaction->status,
-            'created_at' => $transaction->created_at,
-        ]);
+                'id' => $transaction->id,
+                'title' => $transaction->title,
+                'amount' => $transaction->amount,
+                'type' => $transaction->type,
+                'status' => $transaction->status,
+                'created_at' => $transaction->created_at,
+            ]);
 
         return $this->withPagination($transactions, 'Recent transactions');
     }
