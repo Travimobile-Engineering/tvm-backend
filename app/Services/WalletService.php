@@ -691,7 +691,7 @@ class WalletService
                 if ($user->earning_balance < $restriction->min_balance) {
                     $message = str_replace(
                         '{min_balance}',
-                        number_format($restriction->min_balance, 2),
+                        number_format((int) $restriction->min_balance, 2),
                         $restriction->message
                     );
 
