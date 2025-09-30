@@ -9,6 +9,7 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\ManifestCheckerController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\NpisController;
 use App\Http\Controllers\OtherController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Controllers\PaymentController;
@@ -59,6 +60,14 @@ Route::post('/seed/run', function () {
 Route::get('/', fn () => response('Welcome to the API', 200));
 
 Route::resource('transport-route-management', TransportRouteManagementController::class);
+Route::prefix('npis/event')
+    ->controller(NpisController::class)
+    ->group(function () {
+        Route::get('/', 'getEvents');
+        Route::post('/', 'createEvent');
+        Route::get('/{id}', 'getEvent');
+    });
+
 Route::middleware(['validate.header'])
     ->group(function () {
         Route::controller(OtherController::class)
