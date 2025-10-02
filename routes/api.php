@@ -63,8 +63,8 @@ Route::resource('transport-route-management', TransportRouteManagementController
 Route::prefix('npis/event')
     ->controller(NpisController::class)
     ->group(function () {
-        Route::get('/', 'getEvents');
         Route::post('/create', 'createEvent');
+        Route::get('/', 'getEvents');
         Route::get('/{id}', 'getEvent');
     });
 
