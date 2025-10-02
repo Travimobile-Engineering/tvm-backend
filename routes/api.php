@@ -64,8 +64,8 @@ Route::prefix('npis')
     ->controller(NpisController::class)
     ->group(function () {
         Route::post('/event/create', 'createEvent');
-        // Route::get('/', 'getEvents');
-        // Route::get('/{id}', 'getEvent');
+        Route::get('/', 'getEvents');
+        Route::get('/{id}', 'getEvent');
     });
 
 Route::middleware(['validate.header'])
