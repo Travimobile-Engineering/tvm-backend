@@ -60,12 +60,12 @@ Route::post('/seed/run', function () {
 Route::get('/', fn () => response('Welcome to the API', 200));
 
 Route::resource('transport-route-management', TransportRouteManagementController::class);
-Route::prefix('npis/event')
+Route::prefix('npis')
     ->controller(NpisController::class)
     ->group(function () {
-        Route::post('/create', 'createEvent');
-        Route::get('/', 'getEvents');
-        Route::get('/{id}', 'getEvent');
+        Route::post('/event/create', 'createEvent');
+        // Route::get('/', 'getEvents');
+        // Route::get('/{id}', 'getEvent');
     });
 
 Route::middleware(['validate.header'])
