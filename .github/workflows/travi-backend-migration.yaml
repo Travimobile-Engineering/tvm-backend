@@ -22,10 +22,6 @@ jobs:
           echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
 
-      - name: Authenticate to AWS ECR
-        run: |
-          aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $IMAGE_URI
-
       - name: Extract short commit SHA
         id: vars
         run: echo "short_commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
