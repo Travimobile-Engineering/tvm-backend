@@ -15,30 +15,33 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Ensure full git history for proper SHA
 
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Extract short commit SHA
-        id: vars
-        run: echo "short_commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - name: Determine tag
-        id: tag
+      - name: Set up tags
+        id: set-tags
         run: |
-          if [[ $GITHUB_REF == refs/heads/master ]]; then
-            echo "tag=${{ env.short_commit_sha }}-prod" >> $GITHUB_ENV
-          elif [[ $GITHUB_REF == refs/heads/staging ]]; then
-            echo "tag=${{ env.short_commit_sha }}-stg" >> $GITHUB_ENV
-          elif [[ $GITHUB_REF == refs/heads/dev ]]; then
-            echo "tag=${{ env.short_commit_sha }}-dev" >> $GITHUB_ENV
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "short_commit_sha=$SHORT_SHA" >> $GITHUB_ENV
+          
+          if [[ "$GITHUB_REF" == "refs/heads/master" ]]; then
+            echo "TAG=${SHORT_SHA}-prod" >> $GITHUB_ENV
+          elif [[ "$GITHUB_REF" == "refs/heads/staging" ]]; then
+            echo "TAG=${SHORT_SHA}-stg" >> $GITHUB_ENV
+          elif [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
+            echo "TAG=${SHORT_SHA}-dev" >> $GITHUB_ENV
           fi
+          
+          echo "Using tag: $TAG"
 
       - name: Build Docker image
-        run: docker build -f Dockerfile.nginx -t $IMAGE_NAME:${{ env.tag }} .
+        run: docker build -f Dockerfile.nginx -t $IMAGE_NAME:${{ env.TAG }} .
 
       - name: Push Docker image to Docker Hub
-        run: docker push $IMAGE_NAME:${{ env.tag }}
+        run: docker push $IMAGE_NAME:${{ env.TAG }}
 
       - name: Logout from Docker Hub
         if: always()
