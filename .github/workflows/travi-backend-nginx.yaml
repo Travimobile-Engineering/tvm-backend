@@ -13,36 +13,29 @@ jobs:
     name: 'Build and push docker image to Artifact Registry'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: "Export AWS Credentials"
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
+          
+      - name: Extract short commit SHA
+        id: vars
+        run: echo "short_commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-    - name: 'Authenticate to AWS ECR'
-      run:  aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $IMAGE_URI
+      - name: Determine tag
+        id: tag
+        run: |
+          if [[ $GITHUB_REF == refs/heads/master ]]; then
+            echo "tag=main" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == refs/heads/staging ]]; then
+            echo "tag=stg" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == refs/heads/dev ]]; then
+            echo "tag=dev" >> $GITHUB_ENV
+          fi
 
-    - name: Extract short commit SHA
-      id: vars
-      run: echo "short_commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Build Docker image
+        run: docker build -f Dockerfile.nginx -t $IMAGE_URI:${{ env.tag }} .
 
-    - name: Determine tag
-      id: tag
-      run: |
-        if [[ $GITHUB_REF == refs/heads/master ]]; then
-          echo "tag=main" >> $GITHUB_ENV
-        elif [[ $GITHUB_REF == refs/heads/staging ]]; then
-          echo "tag=stg" >> $GITHUB_ENV
-        elif [[ $GITHUB_REF == refs/heads/dev ]]; then
-          echo "tag=dev" >> $GITHUB_ENV
-        fi
-
-    - name: Build Docker image
-      run: docker build -f Dockerfile.nginx -t $IMAGE_URI:${{ env.tag }} .
-
-    - name: Push Docker image to Artifact Registry
-      run: docker push $IMAGE_URI:${{ env.tag }}
+      - name: Push Docker image to Artifact Registry
+        run: docker push $IMAGE_URI:${{ env.tag }}
