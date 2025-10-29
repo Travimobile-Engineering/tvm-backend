@@ -5,7 +5,7 @@ on:
     branches: [ master, staging, dev ]
 
 env:
-  IMAGE_URI: "820242924853.dkr.ecr.eu-west-2.amazonaws.com/backend-nginx"
+  IMAGE_URI: "travi3/travimobile-backend-nginx"
 
 jobs:
   build-image:
