@@ -22,9 +22,9 @@ class TripBookService
             return $this->error(null, 'User not found', 404);
         }
 
-        if (app()->environment('production') && $suspend) {
-            return $this->error(null, "Booking has been temporarily suspended", 400);
-        }
+        // if (app()->environment('production') && $suspend) {
+        //     return $this->error(null, "Booking has been temporarily suspended", 400);
+        // }
 
         $amount_paid = $request->amount_paid;
         $result = null;
