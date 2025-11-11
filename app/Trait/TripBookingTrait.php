@@ -190,7 +190,7 @@ trait TripBookingTrait
 
         $ref = getRandomString();
 
-        $paymentLog = $this->walletPaymentLog($data->user, $data->request, $data->amountPaid, $ref, PaymentType::TRIP_BOOKING);
+        $paymentLog = $this->walletPaymentLog($data->user, $data->request, $amount, $ref, PaymentType::TRIP_BOOKING);
 
         $selectedSeats = explode(',', str_replace(' ', '', $data->request->selected_seat));
         $travellingWith = collect($data->request->travelling_with)->filter(function ($passenger) {
@@ -237,7 +237,6 @@ trait TripBookingTrait
         if ($data->user->user_category == UserType::PASSENGER->value) {
             // Disabled for now
             //$this->driverIncrementEarning($trip->user, $amount_paid);
-
             $data->trip->user->driverTripPayments()->create([
                 'user_id' => $data->user->id,
                 'trip_id' => $data->trip->id,

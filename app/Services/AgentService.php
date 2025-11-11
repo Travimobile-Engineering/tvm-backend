@@ -160,6 +160,7 @@ class AgentService
 
         $chargeAmount = 0;
 
+        // Charge agent for booking
         if ($user->user_category == UserType::AGENT->value) {
             $charges = $request->charges;
 

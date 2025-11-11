@@ -38,7 +38,7 @@ trait PaymentLogTrait
         ]);
     }
 
-    public function walletPaymentLog($user, $request, $amount_paid, $ref, $type)
+    public function walletPaymentLog($user, $request, $amountPaid, $ref, $type)
     {
         return $user->paymentLogs()->create([
             'trip_id' => $request->trip_id,
@@ -46,7 +46,7 @@ trait PaymentLogTrait
             'last_name' => $user->last_name,
             'email' => $user->email,
             'phone_number' => $user->phone_number,
-            'amount' => $amount_paid,
+            'amount' => $amountPaid,
             'reference' => $ref,
             'channel' => "wallet",
             'currency' => "NGN",
