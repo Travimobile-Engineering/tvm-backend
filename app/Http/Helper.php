@@ -289,10 +289,12 @@ if (! function_exists('mailSend')) {
         ];
 
         logger()->info("Data: ", $data);
+        error_log('Data:' . json_encode($data));
 
         $mailing = Mailing::saveData($data);
 
         logger()->info("Mailing: ", $mailing->toArray());
+        error_log('Mailing:' . json_encode($mailing->toArray()));
 
         dispatch(new ProcessMail($mailing->id));
     }

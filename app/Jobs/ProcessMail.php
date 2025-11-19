@@ -48,11 +48,13 @@ class ProcessMail implements ShouldQueue
         try {
 
             logger()->info('Payload:' . json_encode($payload));
+            error_log("Payload: " . json_encode($payload));
 
             $mailableInstance = new $mailableClass(...array_values($payload));
             Mail::to($email->email)->send($mailableInstance);
 
             logger()->info('Email sent!');
+            error_log("Email sent!");
 
             $email->update(['status' => MailingEnum::SENT]);
 
