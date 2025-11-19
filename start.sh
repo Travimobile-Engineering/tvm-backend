@@ -15,7 +15,7 @@ fi
 
 # Optional: You can skip sleep in Kubernetes since pod startup time isn't tight
 echo "🚀 Starting queue worker and reverb..."
-php artisan queue:work &    # background
+php artisan queue:work rabbitmq &    # background
 php artisan reverb:start &  # background
 # php artisan schedule:work &  # background
 
