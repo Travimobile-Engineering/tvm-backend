@@ -17,7 +17,7 @@ fi
 echo "🚀 Starting queue worker and reverb..."
 php artisan queue:work rabbitmq &    # background
 php artisan reverb:start &  # background
-# php artisan schedule:work &  # background
+php artisan schedule:work &  # background
 
 # Start php-fpm in the foreground so the container doesn't exit
 echo "📦 Starting php-fpm..."
