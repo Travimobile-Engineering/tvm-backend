@@ -96,6 +96,15 @@ return [
             ],
         ],
 
+        'failover' => [
+            'driver' => 'failover',
+            'connections' => [
+                'rabbitmq',
+                'database',
+                'sync',
+            ],
+        ],
+
         // 'rabbitmq' => [
         //     'driver' => 'rabbitmq', 'hosts' => [
         //         [

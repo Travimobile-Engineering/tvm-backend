@@ -26,10 +26,6 @@ class ProcessMail implements ShouldQueue
      */
     public function handle(): void
     {
-        logger()->info('Process mail');
-
-        logger()->info('Process mail id:' . $this->mailingId);
-
         $email = Mailing::where('id', $this->mailingId)
             ->where('status', MailingEnum::PENDING)
             ->where('attempts', '<', 3)
@@ -40,21 +36,12 @@ class ProcessMail implements ShouldQueue
             return;
         }
 
-        logger()->info('mailing record found.');
-
         $mailableClass = $email->mailable;
         $payload = $email->payload ?? [];
 
         try {
-
-            logger()->info('Payload:' . json_encode($payload));
-            error_log("Payload: " . json_encode($payload));
-
             $mailableInstance = new $mailableClass(...array_values($payload));
             Mail::to($email->email)->send($mailableInstance);
-
-            logger()->info('Email sent!');
-            error_log("Email sent!");
 
             $email->update(['status' => MailingEnum::SENT]);
 
