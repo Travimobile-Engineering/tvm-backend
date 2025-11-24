@@ -1,8 +1,8 @@
 name: Build and Push Travi Backend Image to Registry
 
 on:
-  # push:
-  #   branches: [ master, staging, dev ]
+  push:
+    branches: [ master, staging, dev ]
   workflow_dispatch:
 
 env:
