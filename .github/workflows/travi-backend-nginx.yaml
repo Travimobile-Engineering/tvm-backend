@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_URI: "travi3/travimobile-backend-nginx"
+  IMAGE_URI: "travi3/backend-nginx"
 
 jobs:
   build-image:
