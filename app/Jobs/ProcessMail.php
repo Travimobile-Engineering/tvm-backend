@@ -28,7 +28,6 @@ class ProcessMail implements ShouldQueue
     {
         $email = Mailing::where('id', $this->mailingId)
             ->where('status', MailingEnum::PENDING)
-            ->where('attempts', '<', 1)
             ->first();
 
         if (!$email) {
