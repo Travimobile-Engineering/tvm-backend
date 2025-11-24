@@ -55,12 +55,10 @@ class MailingService
                     logger()->error('Email failed to send: '.$e->getMessage());
 
                     $email->increment('attempts');
-                    if ($email->attempts >= $email->max_attempts) {
-                        $email->update([
-                            'status' => MailingEnum::FAILED,
-                            'error_response' => $e->getMessage(),
-                        ]);
-                    }
+                    $email->update([
+                        'status' => MailingEnum::FAILED,
+                        'error_response' => $e->getMessage(),
+                    ]);
                 }
             }
         });
