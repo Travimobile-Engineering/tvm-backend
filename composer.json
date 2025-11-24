@@ -23,7 +23,7 @@
         "laravel/tinker": "^2.10.1",
         "php-amqplib/php-amqplib": "^3.7",
         "spatie/laravel-responsecache": "^7.6",
-        "tymon/jwt-auth": "^2.2",
+        "tymon/jwt-auth": "^2.1",
         "unicodeveloper/laravel-paystack": "dev-master",
         "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.1"
     },
