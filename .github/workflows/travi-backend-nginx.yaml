@@ -1,4 +1,4 @@
-name: Build and Push Travi Backend Image to Registry
+name: Build and Push Travi Backend Nginx Image to Registry
 
 on:
   push:
