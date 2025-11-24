@@ -1,4 +1,4 @@
-name: Build and Push Travi Backend Image to Docker Hub
+name: Build and Push Travi Backend Nginx Image to Docker Hub
 
 on:
   push:
