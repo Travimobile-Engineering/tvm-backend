@@ -288,8 +288,8 @@ if (! function_exists('mailSend')) {
             'payload' => array_merge($payloadData)
         ];
 
-        $mailing = Mailing::saveData($data);
-        dispatch(new ProcessMail($mailing->id));
+        // $mailing = Mailing::saveData($data);
+        // dispatch(new ProcessMail($mailing->id));
     }
 }
 
