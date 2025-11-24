@@ -45,7 +45,7 @@ class ProcessMail implements ShouldQueue
             $email->update(['status' => MailingEnum::SENT]);
 
         } catch (\Exception $e) {
-            $email->increment('attempts');
+            //$email->increment('attempts');
 
             $email->update([
                 'status' => MailingEnum::FAILED,
