@@ -1,4 +1,4 @@
-name: Laravel Backend CI/CD
+name: Laravel Backend CI/CD Migration
 
 on:
   push:
