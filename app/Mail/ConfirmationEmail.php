@@ -34,8 +34,8 @@ class ConfirmationEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address('noreply@travimobile.com','Travi Mobile'),
-            subject: 'Your OTP Verification Code',
+            from: new Address('noreply@travimobile.com', 'Travi Mobile'),
+            subject: 'Your OTP Verification Code is',
 
         );
     }
