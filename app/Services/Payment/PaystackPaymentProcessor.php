@@ -11,20 +11,21 @@ class PaystackPaymentProcessor implements Payment
 {
     use HttpResponse;
 
+    public function __construct(protected HttpService $httpService) {}
+
     public function processPayment(array $paymentDetails)
     {
         $url = config('services.payment.url').'/paystack/initialize';
-        $service = app(HttpService::class);
 
         try {
-            $response = $service->post(
+            $response = $this->httpService->post(
                 $url,
                 new RequestOptions(
                     data: $paymentDetails
                 )
             );
 
-            if (! in_array($response->status(), [201, 200])) {
+            if ($response->failed()) {
                 return [
                     'status' => false,
                     'message' => 'Failed',

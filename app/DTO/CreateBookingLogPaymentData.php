@@ -3,8 +3,8 @@
 namespace App\DTO;
 
 use App\Http\Requests\AgentBookingRequest;
-use App\Models\User;
 use App\Models\Trip;
+use App\Models\User;
 
 class CreateBookingLogPaymentData
 {
