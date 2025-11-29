@@ -581,6 +581,7 @@ class WalletService
             'metadata' => json_encode([
                 'user_id' => $request->input('user_id'),
                 'payment_type' => PaymentType::FUND_WALLET,
+                'service' => 'transport',
             ]),
             'payment_method' => 'paystack',
             'callback_url' => (string) trim($request->input('redirect_url')),
@@ -598,7 +599,7 @@ class WalletService
             if ($response->failed()) {
                 return [
                     'status' => false,
-                    'message' => 'Failed',
+                    'message' => $response['message'] ?? 'Failed to initialize payment',
                     'data' => null,
                 ];
             }
