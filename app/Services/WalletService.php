@@ -577,6 +577,7 @@ class WalletService
         $paymentDetails = [
             'email' => $request->input('email') ?? 'hello@email.com',
             'amount' => $amount,
+            'currency' => 'NGN',
             'metadata' => json_encode([
                 'user_id' => $request->input('user_id'),
                 'payment_type' => PaymentType::FUND_WALLET,
