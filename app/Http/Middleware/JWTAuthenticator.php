@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Exceptions\JWTException;
-use \Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class JWTAuthenticator
 {
@@ -17,10 +17,9 @@ class JWTAuthenticator
      */
     public function handle(Request $request, Closure $next): Response
     {
-        try{
+        try {
             JWTAuth::parseToken()->authenticate();
-        }
-        catch(JWTException $e){
+        } catch (JWTException $e) {
             return response()->json(['error' => 'The token is invalid or expired'], 400);
         }
 

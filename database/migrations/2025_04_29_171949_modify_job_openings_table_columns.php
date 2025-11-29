@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('job_openings', function(Blueprint $table){
+        Schema::table('job_openings', function (Blueprint $table) {
             $table->json('responsibilities')->change();
             $table->json('requirement')->change();
             $table->json('offer')->change();
@@ -23,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('job_openings', function(Blueprint $table){
+        Schema::table('job_openings', function (Blueprint $table) {
             $table->longText('responsibilities')->change();
             $table->text('requirement')->change();
             $table->tinyText('offer')->change();

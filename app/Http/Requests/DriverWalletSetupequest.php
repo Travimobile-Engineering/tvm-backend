@@ -26,7 +26,7 @@ class DriverWalletSetupequest extends FormRequest
             'bank_name' => ['required', 'string'],
             'account_number' => ['required', 'string'],
             'account_name' => ['required', 'string'],
-            'pin' => ['required', 'numeric', 'digits:4', 'confirmed']
+            'pin' => ['required', 'numeric', 'digits:4', 'confirmed'],
         ];
     }
 }

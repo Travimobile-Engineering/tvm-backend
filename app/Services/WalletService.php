@@ -2,40 +2,41 @@
 
 namespace App\Services;
 
-use App\Models\Bank;
-use App\Models\User;
-use App\Enum\General;
-use App\Enum\UserType;
-use App\Models\Wallet;
-use App\Models\Earning;
+use App\DTO\NotificationDispatchData;
 use App\Enum\ChargeType;
+use App\Enum\General;
 use App\Enum\PaymentType;
+use App\Enum\TransactionTitle;
+use App\Enum\UserType;
+use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Models\Bank;
+use App\Models\Earning;
+use App\Models\Transaction;
+use App\Models\User;
+use App\Models\Wallet;
+use App\Models\WithdrawalRestriction;
+use App\Services\Client\HttpService;
+use App\Services\Client\RequestOptions;
+use App\Services\Notification\NotificationDispatcher;
+use App\Services\Paystack\PaystackService;
 use App\Trait\ChargeTrait;
 use App\Trait\DriverTrait;
-use App\Models\Transaction;
 use App\Trait\HttpResponse;
-use App\Enum\TransactionTitle;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use App\DTO\NotificationDispatchData;
-use App\Models\WithdrawalRestriction;
-use App\Services\Paystack\PaystackService;
-use Unicodeveloper\Paystack\Facades\Paystack;
-use App\Services\Notification\NotificationDispatcher;
-use App\Http\Controllers\Payment\PaystackPaymentController;
 
 class WalletService
 {
     const MIN_WITHDRAWAL = 100;
 
-    use HttpResponse, DriverTrait, ChargeTrait;
+    use ChargeTrait, DriverTrait, HttpResponse;
 
     protected $user;
 
     public function __construct(
         protected NotificationDispatcher $notifier
-    ){
+    ) {
         $this->user = JWTAuth::user();
     }
 
@@ -45,18 +46,18 @@ class WalletService
 
         $user = User::find($userId);
 
-        if (!$user) {
-            return $this->error("User not found", 404);
+        if (! $user) {
+            return $this->error('User not found', 404);
         }
 
         $data = $user->wallet_amount ?? [];
 
-        return $this->success($data, "Wallet balance retrieved");
+        return $this->success($data, 'Wallet balance retrieved');
     }
 
     public function fundWallet($request)
     {
-        $ppc = new PaystackPaymentController();
+        $ppc = new PaystackPaymentController;
 
         $response = $ppc->verifyTransaction($request->reference, $request->amount);
 
@@ -68,7 +69,7 @@ class WalletService
                 'title' => 'Wallet top up',
                 'amount' => $request->amount,
                 'type' => 'CR',
-                'txn_reference' => $request->reference
+                'txn_reference' => $request->reference,
             ]);
 
             $formattedAmount = number_format($request->amount);
@@ -86,7 +87,7 @@ class WalletService
                 ]
             ));
 
-            return $this->success($user, "Wallet funded successfully");
+            return $this->success($user, 'Wallet funded successfully');
         } else {
             return $this->error(null, $response['message'], 400);
         }
@@ -98,10 +99,10 @@ class WalletService
 
         $recipient = User::where('agent_id', $request->agent_id)->first();
         if (! $recipient) {
-            return $this->error(null, "You are not authorized to perform this action", 403);
+            return $this->error(null, 'You are not authorized to perform this action', 403);
         }
         if ($sender->id === $recipient->id) {
-            return $this->error(null, "Cannot transfer to self", 400);
+            return $this->error(null, 'Cannot transfer to self', 400);
         }
 
         $amount = (float) $request->amount;
@@ -125,7 +126,7 @@ class WalletService
 
                 // Balance check using the LOCKED sender wallet
                 if ($amount > (float) $senderWallet->balance) {
-                    throw new \RuntimeException("Insufficient wallet balance");
+                    throw new \RuntimeException('Insufficient wallet balance');
                 }
 
                 // Move funds atomically while locks are held
@@ -157,10 +158,10 @@ class WalletService
         } catch (\RuntimeException $e) {
             return $this->error(null, $e->getMessage(), 400);
         } catch (\Throwable $e) {
-            return $this->error(null, "Something went wrong: " . $e->getMessage(), 400);
+            return $this->error(null, 'Something went wrong: '.$e->getMessage(), 400);
         }
 
-        return $this->success(null, "Funds tranfered successfully");
+        return $this->success(null, 'Funds tranfered successfully');
     }
 
     public function getTransactions()
@@ -169,13 +170,13 @@ class WalletService
 
         $user = User::with('transactions')->find($userId);
 
-        if (!$user) {
-            return $this->error("User not found", 404);
+        if (! $user) {
+            return $this->error('User not found', 404);
         }
 
         $data = $user->transactions ?? [];
 
-        return $this->success($data, "Wallet transactions retrieved");
+        return $this->success($data, 'Wallet transactions retrieved');
     }
 
     public function walletSetup($request, $sendVerificationCode)
@@ -188,9 +189,9 @@ class WalletService
         try {
             DB::beginTransaction();
 
-            if (!empty($user->userBank)) {
+            if (! empty($user->userBank)) {
                 if ($user->userPin?->status === 'active') {
-                    return $this->error(null, "Your bank is already active. You cannot create a new bank!", 403);
+                    return $this->error(null, 'Your bank is already active. You cannot create a new bank!', 403);
                 }
 
                 if ($user->userPin?->status === 'pending') {
@@ -199,13 +200,16 @@ class WalletService
                         'verification_code_expires_at' => now()->addMinutes(30),
                     ]);
 
-                    $sendVerificationCode->execute($user, $code);
+                    if (app()->environment('production')) {
+                        $sendVerificationCode->execute($user, $code);
+                    }
 
                     DB::commit();
-                    return $this->success(null, "Verification email resent successfully", 200);
+
+                    return $this->success(null, 'Verification email resent successfully', 200);
                 }
 
-                return $this->error(null, "You have already created a bank.", 403);
+                return $this->error(null, 'You have already created a bank.', 403);
             }
 
             $user->userBank()->create([
@@ -216,29 +220,33 @@ class WalletService
             ]);
 
             $bank = Bank::where([
-                'name' => $request->bank_name
+                'name' => $request->bank_name,
             ])->first();
 
-            if(! $bank) {
-                return $this->error(null, "Selected bank not found!", 404);
+            if (! $bank) {
+                return $this->error(null, 'Selected bank not found!', 404);
             }
 
             $fields = [
-                'type' => "nuban",
+                'type' => 'nuban',
                 'name' => $request->account_name,
                 'account_number' => $request->account_number,
                 'bank_code' => $bank->code,
-                'currency' => $bank->currency
+                'currency' => $bank->currency,
             ];
 
-            PaystackService::createRecipient($user, $fields);
+            $recipientData = PaystackService::createRecipient($fields);
 
-            if(empty($user->userPin)) {
+            if ($recipientData === null && ! isset($recipientData['data'])) {
+                return $this->error(null, 'Unexpected error occured, try again later.', 400);
+            }
+
+            if (empty($user->userPin)) {
                 $user->userPin()->create([
                     'pin' => bcrypt($request->pin),
                     'ip_address' => $request->ip(),
                     'device_info' => $request->header('User-Agent'),
-                    'attempts' => 0
+                    'attempts' => 0,
                 ]);
             }
 
@@ -247,14 +255,20 @@ class WalletService
                 'verification_code_expires_at' => now()->addMinutes(30),
             ]);
 
+            $user->userBank()->update([
+                'recipient_code' => $recipientData['data']['recipient_code'],
+                'data' => $recipientData['data'],
+            ]);
+
             DB::commit();
 
-            $sendVerificationCode->execute($user, $code);
+            if (app()->environment('production')) {
+                $sendVerificationCode->execute($user, $code);
+            }
 
-            return $this->success(null, "Created successfully", 201);
+            return $this->success(null, 'Created successfully', 201);
         } catch (\Throwable $th) {
             DB::rollBack();
-
             throw $th;
         }
     }
@@ -272,24 +286,24 @@ class WalletService
         ]);
 
         $bank = Bank::where([
-            'name' => $request->bank_name
+            'name' => $request->bank_name,
         ])->first();
 
-        if(! $bank) {
-            return $this->error(null, "Selected bank not found!", 404);
+        if (! $bank) {
+            return $this->error(null, 'Selected bank not found!', 404);
         }
 
         $fields = [
-            'type' => "nuban",
+            'type' => 'nuban',
             'name' => $request->account_name,
             'account_number' => $request->account_number,
             'bank_code' => $bank->code,
-            'currency' => $bank->currency
+            'currency' => $bank->currency,
         ];
 
         PaystackService::createRecipient($user, $fields);
 
-        return $this->success(null, "Created successfully", 201);
+        return $this->success(null, 'Created successfully', 201);
     }
 
     public function verifyPin($request)
@@ -299,9 +313,8 @@ class WalletService
             ->where('verification_code_expires_at', '>', now())
             ->find($request->user_id);
 
-
         if (! $user) {
-            return $this->error(null, "Invalid code!", 400);
+            return $this->error(null, 'Invalid code!', 400);
         }
 
         $user->update([
@@ -310,10 +323,10 @@ class WalletService
         ]);
 
         $user->userPin()->update([
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
-        return $this->success(null, "Setup successfully");
+        return $this->success(null, 'Setup successfully');
     }
 
     public function setTransactionPin($request)
@@ -322,7 +335,7 @@ class WalletService
             ->findOrFail($request->user_id);
 
         if ($user->userPin) {
-            return $this->error(null, "You have already set a transaction pin", 403);
+            return $this->error(null, 'You have already set a transaction pin', 403);
         }
 
         $user->userPin()->create([
@@ -333,7 +346,7 @@ class WalletService
             'status' => General::ACTIVE,
         ]);
 
-        return $this->success(null, "Transaction pin set successfully", 201);
+        return $this->success(null, 'Transaction pin set successfully', 201);
     }
 
     public function withdraw($request)
@@ -342,11 +355,11 @@ class WalletService
             ->findOrFail($request->user_id);
 
         if (! $user->userBank) {
-            return $this->error(null, "No bank found", 404);
+            return $this->error(null, 'No bank found', 404);
         }
 
         if (! $user->walletAccount) {
-            return $this->error(null, "Wallet not found", 404);
+            return $this->error(null, 'Wallet not found', 404);
         }
 
         if ($user->walletAccount->is_flagged) {
@@ -354,7 +367,7 @@ class WalletService
         }
 
         if (empty($user?->userPin?->pin)) {
-            return $this->error(null,  "Set your transaction pin!", 400);
+            return $this->error(null, 'Set your transaction pin!', 400);
         }
 
         // Check withdrawal restrictions
@@ -377,11 +390,11 @@ class WalletService
                 $totalDeduction = $request->amount + $charges[ChargeType::WITHDRAW_FEE->value] + $charges[ChargeType::ADMIN->value];
 
                 if ($request->amount < self::MIN_WITHDRAWAL) {
-                    throw new \RuntimeException("Minimum withdrawal amount is " . self::MIN_WITHDRAWAL);
+                    throw new \RuntimeException('Minimum withdrawal amount is '.self::MIN_WITHDRAWAL);
                 }
 
                 if ($totalDeduction > $wallet->earnings) {
-                    throw new \RuntimeException("Insufficient earning balance");
+                    throw new \RuntimeException('Insufficient earning balance');
                 }
 
                 $fees = $request->amount + $charges[ChargeType::WITHDRAW_FEE->value];
@@ -396,7 +409,7 @@ class WalletService
                     'status' => General::PENDING,
                     'ip_address' => $request->ip(),
                     'device' => $request->header('User-Agent'),
-                    'description' => "User account withdrawal",
+                    'description' => 'User account withdrawal',
                 ]);
 
                 $user->createEarning(
@@ -404,7 +417,7 @@ class WalletService
                     $request->amount,
                     'DR',
                     General::PAID,
-                    "Withdrawal amount charged from your earnings."
+                    'Withdrawal amount charged from your earnings.'
                 );
 
                 $user->createEarning(
@@ -412,7 +425,7 @@ class WalletService
                     $charges[ChargeType::WITHDRAW_FEE->value],
                     'DR',
                     General::PAID,
-                    "Withdraw fee charged from your earnings."
+                    'Withdraw fee charged from your earnings.'
                 );
 
                 // Admin Charge
@@ -421,10 +434,10 @@ class WalletService
         } catch (\RuntimeException $e) {
             return $this->error(null, $e->getMessage(), 400);
         } catch (\Throwable $e) {
-            return $this->error(null, "Something went wrong: " . $e->getMessage(), 400);
+            return $this->error(null, 'Something went wrong: '.$e->getMessage(), 400);
         }
 
-        return $this->success(null, "Request sent successfully");
+        return $this->success(null, 'Request sent successfully');
     }
 
     public function balanceWithdraw($request)
@@ -432,8 +445,8 @@ class WalletService
         $user = User::with(['userPin', 'walletAccount', 'userWithdrawLogs'])
             ->findOrFail($request->user_id);
 
-        if (!$user->walletAccount) {
-            return $this->error(null, "Wallet not found", 404);
+        if (! $user->walletAccount) {
+            return $this->error(null, 'Wallet not found', 404);
         }
 
         if ($user->walletAccount->is_flagged) {
@@ -441,11 +454,11 @@ class WalletService
         }
 
         if ($user->user_category === UserType::AGENT->value && (float) $user->earning_balance < 5000) {
-            return $this->error(null, "You must have at least ₦5,000 in your earning balance to withdraw", 400);
+            return $this->error(null, 'You must have at least ₦5,000 in your earning balance to withdraw', 400);
         }
 
-        if(empty($user?->userPin?->pin)) {
-            return $this->error(null,  "Set your transaction pin!", 400);
+        if (empty($user?->userPin?->pin)) {
+            return $this->error(null, 'Set your transaction pin!', 400);
         }
 
         // Check withdrawal restrictions
@@ -466,11 +479,11 @@ class WalletService
 
                 $amount = (float) $request->amount;
                 if ($amount <= 0) {
-                    throw new \RuntimeException("Invalid amount");
+                    throw new \RuntimeException('Invalid amount');
                 }
 
                 if ($totalDeduction > (float) $wallet->earnings) {
-                    throw new \RuntimeException("Insufficient earning balance");
+                    throw new \RuntimeException('Insufficient earning balance');
                 }
 
                 $this->driverDecrementEarning($user, $amount, $wallet);
@@ -480,7 +493,7 @@ class WalletService
                     $amount,
                     'DR',
                     General::PAID,
-                    "Withdrawal to wallet successful"
+                    'Withdrawal to wallet successful'
                 );
 
                 $this->userIncrementBalance($user, $amount, $wallet);
@@ -500,10 +513,10 @@ class WalletService
         } catch (\RuntimeException $e) {
             return $this->error(null, $e->getMessage(), 400);
         } catch (\Throwable $e) {
-            return $this->error(null, "Something went wrong: " . $e->getMessage(), 400);
+            return $this->error(null, 'Something went wrong: '.$e->getMessage(), 400);
         }
 
-        return $this->success(null, "Withdrawal to wallet successful");
+        return $this->success(null, 'Withdrawal to wallet successful');
     }
 
     public function recentTransaction($userId)
@@ -511,14 +524,14 @@ class WalletService
         $date = request()->input('date');
 
         $transactions = Transaction::where(function ($query) use ($userId) {
-                $query->where('user_id', $userId)
-                    ->orWhere('receiver_id', $userId);
-            })
+            $query->where('user_id', $userId)
+                ->orWhere('receiver_id', $userId);
+        })
             ->select('id', 'user_id', 'title', 'amount', 'type', 'status', 'created_at')
-            ->when($date, fn($query) => $query->whereDate('created_at', $date))
+            ->when($date, fn ($query) => $query->whereDate('created_at', $date))
             ->orderByDesc('created_at')
             ->paginate(25)
-            ->through(fn($transaction) => [
+            ->through(fn ($transaction) => [
                 'id' => $transaction->id,
                 'title' => $transaction->title,
                 'amount' => $transaction->amount,
@@ -527,7 +540,7 @@ class WalletService
                 'created_at' => $transaction->created_at,
             ]);
 
-        return $this->withPagination($transactions, "Recent transactions");
+        return $this->withPagination($transactions, 'Recent transactions');
     }
 
     public function recentEarning($userId)
@@ -536,40 +549,64 @@ class WalletService
 
         $earnings = Earning::select('id', 'title', 'amount', 'type', 'description', 'status', 'created_at')
             ->where('user_id', $userId)
-            ->when($date, fn($query) => $query->whereDate('created_at', $date))
+            ->when($date, fn ($query) => $query->whereDate('created_at', $date))
             ->latest()
             ->paginate(25);
 
-        return $this->withPagination($earnings, "Recent earnings");
+        return $this->withPagination($earnings, 'Recent earnings');
     }
 
     public function walletTopUp($request)
     {
+        $url = config('services.payment.url').'/paystack/initialize';
+        $service = app(HttpService::class);
+
         User::findOrFail($request->input('user_id'));
 
         $amount = $request->input('amount') * 100;
 
         $callbackUrl = $request->input('redirect_url');
-        if (!filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
+        if (! filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
             return response()->json(['error' => 'Invalid callback URL'], 400);
         }
 
         $paymentDetails = [
-            'email' => $request->input('email') ?? "support@travimobile.com",
+            'email' => $request->input('email') ?? 'hello@email.com',
             'amount' => $amount,
             'metadata' => json_encode([
                 'user_id' => $request->input('user_id'),
                 'payment_type' => PaymentType::FUND_WALLET,
             ]),
+            'payment_method' => 'paystack',
             'callback_url' => (string) trim($request->input('redirect_url')),
         ];
 
-        $paystackInstance = Paystack::getAuthorizationUrl($paymentDetails);
+        try {
+            $response = $service->post(
+                $url,
+                new RequestOptions(
+                    data: $paymentDetails
+                )
+            );
 
-        return [
-            'status' => 'success',
-            'data' => $paystackInstance,
-        ];
+            if (! in_array($response->status(), [201, 200])) {
+                return [
+                    'status' => false,
+                    'message' => 'Failed',
+                    'data' => null,
+                ];
+            }
+
+            $data = $response->json();
+
+            return [
+                'status' => 'success',
+                'message' => $data['message'],
+                'data' => $data['data'],
+            ];
+        } catch (\Exception $e) {
+            return $this->error(null, $e->getMessage(), 500);
+        }
     }
 
     public function stats($userId)
@@ -607,7 +644,7 @@ class WalletService
             ];
         });
 
-        return $this->success($statistics, "Transaction statistics retrieved successfully.");
+        return $this->success($statistics, 'Transaction statistics retrieved successfully.');
     }
 
     public function getCharges()
@@ -616,14 +653,14 @@ class WalletService
         $userId = request()->query('user_id', null);
 
         if (! $type || ! $userId) {
-            return $this->error("Please provide a charge type and user ID.", 400);
+            return $this->error('Please provide a charge type and user ID.', 400);
         }
 
-        return match($type) {
+        return match ($type) {
             'booking' => $this->bookingCharge($userId),
             'bank_withdrawal' => $this->bankWithdrawalCharge(),
             'wallet_withdrawal' => $this->walletWithdrawalCharge(),
-            default => $this->error(null, "Invalid charge type.", 400),
+            default => $this->error(null, 'Invalid charge type.', 400),
         };
     }
 
@@ -633,7 +670,7 @@ class WalletService
         if ($amount < self::MIN_WITHDRAWAL) {
             return [
                 'allowed' => false,
-                'message' => "Minimum withdrawal amount is ₦" . self::MIN_WITHDRAWAL
+                'message' => 'Minimum withdrawal amount is ₦'.self::MIN_WITHDRAWAL,
             ];
         }
 
@@ -646,7 +683,7 @@ class WalletService
                 if ($restriction->complete_block) {
                     return [
                         'allowed' => false,
-                        'message' => $restriction->message
+                        'message' => $restriction->message,
                     ];
                 }
 
@@ -654,13 +691,13 @@ class WalletService
                 if ($user->earning_balance < $restriction->min_balance) {
                     $message = str_replace(
                         '{min_balance}',
-                        number_format($restriction->min_balance, 2),
+                        number_format((int) $restriction->min_balance, 2),
                         $restriction->message
                     );
 
                     return [
                         'allowed' => false,
-                        'message' => $message
+                        'message' => $message,
                     ];
                 }
             }

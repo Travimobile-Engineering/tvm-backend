@@ -4,10 +4,10 @@ namespace App\Services;
 
 use App\Enum\PaymentMethod;
 use App\Models\PaymentLog;
+use App\Services\Payment\PaystackPaymentProcessor;
 use App\Trait\HttpResponse;
 use App\Trait\TripBookingTrait;
 use Illuminate\Support\Facades\Auth;
-use App\Services\Payment\PaystackPaymentProcessor;
 
 class TripBookService
 {
@@ -30,9 +30,9 @@ class TripBookService
         $result = null;
         $paymentProcessor = null;
 
-        match($request->payment_method) {
+        match ($request->payment_method) {
             PaymentMethod::WALLET => $result = $this->walletPayment($amount_paid, $request, $user),
-            PaymentMethod::PAYSTACK => $paymentProcessor = new PaystackPaymentProcessor(),
+            PaymentMethod::PAYSTACK => $paymentProcessor = new PaystackPaymentProcessor,
             default => throw new \Exception('Invalid payment method'),
         };
 
@@ -45,7 +45,7 @@ class TripBookService
             ->where('reference', $reference)
             ->first();
 
-        if(! $paymentLog) {
+        if (! $paymentLog) {
             return $this->error(null, 'Invalid payment reference', 400);
         }
 
@@ -57,8 +57,3 @@ class TripBookService
         return $this->success($data, 'Payment reference fetched successfully');
     }
 }
-
-
-
-
-

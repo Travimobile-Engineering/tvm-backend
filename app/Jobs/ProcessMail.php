@@ -18,8 +18,7 @@ class ProcessMail implements ShouldQueue
      */
     public function __construct(
         public int $mailingId
-    )
-    {}
+    ) {}
 
     /**
      * Execute the job.
@@ -30,8 +29,9 @@ class ProcessMail implements ShouldQueue
             ->where('status', MailingEnum::PENDING)
             ->first();
 
-        if (!$email) {
+        if (! $email) {
             Log::error("Mailing record not found for ID: {$this->mailingId}");
+
             return;
         }
 

@@ -3,11 +3,10 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Queue\SerializesModels;
 
 class VerifyPinMail extends Mailable
@@ -17,8 +16,7 @@ class VerifyPinMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(protected string $name, protected string $code)
-    {}
+    public function __construct(protected string $name, protected string $code) {}
 
     /**
      * Get the message envelope.
@@ -26,7 +24,7 @@ class VerifyPinMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address('noreply@travimobile.com','Travi Mobile'),
+            from: new Address('noreply@travimobile.com', 'Travi Mobile'),
             subject: 'Verify Pin Mail',
         );
     }
@@ -40,7 +38,7 @@ class VerifyPinMail extends Mailable
             markdown: 'mail.verify-pin-mail',
             with: [
                 'name' => $this->name,
-                'code' => $this->code
+                'code' => $this->code,
             ]
         );
     }

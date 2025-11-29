@@ -3,22 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AgentAddUserRequest;
-use Illuminate\Http\Request;
+use App\Http\Requests\AgentBookingRequest;
+use App\Http\Requests\AgentInfoRequest;
+use App\Http\Requests\ChangePinRequest;
+use App\Http\Requests\ImpersonateDriverRequest;
+use App\Http\Requests\NotificationRequest;
+use App\Http\Requests\SendPinOtpRequest;
+use App\Http\Requests\StartTripRequest;
+use App\Http\Requests\TransportOneTimeRequest;
+use App\Http\Requests\TransportRecurringRequest;
+use App\Http\Requests\ValidatePinRequest;
+use App\Http\Requests\VerifyPinRequest;
 use App\Services\AgentService;
 use App\Services\DriverService;
 use App\Services\Trip\TripService;
-use App\Http\Requests\AgentInfoRequest;
-use App\Http\Requests\StartTripRequest;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
-use App\Http\Requests\AgentBookingRequest;
-use App\Http\Requests\ChangePinRequest;
-use App\Http\Requests\NotificationRequest;
-use App\Http\Requests\TransportOneTimeRequest;
-use App\Http\Requests\ImpersonateDriverRequest;
-use App\Http\Requests\SendPinOtpRequest;
-use App\Http\Requests\TransportRecurringRequest;
-use App\Http\Requests\VerifyPinRequest;
-use App\Http\Requests\ValidatePinRequest;
 
 class AgentController extends Controller
 {
@@ -26,8 +26,7 @@ class AgentController extends Controller
         protected AgentService $service,
         protected DriverService $driverService,
         protected TripService $tripService,
-    )
-    {}
+    ) {}
 
     public function profile()
     {
@@ -44,7 +43,7 @@ class AgentController extends Controller
         $request->validate([
             'current_password' => ['required', 'string'],
             'new_password' => ['required', 'string', Password::defaults()],
-            'confirm_password' => ['required', 'same:new_password']
+            'confirm_password' => ['required', 'same:new_password'],
         ]);
 
         return $this->service->changePassword($request);

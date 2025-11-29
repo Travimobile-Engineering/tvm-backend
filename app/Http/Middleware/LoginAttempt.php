@@ -22,7 +22,7 @@ class LoginAttempt
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $loginValue = !empty($request->input('email'))
+        $loginValue = ! empty($request->input('email'))
             ? $request->input('email')
             : $request->input('phone_number');
 
@@ -30,7 +30,7 @@ class LoginAttempt
 
         $loginField = filter_var($loginValue, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
 
-        if ($loginField === 'phone_number' && !empty($loginValue)) {
+        if ($loginField === 'phone_number' && ! empty($loginValue)) {
             $loginValue = formatPhoneNumber($loginValue);
         }
 
@@ -41,7 +41,7 @@ class LoginAttempt
 
         $user = User::where($loginField, $loginValue)->first();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error(null, "User doesn't exist", 404);
         }
 
@@ -50,10 +50,11 @@ class LoginAttempt
                 'status' => UserStatus::BLOCKED->value,
                 'reason' => UserStatus::FAILED_LOGIN_ATTEMPTS->value,
             ];
+
             return $this->error($data, 'Your account has been blocked due to too many failed attempts.', 403);
         }
 
-        if (!JWTAuth::attempt($credentials)) {
+        if (! JWTAuth::attempt($credentials)) {
             $attempts = Cache::get($key, 0) + 1;
             Cache::put($key, $attempts, now()->addMinutes(30));
 
@@ -68,10 +69,11 @@ class LoginAttempt
                     'status' => UserStatus::BLOCKED->value,
                     'reason' => UserStatus::FAILED_LOGIN_ATTEMPTS->value,
                 ];
+
                 return $this->error($data, 'Your account has been blocked due to too many failed attempts.', 403);
             }
 
-            return $this->error(null, "Invalid credentials", 401);
+            return $this->error(null, 'Invalid credentials', 401);
         }
 
         Cache::forget($key);

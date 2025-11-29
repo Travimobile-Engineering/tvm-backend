@@ -2,42 +2,53 @@
 
 namespace App\Services\Paystack;
 
-use App\Models\User;
-use App\Trait\HttpResponse;
-use App\Models\AccountTransfer;
-use App\Models\UserWithdrawLog;
-use Illuminate\Support\Facades\DB;
 use App\Enum\AccountTransferStatus;
+use App\Models\AccountTransfer;
 use App\Models\AdminBulkTransfer;
-use Illuminate\Support\Facades\Log;
-use App\Services\Curl\PostCurlService;
+use App\Models\User;
+use App\Models\UserWithdrawLog;
 use App\Notifications\WithdrawalNotification;
+use App\Services\Client\HttpService;
+use App\Services\Client\RequestOptions;
+use App\Services\Curl\PostCurlService;
+use App\Trait\HttpResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PaystackService
 {
     use HttpResponse;
 
-    public static function createRecipient($user, $fields)
+    public static function createRecipient(array $fields)
     {
-        $url = "https://api.paystack.co/transferrecipient";
-        $token = config('app.paystack_secret_key');
+        try {
+            $url = config('services.payment.url').'/paystack/recipient';
+            $service = app(HttpService::class);
 
-        $headers = [
-            'Accept' => 'application/json',
-            'Authorization' => "Bearer {$token}",
-        ];
+            $response = $service->post(
+                $url,
+                new RequestOptions(
+                    data: $fields
+                )
+            );
 
-        $data = (new PostCurlService($url, $headers, $fields))->execute();
+            if ($response->status() !== 200) {
+                return [
+                    'status' => false,
+                    'message' => 'Failed',
+                    'data' => null,
+                ];
+            }
 
-        $user->userBank()->update([
-            'recipient_code' => $data['recipient_code'],
-            'data' => $data,
-        ]);
+            return $response->json();
+        } catch (\Exception $e) {
+            logger()->info("Error: {$e->getMessage()}");
+        }
     }
 
     public static function transfer($user, $fields)
     {
-        $url = "https://api.paystack.co/transfer";
+        $url = 'https://api.paystack.co/transfer';
         $token = config('app.paystack_secret_key');
 
         $headers = [
@@ -47,21 +58,21 @@ class PaystackService
 
         $data = (new PostCurlService($url, $headers, $fields))->execute();
 
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return response()->json([
                 'status' => false,
                 'message' => 'Invalid response from Paystack',
-                'data' => null
+                'data' => null,
             ], 500);
         }
 
         Log::error('Paystack Transfer Response:', $data);
 
-        if (!isset($data['status']) || $data['status'] === false) {
+        if (! isset($data['status']) || $data['status'] === false) {
             return response()->json([
                 'status' => $data['status'] ?? false,
                 'message' => $data['message'] ?? 'An unknown error occurred',
-                'data' => null
+                'data' => null,
             ], 400);
         }
 
@@ -70,7 +81,7 @@ class PaystackService
         return response()->json([
             'status' => $data['status'],
             'message' => $data['message'] ?? 'Transfer successful',
-            'data' => null
+            'data' => null,
         ], 200);
     }
 
@@ -95,8 +106,9 @@ class PaystackService
         $reference = $event['reference'] ?? null;
         $reason = $event['reason'] ?? 'No reason provided';
 
-        if (!$transferCode) {
+        if (! $transferCode) {
             Log::error("{$logPrefix}: Missing transfer_code in event");
+
             return;
         }
 
@@ -117,9 +129,10 @@ class PaystackService
                         'response' => ['bulk_reason' => $reason, 'bulk_reference' => $reference],
                     ]);
 
-                Log::info("{$logPrefix} for AdminBulkTransfer ID {$bulkTransfer->id} - Ref: {$reference}, affecting " .
-                        $bulkTransfer->accountTransfers()->count() . " transfers");
+                Log::info("{$logPrefix} for AdminBulkTransfer ID {$bulkTransfer->id} - Ref: {$reference}, affecting ".
+                        $bulkTransfer->accountTransfers()->count().' transfers');
                 DB::commit();
+
                 return;
             }
 
@@ -136,6 +149,7 @@ class PaystackService
                 if (! $user) {
                     Log::error("{$logPrefix}: User not found for UserWithdrawLog ID {$userWithdraw->id}");
                     DB::commit();
+
                     return;
                 }
 
@@ -143,6 +157,7 @@ class PaystackService
 
                 Log::info("{$logPrefix} for UserWithdrawLog ID {$userWithdraw->id} - Ref: {$reference}");
                 DB::commit();
+
                 return;
             }
 
@@ -150,7 +165,7 @@ class PaystackService
             DB::rollBack();
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error("Error processing {$logPrefix}: " . $e->getMessage());
+            Log::error("Error processing {$logPrefix}: ".$e->getMessage());
             throw $e;
         }
     }
@@ -167,4 +182,3 @@ class PaystackService
         ]);
     }
 }
-

@@ -1,9 +1,9 @@
 <?php
 
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -21,7 +21,7 @@ return new class extends Migration
 
             $table->string('name')->unique()->after('id');
             $table->double('amount')->default(0.00)->after('name');
-            
+
             if (DB::getDriverName() !== 'sqlite') {
                 DB::unprepared('DROP TRIGGER IF EXISTS limit_records');
             }

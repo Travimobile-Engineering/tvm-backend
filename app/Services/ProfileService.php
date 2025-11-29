@@ -17,11 +17,11 @@ class ProfileService
     {
         $user = User::find($id);
 
-        if (! $user){
-            return $this->error("User not found", 404);
+        if (! $user) {
+            return $this->error('User not found', 404);
         }
 
-        if ($request->has('full_name')){
+        if ($request->has('full_name')) {
             $names = explode(' ', $request->full_name, 2);
             $first_name = $names[0];
             $last_name = $names[1] ?? '';
@@ -61,22 +61,22 @@ class ProfileService
         $auth = authUser();
 
         $user = User::with([
-                'transitCompany',
-                'vehicle',
-                'vehicle.vehicleImages',
-                'vehicle.tripSchedule',
-                'documents',
-                'driverTripPayments',
-                'trips',
-                'premiumUpgrades.vehicle',
-                'unavailableDates',
-                'userBank',
-                'securityQuestion',
-            ])
+            'transitCompany',
+            'vehicle',
+            'vehicle.vehicleImages',
+            'vehicle.tripSchedule',
+            'documents',
+            'driverTripPayments',
+            'trips',
+            'premiumUpgrades.vehicle',
+            'unavailableDates',
+            'userBank',
+            'securityQuestion',
+        ])
             ->findOrFail($auth->id);
 
         if ($user->user_category !== UserType::DRIVER->value) {
-            return $this->error(null, "You are not allowed to access this resource", 403);
+            return $this->error(null, 'You are not allowed to access this resource', 403);
         }
 
         $data = new DriverProfileResource($user);
@@ -89,22 +89,22 @@ class ProfileService
         $auth = authUser();
 
         $user = User::with([
-                'transitCompany',
-                'vehicle',
-                'vehicle.vehicleImages',
-                'vehicle.tripSchedule',
-                'documents',
-                'driverTripPayments',
-                'trips',
-                'premiumUpgrades.vehicle',
-                'unavailableDates',
-                'userBank',
-                'securityQuestion',
-            ])
+            'transitCompany',
+            'vehicle',
+            'vehicle.vehicleImages',
+            'vehicle.tripSchedule',
+            'documents',
+            'driverTripPayments',
+            'trips',
+            'premiumUpgrades.vehicle',
+            'unavailableDates',
+            'userBank',
+            'securityQuestion',
+        ])
             ->findOrFail($auth->id);
 
         if ($user->user_category !== UserType::FOO->value) {
-            return $this->error(null, "You are not allowed to access this resource", 403);
+            return $this->error(null, 'You are not allowed to access this resource', 403);
         }
 
         $data = new FooProfileResource($user);
@@ -112,4 +112,3 @@ class ProfileService
         return $this->success($data, 'Foo profile retrieved successfully');
     }
 }
-

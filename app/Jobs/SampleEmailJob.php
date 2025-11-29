@@ -13,12 +13,13 @@ use Illuminate\Support\Facades\Mail;
 
 class SampleEmailJob implements ShouldQueue
 {
-    use Queueable, Dispatchable, InteractsWithQueue, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * Create a new job instance.
      */
     protected $emailData;
+
     public function __construct($emailData)
     {
         $this->emailData = $emailData;
@@ -31,6 +32,6 @@ class SampleEmailJob implements ShouldQueue
     {
         Mail::to($this->emailData['to'])
         // ->send(new ConfirmationEmail($this->emailData['name'], $this->emailData['code'],$this->emailData['view']));
-        ->send(new SampleMail($this->emailData['name'], $this->emailData['code']));
+            ->send(new SampleMail($this->emailData['name'], $this->emailData['code']));
     }
 }

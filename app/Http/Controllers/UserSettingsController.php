@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SetSecurityAnswerRequest;
-use Illuminate\Http\Request;
 use App\Services\UserSettingsService;
 use App\Trait\HttpResponse;
+use Illuminate\Http\Request;
 
 class UserSettingsController extends Controller
 {
@@ -13,8 +13,7 @@ class UserSettingsController extends Controller
 
     public function __construct(
         protected UserSettingsService $userSettingsService
-    )
-    {}
+    ) {}
 
     public function getQuestions()
     {
@@ -30,7 +29,7 @@ class UserSettingsController extends Controller
         ]);
 
         return $this->error(null, 'Contact support for more information.', 400);
-        //return $this->userSettingsService->setSecurityAnswer($request);
+        // return $this->userSettingsService->setSecurityAnswer($request);
     }
 
     public function createPassword(Request $request)
@@ -41,7 +40,7 @@ class UserSettingsController extends Controller
         ]);
 
         return $this->error(null, 'Contact support for more information.', 400);
-        //return $this->userSettingsService->createPassword($request);
+        // return $this->userSettingsService->createPassword($request);
     }
 
     public function changeSecurityAnswer(SetSecurityAnswerRequest $request)
@@ -62,6 +61,6 @@ class UserSettingsController extends Controller
         ]);
 
         return $this->error(null, 'Contact support for more information.', 400);
-        //return $this->userSettingsService->verifySecurityAnswer($request);
+        // return $this->userSettingsService->verifySecurityAnswer($request);
     }
 }

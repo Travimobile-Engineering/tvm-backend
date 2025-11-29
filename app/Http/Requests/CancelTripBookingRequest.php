@@ -23,7 +23,7 @@ class CancelTripBookingRequest extends FormRequest
     {
         return [
             'booking_id' => 'required|exists:trip_bookings,booking_id',
-            'reason' => 'required|string'
+            'reason' => 'required|string',
         ];
     }
 }

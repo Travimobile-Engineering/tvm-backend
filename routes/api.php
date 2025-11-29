@@ -1,40 +1,41 @@
 <?php
 
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\JobController;
-use Illuminate\Support\Facades\Artisan;
-use App\Http\Controllers\TripController;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\AgentController;
-use App\Http\Controllers\OtherController;
-use App\Http\Controllers\RouteController;
-use App\Http\Middleware\JWTAuthenticator;
-use App\Http\Controllers\DriverController;
-use App\Http\Controllers\WalletController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\VehicleController;
-use App\Http\Controllers\GoogleAuthController;
-use App\Http\Controllers\PremiumHireController;
-use App\Http\Controllers\TripBookingController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\SendTestMailController;
-use App\Http\Controllers\UserSettingsController;
-use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\TransitCompanyController;
-use App\Http\Controllers\ManifestCheckerController;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\DriverController;
+use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\JobController;
+use App\Http\Controllers\ManifestCheckerController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\NpisController;
+use App\Http\Controllers\OtherController;
 use App\Http\Controllers\Payment\PaystackPaymentController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PremiumHireController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RouteController;
+use App\Http\Controllers\SendTestMailController;
+use App\Http\Controllers\TransitCompanyController;
 use App\Http\Controllers\TransportRouteManagementController;
+use App\Http\Controllers\TripBookingController;
+use App\Http\Controllers\TripController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserSettingsController;
+use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\WalletController;
+use App\Http\Middleware\JWTAuthenticator;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 Route::post('/seed/run', function () {
     $seederClass = Str::studly(request()->input('seeder_class'));
 
-    if (!class_exists("Database\\Seeders\\{$seederClass}")) {
+    if (! class_exists("Database\\Seeders\\{$seederClass}")) {
         return response()->json([
-            'error' => "Seeder class '{$seederClass}' not found in Database\\Seeders namespace."
+            'error' => "Seeder class '{$seederClass}' not found in Database\\Seeders namespace.",
         ], 404);
     }
 
@@ -56,9 +57,17 @@ Route::post('/seed/run', function () {
     }
 });
 
-Route::get('/', fn() => response('Welcome to the API', 200));
+Route::get('/', fn () => response('Welcome to the API', 200));
 
 Route::resource('transport-route-management', TransportRouteManagementController::class);
+Route::prefix('npis/event')
+    ->controller(NpisController::class)
+    ->group(function () {
+        Route::get('/', 'getEvents');
+        Route::post('/create', 'createEvent');
+        Route::get('/{id}', 'getEvent');
+    });
+
 Route::middleware(['validate.header'])
     ->group(function () {
         Route::controller(OtherController::class)
@@ -94,10 +103,17 @@ Route::middleware(['validate.header'])
                 Route::post('/verify/account', [RegisterController::class, 'verifyAcount']);
             });
 
-        Route::post('/payment/webhook', [PaymentController::class, 'webhook'])
-            ->withoutMiddleware(['validate.header']);
+        Route::prefix('payment')
+            ->controller(PaymentController::class)
+            ->group(function () {
+                Route::post('/callback', 'callback');
 
-        // Approval URL
+                // Deprecating soon
+                Route::post('/webhook', 'webhook')
+                    ->withoutMiddleware(['validate.header']);
+            });
+
+        // Approval URL (Deprecating soon)
         Route::post('/payment/paystack/transfer/approve', [PaymentController::class, 'approveTransfer'])
             ->withoutMiddleware(['validate.header']);
 
@@ -173,7 +189,7 @@ Route::middleware(['validate.header'])
                         Route::patch('remove-fcm-token', 'removeFCMToken');
                         Route::delete('/delete-account', 'deleteAccount');
 
-                        //Settings
+                        // Settings
                         Route::prefix('settings')
                             ->controller(UserSettingsController::class)
                             ->group(function () {
@@ -456,7 +472,7 @@ Route::middleware(['validate.header'])
                 Route::get('/bus-stop/{user_id}', 'getAllBusStops');
                 Route::get('{user_id}/stops/{state_id}', 'getStop');
 
-                //Notification
+                // Notification
                 Route::patch('/notification', 'updateNotification');
 
                 // Create Driver

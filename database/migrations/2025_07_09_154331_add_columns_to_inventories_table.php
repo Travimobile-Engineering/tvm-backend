@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('inventories', 'code')) {
+        if (! Schema::hasColumn('inventories', 'code')) {
             Schema::table('inventories', function (Blueprint $table) {
                 $table->string('code')->nullable()->after('name');
             });
@@ -57,10 +57,10 @@ return new class extends Migration
             }
 
             Schema::table('stocks', function (Blueprint $table) {
-                if (!Schema::hasColumn('stocks', 'inventory_id')) {
+                if (! Schema::hasColumn('stocks', 'inventory_id')) {
                     $table->foreignId('inventory_id')->constrained()->onDelete('cascade');
                 }
-                if (!Schema::hasColumn('stocks', 'created_at')) {
+                if (! Schema::hasColumn('stocks', 'created_at')) {
                     $table->timestamps();
                 }
             });
@@ -89,7 +89,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasColumn('issued_item', 'item_id')) {
+        if (! Schema::hasColumn('issued_item', 'item_id')) {
             Schema::table('issued_item', function (Blueprint $table) {
                 $table->foreignId('item_id')->constrained()->onDelete('cascade');
             });
@@ -107,7 +107,7 @@ return new class extends Migration
                 });
             }
 
-            if (!Schema::hasColumn('item_count', 'item_id')) {
+            if (! Schema::hasColumn('item_count', 'item_id')) {
                 Schema::table('item_count', function (Blueprint $table) {
                     $table->foreignId('item_id')->constrained()->onDelete('cascade');
                 });

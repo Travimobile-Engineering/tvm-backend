@@ -13,8 +13,7 @@ class UserService
 
     public function __construct(
         protected AgentService $agentService
-    )
-    {}
+    ) {}
 
     public function changePassword($request)
     {
@@ -29,9 +28,9 @@ class UserService
                 'password' => Hash::make($request->new_password),
             ]);
 
-             return $this->success(null, "Password changed successfully");
+            return $this->success(null, 'Password changed successfully');
 
-        }else {
+        } else {
             return $this->error(null, 'Old Password did not match', 422);
         }
     }
@@ -219,5 +218,3 @@ class UserService
         return $this->success(null, 'Account deleted successfully');
     }
 }
-
-

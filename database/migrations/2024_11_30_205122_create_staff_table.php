@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('uuid')->nullable();
             $table->string('name');
-            $table->enum('category',['Development','Administration','Research','Normal'])->default('Normal');
+            $table->enum('category', ['Development', 'Administration', 'Research', 'Normal'])->default('Normal');
             // $table->enum('event_status', ['upcoming', 'ongoing', 'passed'])->default('upcoming')->after('description');
             $table->timestamps();
         });

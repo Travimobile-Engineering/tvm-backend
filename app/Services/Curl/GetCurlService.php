@@ -3,13 +3,13 @@
 namespace App\Services\Curl;
 
 use App\Trait\HttpResponse;
-use Exception;
 
 class GetCurlService
 {
     use HttpResponse;
 
     protected $url;
+
     protected $headers = [];
 
     public function __construct(string $url, array $headers = [])
@@ -31,18 +31,18 @@ class GetCurlService
         $response = curl_exec($ch);
 
         if (curl_errno($ch)) {
-            return $this->error(null, "Curl error: " . curl_error($ch), 400);
+            return $this->error(null, 'Curl error: '.curl_error($ch), 400);
         }
 
         curl_close($ch);
 
         $result = json_decode($response, true);
 
-        if (!$result) {
-            return $this->error(null, "Invalid JSON response from API: " . json_encode($response), 400);
+        if (! $result) {
+            return $this->error(null, 'Invalid JSON response from API: '.json_encode($response), 400);
         }
 
-        if (!isset($result['data'])) {
+        if (! isset($result['data'])) {
             return $this->error(null, $result['message'] ?? 'An error occurred while processing your request.', 400);
         }
 

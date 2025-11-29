@@ -15,7 +15,7 @@ class DriverProfileResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => (int)$this->id,
+            'id' => (int) $this->id,
             'uuid' => $this->uuid,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
@@ -37,20 +37,20 @@ class DriverProfileResource extends JsonResource
             'total_ride' => $this->total_trips,
             'rating' => 3.5,
             'is_available' => $this->is_available,
-            'lng' => (float)$this->lng,
-            'lat' => (float)$this->lat,
+            'lng' => (float) $this->lng,
+            'lat' => (float) $this->lat,
             'trip_extended_time' => $this->trip_extended_time,
             'sms_notification' => $this->inbox_notifications,
             'email_notification' => $this->email_notifications,
-            'transit_company' => (object)[
+            'transit_company' => (object) [
                 'id' => $this->transitCompany?->id,
                 'name' => $this->transitCompany?->name,
                 'email' => $this->transitCompany?->email,
                 'address' => $this->transitCompany?->address,
                 'park' => $this->transitCompany?->park,
             ],
-            'vehicle' => (object)[
-                'id' => (int)$this->vehicle?->id,
+            'vehicle' => (object) [
+                'id' => (int) $this->vehicle?->id,
                 'year' => $this->vehicle?->year,
                 'model' => $this->vehicle?->model,
                 'color' => $this->vehicle?->color,
@@ -62,11 +62,11 @@ class DriverProfileResource extends JsonResource
                 'seat_column' => $this->vehicle?->seat_column,
                 'description' => $this->vehicle?->description,
             ],
-            'premium_upgrades' => $this->premiumUpgrades ? $this->premiumUpgrades->map(function($upgrade) {
+            'premium_upgrades' => $this->premiumUpgrades ? $this->premiumUpgrades->map(function ($upgrade) {
                 return [
-                    'id' => (int)$upgrade->id,
-                    'vehicle' => (object)[
-                        'id' => (int)$upgrade->vehicle?->id,
+                    'id' => (int) $upgrade->id,
+                    'vehicle' => (object) [
+                        'id' => (int) $upgrade->vehicle?->id,
                         'model' => $upgrade->vehicle?->model,
                         'type' => $upgrade->vehicle?->type,
                         'color' => $upgrade->vehicle?->color,
@@ -80,19 +80,19 @@ class DriverProfileResource extends JsonResource
                     'status' => $upgrade->status,
                     'images' => $this->vehicle?->vehicleImages ? $this->vehicle?->vehicleImages->map(function ($image) {
                         return [
-                            'id' => (int)$image->id,
+                            'id' => (int) $image->id,
                             'type' => $image->type,
                             'url' => $image->url,
                         ];
                     })->toArray() : [],
                     'unavailable_dates' => $this->vehicle?->unavailableDates ? $this->vehicle?->unavailableDates->map(function ($date) {
                         return $date->date;
-                    })->toArray() : []
+                    })->toArray() : [],
                 ];
             })->toArray() : [],
-            'documents' => $this->documents ? $this->documents->map(function($document) {
+            'documents' => $this->documents ? $this->documents->map(function ($document) {
                 return [
-                    'id' => (int)$document->id,
+                    'id' => (int) $document->id,
                     'type' => $document->type,
                     'image_url' => $document->image_url,
                     'number' => $document->number,
@@ -109,7 +109,7 @@ class DriverProfileResource extends JsonResource
                 ],
                 'available_balance' => $this->wallet_amount,
             ],
-            'bank' => (object)[
+            'bank' => (object) [
                 'id' => $this->userBank?->id,
                 'account_name' => $this->userBank?->account_name,
                 'account_number' => $this->userBank?->account_number,

@@ -12,5 +12,3 @@ abstract class BaseResource extends JsonResource
         return Crypt::encryptString((string) $id);
     }
 }
-
-

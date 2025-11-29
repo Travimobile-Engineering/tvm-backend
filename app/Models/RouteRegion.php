@@ -9,7 +9,7 @@ class RouteRegion extends Model
 {
     use HasFactory;
 
-    protected $table = "route_regions";
+    protected $table = 'route_regions';
 
     protected $fillable = [
         'name',

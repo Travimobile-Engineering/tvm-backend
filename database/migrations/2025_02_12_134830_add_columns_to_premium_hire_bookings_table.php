@@ -17,5 +17,4 @@ return new class extends Migration
             $table->string('time')->nullable()->after('payment_method');
         });
     }
-
 };

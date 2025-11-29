@@ -3,24 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CancelTripBookingRequest;
-use App\Models\TripBooking;
-use App\Trait\HttpResponse;
-use Illuminate\Http\Request;
-use App\Services\TripBookingService;
 use App\Http\Requests\TripBookingCreateRequest;
 use App\Http\Requests\TripBookingUpdateRequest;
+use App\Models\TripBooking;
+use App\Services\TripBookingService;
 use App\Services\TripBookService;
+use App\Trait\HttpResponse;
+use Illuminate\Http\Request;
 
 class TripBookingController extends Controller
 {
     use HttpResponse;
+
     protected $service;
+
     protected $tripBookService;
 
-    public function __construct(TripBookingService $service, TripBookService $tripBookService){
+    public function __construct(TripBookingService $service, TripBookService $tripBookService)
+    {
         $this->service = $service;
         $this->tripBookService = $tripBookService;
     }
+
     /**
      * Display a listing of the resource.
      */
@@ -70,6 +74,7 @@ class TripBookingController extends Controller
     {
         //
     }
+
     public function booking(TripBookingCreateRequest $request)
     {
         return $this->tripBookService->store($request);

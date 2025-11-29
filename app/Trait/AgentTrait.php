@@ -2,8 +2,8 @@
 
 namespace App\Trait;
 
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 
 trait AgentTrait
 {
@@ -17,12 +17,13 @@ trait AgentTrait
         $blockKey = "login_blocked: {$user->id}";
 
         if (Cache::has($blockKey)) {
-            return $this->error(null, "Too many attempts. Try again later.", 429);
+            return $this->error(null, 'Too many attempts. Try again later.', 429);
         }
 
         if (Hash::check($request->password, $user->password)) {
             Cache::forget($userKey);
-            return $this->success(null, "Valid credentials");
+
+            return $this->success(null, 'Valid credentials');
         }
 
         $attempts = Cache::increment($userKey);
@@ -34,9 +35,10 @@ trait AgentTrait
         if ($attempts >= 3) {
             Cache::put($blockKey, now()->addMinutes(10)->timestamp, 600);
             Cache::forget($userKey);
-            return $this->error(null, "Too many attempts. You are blocked", 429);
+
+            return $this->error(null, 'Too many attempts. You are blocked', 429);
         }
 
-        return $this->error(null, "Invalid credentials", 400);
+        return $this->error(null, 'Invalid credentials', 400);
     }
 }

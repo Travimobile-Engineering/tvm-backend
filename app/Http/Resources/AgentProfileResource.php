@@ -15,7 +15,7 @@ class AgentProfileResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => (int)$this->id,
+            'id' => (int) $this->id,
             'uuid' => $this->uuid,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
@@ -36,16 +36,16 @@ class AgentProfileResource extends JsonResource
             'referral_code' => $this->referral_code,
             'status' => ($this->email_verified || $this->sms_verified) ? 'verified' : 'pending',
             'rating' => 3.5,
-            'lng' => (float)$this->lng,
-            'lat' => (float)$this->lat,
-            'transit_company' => (object)[
+            'lng' => (float) $this->lng,
+            'lat' => (float) $this->lat,
+            'transit_company' => (object) [
                 'id' => $this->transitCompany?->id,
                 'name' => $this->transitCompany?->name,
                 'email' => $this->transitCompany?->email,
                 'address' => $this->transitCompany?->address,
                 'park' => $this->transitCompany?->park,
             ],
-            'bank' => (object)[
+            'bank' => (object) [
                 'id' => $this->userBank?->id,
                 'account_name' => $this->userBank?->account_name,
                 'account_number' => $this->userBank?->account_number,
@@ -64,7 +64,7 @@ class AgentProfileResource extends JsonResource
             'email_notification' => $this->email_notifications,
             'has_setup_security_answer' => hasSetSecurityAnswer($this->id),
             'security_question' => $this->securityQuestion?->question,
-            'drivers_created' => DriverProfileResource::collection(driversCreatedByAgent($this->id))
+            'drivers_created' => DriverProfileResource::collection(driversCreatedByAgent($this->id)),
         ];
     }
 }

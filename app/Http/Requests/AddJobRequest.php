@@ -29,7 +29,7 @@ class AddJobRequest extends FormRequest
             'responsibilities' => ['required', 'array'],
             'requirement' => ['required', 'array'],
             'offer' => ['required', 'array'],
-            
+
         ];
     }
 }

@@ -15,7 +15,7 @@ class BusStopResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => (int)$this->id,
+            'id' => (int) $this->id,
             'state_id' => $this->state_id,
             'state' => $this->state->name,
             'stops' => $this->stops,

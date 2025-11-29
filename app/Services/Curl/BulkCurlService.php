@@ -5,7 +5,9 @@ namespace App\Services\Curl;
 class BulkCurlService
 {
     protected $url;
+
     protected $headers = [];
+
     protected $fields;
 
     public function __construct(string $url, array $headers = [], array $fields = [])
@@ -23,11 +25,11 @@ class BulkCurlService
 
         $ch = curl_init();
 
-        curl_setopt($ch,CURLOPT_URL, $this->url);
-        curl_setopt($ch,CURLOPT_POST, true);
-        curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+        curl_setopt($ch, CURLOPT_URL, $this->url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
-        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
         $response = curl_exec($ch);
 
@@ -40,10 +42,7 @@ class BulkCurlService
         }
 
         curl_close($ch);
+
         return json_decode($response, true);
     }
 }
-
-
-
-

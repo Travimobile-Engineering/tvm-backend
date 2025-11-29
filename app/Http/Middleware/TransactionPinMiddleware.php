@@ -28,10 +28,10 @@ class TransactionPinMiddleware
             ->where('id', $userId)
             ->first();
 
-        if($user) {
+        if ($user) {
             $pin = $user->userPin?->pin;
 
-            if(Hash::check($request->pin, $pin)) {
+            if (Hash::check($request->pin, $pin)) {
                 return $next($request);
             }
 
@@ -39,7 +39,7 @@ class TransactionPinMiddleware
             $total = $attempt + 1;
 
             $user->userPin()->update([
-                'attempts' => $total
+                'attempts' => $total,
             ]);
 
             return $this->error(null, 'Invalid transaction pin', 403);

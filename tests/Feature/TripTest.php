@@ -14,7 +14,6 @@ use App\Models\TripBookingPassenger;
 use App\Models\User;
 use App\Models\Vehicle\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -25,18 +24,28 @@ class TripTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected array $headers;
+
     protected $transitCompany;
+
     protected $vehicle;
+
     protected $union;
+
     protected $state;
+
     protected $departureRegion;
+
     protected $destinationRegion;
+
     protected $busStop1;
+
     protected $busStop2;
+
     protected $busStop3;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -100,16 +109,16 @@ class TripTest extends TestCase
         $response = $this->postJson('/api/trip/driver/one-time', $payload, $this->headers);
 
         $response->assertStatus(201)
-                 ->assertJson([
-                     'message' => 'Created successfully',
-                     'data' => [
-                        'user_id' => $this->user->id,
-                        'departure' => $this->departureRegion->id,
-                        'destination' => $this->destinationRegion->id,
-                        'type' => TripType::ONETIME,
-                        'status' => TripStatus::UPCOMING,
-                     ]
-                 ]);
+            ->assertJson([
+                'message' => 'Created successfully',
+                'data' => [
+                    'user_id' => $this->user->id,
+                    'departure' => $this->departureRegion->id,
+                    'destination' => $this->destinationRegion->id,
+                    'type' => TripType::ONETIME,
+                    'status' => TripStatus::UPCOMING,
+                ],
+            ]);
 
         $this->assertDatabaseHas('trips', [
             'user_id' => $this->user->id,
@@ -146,9 +155,9 @@ class TripTest extends TestCase
         $response = $this->postJson('/api/trip/driver/one-time', $payload, $this->headers);
 
         $response->assertStatus(400)
-                 ->assertJson([
-                     'message' => 'Departure and destination cannot be the same',
-                 ]);
+            ->assertJson([
+                'message' => 'Departure and destination cannot be the same',
+            ]);
     }
 
     #[Test]
@@ -174,7 +183,7 @@ class TripTest extends TestCase
                 ],
             ],
             'bus_type' => 'Standard',
-            'price' => "6000",
+            'price' => '6000',
             'bus_stops' => [
                 $this->busStop1->id,
                 $this->busStop2->id,
@@ -185,9 +194,9 @@ class TripTest extends TestCase
         $response = $this->postJson('/api/trip/driver/recurring', $payload, $this->headers);
 
         $response->assertStatus(201)
-                ->assertJson([
-                    'message' => 'Recurring trips created successfully',
-                ]);
+            ->assertJson([
+                'message' => 'Recurring trips created successfully',
+            ]);
 
         // Assert at least one trip exists in database
         $this->assertDatabaseHas('trips', [
@@ -218,7 +227,7 @@ class TripTest extends TestCase
                 ],
             ],
             'bus_type' => 'Standard',
-            'price' => "5000",
+            'price' => '5000',
             'bus_stops' => [
                 $this->busStop1->id,
                 $this->busStop2->id,
@@ -228,9 +237,9 @@ class TripTest extends TestCase
         $response = $this->postJson('/api/trip/driver/recurring', $payload, $this->headers);
 
         $response->assertStatus(400)
-                ->assertJson([
-                    'message' => 'Departure and destination cannot be the same',
-                ]);
+            ->assertJson([
+                'message' => 'Departure and destination cannot be the same',
+            ]);
     }
 
     #[Test]
@@ -251,9 +260,9 @@ class TripTest extends TestCase
         $response = $this->putJson("/api/trip/driver/cancel/{$trip->id}", $payload, $this->headers);
 
         $response->assertStatus(200)
-                ->assertJson([
-                    'message' => 'Trip Cancelled Successfully',
-                ]);
+            ->assertJson([
+                'message' => 'Trip Cancelled Successfully',
+            ]);
 
         $this->assertDatabaseHas('trips', [
             'id' => $trip->id,
@@ -276,9 +285,9 @@ class TripTest extends TestCase
         $response = $this->putJson("/api/trip/driver/complete/{$trip->id}", [], $this->headers);
 
         $response->assertStatus(200)
-                ->assertJson([
-                    'message' => 'Trip Completed Successfully',
-                ]);
+            ->assertJson([
+                'message' => 'Trip Completed Successfully',
+            ]);
 
         $this->assertDatabaseHas('trips', [
             'id' => $trip->id,
@@ -318,15 +327,13 @@ class TripTest extends TestCase
         $response = $this->postJson('/api/trip/driver/start-trip', $payload, $this->headers);
 
         $response->assertStatus(200)
-                ->assertJson([
-                    'message' => 'Trip Started Successfully',
-                ]);
+            ->assertJson([
+                'message' => 'Trip Started Successfully',
+            ]);
 
         $this->assertDatabaseHas('trips', [
             'id' => $trip->id,
             'status' => TripStatus::INPROGRESS,
         ]);
     }
-
-
 }

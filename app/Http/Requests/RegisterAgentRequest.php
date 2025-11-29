@@ -23,9 +23,9 @@ class RegisterAgentRequest extends FormRequest
     {
         return [
             'address' => 'required',
-                    'email' => 'required',
-                    'phone_number' => 'required',
-                    'nin' => 'required',
+            'email' => 'required',
+            'phone_number' => 'required',
+            'nin' => 'required',
         ];
     }
 }

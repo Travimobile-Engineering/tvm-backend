@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Schedule;
+
 Schedule::everyMinute()
     ->group(function () {
         Schedule::command('email:process');

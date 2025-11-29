@@ -3,24 +3,13 @@
 namespace App\Services;
 
 use App\DTO\NotificationDispatchData;
-use App\Models\Trip;
-use App\Models\User;
-use App\Enum\TripStatus;
-use App\Enum\PaymentMethod;
-use App\Models\Transaction;
-use App\Models\TripBooking;
-use App\Models\TripPayment;
-use App\Trait\HttpResponse;
-use Illuminate\Support\Str;
-use App\Models\Notification;
-use App\Models\TransitCompany;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\QueryException;
-use App\Http\Controllers\Payment\PaystackPaymentController;
 use App\Http\Resources\TripBookingResource;
+use App\Models\Trip;
+use App\Models\TripBooking;
+use App\Models\User;
 use App\Services\Notification\NotificationDispatcher;
+use App\Trait\HttpResponse;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TripBookingService
 {
@@ -30,7 +19,7 @@ class TripBookingService
 
     public function __construct(
         protected NotificationDispatcher $notifier
-    ){
+    ) {
         $this->user = JWTAuth::user();
     }
 
@@ -56,18 +45,18 @@ class TripBookingService
     public function show($tripBooking)
     {
         $booking = TripBooking::with([
-                'trip.user',
-                'user.transitCompany',
-                'trip.departureRegion.state',
-                'trip.destinationRegion.state',
-                'trip.departureRegion.parksWithTransitCompany',
-                'trip.destinationRegion.parksWithTransitCompany',
-                'trip.vehicle',
-            ])
+            'trip.user',
+            'user.transitCompany',
+            'trip.departureRegion.state',
+            'trip.destinationRegion.state',
+            'trip.departureRegion.parksWithTransitCompany',
+            'trip.destinationRegion.parksWithTransitCompany',
+            'trip.vehicle',
+        ])
             ->where('booking_id', $tripBooking->booking_id)
             ->first();
 
-        if(!$booking) {
+        if (! $booking) {
             return $this->error(null, 'Invalid booking ID', 400);
         }
 
@@ -81,7 +70,7 @@ class TripBookingService
      */
     public function update($request, $tripBooking)
     {
-        if($this->user->id != $tripBooking->user_id) {
+        if ($this->user->id != $tripBooking->user_id) {
             return $this->error(null, 'You do not have the permission to complete this request', 400);
         }
 
@@ -89,7 +78,7 @@ class TripBookingService
             ->where('status', 1)
             ->exists();
 
-        if(!$trip) {
+        if (! $trip) {
             return $this->error(null, 'Invalid booking ID', 400);
         }
 
@@ -100,7 +89,7 @@ class TripBookingService
             'travelling_with' => $request->travelling_with ?? '',
             'amount_paid' => $request->amount_paid ?? 0,
             'payment_method' => $request->payment_method ?? '',
-            'payment_status' => $request->payment_status
+            'payment_status' => $request->payment_status,
         ]);
 
         return $this->success($tripBooking, 'Booking updated successfully');
@@ -112,14 +101,14 @@ class TripBookingService
             ->where('booking_id', $request->booking_id)
             ->firstOrFail();
 
-        if(!in_array($this->user->id, [$booking->user_id, $booking->agent_id])) {
+        if (! in_array($this->user->id, [$booking->user_id, $booking->agent_id])) {
             return $this->error(null, 'You do not have the permission to complete this request', 400);
         }
 
         $booking->update([
             'reason' => $request->reason,
             'date_canceled' => now(),
-            'status' => 0
+            'status' => 0,
         ]);
 
         $this->notifier->send(new NotificationDispatchData(
@@ -141,10 +130,10 @@ class TripBookingService
     {
         $user = User::findOrFail($request->user);
         $history = TripBooking::with([
-                'trip' => function ($query) {
-                    $query->select('id', 'departure', 'destination', 'departure_date', 'trip_duration');
-                },
-            ])
+            'trip' => function ($query) {
+                $query->select('id', 'departure', 'destination', 'departure_date', 'trip_duration');
+            },
+        ])
             ->where('user_id', $user->id)
             ->get();
 
@@ -157,6 +146,7 @@ class TripBookingService
     public function destroy(TripBooking $tripBooking)
     {
         $tripBooking->delete();
+
         return $this->success(null, 'Booking deleted successfully');
     }
 }

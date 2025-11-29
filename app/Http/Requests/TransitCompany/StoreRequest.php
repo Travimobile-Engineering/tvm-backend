@@ -24,7 +24,7 @@ class StoreRequest extends FormRequest
         return [
             'email' => 'required|unique:transit_companies|email',
             'phone' => 'required|unique:transit_companies|max_digits:14',
-            'url' => 'nullable|url'
+            'url' => 'nullable|url',
         ];
     }
 }

@@ -9,6 +9,7 @@ use Laravel\Socialite\Facades\Socialite;
 class GoogleAuthController extends Controller
 {
     protected $frontendBaseUrl;
+
     protected $mobileRedirectUri;
 
     public function __construct()
@@ -53,7 +54,7 @@ class GoogleAuthController extends Controller
 
             $user = User::where('email', $googleUser->getEmail())->first();
 
-            if (!$user) {
+            if (! $user) {
                 $user = User::create([
                     'first_name' => $firstName,
                     'last_name' => $lastName,
@@ -84,7 +85,7 @@ class GoogleAuthController extends Controller
                 ? $this->mobileRedirectUri
                 : $this->frontendBaseUrl;
 
-            return redirect($redirectUrl . '/auth/callback?' . http_build_query([
+            return redirect($redirectUrl.'/auth/callback?'.http_build_query([
                 'token' => $token,
                 'user' => $user,
             ]));
@@ -92,12 +93,12 @@ class GoogleAuthController extends Controller
         } catch (\Exception $e) {
             if ($request->has('mobile')) {
                 return response()->json([
-                    'error' => 'Authentication failed: ' . $e->getMessage(),
+                    'error' => 'Authentication failed: '.$e->getMessage(),
                 ], 401);
             }
 
-            return redirect($this->frontendBaseUrl . '/auth/callback?' . http_build_query([
-                'error' => 'Authentication failed: ' . $e->getMessage(),
+            return redirect($this->frontendBaseUrl.'/auth/callback?'.http_build_query([
+                'error' => 'Authentication failed: '.$e->getMessage(),
             ]));
         }
     }

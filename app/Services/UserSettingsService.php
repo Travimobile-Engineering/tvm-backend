@@ -19,6 +19,7 @@ class UserSettingsService
     public function getQuestions()
     {
         $data = SecurityQuestion::select('id', 'question')->get();
+
         return $this->success($data, 'Questions retrieved successfully');
     }
 
@@ -36,7 +37,7 @@ class UserSettingsService
 
         $user = User::where($field, $value)->first();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error(null, 'User not found', 404);
         }
 
@@ -57,13 +58,13 @@ class UserSettingsService
         } else {
             $data = [
                 'name' => $user->first_name,
-                'verification_code' => $code
+                'verification_code' => $code,
             ];
 
             mailSend(
                 MailingEnum::VERIFY_OTP,
                 $user,
-                "Verify Account",
+                'Verify Account',
                 ConfirmationEmail::class,
                 $data
             );
@@ -90,11 +91,11 @@ class UserSettingsService
             return $this->error(null, 'User not found', 404);
         }
 
-        if (!Cache::get("security_reset_{$user->email}")) {
+        if (! Cache::get("security_reset_{$user->email}")) {
             return $this->error(null, 'You must complete the security setup or answer first.', 403);
         }
 
-        if (!$user->security_question_id || !$user->security_answer) {
+        if (! $user->security_question_id || ! $user->security_answer) {
             return $this->error(null, 'Please set your security question first', 403);
         }
 
@@ -110,7 +111,7 @@ class UserSettingsService
 
         $data = [
             'token' => $token,
-            'user' => $user
+            'user' => $user,
         ];
 
         return $this->success($data, 'Password created successfully');
@@ -120,7 +121,7 @@ class UserSettingsService
     {
         $user = User::findOrFail($request->user_id);
 
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             return $this->error(null, 'Incorrect password', 400);
         }
 
@@ -128,7 +129,7 @@ class UserSettingsService
 
         $user->update([
             'security_question_id' => $request->security_question_id,
-            'security_answer' => Hash::make($normalizedAnswer)
+            'security_answer' => Hash::make($normalizedAnswer),
         ]);
 
         return $this->success(null, 'Security answer set successfully');
@@ -195,7 +196,7 @@ class UserSettingsService
 
         $normalizedInput = strtolower(trim($request->answer));
 
-        if (!Hash::check($normalizedInput, $user->security_answer)) {
+        if (! Hash::check($normalizedInput, $user->security_answer)) {
             return $this->error(null, 'Incorrect answer', 400);
         }
 
@@ -207,7 +208,7 @@ class UserSettingsService
     private function validateEmail($request)
     {
         $request->validate([
-            'email' => ['required', 'email', 'exists:users,email']
+            'email' => ['required', 'email', 'exists:users,email'],
         ]);
     }
 
@@ -220,4 +221,3 @@ class UserSettingsService
         }
     }
 }
-

@@ -16,7 +16,7 @@ enum UserType: string
      */
     public static function group(array $cases): array
     {
-        return array_map(fn(self $case) => $case->value, $cases);
+        return array_map(fn (self $case) => $case->value, $cases);
     }
 
     /**

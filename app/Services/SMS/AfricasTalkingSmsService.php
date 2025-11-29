@@ -8,8 +8,11 @@ use Illuminate\Support\Facades\Http;
 class AfricasTalkingSmsService implements SMS
 {
     protected string $username;
+
     protected string $apiKey;
+
     protected string $senderId;
+
     protected string $url;
 
     public function __construct()

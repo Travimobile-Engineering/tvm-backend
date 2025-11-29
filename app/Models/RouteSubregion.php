@@ -9,13 +9,13 @@ class RouteSubregion extends Model
 {
     use HasFactory;
 
-    protected $table = "route_subregions";
+    protected $table = 'route_subregions';
 
     protected $fillable = [
         'name',
         'state_id',
         'region_id',
-        'status'
+        'status',
     ];
 
     public function state()
@@ -36,7 +36,6 @@ class RouteSubregion extends Model
     public function parksWithTransitCompany()
     {
         return $this->hasMany(Park::class, 'route_subregion_id')
-                    ->whereNotNull('transit_company_id');
+            ->whereNotNull('transit_company_id');
     }
-
 }

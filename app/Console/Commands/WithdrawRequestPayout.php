@@ -28,8 +28,9 @@ class WithdrawRequestPayout extends Command
      */
     public function handle()
     {
-        if (!app()->environment('production')) {
+        if (! app()->environment('production')) {
             $this->info('This command can only run in production environment.');
+
             return;
         }
 
@@ -43,6 +44,7 @@ class WithdrawRequestPayout extends Command
 
         if (empty($requests)) {
             $this->info('No transfers(s) to process.');
+
             return;
         }
 

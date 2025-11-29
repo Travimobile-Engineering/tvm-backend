@@ -19,7 +19,7 @@ class AccountTransfer extends Model
     protected function casts(): array
     {
         return [
-            'response' => 'array'
+            'response' => 'array',
         ];
     }
 

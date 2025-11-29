@@ -2,40 +2,40 @@
 
 namespace App\Services;
 
-use Carbon\Carbon;
-use App\Models\Trip;
-use App\Models\User;
-use App\Enum\TripType;
-use App\Enum\UserType;
-use App\Models\TripLog;
-use App\Enum\TripStatus;
+use App\DTO\NotificationDispatchData;
 use App\DTO\SendCodeData;
 use App\Enum\MailingEnum;
-use App\Trait\AgentTrait;
-use App\Trait\DriverTrait;
-use App\Enum\PaymentMethod;
-use App\Mail\VerifyPinMail;
-use App\Models\TripBooking;
-use App\Trait\HttpResponse;
-use Illuminate\Support\Str;
 use App\Enum\ManifestStatus;
-use App\Models\RouteSubregion;
-use App\Trait\TripBookingTrait;
-use Illuminate\Support\Facades\DB;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Http\Resources\TripResource;
-use Illuminate\Support\Facades\Hash;
-use App\DTO\NotificationDispatchData;
-use Illuminate\Support\Facades\Cache;
-use App\Http\Resources\TripBookingResource;
-use Illuminate\Support\Facades\RateLimiter;
+use App\Enum\PaymentMethod;
+use App\Enum\TripStatus;
+use App\Enum\TripType;
+use App\Enum\UserType;
 use App\Http\Resources\AgentProfileResource;
+use App\Http\Resources\TripBookingResource;
+use App\Http\Resources\TripResource;
+use App\Mail\VerifyPinMail;
+use App\Models\RouteSubregion;
+use App\Models\Trip;
+use App\Models\TripBooking;
+use App\Models\TripLog;
+use App\Models\User;
 use App\Notifications\PassengerTripNotification;
 use App\Services\Notification\NotificationDispatcher;
+use App\Trait\AgentTrait;
+use App\Trait\DriverTrait;
+use App\Trait\HttpResponse;
+use App\Trait\TripBookingTrait;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AgentService
 {
-    use HttpResponse, TripBookingTrait, DriverTrait, AgentTrait;
+    use AgentTrait, DriverTrait, HttpResponse, TripBookingTrait;
 
     public function __construct(
         protected NotificationDispatcher $notifier
@@ -47,44 +47,44 @@ class AgentService
         $userId = $auth->id;
 
         $user = User::with([
-                'transitCompany',
-                'busStops.state',
-                'userBank',
-                'securityQuestion',
-            ])
+            'transitCompany',
+            'busStops.state',
+            'userBank',
+            'securityQuestion',
+        ])
             ->where('id', $userId)
             ->first();
 
-        if (!$user) {
-            return $this->error(null, "User not found", 404);
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
         }
 
         if ($user->user_category !== UserType::AGENT->value) {
-            return $this->error(null, "You are not allowed to access this resource", 403);
+            return $this->error(null, 'You are not allowed to access this resource', 403);
         }
 
         $data = new AgentProfileResource($user);
 
-        return $this->success($data, "Agent profile");
+        return $this->success($data, 'Agent profile');
     }
 
     public function getAgent($agentId)
     {
         $agent = User::with([
-                'transitCompany',
-                'busStops.state',
-                'userBank',
-            ])
+            'transitCompany',
+            'busStops.state',
+            'userBank',
+        ])
             ->where('agent_id', $agentId)
             ->first();
 
-        if (!$agent) {
-            return $this->error(null, "Agent not found", 404);
+        if (! $agent) {
+            return $this->error(null, 'Agent not found', 404);
         }
 
         $data = new AgentProfileResource($agent);
 
-        return $this->success($data, "Agent details");
+        return $this->success($data, 'Agent details');
     }
 
     public function changePassword($request)
@@ -100,9 +100,9 @@ class AgentService
                 'password' => Hash::make($request->new_password),
             ]);
 
-             return $this->success(null, "Password changed successfully");
+            return $this->success(null, 'Password changed successfully');
 
-        }else {
+        } else {
             return $this->error(null, 'Old Password did not match', 422);
         }
     }
@@ -111,7 +111,7 @@ class AgentService
     {
         $user = User::findOrFail($request->user_id);
 
-        $photo = uploadFile($request, "profile_photo", "agent/profile");
+        $photo = uploadFile($request, 'profile_photo', 'agent/profile');
         $agentId = generateUniqueNumber('users', 'agent_id', 11);
 
         $user->update([
@@ -127,7 +127,7 @@ class AgentService
             'referral_code' => generateUniqueString('users', 'referral_code', 8),
         ]);
 
-        return $this->success(null, "Agent information updated successfully");
+        return $this->success(null, 'Agent information updated successfully');
     }
 
     public function busSearch($request)
@@ -142,7 +142,7 @@ class AgentService
 
         $data = TripResource::collection($trips);
 
-        return $this->success($data, "Bus search result");
+        return $this->success($data, 'Bus search result');
     }
 
     public function buyTicket($request)
@@ -155,7 +155,7 @@ class AgentService
         $user = User::with(['transactions', 'walletAccount'])->findOrFail($authUser->id);
 
         if ($user->user_category == UserType::AGENT->value && $user->wallet_balance < 1000) {
-            return $this->error(null, "Your wallet balance must be at least 1000 to make a booking", 400);
+            return $this->error(null, 'Your wallet balance must be at least 1000 to make a booking', 400);
         }
 
         $chargeAmount = 0;
@@ -201,7 +201,7 @@ class AgentService
 
         $data = TripBookingResource::collection($tickets);
 
-        return $this->success($data, "Ticket search result");
+        return $this->success($data, 'Ticket search result');
     }
 
     public function searchPassenger($request)
@@ -221,7 +221,7 @@ class AgentService
             })
             ->get();
 
-        return $this->success($users, "Passenger search result");
+        return $this->success($users, 'Passenger search result');
     }
 
     public function addUser($request)
@@ -247,7 +247,7 @@ class AgentService
             'password' => Str::password(10),
         ]);
 
-        return $this->success($user, "User created successfully");
+        return $this->success($user, 'User created successfully');
     }
 
     public function bookingHistory($userId)
@@ -255,22 +255,22 @@ class AgentService
         $status = strtolower(request()->query('status', ''));
 
         $bookings = TripBooking::with([
-                'user' => function ($query) {
-                    $query->select('id', 'first_name', 'last_name', 'phone_number');
-                },
-                'trip' => function ($query) {
-                    $query->select('id', 'departure', 'destination', 'departure_date', 'departure_time', 'trip_duration', 'status');
-                },
-            ])
+            'user' => function ($query) {
+                $query->select('id', 'first_name', 'last_name', 'phone_number');
+            },
+            'trip' => function ($query) {
+                $query->select('id', 'departure', 'destination', 'departure_date', 'departure_time', 'trip_duration', 'status');
+            },
+        ])
             ->where('agent_id', $userId)
             ->when($status, function ($query) use ($status) {
                 if ($status === 'upcoming') {
                     $query->whereHas('trip', function ($tripQuery) {
                         $tripQuery->whereDate('departure_date', '>', now())
-                                  ->orWhereDate('start_date', '>', now());
+                            ->orWhereDate('start_date', '>', now());
                     });
                 } else {
-                    $query->whereHas('trip', fn($tripQuery) => $tripQuery->where('status', $status));
+                    $query->whereHas('trip', fn ($tripQuery) => $tripQuery->where('status', $status));
                 }
             })
             ->get();
@@ -281,11 +281,11 @@ class AgentService
     public function bookingDetail($bookingId)
     {
         $booking = TripBooking::with([
-                'user:id,first_name,last_name,phone_number',
-                'trip:id,vehicle_id,departure,destination,departure_date,departure_time,trip_duration,reason,date_cancelled,status',
-                'trip.vehicle:id,user_id,name,year,model,color,type,capacity,plate_no,seats,seat_row,seat_column',
-                'trip.vehicle.user:id,first_name,last_name,email,phone_number,profile_photo',
-            ])
+            'user:id,first_name,last_name,phone_number',
+            'trip:id,vehicle_id,departure,destination,departure_date,departure_time,trip_duration,reason,date_cancelled,status',
+            'trip.vehicle:id,user_id,name,year,model,color,type,capacity,plate_no,seats,seat_row,seat_column',
+            'trip.vehicle.user:id,first_name,last_name,email,phone_number,profile_photo',
+        ])
             ->where('booking_id', $bookingId)
             ->first();
 
@@ -294,11 +294,11 @@ class AgentService
         }
 
         $driver = [
-            'driver' => $booking->trip?->vehicle?->user ?? null
+            'driver' => $booking->trip?->vehicle?->user ?? null,
         ];
 
         $vehicle = [
-            'vehicle' => $booking->trip?->vehicle ?? null
+            'vehicle' => $booking->trip?->vehicle ?? null,
         ];
 
         $bookingData = $booking->toArray();
@@ -349,7 +349,7 @@ class AgentService
         ];
 
         if ($request->hasFile('profile_photo')) {
-            $photo = uploadFile($request, "profile_photo", "agent/profile");
+            $photo = uploadFile($request, 'profile_photo', 'agent/profile');
         }
 
         $user->update([
@@ -366,7 +366,7 @@ class AgentService
             'next_of_kin_phone_number' => $request->next_of_kin_phone_number ?? $user->next_of_kin_phone_number,
         ]);
 
-        return $this->success($user, "Profile updated successfully");
+        return $this->success($user, 'Profile updated successfully');
     }
 
     public function deleteProfile($request)
@@ -380,7 +380,8 @@ class AgentService
         }
 
         $user->delete();
-        return $this->success(null, "Account deleted successfully");
+
+        return $this->success(null, 'Account deleted successfully');
     }
 
     public function sendOtp($request)
@@ -392,7 +393,7 @@ class AgentService
         }
 
         $code = generateUniqueNumber('users', 'verification_code', 5);
-        Cache::put('otp_pin_' . $user->id, $code, now()->addMinutes(5));
+        Cache::put('otp_pin_'.$user->id, $code, now()->addMinutes(5));
 
         $user->update([
             'verification_code' => $code,
@@ -401,7 +402,7 @@ class AgentService
 
         $data = [
             'name' => $user->first_name,
-            'code' => $code
+            'code' => $code,
         ];
 
         sendCode($request, new SendCodeData(
@@ -425,21 +426,21 @@ class AgentService
             ->first();
 
         if (! $user) {
-            return $this->error(null, "Invalid code", 400);
+            return $this->error(null, 'Invalid code', 400);
         }
 
-        $cachedOTP = Cache::get('otp_pin_' . $user->id);
+        $cachedOTP = Cache::get('otp_pin_'.$user->id);
 
-        if (!$cachedOTP || $cachedOTP !== $request->code) {
-            return $this->error(null, "Invalid OTP", 400);
+        if (! $cachedOTP || $cachedOTP !== $request->code) {
+            return $this->error(null, 'Invalid OTP', 400);
         }
 
-        Cache::put('pin_change_verified_' . $user->id, true, now()->addMinutes(5));
-        Cache::forget('otp_pin_' . $user->id);
+        Cache::put('pin_change_verified_'.$user->id, true, now()->addMinutes(5));
+        Cache::forget('otp_pin_'.$user->id);
 
         $user->update([
             'verification_code' => 0,
-            'verification_code_expires_at' => null
+            'verification_code_expires_at' => null,
         ]);
 
         return $this->success(null, 'Verified successfully');
@@ -450,10 +451,10 @@ class AgentService
         $user = User::with('userPin')->findOrFail($request->user_id);
 
         $user->userPin()->update([
-            'pin' => bcrypt($request->pin)
+            'pin' => bcrypt($request->pin),
         ]);
 
-        Cache::forget('pin_change_verified_' . $user->id);
+        Cache::forget('pin_change_verified_'.$user->id);
 
         return $this->success(null, 'Changed successfully');
     }
@@ -473,7 +474,7 @@ class AgentService
             })
             ->get();
 
-        return $this->success($users, "Drivers search result");
+        return $this->success($users, 'Drivers search result');
     }
 
     public function impersonateDriver($request)
@@ -482,19 +483,19 @@ class AgentService
         $cacheKey = "impersonation_attempts:driver_{$driverId}";
 
         $driver = User::with(['vehicle'])->where('id', $request->user_id)
-                  ->where('user_category', UserType::DRIVER->value)
-                  ->first();
+            ->where('user_category', UserType::DRIVER->value)
+            ->first();
 
         if (! $driver) {
             return $this->error(null, 'Driver not found', 404);
         }
 
-        if (!Hash::check($request->password, $driver->password)) {
+        if (! Hash::check($request->password, $driver->password)) {
             RateLimiter::hit($cacheKey, 86400);
 
             return $this->error(
                 null,
-                "Invalid password, Attempts left: " . (3 - RateLimiter::attempts($cacheKey)),
+                'Invalid password, Attempts left: '.(3 - RateLimiter::attempts($cacheKey)),
                 401
             );
         }
@@ -512,7 +513,7 @@ class AgentService
     public function createOneTimeTrip($request)
     {
         if ($request->departure_id == $request->destination_id) {
-            return $this->error("Departure and destination cannot be the same", 400);
+            return $this->error('Departure and destination cannot be the same', 400);
         }
 
         try {
@@ -540,7 +541,7 @@ class AgentService
                 'status' => TripStatus::UPCOMING,
             ]);
 
-            return $this->success($trip, "Created successfully", 201);
+            return $this->success($trip, 'Created successfully', 201);
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -549,7 +550,7 @@ class AgentService
     public function createRecurringTrip($request)
     {
         if ($request->departure_id == $request->destination_id) {
-            return $this->error("Departure and destination cannot be the same", 400);
+            return $this->error('Departure and destination cannot be the same', 400);
         }
 
         try {
@@ -564,8 +565,8 @@ class AgentService
             $route = RouteSubregion::with('state')->findOrFail($request->destination_id);
 
             foreach ($request->trip_days as $tripDay) {
-                if (!is_array($tripDay) || !isset($tripDay['day'], $tripDay['time'])) {
-                    return $this->error("Invalid trip_days format. Expected array of {day, time}", 422);
+                if (! is_array($tripDay) || ! isset($tripDay['day'], $tripDay['time'])) {
+                    return $this->error('Invalid trip_days format. Expected array of {day, time}', 422);
                 }
 
                 $day = strtolower($tripDay['day']);
@@ -606,7 +607,7 @@ class AgentService
                 }
             }
 
-            return $this->success(null, "Recurring trips created successfully", 201);
+            return $this->success(null, 'Recurring trips created successfully', 201);
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -617,14 +618,14 @@ class AgentService
         $date = request()->query('date');
         $status = request()->query('status', TripStatus::UPCOMING);
 
-        if (!in_array($status, [
-                TripStatus::UPCOMING,
-                TripStatus::COMPLETED,
-                TripStatus::CANCELLED,
-                TripStatus::INPROGRESS,
-            ]
+        if (! in_array($status, [
+            TripStatus::UPCOMING,
+            TripStatus::COMPLETED,
+            TripStatus::CANCELLED,
+            TripStatus::INPROGRESS,
+        ]
         )) {
-            return $this->error("Invalid status", 400);
+            return $this->error('Invalid status', 400);
         }
 
         $trips = Trip::where('user_id', $userId)
@@ -632,14 +633,14 @@ class AgentService
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when($date, function ($q, $date) {
                 $start = Carbon::parse($date)->startOfDay();
-                $end   = Carbon::parse($date)->endOfDay();
+                $end = Carbon::parse($date)->endOfDay();
                 $q->whereBetween('created_at', [$start, $end]);
             })
             ->paginate(25);
 
         $data = TripResource::collection($trips);
 
-        return $this->withPagination($data, "Trips");
+        return $this->withPagination($data, 'Trips');
     }
 
     public function tripDetails($tripId)
@@ -649,7 +650,8 @@ class AgentService
             ->firstOrFail();
 
         $data = new TripResource($trip);
-        return $this->success($data, "Trip details");
+
+        return $this->success($data, 'Trip details');
     }
 
     public function startTrip($request)
@@ -658,12 +660,12 @@ class AgentService
             ->findOrFail($request->user_id);
 
         $trip = Trip::with(['user', 'tripBookings' => function ($query) {
-                $query->where('payment_status', 1);
-            }, 'manifest', 'departureRegion', 'destinationRegion', 'departureRegion.state', 'destinationRegion.state'])
+            $query->where('payment_status', 1);
+        }, 'manifest', 'departureRegion', 'destinationRegion', 'departureRegion.state', 'destinationRegion.state'])
             ->find($request->trip_id);
 
         if (! $trip) {
-            return $this->error(null, "Trip not found!", 404);
+            return $this->error(null, 'Trip not found!', 404);
         }
 
         if ($trip->status !== TripStatus::UPCOMING) {
@@ -671,14 +673,14 @@ class AgentService
         }
 
         if ($request->payment_method === 'driver_wallet' && $user->wallet_amount < $request->amount) {
-            return $this->error(null, "Insufficient wallet balance!", 400);
+            return $this->error(null, 'Insufficient wallet balance!', 400);
         }
 
         try {
             DB::beginTransaction();
 
             if ($trip->tripBookings->isEmpty()) {
-                return $this->error(null, "No bookings available!", 400);
+                return $this->error(null, 'No bookings available!', 400);
             }
 
             foreach ($trip->tripBookings as $booking) {
@@ -720,11 +722,11 @@ class AgentService
                 body: 'The trip has begun.',
                 data: [
                     'trip_id' => $trip->id,
-                    'type' => 'trip_started'
+                    'type' => 'trip_started',
                 ]
             ));
 
-            return $this->success(null, "Trip Started Successfully", 200);
+            return $this->success(null, 'Trip Started Successfully', 200);
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -734,10 +736,10 @@ class AgentService
                 'amount_charged' => 0,
                 'retry_attempt' => 0,
                 'status' => 'failure',
-                'message' => "Failed to start trip: " . $e->getMessage(),
+                'message' => 'Failed to start trip: '.$e->getMessage(),
             ]);
 
-            return $this->error(null, "Failed to start trip: " . $e->getMessage(), 400);
+            return $this->error(null, 'Failed to start trip: '.$e->getMessage(), 400);
         }
     }
 
@@ -745,8 +747,8 @@ class AgentService
     {
         $user = User::find($request->user_id);
 
-        if (!$user) {
-            return $this->error(null, "User not found", 404);
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
         }
 
         $user->update([
@@ -754,7 +756,7 @@ class AgentService
             'email_notifications' => $request->email_notifications,
         ]);
 
-        return $this->success(null, "Notification settings updated successfully");
+        return $this->success(null, 'Notification settings updated successfully');
     }
 
     public function notifyPassengers($request)
@@ -781,7 +783,7 @@ class AgentService
             ]
         ));
 
-        return $this->success(null, "Notification sent successfully");
+        return $this->success(null, 'Notification sent successfully');
     }
 
     public function scanTicket($request, $bookingId, $seatNo)
@@ -789,33 +791,33 @@ class AgentService
         $ticketId = $bookingId ?? $request->input('booking_id');
         $seatNo = $seatNo ?? $request->input('seat_no');
 
-        if (!$ticketId) {
-            return $this->error(null, "Ticket ID is required", 400);
+        if (! $ticketId) {
+            return $this->error(null, 'Ticket ID is required', 400);
         }
 
-        if (!$seatNo) {
-            return $this->error(null, "Passenger ID is required", 400);
+        if (! $seatNo) {
+            return $this->error(null, 'Passenger ID is required', 400);
         }
 
         $booking = TripBooking::with('tripBookingPassengers')
             ->where('booking_id', $ticketId)
             ->first();
 
-        if (!$booking) {
-            return $this->error(null, "Booking not found", 404);
+        if (! $booking) {
+            return $this->error(null, 'Booking not found', 404);
         }
 
         $passenger = $booking->tripBookingPassengers()
             ->where('selected_seat', $seatNo)
             ->first();
 
-        if (!$passenger) {
-            return $this->error(null, "Passenger not found", 404);
+        if (! $passenger) {
+            return $this->error(null, 'Passenger not found', 404);
         }
 
         $passenger->update(['on_seat' => true]);
 
-        return $this->success(null, "Ticket scanned successfully");
+        return $this->success(null, 'Ticket scanned successfully');
     }
 
     public function validateDriverPin($request)
@@ -823,23 +825,24 @@ class AgentService
         $user = User::with('userPin')->find($request->user_id);
 
         if (! $user) {
-            return $this->error(null, "User not found", 404);
+            return $this->error(null, 'User not found', 404);
         }
 
         if (! $user->userPin) {
             return $this->validatePassword($user, $request);
         }
 
-        $userKey = 'login_attempts:' . $user->id;
-        $blockKey = 'login_blocked:' . $user->id;
+        $userKey = 'login_attempts:'.$user->id;
+        $blockKey = 'login_blocked:'.$user->id;
 
         if (Cache::has($blockKey)) {
-            return $this->error(null, "Too many attempts. Try again later.", 429);
+            return $this->error(null, 'Too many attempts. Try again later.', 429);
         }
 
         if (Hash::check($request->pin, $user?->userPin->pin)) {
             Cache::forget($userKey);
-            return $this->success(null, "Valid credentials");
+
+            return $this->success(null, 'Valid credentials');
         }
 
         $attempts = Cache::increment($userKey);
@@ -851,14 +854,10 @@ class AgentService
         if ($attempts >= 3) {
             Cache::put($blockKey, now()->addMinutes(10)->timestamp, 600);
             Cache::forget($userKey);
-            return $this->error(null, "Too many attempts. You are blocked", 429);
+
+            return $this->error(null, 'Too many attempts. You are blocked', 429);
         }
 
-        return $this->error(null, "Invalid credentials entered.", 400);
+        return $this->error(null, 'Invalid credentials entered.', 400);
     }
 }
-
-
-
-
-

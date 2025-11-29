@@ -26,7 +26,7 @@ class WithdrawalRestriction extends Model
 
     public function appliesToUserType(string $userType): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 

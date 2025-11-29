@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Zone;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class ZonesSeeder extends Seeder
 {
@@ -14,7 +13,7 @@ class ZonesSeeder extends Seeder
      */
     public function run(): void
     {
-        if(Zone::count() === 0){
+        if (Zone::count() === 0) {
             DB::table('zones')->insert([
                 ['name' => 'north-east'],
                 ['name' => 'north-west'],

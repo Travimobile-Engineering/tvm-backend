@@ -25,7 +25,7 @@ class DriverInfoRequest extends FormRequest
             'user_id' => 'required|exists:users,id',
             'agent_id' => 'nullable|integer|exists:users,id',
             'transit_company_union_id' => 'required|integer',
-            'vehicle_year' => 'required|integer|min:1900|max:' . now()->year,
+            'vehicle_year' => 'required|integer|min:1900|max:'.now()->year,
             'vehicle_model' => 'required|string',
             'vehicle_color' => 'required|string',
             'plate_number' => 'required|string',
@@ -43,7 +43,7 @@ class DriverInfoRequest extends FormRequest
             'seats' => 'required',
             'seat_row' => 'required',
             'seat_column' => 'required',
-            'union_states_chapter' => 'required|integer|exists:states,id'
+            'union_states_chapter' => 'required|integer|exists:states,id',
         ];
     }
 }

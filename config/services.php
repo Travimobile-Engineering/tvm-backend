@@ -41,7 +41,7 @@ return [
         'redirect' => env('GOOGLE_REDIRECT'),
     ],
 
-    'paystack_base_url' => "https://api.paystack.co/bank",
+    'paystack_base_url' => 'https://api.paystack.co/bank',
 
     'sms' => [
         'default' => env('SMS_PROVIDER', 'termii'),
@@ -52,7 +52,7 @@ return [
         'api_key' => env('AFRICASTALKING_API_KEY'),
         'sender_id' => env('AFRICASTALKING_SENDER_ID'),
         'senderId' => env('AFRICASTALKING_SENDER_ID'),
-        'url' => "https://api.africastalking.com/version1/messaging/bulk",
+        'url' => 'https://api.africastalking.com/version1/messaging/bulk',
     ],
 
     'termii' => [
@@ -67,4 +67,10 @@ return [
         'endpoint_key' => env('IMAGEKIT_URL_ENDPOINT'),
     ],
 
+    'payment' => [
+        'api_key' => env('TRAVI_PAYMENT_KEY'),
+        'api_secret' => env('TRAVI_PAYMENT_SECRET'),
+        'header_value' => env('TRAVI_PAYMENT_HEADER_VALUE'),
+        'url' => env('TRAVI_PAYMENT_URL'),
+    ],
 ];

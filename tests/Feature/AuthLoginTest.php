@@ -6,7 +6,6 @@ use App\Enum\UserStatus;
 use App\Enum\UserType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -14,9 +13,10 @@ use Tests\TestCase;
 class AuthLoginTest extends TestCase
 {
     use RefreshDatabase;
+
     protected array $headers;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -48,7 +48,7 @@ class AuthLoginTest extends TestCase
                 'data' => [
                     'token',
                     'user' => ['id', 'email', 'user_category'],
-                ]
+                ],
             ]);
     }
 
@@ -93,8 +93,8 @@ class AuthLoginTest extends TestCase
         ], $this->headers);
 
         $response->assertStatus(400)
-                 ->assertJsonFragment([
-                    'message' => 'Email has not been verified!',
-                 ]);
+            ->assertJsonFragment([
+                'message' => 'Email has not been verified!',
+            ]);
     }
 }

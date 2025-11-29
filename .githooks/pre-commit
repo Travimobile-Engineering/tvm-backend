@@ -1,0 +1,8 @@
+#!/bin/sh
+# Run Laravel Pint and automatically add changes before committing
+
+echo "Running Laravel Pint..."
+./vendor/bin/pint
+
+# Stage any Pint changes
+git add -A

@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -23,9 +22,9 @@ class RoutesSeeder extends Seeder
             ['name' => 'Kanu'],
             ['name' => 'Ogun'],
             ['name' => 'Delta'],
-            ['name' => 'Ekiti']
+            ['name' => 'Ekiti'],
         ]);
-        
+
         DB::table('route_subregions')->insert([
             ['state_id' => 33, 'name' => 'Waterline'],
             ['state_id' => 33, 'name' => 'Rumuokoro'],
@@ -38,7 +37,7 @@ class RoutesSeeder extends Seeder
             ['state_id' => 33, 'name' => 'Bonny'],
             ['state_id' => 33, 'name' => 'Ahoada East'],
             ['state_id' => 33, 'name' => 'Ahoada West'],
-            
+
             ['state_id' => 25, 'name' => 'Lekki'],
             ['state_id' => 25, 'name' => 'Maryland'],
             ['state_id' => 25, 'name' => 'Ikeja'],
@@ -52,7 +51,6 @@ class RoutesSeeder extends Seeder
             ['state_id' => 15, 'name' => 'Nyanya'],
 
         ]);
-
 
         DB::table('covered_routes')->insert([
 

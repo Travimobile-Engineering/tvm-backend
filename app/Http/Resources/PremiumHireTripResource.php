@@ -16,13 +16,13 @@ class PremiumHireTripResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user' => (object)[
+            'user' => (object) [
                 'id' => $this->user?->id,
-                'name' => $this->user?->first_name . ' ' . $this->user?->last_name,
+                'name' => $this->user?->first_name.' '.$this->user?->last_name,
                 'email' => $this->user?->email,
                 'phone_number' => $this->user?->phone_number,
             ],
-            'vehicle' => (object)[
+            'vehicle' => (object) [
                 'id' => $this->vehicle_id,
                 'model' => $this->vehicle->model,
                 'image' => $this->vehicle->vehicleImages()->value('url'),
@@ -51,7 +51,7 @@ class PremiumHireTripResource extends JsonResource
             'reason' => $this->reason,
             'cancelled_on' => $this->reason ? $this->updated_at->format('j F, Y') : null,
             'manifest_fee' => getFee('manifest'),
-            'status' => $this->status
+            'status' => $this->status,
         ];
     }
 }

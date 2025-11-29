@@ -7,19 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 class WatchList extends Model
 {
     protected $fillable = [
-        "full_name",
-        "category",
-        "phone",
-        "email",
-        "dob",
-        "state_of_origin",
-        "nin",
-        "investigation_officer",
-        "io_contact_number",
-        "state_id",
-        "city",
-        "reason",
-        "photo_url",
-        "documents",
+        'full_name',
+        'category',
+        'phone',
+        'email',
+        'dob',
+        'state_of_origin',
+        'nin',
+        'investigation_officer',
+        'io_contact_number',
+        'state_id',
+        'city',
+        'reason',
+        'photo_url',
+        'documents',
     ];
 }
