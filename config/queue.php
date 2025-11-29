@@ -72,27 +72,34 @@ return [
             'after_commit' => false,
         ],
 
-        'connections' => [
-            'rabbitmq' => [
-                'driver' => 'rabbitmq',
-                'host' => env('RABBITMQ_HOST', '127.0.0.1'),
-                'port' => env('RABBITMQ_PORT', 5672),
-                'vhost' => env('RABBITMQ_VHOST', '/'),
-                'login' => env('RABBITMQ_LOGIN', 'guest'),
-                'password' => env('RABBITMQ_PASSWORD', 'guest'),
-                'queue' => env('RABBITMQ_QUEUE', 'default'),
-                'options' => [
-                    'ssl_options' => [
-                        'cafile' => env('RABBITMQ_SSL_CAFILE', null),
-                        'local_cert' => env('RABBITMQ_SSL_LOCALCERT', null),
-                        'local_key' => env('RABBITMQ_SSL_LOCALKEY', null),
-                        'verify_peer' => env('RABBITMQ_SSL_VERIFY_PEER', true),
-                        'passphrase' => env('RABBITMQ_SSL_PASSPHRASE', null),
-                    ],
-                    'queue' => [
-                        'job' => VladimirYuldashev\LaravelQueueRabbitMQ\Queue\Jobs\RabbitMQJob::class,
-                    ],
+        'rabbitmq' => [
+            'driver' => 'rabbitmq',
+            'host' => env('RABBITMQ_HOST', '127.0.0.1'),
+            'port' => env('RABBITMQ_PORT', 5672),
+            'vhost' => env('RABBITMQ_VHOST', '/'),
+            'login' => env('RABBITMQ_LOGIN', 'guest'),
+            'password' => env('RABBITMQ_PASSWORD', 'guest'),
+            'queue' => env('RABBITMQ_QUEUE', 'default'),
+            'options' => [
+                'ssl_options' => [
+                    'cafile' => env('RABBITMQ_SSL_CAFILE', null),
+                    'local_cert' => env('RABBITMQ_SSL_LOCALCERT', null),
+                    'local_key' => env('RABBITMQ_SSL_LOCALKEY', null),
+                    'verify_peer' => env('RABBITMQ_SSL_VERIFY_PEER', true),
+                    'passphrase' => env('RABBITMQ_SSL_PASSPHRASE', null),
                 ],
+                'queue' => [
+                    'job' => VladimirYuldashev\LaravelQueueRabbitMQ\Queue\Jobs\RabbitMQJob::class,
+                ],
+            ],
+        ],
+
+        'failover' => [
+            'driver' => 'failover',
+            'connections' => [
+                'database',
+                'rabbitmq',
+                'sync',
             ],
         ],
 

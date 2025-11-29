@@ -27,7 +27,6 @@ class ProcessMail implements ShouldQueue
     {
         $email = Mailing::where('id', $this->mailingId)
             ->where('status', MailingEnum::PENDING)
-            ->where('attempts', '<', 3)
             ->first();
 
         if (! $email) {
@@ -46,15 +45,12 @@ class ProcessMail implements ShouldQueue
             $email->update(['status' => MailingEnum::SENT]);
 
         } catch (\Exception $e) {
-            Log::error('Email failed to send: '.$e->getMessage());
             $email->increment('attempts');
 
-            if ($email->attempts >= $email->max_attempts) {
-                $email->update([
-                    'status' => MailingEnum::FAILED,
-                    'error_response' => $e->getMessage(),
-                ]);
-            }
+            $email->update([
+                'status' => MailingEnum::FAILED,
+                'error_response' => $e->getMessage()
+            ]);
         }
     }
 }
