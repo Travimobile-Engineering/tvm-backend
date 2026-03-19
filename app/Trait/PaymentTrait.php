@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\Vehicle\Vehicle;
 use App\Services\ERP\ChargeService;
 use App\Services\Notification\NotificationDispatcher;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 trait PaymentTrait
@@ -327,7 +328,7 @@ trait PaymentTrait
     private function notifyUserBooking(User $user, Trip $trip, string $bookingId): void
     {
         $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
-        $date = \Carbon\Carbon::parse($trip->departure_date)->format('Y-m-d');
+        $date = Carbon::parse($trip->departure_date)->format('Y-m-d');
         $time = $trip->departure_time;
         $description = "Your bus ticket to {$destination} on {$date} {$time} has been successfully booked";
 

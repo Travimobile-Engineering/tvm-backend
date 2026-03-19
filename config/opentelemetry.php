@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Str;
 use Keepsuit\LaravelOpenTelemetry\Instrumentation;
 use OpenTelemetry\SDK\Common\Configuration\Variables;
 
@@ -7,7 +8,7 @@ return [
     /**
      * Service name
      */
-    'service_name' => env(Variables::OTEL_SERVICE_NAME, \Illuminate\Support\Str::slug((string) env('APP_NAME', 'laravel-app'))),
+    'service_name' => env(Variables::OTEL_SERVICE_NAME, Str::slug((string) env('APP_NAME', 'laravel-app'))),
 
     /**
      * Comma separated list of propagators to use.

@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\RouteRegion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RouteRegion>
+ * @extends Factory<RouteRegion>
  */
 class RouteRegionFactory extends Factory
 {

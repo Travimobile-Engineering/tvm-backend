@@ -4,10 +4,11 @@ namespace Database\Factories\Vehicle;
 
 use App\Models\TransitCompany;
 use App\Models\User;
+use App\Models\Vehicle\Vehicle;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Vehicle\Vehicle>
+ * @extends Factory<Vehicle>
  */
 class VehicleFactory extends Factory
 {

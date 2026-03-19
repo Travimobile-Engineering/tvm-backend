@@ -4,12 +4,13 @@ namespace Database\Factories;
 
 use App\Models\RouteSubregion;
 use App\Models\TransitCompany;
+use App\Models\Trip;
 use App\Models\User;
 use App\Models\Vehicle\Vehicle;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Trip>
+ * @extends Factory<Trip>
  */
 class TripFactory extends Factory
 {

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Trait\HttpResponse;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -74,7 +75,7 @@ class TransactionReplayShield
         $row = DB::table('tx_replay_guards')->where('key', $sig)->first();
 
         if ($row) {
-            $rowExp = \Carbon\Carbon::parse($row->expires_at);
+            $rowExp = Carbon::parse($row->expires_at);
 
             if ($rowExp->lte($now)) {
                 // Expired → atomically reclaim so new request can proceed

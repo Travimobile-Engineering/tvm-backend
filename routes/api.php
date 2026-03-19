@@ -49,7 +49,7 @@ Route::post('/seed/run', function () {
             'message' => "{$seederClass} executed successfully.",
             'output' => Artisan::output(),
         ]);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         return response()->json([
             'error' => 'Seeder failed to run.',
             'details' => $e->getMessage(),
