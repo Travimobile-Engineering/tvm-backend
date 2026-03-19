@@ -35,7 +35,8 @@ class WalletService
     protected $user;
 
     public function __construct(
-        protected NotificationDispatcher $notifier
+        protected NotificationDispatcher $notifier,
+        protected HttpService $httpService
     ) {
         $this->user = JWTAuth::user();
     }
@@ -237,8 +238,8 @@ class WalletService
 
             $recipientData = PaystackService::createRecipient($fields);
 
-            if ($recipientData === null && ! isset($recipientData['data'])) {
-                return $this->error(null, 'Unexpected error occured, try again later.', 400);
+            if (! $recipientData['status']) {
+                return $this->error(null, $recipientData['message'], 400);
             }
 
             if (empty($user->userPin)) {
@@ -278,13 +279,6 @@ class WalletService
         $user = User::with(['userBank', 'userPin', 'userTransferReceipient'])
             ->findOrFail($request->user_id);
 
-        $user->userBank()->update([
-            'bank_name' => $request->bank_name,
-            'account_number' => $request->account_number,
-            'account_name' => $request->account_name,
-            'is_default' => true,
-        ]);
-
         $bank = Bank::where([
             'name' => $request->bank_name,
         ])->first();
@@ -301,7 +295,20 @@ class WalletService
             'currency' => $bank->currency,
         ];
 
-        PaystackService::createRecipient($user, $fields);
+        $recipientData = PaystackService::createRecipient($fields);
+
+        if (! $recipientData['status']) {
+            return $this->error(null, $recipientData['message'], 400);
+        }
+
+        $user->userBank()->update([
+            'bank_name' => $request->bank_name,
+            'account_number' => $request->account_number,
+            'account_name' => $request->account_name,
+            'is_default' => true,
+            'recipient_code' => $recipientData['data']['recipient_code'],
+            'data' => $recipientData['data'],
+        ]);
 
         return $this->success(null, 'Created successfully', 201);
     }
@@ -558,9 +565,6 @@ class WalletService
 
     public function walletTopUp($request)
     {
-        $url = config('services.payment.url').'/paystack/initialize';
-        $service = app(HttpService::class);
-
         User::findOrFail($request->input('user_id'));
 
         $amount = $request->input('amount') * 100;
@@ -573,26 +577,29 @@ class WalletService
         $paymentDetails = [
             'email' => $request->input('email') ?? 'hello@email.com',
             'amount' => $amount,
+            'currency' => 'NGN',
             'metadata' => json_encode([
                 'user_id' => $request->input('user_id'),
                 'payment_type' => PaymentType::FUND_WALLET,
+                'service' => 'transport',
             ]),
             'payment_method' => 'paystack',
             'callback_url' => (string) trim($request->input('redirect_url')),
         ];
 
         try {
-            $response = $service->post(
+            $url = config('services.payment.url').'/paystack/initialize';
+            $response = $this->httpService->post(
                 $url,
                 new RequestOptions(
                     data: $paymentDetails
                 )
             );
 
-            if (! in_array($response->status(), [201, 200])) {
+            if ($response->failed()) {
                 return [
                     'status' => false,
-                    'message' => 'Failed',
+                    'message' => $response['message'] ?? 'Failed to initialize payment',
                     'data' => null,
                 ];
             }

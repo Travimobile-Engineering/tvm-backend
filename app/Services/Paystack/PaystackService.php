@@ -32,10 +32,10 @@ class PaystackService
                 )
             );
 
-            if ($response->status() !== 200) {
+            if ($response->failed()) {
                 return [
                     'status' => false,
-                    'message' => 'Failed',
+                    'message' => $response['message'] ?? 'Failed to create recipient',
                     'data' => null,
                 ];
             }
@@ -43,6 +43,12 @@ class PaystackService
             return $response->json();
         } catch (\Exception $e) {
             logger()->info("Error: {$e->getMessage()}");
+
+            return [
+                'status' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+            ];
         }
     }
 

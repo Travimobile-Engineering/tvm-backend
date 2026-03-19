@@ -147,24 +147,36 @@ class AgentService
 
     public function buyTicket($request)
     {
-        $user = authUser();
+        $authUser = authUser();
         $amount_paid = $request->amount_paid;
         $result = null;
         $paymentProcessor = null;
-        $suspend = true;
 
-        $user = User::with(['transactions', 'walletAccount'])->findOrFail($user->id);
+        $user = User::with(['transactions', 'walletAccount'])->findOrFail($authUser->id);
 
         if ($user->user_category == UserType::AGENT->value && $user->wallet_balance < 1000) {
             return $this->error(null, 'Your wallet balance must be at least 1000 to make a booking', 400);
         }
 
-        if (app()->environment('production') && $suspend) {
-            return $this->error(null, 'Booking has been temporarily suspended', 400);
+        $chargeAmount = 0;
+
+        // Charge agent for booking
+        if ($user->user_category == UserType::AGENT->value) {
+            $charges = $request->charges;
+
+            if (! $charges || ! isset($charges['Admin Charges'])) {
+                return $this->error(null, 'Charges not found', 400);
+            }
+
+            if ($charges['Admin Charges'] == 0) {
+                return $this->error(null, 'Admin charges cannot be zero', 400);
+            }
+
+            $chargeAmount = $charges['Admin Charges'];
         }
 
         match ($request->payment_method) {
-            PaymentMethod::WALLET => $result = $this->walletPayment($amount_paid, $request, $user),
+            PaymentMethod::WALLET => $result = $this->walletPayment($amount_paid, $request, $user, $chargeAmount),
             default => throw new \Exception('Invalid payment method'),
         };
 

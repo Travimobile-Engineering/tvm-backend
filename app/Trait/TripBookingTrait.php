@@ -2,6 +2,7 @@
 
 namespace App\Trait;
 
+use App\DTO\CreateBookingLogPaymentData;
 use App\DTO\NotificationDispatchData;
 use App\Enum\ChargeType;
 use App\Enum\PaymentMethod;
@@ -70,7 +71,7 @@ trait TripBookingTrait
         }
     }
 
-    protected function walletPayment($amount_paid, $request, $user)
+    protected function walletPayment($amount_paid, $request, $user, $chargeAmount = 0)
     {
         $validationResponse = $this->validatePayment($request, $amount_paid, $user);
         if ($validationResponse) {
@@ -82,7 +83,7 @@ trait TripBookingTrait
             return $trip;
         }
 
-        return $this->processPaymentTransaction($amount_paid, $request, $user);
+        return $this->processPaymentTransaction($amount_paid, $request, $user, $chargeAmount);
     }
 
     protected function validatePayment($request, $amount_paid, $user)
@@ -108,7 +109,7 @@ trait TripBookingTrait
         return null;
     }
 
-    protected function processPaymentTransaction($amount_paid, $request, $user)
+    protected function processPaymentTransaction($amount_paid, $request, $user, $chargeAmount)
     {
         try {
             DB::beginTransaction();
@@ -131,7 +132,16 @@ trait TripBookingTrait
             $this->updateUserWallet($amount_paid, $user);
 
             // Create Booking and Log Payment
-            $bookingData = $this->createBookingAndLogPayment($request, $passenger, $user, $amount_paid, $getTrip);
+            $bookingData = $this->createBookingAndLogPayment(
+                new CreateBookingLogPaymentData(
+                    request: $request,
+                    passenger: $passenger,
+                    user: $user,
+                    amountPaid: $amount_paid,
+                    trip: $getTrip,
+                    chargeAmount: $chargeAmount
+                )
+            );
 
             // Send Notifications
             $data = $this->sendBookingNotification($user, $bookingData['booking_id'], $getTrip, $bookingData['ref']);
@@ -168,9 +178,13 @@ trait TripBookingTrait
         }
     }
 
-    protected function createBookingAndLogPayment($request, $passUser, $user, $amount_paid, $trip)
+    protected function createBookingAndLogPayment(CreateBookingLogPaymentData $data)
     {
-        $this->userDecrementBalance($user, $amount_paid);
+        $amount = $data->user->user_category == UserType::AGENT->value
+            ? $data->chargeAmount
+            : $data->amountPaid;
+
+        $this->userDecrementBalance($data->user, $amount);
 
         do {
             $booking_id = getRandomNumber();
@@ -178,10 +192,10 @@ trait TripBookingTrait
 
         $ref = getRandomString();
 
-        $paymentLog = $this->walletPaymentLog($user, $request, $amount_paid, $ref, PaymentType::TRIP_BOOKING);
+        $paymentLog = $this->walletPaymentLog($data->user, $data->request, $amount, $ref, PaymentType::TRIP_BOOKING);
 
-        $selectedSeats = explode(',', str_replace(' ', '', $request->selected_seat));
-        $travellingWith = collect($request->travelling_with)->filter(function ($passenger) {
+        $selectedSeats = explode(',', str_replace(' ', '', $data->request->selected_seat));
+        $travellingWith = collect($data->request->travelling_with)->filter(function ($passenger) {
             return ! empty($passenger['name']) || ! empty($passenger['email']) || ! empty($passenger['phone_number']) || ! empty($passenger['gender']);
         })->values();
 
@@ -192,53 +206,54 @@ trait TripBookingTrait
         $passengers = collect($travellingWith ?? []);
 
         $passengers->prepend([
-            'name' => "{$passUser->first_name } {$passUser->last_name}",
-            'email' => $passUser->email,
-            'phone_number' => $passUser->phone_number,
-            'gender' => $passUser->gender ?? 'unknown',
-            'next_of_kin' => $passUser->next_of_kin_full_name ?? null,
-            'next_of_kin_phone_number' => $passUser->next_of_kin_phone_number ?? null,
+            'name' => "{$data->user->first_name } {$data->user->last_name}",
+            'email' => $data->user->email,
+            'phone_number' => $data->user->phone_number,
+            'gender' => $data->user->gender ?? 'unknown',
+            'next_of_kin' => $data->user->next_of_kin_full_name ?? null,
+            'next_of_kin_phone_number' => $data->user->next_of_kin_phone_number ?? null,
         ]);
 
-        $data = [
+        $bookingData = [
             'booking_id' => $booking_id,
             'payment_log_id' => $paymentLog->id,
-            'trip_id' => $trip->id,
-            'user_id' => $request->user_id ?? $user->id,
-            'agent_id' => $user->user_category == UserType::AGENT->value ? $user->id : null,
-            'third_party_booking' => $request->third_party_booking ?? 0,
+            'trip_id' => $data->trip->id,
+            'user_id' => $data->request->user_id ?? $data->user->id,
+            'agent_id' => $data->user->user_category == UserType::AGENT->value ? $data->user->id : null,
+            'third_party_booking' => $data->request->third_party_booking ?? 0,
             'selected_seat' => $selectedSeats,
-            'trip_type' => $request->trip_type,
+            'trip_type' => $data->request->trip_type,
             'travelling_with' => $travellingWith,
-            'third_party_passenger_details' => $request->third_party_booking === 1 ? $request->third_party_passenger_details : null,
-            'amount_paid' => $amount_paid ?? 0,
-            'payment_method' => $request->payment_method ?? '',
+            'third_party_passenger_details' => $data->request->third_party_booking === 1 ? $data->request->third_party_passenger_details : null,
+            'amount_paid' => $data->amountPaid ?? 0,
+            'payment_method' => $data->request->payment_method ?? '',
             'payment_status' => 1,
-            'receive_sms' => $request->receive_sms ?? 0,
-            'passengers' => $passengers,
-            'user' => $user,
-            'request' => $request,
+            'receive_sms' => $data->request->receive_sms ?? 0,
+            'passengers' => $passengers->toArray(),
+            'user' => $data->user,
+            'request' => $data->request,
         ];
 
-        $this->createBooking($data);
+        $this->createBooking($bookingData);
 
-        $trip->user->driverTripPayments()->create([
-            'user_id' => $user->id,
-            'trip_id' => $request->trip_id,
-            'title' => TransactionTitle::TRIP_BOOKING->value,
-            'amount' => $amount_paid,
-            'status' => PaymentStatus::PENDING->value,
-        ]);
+        if ($data->user->user_category == UserType::PASSENGER->value) {
+            // Disabled for now
+            // $this->driverIncrementEarning($trip->user, $amount_paid);
+            $data->trip->user->driverTripPayments()->create([
+                'user_id' => $data->user->id,
+                'trip_id' => $data->trip->id,
+                'title' => TransactionTitle::TRIP_BOOKING->value,
+                'amount' => $data->amountPaid,
+                'status' => PaymentStatus::PENDING->value,
+            ]);
+        }
 
-        $user->transactions()->create([
+        $data->user->transactions()->create([
             'title' => TransactionTitle::TRIP_BOOKING->value,
-            'amount' => $amount_paid,
+            'amount' => $amount,
             'type' => 'DR',
             'txn_reference' => 'wallet',
         ]);
-
-        // Disabled for now
-        // $this->driverIncrementEarning($trip->user, $amount_paid);
 
         return [
             'booking_id' => $booking_id,
