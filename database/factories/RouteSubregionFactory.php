@@ -3,11 +3,12 @@
 namespace Database\Factories;
 
 use App\Models\RouteRegion;
+use App\Models\RouteSubregion;
 use App\Models\State;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RouteSubregion>
+ * @extends Factory<RouteSubregion>
  */
 class RouteSubregionFactory extends Factory
 {

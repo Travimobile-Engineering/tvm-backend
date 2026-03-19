@@ -479,7 +479,7 @@ class WalletService
         try {
             DB::transaction(function () use ($user, $request, $charges) {
                 // Lock wallet row and re-read fresh
-                /** @var \App\Models\Wallet $wallet */
+                /** @var Wallet $wallet */
                 $wallet = $user->walletAccount()->lockForUpdate()->firstOrFail();
 
                 $totalDeduction = $request->amount + $charges[ChargeType::ADMIN->value];

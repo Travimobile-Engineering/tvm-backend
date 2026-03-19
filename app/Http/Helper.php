@@ -13,6 +13,7 @@ use App\Models\Mailing;
 use App\Models\User;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -86,7 +87,7 @@ if (! function_exists('deleteOldFile')) {
 
         try {
             if (preg_match('/^[a-f0-9]{24}$/', $publicId)) {
-                $imageKit = new \ImageKit\ImageKit(
+                $imageKit = new ImageKit(
                     config('services.imagekit.public_key'),
                     config('services.imagekit.private_key'),
                     config('services.imagekit.endpoint_key')
@@ -95,7 +96,7 @@ if (! function_exists('deleteOldFile')) {
             } else {
                 Cloudinary::destroy($publicId);
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error("Failed to delete file: {$e->getMessage()}");
         }
     }
@@ -115,7 +116,7 @@ if (! function_exists('uploadFile')) {
                     'url' => $image->getSecurePath(),
                     'public_id' => $image->getPublicId(),
                 ];
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 return uploadToImageKit($file, $folder);
             }
         }
@@ -141,7 +142,7 @@ if (! function_exists('uploadFilesBatches')) {
                         'url' => $image->getSecurePath(),
                         'public_id' => $image->getPublicId(),
                     ];
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     $results[$key] = uploadToImageKit($file, $folder);
                 }
             } else {
@@ -159,7 +160,7 @@ if (! function_exists('uploadFilesBatch')) {
         $results = [];
 
         foreach ($files as $file) {
-            if (! ($file instanceof \Illuminate\Http\UploadedFile)) {
+            if (! ($file instanceof UploadedFile)) {
                 continue;
             }
 
@@ -173,7 +174,7 @@ if (! function_exists('uploadFilesBatch')) {
                     'url' => $image->getSecurePath(),
                     'public_id' => $image->getPublicId(),
                 ];
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $results[] = uploadToImageKit($file, $folder);
             }
         }
@@ -369,7 +370,7 @@ if (! function_exists('sendCode')) {
         if (isset($channels[$method])) {
             $channels[$method]();
         } else {
-            throw new \InvalidArgumentException("Unsupported method: {$method}");
+            throw new InvalidArgumentException("Unsupported method: {$method}");
         }
     }
 }
@@ -532,7 +533,7 @@ if (! function_exists('commissionValue')) {
                 ->value('percentage');
 
             return $percentage ?? $commissionRole->value;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $commissionRole->value;
         }
     }

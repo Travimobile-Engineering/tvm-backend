@@ -27,7 +27,7 @@ class NotificationDispatcher
         foreach ($users as $user) {
             $tokens = [];
 
-            if (! empty($user->fcm_token)) {
+            if (filled($user->fcm_token)) {
                 $tokens = [$user->fcm_token];
             }
 

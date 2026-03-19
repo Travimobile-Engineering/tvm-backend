@@ -3,10 +3,11 @@
 namespace Database\Factories;
 
 use App\Models\TripBooking;
+use App\Models\TripBookingPassenger;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\TripBookingPassenger>
+ * @extends Factory<TripBookingPassenger>
  */
 class TripBookingPassengerFactory extends Factory
 {

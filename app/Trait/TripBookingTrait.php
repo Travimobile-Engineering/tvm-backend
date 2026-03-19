@@ -20,6 +20,7 @@ use App\Services\ERP\ChargeService;
 use App\Services\Notification\NotificationDispatcher;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -270,7 +271,7 @@ trait TripBookingTrait
     protected function sendBookingNotification($user, $booking_id, $trip, $ref)
     {
         $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
-        $date = \Carbon\Carbon::parse($trip->departure_date)->format('Y-m-d');
+        $date = Carbon::parse($trip->departure_date)->format('Y-m-d');
         $time = $trip->departure_time;
         $description = "Your bus ticket to {$destination} on {$date} {$time} has been successfully booked";
 

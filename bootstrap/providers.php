@@ -1,7 +1,11 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\RouteServiceProvider;
+use Unicodeveloper\Paystack\PaystackServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\RouteServiceProvider::class,
-    Unicodeveloper\Paystack\PaystackServiceProvider::class,
+    AppServiceProvider::class,
+    RouteServiceProvider::class,
+    PaystackServiceProvider::class,
 ];
