@@ -3,12 +3,13 @@
 namespace Database\Factories;
 
 use App\Models\State;
+use App\Models\TransitCompany;
 use App\Models\TransitCompanyUnion;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\TransitCompany>
+ * @extends Factory<TransitCompany>
  */
 class TransitCompanyFactory extends Factory
 {

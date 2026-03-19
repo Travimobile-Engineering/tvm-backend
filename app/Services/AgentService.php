@@ -164,18 +164,18 @@ class AgentService
         if ($user->user_category == UserType::AGENT->value) {
             $charges = $request->charges;
 
-            if (!$charges || !isset($charges['Admin Charges'])) {
-                return $this->error(null, "Charges not found", 400);
+            if (! $charges || ! isset($charges['Admin Charges'])) {
+                return $this->error(null, 'Charges not found', 400);
             }
 
             if ($charges['Admin Charges'] == 0) {
-                return $this->error(null, "Admin charges cannot be zero", 400);
+                return $this->error(null, 'Admin charges cannot be zero', 400);
             }
 
             $chargeAmount = $charges['Admin Charges'];
         }
 
-        match($request->payment_method) {
+        match ($request->payment_method) {
             PaymentMethod::WALLET => $result = $this->walletPayment($amount_paid, $request, $user, $chargeAmount),
             default => throw new \Exception('Invalid payment method'),
         };

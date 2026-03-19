@@ -54,7 +54,7 @@ class MailingService
                 } catch (\Exception $e) {
                     logger()->error('Email failed to send: '.$e->getMessage());
 
-                    //$email->increment('attempts');
+                    // $email->increment('attempts');
                     $email->update([
                         'status' => MailingEnum::FAILED,
                         'error_response' => $e->getMessage(),

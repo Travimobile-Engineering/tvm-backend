@@ -49,7 +49,7 @@ class ProcessMail implements ShouldQueue
 
             $email->update([
                 'status' => MailingEnum::FAILED,
-                'error_response' => $e->getMessage()
+                'error_response' => $e->getMessage(),
             ]);
         }
     }

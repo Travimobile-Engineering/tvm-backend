@@ -49,7 +49,7 @@ Route::post('/seed/run', function () {
             'message' => "{$seederClass} executed successfully.",
             'output' => Artisan::output(),
         ]);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         return response()->json([
             'error' => 'Seeder failed to run.',
             'details' => $e->getMessage(),
@@ -60,11 +60,11 @@ Route::post('/seed/run', function () {
 Route::get('/', fn () => response('Welcome to the API', 200));
 
 Route::resource('transport-route-management', TransportRouteManagementController::class);
-Route::prefix('npis/event')
+Route::prefix('npis')
     ->controller(NpisController::class)
     ->group(function () {
+        Route::post('/event/create', 'createEvent');
         Route::get('/', 'getEvents');
-        Route::post('/create', 'createEvent');
         Route::get('/{id}', 'getEvent');
     });
 

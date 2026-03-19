@@ -1,5 +1,7 @@
 <?php
 
+use VladimirYuldashev\LaravelQueueRabbitMQ\Queue\Jobs\RabbitMQJob;
+
 return [
 
     /*
@@ -89,7 +91,7 @@ return [
                     'passphrase' => env('RABBITMQ_SSL_PASSPHRASE', null),
                 ],
                 'queue' => [
-                    'job' => VladimirYuldashev\LaravelQueueRabbitMQ\Queue\Jobs\RabbitMQJob::class,
+                    'job' => RabbitMQJob::class,
                 ],
             ],
         ],

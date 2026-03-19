@@ -3,26 +3,28 @@
 namespace App\Trait;
 
 use App\DTO\CreateBookingLogPaymentData;
-use App\Models\Trip;
-use App\Models\User;
-use App\Enum\UserType;
+use App\DTO\NotificationDispatchData;
 use App\Enum\ChargeType;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
 use App\Enum\PaymentType;
 use App\Enum\TransactionTitle;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use App\Services\ERP\ChargeService;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use App\DTO\NotificationDispatchData;
+use App\Enum\TripStatus;
+use App\Enum\UserType;
+use App\Models\Notification;
+use App\Models\Trip;
+use App\Models\TripBooking;
+use App\Models\User;
 use App\Services\ERP\AgentCommissionService;
 use App\Services\ERP\ChargeService;
 use App\Services\Notification\NotificationDispatcher;
 use App\Services\Payment\HandlePaymentService;
 use App\Services\Payment\PaymentDetailService;
-use App\Services\Notification\NotificationDispatcher;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 trait TripBookingTrait
 {
@@ -195,7 +197,7 @@ trait TripBookingTrait
 
         $selectedSeats = explode(',', str_replace(' ', '', $data->request->selected_seat));
         $travellingWith = collect($data->request->travelling_with)->filter(function ($passenger) {
-            return !empty($passenger['name']) || !empty($passenger['email']) || !empty($passenger['phone_number']) || !empty($passenger['gender']);
+            return ! empty($passenger['name']) || ! empty($passenger['email']) || ! empty($passenger['phone_number']) || ! empty($passenger['gender']);
         })->values();
 
         if ($travellingWith->isEmpty()) {
@@ -237,7 +239,7 @@ trait TripBookingTrait
 
         if ($data->user->user_category == UserType::PASSENGER->value) {
             // Disabled for now
-            //$this->driverIncrementEarning($trip->user, $amount_paid);
+            // $this->driverIncrementEarning($trip->user, $amount_paid);
             $data->trip->user->driverTripPayments()->create([
                 'user_id' => $data->user->id,
                 'trip_id' => $data->trip->id,
@@ -250,8 +252,8 @@ trait TripBookingTrait
         $data->user->transactions()->create([
             'title' => TransactionTitle::TRIP_BOOKING->value,
             'amount' => $amount,
-            'type' => "DR",
-            'txn_reference' => "wallet"
+            'type' => 'DR',
+            'txn_reference' => 'wallet',
         ]);
 
         return [
@@ -269,7 +271,7 @@ trait TripBookingTrait
     protected function sendBookingNotification($user, $booking_id, $trip, $ref)
     {
         $destination = "{$trip->destinationRegion?->state?->name} > {$trip->destinationRegion?->name}";
-        $date = \Carbon\Carbon::parse($trip->departure_date)->format('Y-m-d');
+        $date = Carbon::parse($trip->departure_date)->format('Y-m-d');
         $time = $trip->departure_time;
         $description = "Your bus ticket to {$destination} on {$date} {$time} has been successfully booked";
 

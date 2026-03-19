@@ -24,10 +24,10 @@ class PaystackPaymentProcessor implements Payment
                 )
             );
 
-            if (! in_array($response->status(), [201, 200])) {
+            if ($response->failed()) {
                 return [
                     'status' => false,
-                    'message' => 'Failed',
+                    'message' => $response['message'] ?? 'Failed to initialize payment',
                     'data' => null,
                 ];
             }

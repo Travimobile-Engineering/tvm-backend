@@ -1,10 +1,20 @@
 <?php
 
+use App\Http\Middleware\AgentAuthMiddleware;
+use App\Http\Middleware\BurstGuard;
+use App\Http\Middleware\DecryptIds;
+use App\Http\Middleware\ImpersonationThrottle;
+use App\Http\Middleware\LoginAttempt;
 use App\Http\Middleware\TransactionPinMiddleware;
+use App\Http\Middleware\TransactionReplayShield;
+use App\Http\Middleware\ValidateHeader;
+use App\Http\Middleware\VerifyPinChange;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Facades\Log;
+use Spatie\ResponseCache\Middlewares\CacheResponse;
+use Spatie\ResponseCache\Middlewares\DoNotCacheResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -17,16 +27,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'transaction.pin' => TransactionPinMiddleware::class,
-            'cacheResponse' => \Spatie\ResponseCache\Middlewares\CacheResponse::class,
-            'doNotCacheResponse' => \Spatie\ResponseCache\Middlewares\DoNotCacheResponse::class,
-            'agent.auth' => \App\Http\Middleware\AgentAuthMiddleware::class,
-            'validate.header' => \App\Http\Middleware\ValidateHeader::class,
-            'impersonation.throttle' => \App\Http\Middleware\ImpersonationThrottle::class,
-            'verify.pin' => \App\Http\Middleware\VerifyPinChange::class,
-            'login.attempt' => \App\Http\Middleware\LoginAttempt::class,
-            'tx.replay' => \App\Http\Middleware\TransactionReplayShield::class,
-            'burst.guard' => \App\Http\Middleware\BurstGuard::class,
-            'decrypt.ids' => \App\Http\Middleware\DecryptIds::class,
+            'cacheResponse' => CacheResponse::class,
+            'doNotCacheResponse' => DoNotCacheResponse::class,
+            'agent.auth' => AgentAuthMiddleware::class,
+            'validate.header' => ValidateHeader::class,
+            'impersonation.throttle' => ImpersonationThrottle::class,
+            'verify.pin' => VerifyPinChange::class,
+            'login.attempt' => LoginAttempt::class,
+            'tx.replay' => TransactionReplayShield::class,
+            'burst.guard' => BurstGuard::class,
+            'decrypt.ids' => DecryptIds::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
