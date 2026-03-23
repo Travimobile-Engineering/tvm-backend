@@ -1,5 +1,5 @@
 
-FROM php:8.4-fpm AS builder
+FROM php:8.4-fpm
 
 WORKDIR /var/www
 ARG MAX_CHILDREN=40
