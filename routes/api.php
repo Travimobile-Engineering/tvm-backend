@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\AirlineController;
+use App\Http\Controllers\ApiKeyController;
 use App\Http\Controllers\Auth\AuthenticateController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -488,7 +490,52 @@ Route::middleware(['validate.header'])
 
         // Get charges
         Route::get('/charges', [WalletController::class, 'getCharges']);
+
+        Route::prefix('airline')
+            ->group(function () {
+
+                // Profile
+                Route::get('/me', [AuthenticateController::class, 'me']);
+
+                // Environment
+                Route::prefix('environment')
+                    ->group(function () {
+                        Route::get('/', [ApiKeyController::class, 'showCurrentEnvironment']);
+                        Route::patch('/', [ApiKeyController::class, 'toggleEnvironment']);
+                    });
+
+                // API Key management
+                Route::prefix('keys')
+                    ->group(function () {
+                        Route::get('/', [ApiKeyController::class, 'index']);
+                        Route::post('/', [ApiKeyController::class, 'generate']);
+                        Route::get('/{id}', [ApiKeyController::class, 'show']);
+                        Route::post('/{id}/rotate', [ApiKeyController::class, 'rotate']);
+                        Route::delete('/{id}', [ApiKeyController::class, 'revoke']);
+                    });
+
+                // Audit logs
+                Route::get('/audit-logs', [ApiKeyController::class, 'getAudits']);
+            });
+
+        Route::prefix('v1')
+            ->controller(AirlineController::class)
+            ->middleware(['validate.api.key'])
+            ->group(function () {
+
+                Route::get('/flights', 'getFlights');
+                Route::get('/flights/{id}', 'getFlight');
+
+                Route::prefix('tickets')
+                    ->middleware(['force.production.key'])
+                    ->name('tickets.')
+                    ->group(function () {
+                        Route::post('/', 'issueTicket');
+                        Route::get('/{id}', 'getTicket');
+                    });
+            });
     });
+
 Route::fallback(function () {
     return response('page not found', 400);
 });
