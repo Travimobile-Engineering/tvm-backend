@@ -3,10 +3,12 @@
 use App\Http\Middleware\AgentAuthMiddleware;
 use App\Http\Middleware\BurstGuard;
 use App\Http\Middleware\DecryptIds;
+use App\Http\Middleware\ForceProductionKey;
 use App\Http\Middleware\ImpersonationThrottle;
 use App\Http\Middleware\LoginAttempt;
 use App\Http\Middleware\TransactionPinMiddleware;
 use App\Http\Middleware\TransactionReplayShield;
+use App\Http\Middleware\ValidateApiKey;
 use App\Http\Middleware\ValidateHeader;
 use App\Http\Middleware\VerifyPinChange;
 use Illuminate\Foundation\Application;
@@ -37,6 +39,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'tx.replay' => TransactionReplayShield::class,
             'burst.guard' => BurstGuard::class,
             'decrypt.ids' => DecryptIds::class,
+            'validate.api.key' => ValidateApiKey::class,
+            'force.production.key' => ForceProductionKey::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
