@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "181fad158e1c25733a83274fa3b6bdf2",
+    "content-hash": "26623f315706eb5f2b6e99a905ff0b0c",
     "packages": [
         {
             "name": "barryvdh/laravel-dompdf",
@@ -2728,16 +2728,16 @@
         },
         {
             "name": "keepsuit/laravel-opentelemetry",
-            "version": "2.1.0",
+            "version": "2.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/keepsuit/laravel-opentelemetry.git",
-                "reference": "e8e4bc72f18ced33c9918cbf5e47372995026c30"
+                "reference": "546d8444275c5d836f7a30ddb7a0256e5998dc11"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keepsuit/laravel-opentelemetry/zipball/e8e4bc72f18ced33c9918cbf5e47372995026c30",
-                "reference": "e8e4bc72f18ced33c9918cbf5e47372995026c30",
+                "url": "https://api.github.com/repos/keepsuit/laravel-opentelemetry/zipball/546d8444275c5d836f7a30ddb7a0256e5998dc11",
+                "reference": "546d8444275c5d836f7a30ddb7a0256e5998dc11",
                 "shasum": ""
             },
             "require": {
@@ -2822,9 +2822,9 @@
             ],
             "support": {
                 "issues": "https://github.com/keepsuit/laravel-opentelemetry/issues",
-                "source": "https://github.com/keepsuit/laravel-opentelemetry/tree/2.1.0"
+                "source": "https://github.com/keepsuit/laravel-opentelemetry/tree/2.2.0"
             },
-            "time": "2026-03-18T14:02:25+00:00"
+            "time": "2026-03-23T14:33:03+00:00"
         },
         {
             "name": "kreait/firebase-php",
@@ -3630,16 +3630,16 @@
         },
         {
             "name": "league/commonmark",
-            "version": "2.8.1",
+            "version": "2.8.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/commonmark.git",
-                "reference": "84b1ca48347efdbe775426f108622a42735a6579"
+                "reference": "59fb075d2101740c337c7216e3f32b36c204218b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/84b1ca48347efdbe775426f108622a42735a6579",
-                "reference": "84b1ca48347efdbe775426f108622a42735a6579",
+                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/59fb075d2101740c337c7216e3f32b36c204218b",
+                "reference": "59fb075d2101740c337c7216e3f32b36c204218b",
                 "shasum": ""
             },
             "require": {
@@ -3733,7 +3733,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-03-05T21:37:03+00:00"
+            "time": "2026-03-19T13:16:38+00:00"
         },
         {
             "name": "league/config",
@@ -6406,16 +6406,16 @@
         },
         {
             "name": "psy/psysh",
-            "version": "v0.12.21",
+            "version": "v0.12.22",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bobthecow/psysh.git",
-                "reference": "4821fab5b7cd8c49a673a9fd5754dc9162bb9e97"
+                "reference": "3be75d5b9244936dd4ac62ade2bfb004d13acf0f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/4821fab5b7cd8c49a673a9fd5754dc9162bb9e97",
-                "reference": "4821fab5b7cd8c49a673a9fd5754dc9162bb9e97",
+                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/3be75d5b9244936dd4ac62ade2bfb004d13acf0f",
+                "reference": "3be75d5b9244936dd4ac62ade2bfb004d13acf0f",
                 "shasum": ""
             },
             "require": {
@@ -6479,9 +6479,9 @@
             ],
             "support": {
                 "issues": "https://github.com/bobthecow/psysh/issues",
-                "source": "https://github.com/bobthecow/psysh/tree/v0.12.21"
+                "source": "https://github.com/bobthecow/psysh/tree/v0.12.22"
             },
-            "time": "2026-03-06T21:21:28+00:00"
+            "time": "2026-03-22T23:03:24+00:00"
         },
         {
             "name": "pusher/pusher-php-server",
@@ -12450,16 +12450,16 @@
         },
         {
             "name": "sebastian/environment",
-            "version": "9.0.1",
+            "version": "9.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/environment.git",
-                "reference": "e26e9a944bd9d27b3a38a82fc2093d440951bfbe"
+                "reference": "c4a2dc54b1a24e13ef1839cbb5947b967cbae853"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/environment/zipball/e26e9a944bd9d27b3a38a82fc2093d440951bfbe",
-                "reference": "e26e9a944bd9d27b3a38a82fc2093d440951bfbe",
+                "url": "https://api.github.com/repos/sebastianbergmann/environment/zipball/c4a2dc54b1a24e13ef1839cbb5947b967cbae853",
+                "reference": "c4a2dc54b1a24e13ef1839cbb5947b967cbae853",
                 "shasum": ""
             },
             "require": {
@@ -12474,7 +12474,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-main": "9.0-dev"
+                    "dev-main": "9.1-dev"
                 }
             },
             "autoload": {
@@ -12502,7 +12502,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/environment/issues",
                 "security": "https://github.com/sebastianbergmann/environment/security/policy",
-                "source": "https://github.com/sebastianbergmann/environment/tree/9.0.1"
+                "source": "https://github.com/sebastianbergmann/environment/tree/9.1.0"
             },
             "funding": [
                 {
@@ -12522,7 +12522,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-03-15T07:13:02+00:00"
+            "time": "2026-03-22T06:31:50+00:00"
         },
         {
             "name": "sebastian/exporter",
@@ -13294,7 +13294,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.3"
+        "php": "^8.4"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"
