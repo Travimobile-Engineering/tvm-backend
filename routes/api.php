@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\IpWhitelistController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\ManifestCheckerController;
 use App\Http\Controllers\NotificationController;
@@ -497,30 +498,45 @@ Route::middleware(['validate.header'])
                 // Profile
                 Route::get('/me', [AuthenticateController::class, 'me']);
 
-                // Environment
-                Route::prefix('environment')
+                Route::middleware(['ip.whitelist', 'ip.ratelimit:30,10'])
+                    ->controller(ApiKeyController::class)
                     ->group(function () {
-                        Route::get('/', [ApiKeyController::class, 'showCurrentEnvironment']);
-                        Route::patch('/', [ApiKeyController::class, 'toggleEnvironment']);
+                        // Environment
+                        Route::prefix('environment')->group(function () {
+                            Route::get('/', 'showCurrentEnvironment');
+                            Route::patch('/', 'toggleEnvironment');
+                        });
+
+                        // API Key management
+                        Route::prefix('keys')->group(function () {
+                            Route::get('/', 'index');
+                            Route::post('/', 'generate');
+                            Route::get('/{id}', 'show');
+                            Route::post('/{id}/rotate', 'rotate');
+                            Route::delete('/{id}', 'revoke');
+                        });
+
+                        // Audit logs
+                        Route::get('/audit-logs', 'getAudits');
                     });
 
-                // API Key management
-                Route::prefix('keys')
+                // Ip Whitelist
+                Route::prefix('ip-whitelist')
+                    ->controller(IpWhitelistController::class)
                     ->group(function () {
-                        Route::get('/', [ApiKeyController::class, 'index']);
-                        Route::post('/', [ApiKeyController::class, 'generate']);
-                        Route::get('/{id}', [ApiKeyController::class, 'show']);
-                        Route::post('/{id}/rotate', [ApiKeyController::class, 'rotate']);
-                        Route::delete('/{id}', [ApiKeyController::class, 'revoke']);
+                        Route::get('/', 'index');
+                        Route::post('/', 'store');
+                        Route::post('/check', 'check');
+                        Route::get('/{id}', 'show');
+                        Route::patch('/{id}', 'update');
+                        Route::delete('/{id}', 'destroy');
+                        Route::patch('/{id}/toggle', 'toggle');
                     });
-
-                // Audit logs
-                Route::get('/audit-logs', [ApiKeyController::class, 'getAudits']);
             });
 
         Route::prefix('v1')
             ->controller(AirlineController::class)
-            ->middleware(['validate.api.key'])
+            ->middleware(['validate.api.key', 'ip.whitelist', 'ip.ratelimit:30,10'])
             ->group(function () {
 
                 Route::get('/flights', 'getFlights');
