@@ -2,10 +2,12 @@
 
 use App\Http\Middleware\AgentAuthMiddleware;
 use App\Http\Middleware\BurstGuard;
+use App\Http\Middleware\CheckIpWhitelist;
 use App\Http\Middleware\DecryptIds;
 use App\Http\Middleware\ForceProductionKey;
 use App\Http\Middleware\ImpersonationThrottle;
 use App\Http\Middleware\LoginAttempt;
+use App\Http\Middleware\RateLimitByIp;
 use App\Http\Middleware\TransactionPinMiddleware;
 use App\Http\Middleware\TransactionReplayShield;
 use App\Http\Middleware\ValidateApiKey;
@@ -41,6 +43,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'decrypt.ids' => DecryptIds::class,
             'validate.api.key' => ValidateApiKey::class,
             'force.production.key' => ForceProductionKey::class,
+            'ip.whitelist' => CheckIpWhitelist::class,
+            'ip.ratelimit' => RateLimitByIp::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
