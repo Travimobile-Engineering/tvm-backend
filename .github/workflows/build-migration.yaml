@@ -203,6 +203,13 @@ jobs:
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
+      - name: Trim URLs
+        run: |
+         APP_URL=$(echo "$APP_URL" | tr -d '\r\n')
+         PAYSTACK_URL=$(echo "$PAYSTACK_URL" | tr -d '\r\n')
+         echo "Trimmed APP_URL=$APP_URL"
+         echo "Trimmed PAYSTACK_URL=$PAYSTACK_URL"
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
