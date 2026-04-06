@@ -213,7 +213,7 @@ jobs:
           VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
           VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
         run: |
-          curl -s --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_ADDR/v1/secret/data/backend || echo "Vault unreachable"
+          curl -s --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_ADDR/v1/kv/org/data/prod-admin-panel-secrets || echo "Vault unreachable"
         
 
           RESPONSE=$(curl -s --fail --header "X-Vault-Token: $VAULT_TOKEN" \
