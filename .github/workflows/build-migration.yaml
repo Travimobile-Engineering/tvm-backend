@@ -183,6 +183,15 @@ jobs:
 
   unit-test:
     runs-on: ubuntu-latest
+
+    #  Only safe CI configs here (NO hardcoded secrets)
+    env:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ":memory:"
+      CACHE_DRIVER: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -191,17 +200,86 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, bcmath, intl
+          extensions: mbstring, bcmath, intl, pdo_sqlite
           tools: composer
 
+      #  Required for parsing Vault JSON
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      #  FETCH ALL SECRETS FROM VAULT
+      - name: Import secrets from Vault
+        env:
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+        run: |
+          echo "Fetching secrets from Vault..."
+
+          RESPONSE=$(curl -s --fail --header "X-Vault-Token: $VAULT_TOKEN" \
+          $VAULT_ADDR/v1/secret/data/backend)
+
+          #  CORE APP
+          APP_KEY=$(echo $RESPONSE | jq -r '.data.data.APP_KEY')
+          APP_URL=$(echo $RESPONSE | jq -r '.data.data.APP_URL')
+          JWT_SECRET=$(echo $RESPONSE | jq -r '.data.data.JWT_SECRET')
+
+          #  EXTERNAL SERVICES
+          PAYSTACK_URL=$(echo $RESPONSE | jq -r '.data.data.PAYSTACK_URL')
+          CLOUDINARY_URL=$(echo $RESPONSE | jq -r '.data.data.CLOUDINARY_URL')
+
+          # FALLBACKS (prevents pipeline failure)
+          APP_URL=${APP_URL:-http://localhost}
+          PAYSTACK_URL=${PAYSTACK_URL:-https://api.paystack.co}
+
+          # FAIL FAST if critical secrets missing
+          if [ -z "$APP_KEY" ]; then
+            echo "APP_KEY missing from Vault!"
+            exit 1
+          fi
+
+          if [ -z "$JWT_SECRET" ]; then
+            echo "JWT_SECRET missing from Vault!"
+            exit 1
+          fi
+
+          # ✅ EXPORT ENV
+          echo "APP_KEY=$APP_KEY" >> $GITHUB_ENV
+          echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+          echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
+          echo "PAYSTACK_URL=$PAYSTACK_URL" >> $GITHUB_ENV
+          echo "CLOUDINARY_URL=$CLOUDINARY_URL" >> $GITHUB_ENV
+
+          # FORCE SQLITE FOR CI (avoid DB failures)
+          echo "DB_CONNECTION=sqlite" >> $GITHUB_ENV
+          echo "DB_DATABASE=:memory:" >> $GITHUB_ENV
+
+      # Cache dependencies (faster builds)
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+
       - name: Install dependencies
-        run: composer install
+        run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Set up .env
-        run: cp .env.example .env && php artisan key:generate
+      # Laravel setup (NO key:generate — using Vault)
+      - name: Prepare Laravel
+        run: |
+          cp .env.example .env || true
 
-      - name: Run unit tests
-        run: echo "run unit test"
+      - name: Clear config cache
+        run: php artisan config:clear
+
+      # Optional debug (remove later)
+      - name: Debug env
+        run: |
+          echo "APP_URL=$APP_URL"
+          echo "JWT_SECRET is set"
+
+      # Run tests
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit --testdox
 
   build-and-push-docker:
     runs-on: ubuntu-latest
