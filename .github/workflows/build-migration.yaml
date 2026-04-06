@@ -36,30 +36,30 @@ jobs:
           pip install --upgrade pip
           pip install requests
 
-      #- name: Upload to DefectDojo
-       # if: failure()
-        #env:
-         # DEFECT_DOJO_FILE: gitleaks.json
-          #DEFECT_DOJO_ENGAGEMENT: 1
-          #DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          #DEFECT_DOJO_SCAN_TYPE: Gitleaks Scan
-          #DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          #DEFECT_DOJO_PRODUCT_NAME: Backend
-        #run: python upload-scan-report.py
+      - name: Upload to DefectDojo
+        if: failure()
+        env:
+          DEFECT_DOJO_FILE: gitleaks.json
+          DEFECT_DOJO_ENGAGEMENT: 1
+          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
+          DEFECT_DOJO_SCAN_TYPE: Gitleaks Scan
+          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
+          DEFECT_DOJO_PRODUCT_NAME: Backend
+        run: python upload-scan-report.py
 
-      #- name: Slack Notification
-       # if: failure()
-        #uses: slackapi/slack-github-action@v2.1.0
-        #with:
-         # webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-         # webhook-type: incoming-webhook
-          #payload: |
-            #text: "*Gitleaks scan failed* on `${{ github.ref_name }}`"
-            #blocks:
-             # - type: section
-              #  text:
-               #   type: mrkdwn
-                #  text: "*Gitleaks Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
+      - name: Slack Notification
+        if: failure()
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "*Gitleaks scan failed* on `${{ github.ref_name }}`"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Gitleaks Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
 
   dependency-scan:
     runs-on: ubuntu-latest
@@ -122,62 +122,63 @@ jobs:
           DEFECT_DOJO_PRODUCT_NAME: Backend
         run: python upload-scan-report.py
 
-      #- name: Slack Notification
-       # if: failure()
-       # uses: slackapi/slack-github-action@v2.1.0
-        #with:
-         # webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          #webhook-type: incoming-webhook
-          #payload: |
-           # text: "*Dependency check failed* on `${{ github.ref_name }}`"
-            #blocks:
-             # - type: section
-              #  text:
-               #   type: mrkdwn
-                #  text: "*Dependency Check Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
+      - name: Slack Notification
+        if: failure()
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "*Dependency check failed* on `${{ github.ref_name }}`"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Dependency Check Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
 
-  #SAST-test:
-    #runs-on: ubuntu-latest
-    #container:
-     # image: semgrep/semgrep
-    #steps:
-    #  - name: Checkout Code
-    #    uses: actions/checkout@v4
+  SAST-test:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      #- name: Run Semgrep scan
-        #run: semgrep scan --config=auto --error --verbose --json --output semgrep.json
+      - name: Run Semgrep scan
+        run: semgrep scan --config=auto --error --verbose --json --output semgrep.json
 
-      #- name: Install requests package
-        #if: always()
-        #run: |
-         # python3 -m venv venv
-          #. venv/bin/activate
-          #pip install --upgrade pip
-          #pip install requests
+      - name: Install requests package
+        if: always()
+        run: |
+          python3 -m venv venv
+          . venv/bin/activate
+          pip install --upgrade pip
+          pip install requests
 
-      #- name: Upload to DefectDojo
-       # if: failure()
-       # env:
-        #  DEFECT_DOJO_FILE: semgrep.json
-         # DEFECT_DOJO_ENGAGEMENT: 1
-         # DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          #DEFECT_DOJO_SCAN_TYPE: Semgrep JSON Report
-          #DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          #DEFECT_DOJO_PRODUCT_NAME: Backend
-        #run: python upload-scan-report.py
+      - name: Upload to DefectDojo
+        if: failure()
+        env:
+          DEFECT_DOJO_FILE: semgrep.json
+          DEFECT_DOJO_ENGAGEMENT: 1
+          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
+          DEFECT_DOJO_SCAN_TYPE: Semgrep JSON Report
+          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
+          DEFECT_DOJO_PRODUCT_NAME: Backend
+        run: python upload-scan-report.py
 
-     # - name: Slack Notification
-       # if: failure()
-        #uses: slackapi/slack-github-action@v2.1.0
-        #with:
-         # webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          #webhook-type: incoming-webhook
-          #payload: |
-           # text: "*SAST scan failed* on `${{ github.ref_name }}`"
-            #blocks:
-             # text:
-                # type: mrkdwn
-                 # text: "*Semgrep Scan Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
+      - name: Slack Notification
+        if: failure()
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "*SAST scan failed* on `${{ github.ref_name }}`"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Semgrep Scan Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
 
   unit-test:
     runs-on: ubuntu-latest
