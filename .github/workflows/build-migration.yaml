@@ -185,6 +185,10 @@ jobs:
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+      DEV_AUTH_PATH: kv/org/data/dev-auth-secrets
+      OTEL_PATH: kv/org/data/prod-admin-panel-secrets
+      # Disable OTEL in CI
+      OTEL_EXPORTER_OTLP_DISABLED: true
 
     steps:
       - name: Checkout code
@@ -198,6 +202,12 @@ jobs:
 
       - name: Install Composer dependencies
         run: composer install --no-progress --no-suggest --prefer-dist
+      
+      - name: Install Vault CLI
+        run: |
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt update && sudo apt install vault -y
 
       - name: Fetch secrets from Vault
         id: vault-secrets
