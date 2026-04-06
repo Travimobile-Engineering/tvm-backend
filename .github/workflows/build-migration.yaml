@@ -87,16 +87,15 @@ jobs:
 
       - name: Install dependency-check CLI
         run: |
-         VERSION="10.0.4"
-         wget -q https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
-         unzip -q dependency-check-${VERSION}-release.zip
-         sudo mv dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
-         sudo chmod +x /usr/local/bin/dependency-check
+          VERSION="10.0.4"
+          wget -q https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
+          unzip -q dependency-check-${VERSION}-release.zip -d $HOME/
+          echo "$HOME/dependency-check/bin" >> $GITHUB_PATH
 
       - name: Run dependency-check scan
         run: |
           mkdir -p ./dc-data ./reports
-          dependency-check \
+          $HOME/dependency-check/bin/dependency-check.sh \
             --nvdApiDelay 7000 \
             --nvdApiKey ${{ secrets.NVD_API }} \
             --data ./dc-data \
@@ -130,6 +129,7 @@ jobs:
          python upload-scan-report.py
 
       - name: Import Secrets from Vault
+        if: always()
         uses: hashicorp/vault-action@v2
         with:
           url: https://vault.travimobile.com
@@ -137,12 +137,12 @@ jobs:
           role: github-actions-role
           secrets: |
             secret/data/ci-cd TEAMS_WEBHOOK_URL | TEAMS_WEBHOOK_URL
-        
+
       - name: Microsoft Teams Notification
         if: failure()
         run: |
           curl -H "Content-Type: application/json" \
-          -d '{ ... }' \
+          -d "{\"text\": \" Scan Failed on \`${{ github.ref_name }}\`\"}" \
           "$TEAMS_WEBHOOK_URL"
 
   SAST-test:
