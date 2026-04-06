@@ -208,12 +208,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq
 
       #  FETCH ALL SECRETS FROM VAULT
-      - name: Import secrets from Vault
+      - name: Test Vault connection
         env:
           VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
           VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
         run: |
-          echo "Fetching secrets from Vault..."
+          curl -s --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_ADDR/v1/secret/data/backend || echo "Vault unreachable"
+        
 
           RESPONSE=$(curl -s --fail --header "X-Vault-Token: $VAULT_TOKEN" \
           $VAULT_ADDR/v1/secret/data/backend)
