@@ -188,7 +188,9 @@ jobs:
 
   unit-test:
     runs-on: ubuntu-latest
-  
+    env:
+      OTEL_SDK_DISABLED: "true"
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -211,6 +213,7 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+
 
       - name: Setup Laravel
         run: |
