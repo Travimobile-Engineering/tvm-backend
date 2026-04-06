@@ -188,9 +188,21 @@ jobs:
 
   unit-test:
     runs-on: ubuntu-latest
+    env:
+      APP_URL: http://localhost
+      EXTERNAL_API_URL: http://localhost
+      OTEL_SDK_DISABLED: "true"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+    # ✅ Cache Composer dependencies
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -198,30 +210,22 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, bcmath, intl
           tools: composer
+          coverage: none
 
       - name: Install dependencies
-        run: composer install
+        run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Set up .env
-        run: cp .env.example .env && php artisan key:generate
-     
-      - name: Debug URLs
-        run: |
-         echo "APP_URL=$APP_URL"
-         echo "PAYSTACK_URL=$PAYSTACK_URL"
-         env:
-          APP_URL: http://localhost
-          PAYSTACK_URL: https://api.paystack.co
-          EXTERNAL_API_URL: http://localhost
-          
-      - name: Run unit tests
+      - name: Setup Laravel
         run: |
          cp .env.example .env
          php artisan key:generate
          php artisan jwt:secret --force > /dev/null 2>&1
-         php artisan migrate --env=testing
-        env:
-         OTEL_SDK_DISABLED: "true"
+         php artisan config:clear
+         php artisan migrate --env=testing --force
+
+    #Prevent real HTTP calls
+      - name: Run tests
+        run: php artisan test --stop-on-failure
       
 
   build-and-push-docker:
