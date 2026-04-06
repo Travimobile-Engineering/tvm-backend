@@ -243,6 +243,12 @@ jobs:
             exit 1
           fi
 
+          APP_KEY=$(echo $RESPONSE | jq -r '.data.data.APP_KEY')
+          JWT_SECRET=$(echo $RESPONSE | jq -r '.data.data.JWT_SECRET')
+          APP_URL=$(echo $RESPONSE | jq -r '.data.data.APP_URL // "http://localhost"')
+          PAYSTACK_URL=$(echo $RESPONSE | jq -r '.data.data.PAYSTACK_PAYMENT_URL // "https://api.paystack.co"')
+          CLOUDINARY_URL=$(echo $RESPONSE | jq -r '.data.data.CLOUDINARY_URL')
+
           # ✅ EXPORT ENV
           echo "APP_KEY=$APP_KEY" >> $GITHUB_ENV
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
