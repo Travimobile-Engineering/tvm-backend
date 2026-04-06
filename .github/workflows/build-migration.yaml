@@ -207,6 +207,9 @@ jobs:
 
       - name: Run unit tests
         run: php artisan test 
+        env:
+         OTEL_SDK_DISABLED: "true"
+      
 
   build-and-push-docker:
     runs-on: ubuntu-latest
