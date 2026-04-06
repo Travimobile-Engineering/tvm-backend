@@ -188,10 +188,7 @@ jobs:
 
   unit-test:
     runs-on: ubuntu-latest
-    env:
-      APP_URL: http://localhost
-      EXTERNAL_API_URL: http://localhost
-      OTEL_SDK_DISABLED: "true"
+  
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
