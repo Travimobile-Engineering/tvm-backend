@@ -216,9 +216,9 @@ jobs:
           curl -s --header "X-Vault-Token: $VAULT_TOKEN" $VAULT_ADDR/v1/kv/org/data/prod-admin-panel-secrets || echo "Vault unreachable"
         
 
-          RESPONSE=$(curl -s --fail --header "X-Vault-Token: $VAULT_TOKEN" \
-          $VAULT_ADDR/v1/secret/data/backend)
-
+          RESPONSE=$(curl --silent --show-error \--header "X-Vault-Token: $VAULT_TOKEN" \$VAULT_ADDR/v1/kv/org/data/prod-admin-panel-secrets)
+          if [ -z "$RESPONSE" ]; then echo "Vault unreachable or secret missing" exit 1
+          fi
           #  CORE APP
           APP_KEY=$(echo $RESPONSE | jq -r '.data.data.APP_KEY')
           APP_URL=$(echo $RESPONSE | jq -r '.data.data.APP_URL')
