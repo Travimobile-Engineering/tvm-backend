@@ -262,7 +262,7 @@ jobs:
           echo "DB_DATABASE=:memory:" >> $GITHUB_ENV
 
           # Disable OTLP in CI to avoid cURL errors
-          echo "OTEL_EXPORTER_OTLP_ENDPOINT=" >> $GITHUB_ENV
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318" >> $GITHUB_ENV
 
       # Cache dependencies (faster builds)
       - name: Cache Composer dependencies
