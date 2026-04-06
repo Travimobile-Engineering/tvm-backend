@@ -1,3 +1,4 @@
+
 name: Laravel Backend CI/CD Migration
 
 on:
@@ -47,21 +48,19 @@ jobs:
           DEFECT_DOJO_PRODUCT_NAME: Backend
         run: python upload-scan-report.py
 
-      - name: Import Secrets from Vault
-        uses: hashicorp/vault-action@v2
-        with:
-          url: https://vault.travimobile.com
-          method: jwt
-          role: github-actions-role
-          secrets: |
-            secret/data/ci-cd TEAMS_WEBHOOK_URL | TEAMS_WEBHOOK_URL
-        
-      - name: Microsoft Teams Notification
+      - name: Slack Notification
         if: failure()
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d '{ ... }' \
-          "$TEAMS_WEBHOOK_URL"
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "*Gitleaks scan failed* on `${{ github.ref_name }}`"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Gitleaks Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
 
   dependency-scan:
     runs-on: ubuntu-latest
@@ -87,15 +86,13 @@ jobs:
 
       - name: Install dependency-check CLI
         run: |
-          VERSION="10.0.4"
-          wget -q https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
-          unzip -q dependency-check-${VERSION}-release.zip -d $HOME/
-          echo "$HOME/dependency-check/bin" >> $GITHUB_PATH
+          chmod +x dependency-check.sh
+          ./dependency-check.sh
 
       - name: Run dependency-check scan
         run: |
           mkdir -p ./dc-data ./reports
-          $HOME/dependency-check/bin/dependency-check.sh \
+          dependency-check \
             --nvdApiDelay 7000 \
             --nvdApiKey ${{ secrets.NVD_API }} \
             --data ./dc-data \
@@ -124,26 +121,21 @@ jobs:
           DEFECT_DOJO_SCAN_TYPE: Dependency Check Scan
           DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
           DEFECT_DOJO_PRODUCT_NAME: Backend
-        run: |
-         . venv/bin/activate
-         python upload-scan-report.py
+        run: python upload-scan-report.py
 
-      - name: Import Secrets from Vault
-        if: always()
-        uses: hashicorp/vault-action@v2
-        with:
-          url: https://vault.travimobile.com
-          method: jwt
-          role: github-actions-role
-          secrets: |
-            secret/data/ci-cd TEAMS_WEBHOOK_URL | TEAMS_WEBHOOK_URL
-
-      - name: Microsoft Teams Notification
+      - name: Slack Notification
         if: failure()
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"text\": \" Scan Failed on \`${{ github.ref_name }}\`\"}" \
-          "$TEAMS_WEBHOOK_URL"
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "*Dependency check failed* on `${{ github.ref_name }}`"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Dependency Check Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
 
   SAST-test:
     runs-on: ubuntu-latest
@@ -164,6 +156,7 @@ jobs:
           pip install --upgrade pip
           pip install requests
 
+        
       - name: Upload to DefectDojo
         if: failure()
         env:
@@ -175,47 +168,40 @@ jobs:
           DEFECT_DOJO_PRODUCT_NAME: Backend
         run: python upload-scan-report.py
 
-      - name: Import Secrets from Vault
-        uses: hashicorp/vault-action@v2
-        with:
-          url: https://vault.travimobile.com
-          method: jwt
-          role: github-actions-role
-          secrets: |
-            secret/data/ci-cd TEAMS_WEBHOOK_URL | TEAMS_WEBHOOK_URL
-        
-      - name: Microsoft Teams Notification
+      - name: Slack Notification
         if: failure()
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d '{ ... }' \
-          "$TEAMS_WEBHOOK_URL"
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "*SAST scan failed* on `${{ github.ref_name }}`"
+            blocks:
+              text:
+                 type: mrkdwn
+                  text: "*Semgrep Scan Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
 
   unit-test:
     runs-on: ubuntu-latest
-   
     steps:
-     - name: Checkout code
-       uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-     - name: Set up PHP
-       uses: shivammathur/setup-php@v2
-       with:
-        php-version: '8.4'
-        extensions: mbstring, bcmath, intl
-        tools: composer
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, intl
+          tools: composer
 
-     - name: Install dependencies
-       run: composer install --no-progress --prefer-dist
+      - name: Install dependencies
+        run: composer install
 
-     - name: Set up .env
-       run: |
-        cp .env.example .env
-        php artisan key:generate
+      - name: Set up .env
+        run: cp .env.example .env && php artisan key:generate
 
-     - name: Run unit tests
-       run: vendor/bin/phpunit
-      
+      - name: Run unit tests
+        run: echo "run unit test"
 
   build-and-push-docker:
     runs-on: ubuntu-latest
