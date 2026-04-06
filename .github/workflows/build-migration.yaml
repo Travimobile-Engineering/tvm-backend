@@ -206,7 +206,11 @@ jobs:
         run: cp .env.example .env && php artisan key:generate
 
       - name: Run unit tests
-        run: php artisan test 
+        run: |
+         cp .env.example .env
+         php artisan key:generate
+         php artisan jwt:secret --force
+         php artisan migrate --env=testing
         env:
          OTEL_SDK_DISABLED: "true"
       
