@@ -213,10 +213,20 @@ jobs:
         id: vault-secrets
         run: |
           echo "Fetching dev-auth secrets..."
-          DEV_SECRETS=$(vault kv get -format=json -mount="kv/org" dev-auth-secrets | jq -r '.data.data | to_entries[] | "\(.key)=\(.value)"')
+          MAIL_USERNAME=$(vault kv get -field=MAIL_USERNAME $DEV_AUTH_PATH)
+          JWT_SECRET=$(vault kv get -field=JWT_SECRET $DEV_AUTH_PATH)
+
+          # Write to GitHub Actions environment
+          echo "MAIL_USERNAME=$MAIL_USERNAME" >> $GITHUB_ENV
+          echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
           
           echo "Fetching OTEL secrets..."
-          OTEL_SECRETS=$(vault kv get -format=json -mount="kv/org" prod-admin-panel-secrets | jq -r '.data.data | to_entries[] | "\(.key)=\(.value)"')
+          OTEL_EXPORTER_OTLP_ENDPOINT=$(vault kv get -field=OTEL_EXPORTER_OTLP_ENDPOINT $OTEL_PATH)
+          OTEL_EXPORTER_OTLP_PROTOCOL=$(vault kv get -field=OTEL_EXPORTER_OTLP_PROTOCOL $OTEL_PATH)
+
+          # Write to GitHub Actions environment
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_EXPORTER_OTLP_ENDPOINT" >> $GITHUB_ENV
+          echo "OTEL_EXPORTER_OTLP_PROTOCOL=$OTEL_EXPORTER_OTLP_PROTOCOL" >> $GITHUB_ENV  
           
           for secret in $DEV_SECRETS $OTEL_SECRETS; do
             echo "$secret" >> $GITHUB_ENV
