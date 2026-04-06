@@ -87,8 +87,11 @@ jobs:
 
       - name: Install dependency-check CLI
         run: |
-          chmod +x dependency-check.sh
-          ./dependency-check.sh
+         VERSION="10.0.4"
+         wget -q https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
+         unzip -q dependency-check-${VERSION}-release.zip
+         sudo mv dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
+         sudo chmod +x /usr/local/bin/dependency-check
 
       - name: Run dependency-check scan
         run: |
@@ -122,7 +125,9 @@ jobs:
           DEFECT_DOJO_SCAN_TYPE: Dependency Check Scan
           DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
           DEFECT_DOJO_PRODUCT_NAME: Backend
-        run: python upload-scan-report.py
+        run: |
+         . venv/bin/activate
+         python upload-scan-report.py
 
       - name: Import Secrets from Vault
         uses: hashicorp/vault-action@v2
