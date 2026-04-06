@@ -250,7 +250,7 @@ jobs:
           PAYSTACK_URL=$(echo $RESPONSE | jq -r '.data.data.PAYSTACK_PAYMENT_URL // "https://api.paystack.co"')
           CLOUDINARY_URL=$(echo $RESPONSE | jq -r '.data.data.CLOUDINARY_URL')
 
-          # ✅ EXPORT ENV
+          # EXPORT ENV
           echo "APP_KEY=$APP_KEY" >> $GITHUB_ENV
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
           echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
@@ -260,6 +260,9 @@ jobs:
           # FORCE SQLITE FOR CI (avoid DB failures)
           echo "DB_CONNECTION=sqlite" >> $GITHUB_ENV
           echo "DB_DATABASE=:memory:" >> $GITHUB_ENV
+
+          # Disable OTLP in CI to avoid cURL errors
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=" >> $GITHUB_ENV
 
       # Cache dependencies (faster builds)
       - name: Cache Composer dependencies
