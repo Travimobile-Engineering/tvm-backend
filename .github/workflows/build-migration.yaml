@@ -204,12 +204,21 @@ jobs:
 
       - name: Set up .env
         run: cp .env.example .env && php artisan key:generate
-
+     
+      - name: Debug URLs
+        run: |
+         echo "APP_URL=$APP_URL"
+         echo "PAYSTACK_URL=$PAYSTACK_URL"
+         env:
+          APP_URL: http://localhost
+          PAYSTACK_URL: https://api.paystack.co
+          EXTERNAL_API_URL: http://localhost
+          
       - name: Run unit tests
         run: |
          cp .env.example .env
          php artisan key:generate
-         php artisan jwt:secret --force
+         php artisan jwt:secret --force > /dev/null 2>&1
          php artisan migrate --env=testing
         env:
          OTEL_SDK_DISABLED: "true"
