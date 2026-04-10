@@ -542,12 +542,12 @@ Route::middleware(['validate.header'])
                 Route::get('/flights', 'getFlights');
                 Route::get('/flights/{id}', 'getFlight');
 
-                Route::prefix('tickets')
+                Route::prefix('manifest')
                     ->middleware(['force.production.key'])
-                    ->name('tickets.')
+                    ->name('manifest.')
                     ->group(function () {
-                        Route::post('/', 'issueTicket');
-                        Route::get('/{id}', 'getTicket');
+                        Route::post('/', 'createManifest');
+                        Route::get('/{id}', 'getManifest');
                     });
             });
     });
