@@ -265,6 +265,13 @@ jobs:
           php artisan config:clear
           php artisan cache:clear
           php artisan migrate --force
+      
+      - name: Run PHPUnit Tests
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: /home/runner/work/tvm-backend/tvm-backend/database/database.sqlite
+        run: php artisan test --parallel --coverage-text
 
   build-and-push-docker:
     runs-on: ubuntu-latest
