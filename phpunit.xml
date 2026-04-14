@@ -36,5 +36,3 @@
         <env name="OTEL_EXPORTER_OTLP_ENDPOINT" value="http://localhost:4318"/>
     </php>
 </phpunit>
-
-#

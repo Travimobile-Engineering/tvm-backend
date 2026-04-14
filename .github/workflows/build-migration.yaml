@@ -238,40 +238,38 @@ jobs:
         run: |
           cp .env.example .env
 
-          # Override with Vault secrets
           sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env
           sed -i "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" .env
 
-          # Use SQLite for CI testing (MySQL is internal cluster only)
           sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
           echo "DB_DATABASE=/home/runner/work/tvm-backend/tvm-backend/database/database.sqlite" >> .env
 
-          # Disable OTEL
+          # Force override OTEL endpoint to valid URL
+          sed -i "s|OTEL_EXPORTER_OTLP_ENDPOINT=.*|OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318|" .env
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> .env
+
           echo "OTEL_SDK_DISABLED=true" >> .env
           echo "OTEL_TRACES_EXPORTER=none" >> .env
           echo "OTEL_METRICS_EXPORTER=none" >> .env
           echo "OTEL_LOGS_EXPORTER=none" >> .env
 
-          # Use array drivers to avoid external dependencies
           sed -i "s|CACHE_DRIVER=.*|CACHE_DRIVER=array|" .env
           sed -i "s|CACHE_STORE=.*|CACHE_STORE=array|" .env
           sed -i "s|SESSION_DRIVER=.*|SESSION_DRIVER=array|" .env
           sed -i "s|QUEUE_CONNECTION=.*|QUEUE_CONNECTION=sync|" .env
 
-          # Create SQLite database file
           mkdir -p database
           touch database/database.sqlite
 
           php artisan config:clear
           php artisan cache:clear
           php artisan migrate --force
-      
+         
       - name: Run PHPUnit Tests
         env:
-          APP_ENV: testing
-          DB_CONNECTION: sqlite
-          DB_DATABASE: /home/runner/work/tvm-backend/tvm-backend/database/database.sqlite
-        run: php artisan test --parallel --coverage-text
+          OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318"
+        run: php artisan test --parallel --coverage-text    
+
 
   build-and-push-docker:
     runs-on: ubuntu-latest
