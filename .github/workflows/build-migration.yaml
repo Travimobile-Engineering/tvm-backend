@@ -185,7 +185,7 @@ jobs:
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-      DEV_AUTH_PATH: kv/org/data/dev-auth-secrets
+      DEV_AUTH_PATH: /v1/kv/org/data/dev-auth-secrets
       OTEL_PATH: kv/org/data/prod-admin-panel-secrets
       # Disable OTEL in CI
       OTEL_EXPORTER_OTLP_DISABLED: true
