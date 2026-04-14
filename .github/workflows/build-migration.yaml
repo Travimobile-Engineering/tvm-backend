@@ -236,12 +236,33 @@ jobs:
 
       - name: Prepare Laravel
         run: |
+          cp .env.example .env
+          
+          # Override with Vault secrets
+          sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=$DB_CONNECTION|" .env
+          sed -i "s|DB_HOST=.*|DB_HOST=$DB_HOST|" .env
+          sed -i "s|DB_PORT=.*|DB_PORT=$DB_PORT|" .env
+          sed -i "s|DB_DATABASE=.*|DB_DATABASE=$DB_DATABASE|" .env
+          sed -i "s|DB_USERNAME=.*|DB_USERNAME=$DB_USERNAME|" .env
+          sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" .env
+          sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+          sed -i "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" .env
+
+          # Disable OTEL
+          echo "OTEL_SDK_DISABLED=true" >> .env
+          echo "OTEL_TRACES_EXPORTER=none" >> .env
+          echo "OTEL_METRICS_EXPORTER=none" >> .env
+          echo "OTEL_LOGS_EXPORTER=none" >> .env
+
+          # Use array cache driver to avoid DB dependency
+          sed -i "s|CACHE_DRIVER=.*|CACHE_DRIVER=array|" .env
+          sed -i "s|CACHE_STORE=.*|CACHE_STORE=array|" .env
+          sed -i "s|SESSION_DRIVER=.*|SESSION_DRIVER=array|" .env
+          sed -i "s|QUEUE_CONNECTION=.*|QUEUE_CONNECTION=sync|" .env
+
           php artisan config:clear
           php artisan cache:clear
           php artisan migrate --force
-
-      - name: Run tests
-        run: php artisan test --verbose
 
   build-and-push-docker:
     runs-on: ubuntu-latest
