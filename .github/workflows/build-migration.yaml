@@ -13,31 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: zricethezav/gitleaks:v8.26.0
+
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Install Python (Alpine Linux)
-        run: |
-          apk update
-          apk add --no-cache python3 py3-pip
-
-      - name: Disable Git ownership check
-        run: git config --global --add safe.directory "*"
-
-      - name: Scan the code for leaked secrets
-        run: gitleaks detect --verbose --source . -f json -r gitleaks.json
-
-      - name: Install requests package
-        if: always()
-        run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install requests
-
-      - name: Upload to DefectDojo
-        if: failure()
+      - name: Run Gitleaks + Upload to DefectDojo
         env:
           DEFECT_DOJO_FILE: gitleaks.json
           DEFECT_DOJO_ENGAGEMENT: 1
@@ -45,21 +26,29 @@ jobs:
           DEFECT_DOJO_SCAN_TYPE: Gitleaks Scan
           DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
           DEFECT_DOJO_PRODUCT_NAME: Backend
-        run: python upload-scan-report.py
 
-      - name: Slack Notification
-        if: failure()
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "*Gitleaks scan failed* on `${{ github.ref_name }}`"
-            blocks:
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "*Gitleaks Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
+        run: |
+          # Install Python + pip
+          apk add --no-cache python3 py3-pip
+
+          # Install requests
+          pip3 install requests
+
+          # Fix git ownership issue
+          git config --global --add safe.directory "*"
+
+          # Run Gitleaks (don't fail immediately)
+          gitleaks detect --verbose --source . -f json -r gitleaks.json || true
+
+          # Check if leaks exist
+          if [ -s gitleaks.json ]; then
+            echo "Leaks found, uploading to DefectDojo..."
+            python upload-scan-report.py
+            exit 1
+          else
+            echo "No leaks found"
+          fi
+
 
   dependency-scan:
     runs-on: ubuntu-latest
@@ -85,8 +74,11 @@ jobs:
 
       - name: Install dependency-check CLI
         run: |
-          chmod +x dependency-check.sh
-          ./dependency-check.sh
+          VERSION="10.0.4"
+          wget https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
+          unzip dependency-check-${VERSION}-release.zip
+          sudo mv dependency-check /opt/dependency-check
+          sudo ln -s /opt/dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
 
       - name: Run dependency-check scan
         run: |
@@ -120,21 +112,9 @@ jobs:
           DEFECT_DOJO_SCAN_TYPE: Dependency Check Scan
           DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
           DEFECT_DOJO_PRODUCT_NAME: Backend
-        run: python upload-scan-report.py
-
-      - name: Slack Notification
-        if: failure()
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "*Dependency check failed* on `${{ github.ref_name }}`"
-            blocks:
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "*Dependency Check Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
+        run: |
+          . venv/bin/activate
+          python upload-scan-report.py
 
   sast-test:
     runs-on: ubuntu-latest
@@ -166,19 +146,6 @@ jobs:
           DEFECT_DOJO_PRODUCT_NAME: Backend
         run: python upload-scan-report.py
 
-      - name: Slack Notification
-        if: failure()
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "*SAST scan failed* on `${{ github.ref_name }}`"
-            blocks:
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "*Semgrep Scan Failed*\nBranch: `${{ github.ref_name }}`\nCommit: <${{ github.event.head_commit.url }}>"
   unit-test:
     runs-on: ubuntu-latest
     env:
