@@ -51,70 +51,84 @@ jobs:
 
 
   dependency-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+   runs-on: ubuntu-latest
+   steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
 
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --no-dev
+    - name: Install PHP dependencies
+      run: composer install --no-interaction --prefer-dist --no-dev
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
 
-      - name: Install JS dependencies
-        run: npm install
+    - name: Install JS dependencies
+      run: npm install
 
-      - name: Install dependency-check CLI
-        run: |
-          VERSION="10.0.4"
-          wget https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
-          unzip dependency-check-${VERSION}-release.zip
-          sudo mv dependency-check /opt/dependency-check
-          sudo ln -s /opt/dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
+    - name: Install dependency-check CLI
+      run: |
+        VERSION="10.0.4"
+        wget https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
+        unzip dependency-check-${VERSION}-release.zip
+        sudo mv dependency-check /opt/dependency-check
+        sudo ln -s /opt/dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
 
-      - name: Run dependency-check scan
-        run: |
-          mkdir -p ./dc-data ./reports
-          dependency-check \
-            --nvdApiDelay 7000 \
-            --nvdApiKey ${{ secrets.NVD_API }} \
-            --data ./dc-data \
-            --scan . \
-            --log ./reports/dependency-check.log \
-            --enableExperimental \
-            --format JSON \
-            --format XML \
-            --failOnCVSS 4.0 \
-            --out ./reports/
+    - name: Run dependency-check scan
+      id: dependencycheck
+      continue-on-error: true
+      run: |
+        mkdir -p ./dc-data ./reports
+        dependency-check \
+          --nvdApiDelay 7000 \
+          --nvdApiKey "${{ secrets.NVD_API }}" \
+          --data ./dc-data \
+          --scan . \
+          --log ./reports/dependency-check.log \
+          --enableExperimental \
+          --format JSON \
+          --format XML \
+          --failOnCVSS 4.0 \
+          --out ./reports/
 
-      - name: Install requests package
-        if: always()
-        run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install requests
+    - name: Check dependency-check reports
+      if: always()
+      run: |
+        ls -lah ./reports || true
+        test -f ./reports/dependency-check-report.xml && echo "XML report exists" || echo "XML report missing"
+        test -f ./reports/dependency-check-report.xml && wc -c ./reports/dependency-check-report.xml || true
+        test -f ./reports/dependency-check-report.json && echo "JSON report exists" || echo "JSON report missing"
+        test -f ./reports/dependency-check-report.json && wc -c ./reports/dependency-check-report.json || true
 
-      - name: Upload to DefectDojo
-        if: failure()
-        env:
-          DEFECT_DOJO_FILE: ./reports/dependency-check-report.xml
-          DEFECT_DOJO_ENGAGEMENT: 1
-          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          DEFECT_DOJO_SCAN_TYPE: Dependency Check Scan
-          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          DEFECT_DOJO_PRODUCT_NAME: Backend
-        run: |
-          . venv/bin/activate
-          python upload-scan-report.py
+    - name: Install requests package
+      if: always()
+      run: |
+        python3 -m venv venv
+        . venv/bin/activate
+        pip install --upgrade pip
+        pip install requests
+
+    - name: Upload to DefectDojo
+      if: always()
+      env:
+        DEFECT_DOJO_FILE: "./reports/dependency-check-report.xml"
+        DEFECT_DOJO_ENGAGEMENT: "1"
+        DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
+        DEFECT_DOJO_SCAN_TYPE: "Dependency Check Scan"
+        DEFECT_DOJO_URL: "https://defectdojo.travimobile.com/api/v2/import-scan/"
+      run: |
+        . venv/bin/activate
+        python upload-scan-report.py
+
+    - name: Fail job if dependency-check found issues
+      if: steps.dependencycheck.outcome != 'success'
+      run: exit 1
 
   sast-test:
     runs-on: ubuntu-latest
