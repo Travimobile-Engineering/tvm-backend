@@ -264,6 +264,24 @@ jobs:
           php artisan config:clear
           php artisan cache:clear
           php artisan migrate --force
+
+      - name: Find Util.php culprit
+        run: |
+          echo "=== Finding Util.php files ==="
+          find vendor -name "Util.php" | xargs grep -l "curl" 2>/dev/null
+          
+          echo "=== Showing line 51 context of each ==="
+          find vendor -name "Util.php" | xargs grep -l "curl" 2>/dev/null | while read f; do
+            echo "--- $f ---"
+            sed -n '45,60p' "$f"
+          done
+
+          echo "=== Searching for OTLP endpoint usage ==="
+          grep -rn "OTEL_EXPORTER_OTLP_ENDPOINT" vendor/ 2>/dev/null | head -20
+
+          echo "=== Checking config for OTLP ==="
+          grep -rn "OTEL_EXPORTER_OTLP_ENDPOINT" config/ 2>/dev/null
+          grep -rn "otlp" config/ 2>/dev/null    
          
       - name: Run PHPUnit Tests
         env:
