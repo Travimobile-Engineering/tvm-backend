@@ -184,15 +184,14 @@ jobs:
     env:
      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-     DEV_AUTH_PATH: kv/org/dev-auth-secrets
-     OTEL_PATH: kv/org/prod-admin-panel-secrets
-     # Disable OTEL completely in CI
+     DEV_AUTH_PATH: kv/org/dev-auth-secrets      
+     OTEL_PATH: kv/org/prod-admin-panel-secrets     
      OTEL_EXPORTER_OTLP_DISABLED: true
-     OTEL_SDK_DISABLED: true
-     OTEL_TRACES_EXPORTER: none
-     OTEL_METRICS_EXPORTER: none
-     OTEL_LOGS_EXPORTER: none
-     APP_ENV: testing
+     OTEL_SDK_DISABLED: true                        
+     OTEL_TRACES_EXPORTER: none                     
+     OTEL_METRICS_EXPORTER: none                    
+     OTEL_LOGS_EXPORTER: none                       
+     APP_ENV: testing    
 
     steps:
       - name: Checkout code
