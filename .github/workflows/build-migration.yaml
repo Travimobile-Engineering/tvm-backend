@@ -246,14 +246,12 @@ jobs:
 
           # Fully disable OTEL
           echo "OTEL_SDK_DISABLED=true" >> .env
-          echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> .env
+          echo "OTEL_PHP_AUTOLOAD_ENABLED=false" >> .env
+          echo "OTEL_PROPAGATORS=none" >> .env
           echo "OTEL_TRACES_EXPORTER=none" >> .env
           echo "OTEL_METRICS_EXPORTER=none" >> .env
           echo "OTEL_LOGS_EXPORTER=none" >> .env
-
-          # Override the otlp default in config/opentelemetry.php
-          echo "OTEL_PHP_AUTOLOAD_ENABLED=false" >> .env
-          echo "OTEL_PROPAGATORS=none" >> .env
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> .env
 
           sed -i "s|CACHE_DRIVER=.*|CACHE_DRIVER=array|" .env
           sed -i "s|CACHE_STORE=.*|CACHE_STORE=array|" .env
@@ -267,30 +265,25 @@ jobs:
           php artisan cache:clear
           php artisan migrate --force
 
-      - name: Find Util.php culprit
-        run: |
-          echo "=== Finding Util.php files ==="
-          find vendor -name "Util.php" | xargs grep -l "curl" 2>/dev/null
-          
-          echo "=== Showing line 51 context of each ==="
-          find vendor -name "Util.php" | xargs grep -l "curl" 2>/dev/null | while read f; do
-            echo "--- $f ---"
-            sed -n '45,60p' "$f"
-          done
+          # Verify .env has correct OTEL endpoint
+          echo "=== Verifying OTEL config ==="
+          grep "OTEL" .env
 
-          echo "=== Searching for OTLP endpoint usage ==="
-          grep -rn "OTEL_EXPORTER_OTLP_ENDPOINT" vendor/ 2>/dev/null | head -20
-
-          echo "=== Checking config for OTLP ==="
-          grep -rn "OTEL_EXPORTER_OTLP_ENDPOINT" config/ 2>/dev/null
-          grep -rn "otlp" config/ 2>/dev/null    
          
       - name: Run PHPUnit Tests
-        env:
-          OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318"
         run: |
           unset OTEL_EXPORTER_OTLP_ENDPOINT
-          export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"
+          unset OTEL_EXPORTER_OTLP_PROTOCOL
+          unset OTEL_SDK_DISABLED
+          php artisan config:clear
+          APP_ENV=testing \
+          OTEL_SDK_DISABLED=true \
+          OTEL_PHP_AUTOLOAD_ENABLED=false \
+          OTEL_PROPAGATORS=none \
+          OTEL_TRACES_EXPORTER=none \
+          OTEL_METRICS_EXPORTER=none \
+          OTEL_LOGS_EXPORTER=none \
+          OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 \
           php artisan test --parallel --coverage-text
 
   build-and-push-docker:
