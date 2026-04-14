@@ -244,14 +244,16 @@ jobs:
           sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
           echo "DB_DATABASE=/home/runner/work/tvm-backend/tvm-backend/database/database.sqlite" >> .env
 
-          # Force override OTEL endpoint to valid URL
-          sed -i "s|OTEL_EXPORTER_OTLP_ENDPOINT=.*|OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318|" .env
-          echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> .env
-
+          # Fully disable OTEL
           echo "OTEL_SDK_DISABLED=true" >> .env
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> .env
           echo "OTEL_TRACES_EXPORTER=none" >> .env
           echo "OTEL_METRICS_EXPORTER=none" >> .env
           echo "OTEL_LOGS_EXPORTER=none" >> .env
+
+          # Override the otlp default in config/opentelemetry.php
+          echo "OTEL_PHP_AUTOLOAD_ENABLED=false" >> .env
+          echo "OTEL_PROPAGATORS=none" >> .env
 
           sed -i "s|CACHE_DRIVER=.*|CACHE_DRIVER=array|" .env
           sed -i "s|CACHE_STORE=.*|CACHE_STORE=array|" .env
