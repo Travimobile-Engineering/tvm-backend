@@ -268,8 +268,10 @@ jobs:
       - name: Run PHPUnit Tests
         env:
           OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318"
-        run: php artisan test --parallel --coverage-text    
-
+        run: |
+          unset OTEL_EXPORTER_OTLP_ENDPOINT
+          export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"
+          php artisan test --parallel --coverage-text
 
   build-and-push-docker:
     runs-on: ubuntu-latest
