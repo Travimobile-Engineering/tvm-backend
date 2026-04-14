@@ -216,13 +216,6 @@ jobs:
         id: vault-secrets
         run: |
           echo "Fetching dev-auth secrets..."
-          MAIL_USERNAME=$(vault kv get -field=MAIL_USERNAME $DEV_AUTH_PATH)
-          JWT_SECRET=$(vault kv get -field=JWT_SECRET $DEV_AUTH_PATH)
-
-          # Write to GitHub Actions environment
-          echo "MAIL_USERNAME=$MAIL_USERNAME" >> $GITHUB_ENV
-          echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
-          
           echo "Fetching OTEL secrets..."
           OTEL_EXPORTER_OTLP_ENDPOINT=$(vault kv get -field=OTEL_EXPORTER_OTLP_ENDPOINT $OTEL_PATH)
           OTEL_EXPORTER_OTLP_PROTOCOL=$(vault kv get -field=OTEL_EXPORTER_OTLP_PROTOCOL $OTEL_PATH)
