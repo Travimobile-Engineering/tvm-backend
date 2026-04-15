@@ -129,35 +129,40 @@ jobs:
 
     - name: Prepare Laravel
       run: |
-        cp .env.example .env
+       cp .env.example .env
 
-        echo "APP_ENV=testing" >> .env
-        echo "APP_URL=http://localhost" >> .env
+       echo "APP_ENV=testing" >> .env
+       echo "APP_URL=http://localhost" >> .env
 
-        php artisan key:generate
+       php artisan key:generate
 
-        sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
-        echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
+       sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
+       echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
+  
+       echo "CACHE_DRIVER=array" >> .env
+       echo "SESSION_DRIVER=array" >> .env
+       echo "QUEUE_CONNECTION=sync" >> .env
 
-        echo "CACHE_DRIVER=array" >> .env
-        echo "SESSION_DRIVER=array" >> .env
-        echo "QUEUE_CONNECTION=sync" >> .env
+       echo "MAIL_MAILER=log" >> .env
+       echo "BROADCAST_DRIVER=log" >> .env
 
-        echo "MAIL_MAILER=log" >> .env
-        echo "BROADCAST_DRIVER=log" >> .env
+       # IMPORTANT FIX: prevent malformed URL issues
+       echo "ASSET_URL=http://localhost" >> .env
 
-        mkdir -p database
-        touch database/database.sqlite
+       mkdir -p database
+       touch database/database.sqlite
 
-        php artisan config:clear
-        php artisan cache:clear
+       php artisan config:clear
+       php artisan cache:clear
 
-        php artisan migrate --force
+       php artisan config:cache
+
+       php artisan migrate --force
 
     - name: Run PHPUnit
       run: php artisan test --parallel
 
-      
+
   build-and-push-docker:
     runs-on: ubuntu-latest
     needs: [unit-test-backend]
