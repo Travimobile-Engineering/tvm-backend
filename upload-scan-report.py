@@ -33,6 +33,7 @@ def main() -> int:
         print("Report file is empty")
         return 1
 
+    # Validate JSON if this is a JSON file
     if file_path.suffix.lower() == ".json":
         try:
             with file_path.open("r", encoding="utf-8") as jf:
@@ -42,12 +43,6 @@ def main() -> int:
             print(f"Invalid JSON file: {exc}")
             return 1
 
-    content_type = "application/json"
-    if file_path.suffix.lower() == ".xml":
-        content_type = "application/xml"
-    elif file_path.suffix.lower() == ".sarif":
-        content_type = "application/sarif+json"
-
     data = {
         "engagement": engagement,
         "scan_type": scan_type,
@@ -56,6 +51,12 @@ def main() -> int:
         "verified": "true",
         "close_old_findings": "false",
     }
+
+    content_type = "application/json"
+    if file_path.suffix.lower() == ".xml":
+        content_type = "application/xml"
+    elif file_path.suffix.lower() == ".sarif":
+        content_type = "application/sarif+json"
 
     try:
         with file_path.open("rb") as f:
