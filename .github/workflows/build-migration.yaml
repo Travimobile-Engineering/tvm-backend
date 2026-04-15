@@ -159,8 +159,8 @@ jobs:
 
        php artisan migrate --force
 
-    - name: Run PHPUnit
-      run: php artisan test --parallel
+       Run PHPUnit
+       php artisan test --parallel
 
 
   build-and-push-docker:
