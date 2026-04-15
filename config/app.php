@@ -123,7 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'paystack_secret_key' => env('PAYSTACK_SECRET_KEY', 'sk_test_5f66ae04f0233009da14af3422e0fdf781a7a90d'),
+    'paystack_secret_key' => env('PAYSTACK_SECRET_KEY'),
     'paystack_transfer_url' => env('PAYSTACK_TRANSFER_URL', 'https://api.paystack.co/transferrecipient'),
 
 ];
