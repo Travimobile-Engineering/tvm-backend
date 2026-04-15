@@ -97,7 +97,7 @@ sudo apt install -y php8.2-fpm php8.2-cli php8.2-mcrypt php8.2-gd php8.2-imagick
 #sample variables
 APP_NAME=Travi-API
 APP_ENV=local
-APP_KEY=base64:ashjPeKOOfo1Pf5qKQgbDT4Pk8zoWw4WyqnAKS9zR+0=
+APP_KEY=
 APP_DEBUG=true
 APP_TIMEZONE=UTC
 APP_URL=http://127.0.0.1:8000
@@ -162,10 +162,10 @@ AWS_USE_PATH_STYLE_ENDPOINT=false
 
 VITE_APP_NAME="${APP_NAME}"
 
-JWT_SECRET=GsODFyrYZudsmgfdBXTeZV5u0R6yquQjfLEm3H1lYEoC6lFAH0EygTeIXGq7u14b
+JWT_SECRET=
 
-PAYSTACK_SECRET_KEY = sk_test_5f66ae04f0233009da14af3422e0fdf781a7a90d
-CLOUDINARY_URL=cloudinary://394977333318586:lHXkJcllVDafSKam6gr-S8VE4q0@ducbzbm1d
+PAYSTACK_SECRET_KEY = 
+CLOUDINARY_URL=
 ----------
 
 # Testing API
