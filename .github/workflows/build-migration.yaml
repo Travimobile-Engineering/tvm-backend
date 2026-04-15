@@ -117,9 +117,15 @@ jobs:
       - name: Run dependency-check scan
         run: |
           mkdir -p ./dc-data ./reports
+
+          NVD_ARG=""
+          if [ -n "${{ secrets.NVD_API }}" ]; then
+            NVD_ARG="--nvdApiKey ${{ secrets.NVD_API }}"
+          fi
+
           dependency-check \
             --nvdApiDelay 7000 \
-            --nvdApiKey ${{ secrets.NVD_API }} \
+            $NVD_ARG \
             --data ./dc-data \
             --scan . \
             --log ./reports/dependency-check.log \
@@ -127,6 +133,7 @@ jobs:
             --format JSON \
             --format XML \
             --failOnCVSS 4.0 \
+            --project "tvm-backend" \
             --out ./reports/
 
       - name: Upload to DefectDojo
@@ -176,6 +183,18 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-progress --prefer-dist --no-interaction
 
+      - name: Disable OTEL Service Provider for CI
+        run: |
+          if [ -f bootstrap/providers.php ]; then
+            sed -i 's|Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|//Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|g' bootstrap/providers.php
+            echo "Patched bootstrap/providers.php"
+            cat bootstrap/providers.php
+          fi
+          if [ -f config/app.php ]; then
+            sed -i 's|Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|//Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|g' config/app.php
+            echo "Patched config/app.php"
+          fi
+
       - name: Install Vault CLI
         run: |
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
@@ -186,7 +205,6 @@ jobs:
         run: |
           APP_KEY=$(vault kv get -field=APP_KEY $DEV_AUTH_PATH)
           JWT_SECRET=$(vault kv get -field=JWT_SECRET $DEV_AUTH_PATH)
-
           echo "APP_KEY=$APP_KEY" >> $GITHUB_ENV
           echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
 
