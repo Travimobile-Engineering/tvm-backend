@@ -130,34 +130,49 @@ jobs:
     - name: Prepare Laravel
       run: |
        cp .env.example .env
-
        echo "APP_ENV=testing" >> .env
        echo "APP_URL=http://localhost" >> .env
-
        php artisan key:generate
-
        sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
        echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
-  
        echo "CACHE_DRIVER=array" >> .env
        echo "SESSION_DRIVER=array" >> .env
        echo "QUEUE_CONNECTION=sync" >> .env
-
        echo "MAIL_MAILER=log" >> .env
        echo "BROADCAST_DRIVER=log" >> .env
-
-       # IMPORTANT FIX: prevent malformed URL issues
        echo "ASSET_URL=http://localhost" >> .env
+
+       # Fix OpenTelemetry - disable it completely
+       echo "OTEL_PHP_DISABLED=true" >> .env
+       echo "OTEL_TRACES_EXPORTER=none" >> .env
+       echo "OTEL_METRICS_EXPORTER=none" >> .env
+       echo "OTEL_LOGS_EXPORTER=none" >> .env
+       echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> .env
+
+       # Fix RabbitMQ - point to localhost so it doesn't crash
+       echo "RABBITMQ_HOST=localhost" >> .env
+       echo "RABBITMQ_PORT=5672" >> .env
+       echo "RABBITMQ_USER=guest" >> .env
+       echo "RABBITMQ_PASSWORD=guest" >> .env
+       echo "RABBITMQ_VHOST=/" >> .env
+
+       # Fix Cloudinary
+       echo "CLOUDINARY_URL=cloudinary://000000000000000:xxxxxxxxxxxxxxxx@dummy" >> .env
+
+       # Fix Firebase
+       echo "FIREBASE_CREDENTIALS=" >> .env
+       echo "FIREBASE_PROJECT_ID=dummy" >> .env
+
+       # Fix Paystack
+       echo "PAYSTACK_PUBLIC_KEY=pk_test_dummy" >> .env
+       echo "PAYSTACK_SECRET_KEY=sk_test_dummy" >> .env
+       echo "PAYSTACK_PAYMENT_URL=https://api.paystack.co" >> .env
 
        mkdir -p database
        touch database/database.sqlite
-
        php artisan config:clear
        php artisan cache:clear
-
        php artisan migrate --force
-
-       Run PHPUnit
        php artisan test --parallel
 
 
