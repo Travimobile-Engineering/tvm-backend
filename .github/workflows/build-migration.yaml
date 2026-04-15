@@ -53,32 +53,42 @@ jobs:
       run: exit 1
 
   dependency-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+   runs-on: ubuntu-latest
+   steps:
+    - uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
 
-      - name: Cache Composer
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+    - name: Cache Composer
+      uses: actions/cache@v4
+      with:
+        path: vendor
+        key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
 
-      - run: composer install --no-interaction --prefer-dist --no-dev
+    - run: composer install --no-interaction --prefer-dist --no-dev
 
-      - name: Install dependency-check
-        run: |
-          wget https://github.com/jeremylong/DependencyCheck/releases/download/v10.0.4/dependency-check-10.0.4-release.zip
-          unzip dependency-check-10.0.4-release.zip
+    # ✅ Cache Dependency-Check DB (VERY IMPORTANT)
+    - name: Cache Dependency-Check data
+      uses: actions/cache@v4
+      with:
+        path: ~/.dependency-check
+        key: ${{ runner.os }}-dc
 
-      - name: Run dependency-check
-        run: |
-          ./dependency-check/bin/dependency-check.sh \
-            --scan . \
-            --failOnCVSS 4.0
+    - name: Install dependency-check
+      run: |
+        wget https://github.com/jeremylong/DependencyCheck/releases/download/v10.0.4/dependency-check-10.0.4-release.zip
+        unzip dependency-check-10.0.4-release.zip
+
+    - name: Run dependency-check (optimized)
+      run: |
+        ./dependency-check/bin/dependency-check.sh \
+          --data ~/.dependency-check \
+          --nvdApiKey ${{ secrets.NVD_API }} \
+          --nvdApiDelay 2000 \
+          --scan . \
+          --failOnCVSS 4.0
 
   unit-test-backend:
     runs-on: ubuntu-latest
