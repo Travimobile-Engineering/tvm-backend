@@ -71,7 +71,7 @@ jobs:
       id: semgrep
       continue-on-error: true
       run: |
-        semgrep scan --config=auto --json --output semgrep.json
+        semgrep scan --config=auto --sarif --output semgrep.sarif
 
     - name: Check Semgrep report
       if: always()
@@ -84,10 +84,10 @@ jobs:
     - name: Upload to DefectDojo
       if: always()
       env:
-        DEFECT_DOJO_FILE: "semgrep.json"
+        DEFECT_DOJO_FILE: "semgrep.sarif"
         DEFECT_DOJO_ENGAGEMENT: "1"
         DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-        DEFECT_DOJO_SCAN_TYPE: "Semgrep JSON Report"
+        DEFECT_DOJO_SCAN_TYPE: "sarif"
         DEFECT_DOJO_URL: "https://defectdojo.travimobile.com/api/v2/import-scan/"
       run: |
         python upload-scan-report.py
