@@ -101,55 +101,63 @@ jobs:
   unit-test-backend:
     runs-on: ubuntu-latest
     needs: [check-for-leaked-secrets, semgrep-scan]
+
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: 8.4
-          extensions: mbstring, curl, openssl, bcmath, pdo_sqlite, sqlite3
-          coverage: xdebug
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.4
+        extensions: mbstring, curl, openssl, bcmath, pdo_sqlite, sqlite3
+        coverage: xdebug
 
-      - name: Cache Composer
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+    - name: Cache Composer
+      uses: actions/cache@v4
+      with:
+        path: vendor
+        key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
 
-      - run: composer install --no-interaction --prefer-dist
+    - run: composer install --no-interaction --prefer-dist
 
-      # FIXED Laravel setup
-      - name: Prepare Laravel
-        run: |
-          cp .env.example .env
+    # ✅ FIX: disable OpenTelemetry in CI
+    - name: Disable OpenTelemetry
+      run: |
+        echo "OTEL_PHP_DISABLED=true" >> $GITHUB_ENV
+        echo "OTEL_METRICS_EXPORTER=none" >> $GITHUB_ENV
+        echo "OTEL_TRACES_EXPORTER=none" >> $GITHUB_ENV
+        echo "OTEL_LOGS_EXPORTER=none" >> $GITHUB_ENV
 
-          echo "APP_ENV=testing" >> .env
-          echo "APP_URL=http://localhost" >> .env
+    - name: Prepare Laravel
+      run: |
+        cp .env.example .env
 
-          php artisan key:generate
+        echo "APP_ENV=testing" >> .env
+        echo "APP_URL=http://localhost" >> .env
 
-          sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
-          echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
+        php artisan key:generate
 
-          echo "CACHE_DRIVER=array" >> .env
-          echo "SESSION_DRIVER=array" >> .env
-          echo "QUEUE_CONNECTION=sync" >> .env
+        sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
+        echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
 
-          echo "MAIL_MAILER=log" >> .env
-          echo "BROADCAST_DRIVER=log" >> .env
+        echo "CACHE_DRIVER=array" >> .env
+        echo "SESSION_DRIVER=array" >> .env
+        echo "QUEUE_CONNECTION=sync" >> .env
 
-          mkdir -p database
-          touch database/database.sqlite
+        echo "MAIL_MAILER=log" >> .env
+        echo "BROADCAST_DRIVER=log" >> .env
 
-          php artisan config:clear
-          php artisan cache:clear
-          php artisan config:cache
+        mkdir -p database
+        touch database/database.sqlite
 
-          php artisan migrate --force
+        php artisan config:clear
+        php artisan cache:clear
 
-      - name: Run PHPUnit
-        run: php artisan test --parallel
+        php artisan migrate --force
 
+    - name: Run PHPUnit
+      run: php artisan test --parallel
+
+      
   build-and-push-docker:
     runs-on: ubuntu-latest
     needs: [unit-test-backend]
