@@ -71,7 +71,8 @@ jobs:
       id: semgrep
       continue-on-error: true
       run: |
-        semgrep scan --config=auto --sarif --output semgrep.sarif
+        semgrep scan --config=auto app --sarif --output semgrep-app.sarif
+        semgrep scan --config=auto routes --sarif --output semgrep-routes.sarif
 
     - name: Check Semgrep report
       if: always()
