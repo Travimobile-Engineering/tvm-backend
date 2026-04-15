@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: zricethezav/gitleaks:v8.26.0
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -26,119 +25,68 @@ jobs:
           DEFECT_DOJO_SCAN_TYPE: Gitleaks Scan
           DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
           DEFECT_DOJO_PRODUCT_NAME: Backend
-
         run: |
-          # Install Python + pip
           apk add --no-cache python3 py3-pip
-
-          # Install requests
           pip3 install requests
-
-          # Fix git ownership issue
           git config --global --add safe.directory "*"
-
-          # Run Gitleaks (don't fail immediately)
           gitleaks detect --verbose --source . -f json -r gitleaks.json || true
-
-          # Check if leaks exist
           if [ -s gitleaks.json ]; then
             echo "Leaks found, uploading to DefectDojo..."
-            python upload-scan-report.py
+            python3 upload-scan-report.py
             exit 1
           else
             echo "No leaks found"
           fi
 
-
   semgrep-scan:
-   runs-on: ubuntu-latest
-
-   steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
-
-    - name: Install Semgrep
-      run: |
-        python -m pip install --upgrade pip
-        pip install semgrep requests
-
-    - name: Run Semgrep
-      id: semgrep
-      continue-on-error: true
-      run: |
-        semgrep scan --config=auto --json --output semgrep.json
-
-    - name: Check Semgrep report
-      if: always()
-      run: |
-        ls -lah
-        test -f semgrep.json && echo "semgrep.json exists" || echo "semgrep.json missing"
-        test -f semgrep.json && wc -c semgrep.json || true
-        test -f semgrep.json && python -m json.tool semgrep.json > /dev/null && echo "valid json" || true
-
-    - name: Upload to DefectDojo
-      if: always()
-      env:
-        DEFECT_DOJO_FILE: "semgrep.json"
-        DEFECT_DOJO_ENGAGEMENT: "1"
-        DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-        DEFECT_DOJO_SCAN_TYPE: "Semgrep JSON Report"
-        DEFECT_DOJO_URL: "https://defectdojo.travimobile.com/api/v2/import-scan/"
-      run: |
-        python upload-scan-report.py
-
-    - name: Fail job if Semgrep found issues
-      if: steps.semgrep.outcome != 'success'
-      run: exit 1
-
-  sast-test:
     runs-on: ubuntu-latest
-    container:
-      image: semgrep/semgrep
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Semgrep scan
-        run: semgrep scan --config=auto --error --verbose --json --output semgrep.json
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Install requests package
-        if: always()
+      - name: Install Semgrep
         run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install requests
+          python -m pip install --upgrade pip
+          pip install semgrep requests
+
+      - name: Run Semgrep
+        id: semgrep
+        continue-on-error: true
+        run: |
+          semgrep scan --config=auto --json --output semgrep.json
 
       - name: Upload to DefectDojo
-        if: failure()
+        if: always()
         env:
           DEFECT_DOJO_FILE: semgrep.json
-          DEFECT_DOJO_ENGAGEMENT: 1
+          DEFECT_DOJO_ENGAGEMENT: 1                              # ⚠️ verify this ID exists in DefectDojo
           DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
           DEFECT_DOJO_SCAN_TYPE: Semgrep JSON Report
           DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          DEFECT_DOJO_PRODUCT_NAME: Backend
+          DEFECT_DOJO_PRODUCT_NAME: Backend                      # ⚠️ verify this product exists in DefectDojo
         run: python upload-scan-report.py
+
+      - name: Fail job if Semgrep found issues
+        if: steps.semgrep.outcome != 'success'
+        run: exit 1
 
   unit-test:
     runs-on: ubuntu-latest
     env:
-     VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-     VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-     DEV_AUTH_PATH: kv/org/dev-auth-secrets      
-     OTEL_PATH: kv/org/prod-admin-panel-secrets     
-     OTEL_EXPORTER_OTLP_DISABLED: true
-     OTEL_SDK_DISABLED: true                        
-     OTEL_TRACES_EXPORTER: none                     
-     OTEL_METRICS_EXPORTER: none                    
-     OTEL_LOGS_EXPORTER: none                       
-     APP_ENV: testing    
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+      DEV_AUTH_PATH: kv/org/dev-auth-secrets
+      OTEL_SDK_DISABLED: true
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_PHP_AUTOLOAD_ENABLED: false
+      APP_ENV: testing
 
     steps:
       - name: Checkout code
@@ -148,32 +96,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.4
-          extensions: mbstring, curl, openssl, bcmath, pdo_mysql
+          extensions: mbstring, curl, openssl, bcmath, pdo_mysql, sqlite3
 
       - name: Install Composer dependencies
         run: composer install --no-progress --no-suggest --prefer-dist
-      
-      - name: Install Vault CLI
-        run: |
-          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-          sudo apt update && sudo apt install vault -y
-
-      - name: Fetch secrets from Vault
-        id: vault-secrets
-        run: |
-          echo "Fetching dev-auth secrets..."
-          echo "Fetching OTEL secrets..."
-          OTEL_EXPORTER_OTLP_ENDPOINT=$(vault kv get -field=OTEL_EXPORTER_OTLP_ENDPOINT $OTEL_PATH)
-          OTEL_EXPORTER_OTLP_PROTOCOL=$(vault kv get -field=OTEL_EXPORTER_OTLP_PROTOCOL $OTEL_PATH)
-
-          # Write to GitHub Actions environment
-          echo "OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_EXPORTER_OTLP_ENDPOINT" >> $GITHUB_ENV
-          echo "OTEL_EXPORTER_OTLP_PROTOCOL=$OTEL_EXPORTER_OTLP_PROTOCOL" >> $GITHUB_ENV  
-          
-          for secret in $DEV_SECRETS $OTEL_SECRETS; do
-            echo "$secret" >> $GITHUB_ENV
-          done
 
       - name: Cache composer dependencies
         uses: actions/cache@v3
@@ -181,13 +107,46 @@ jobs:
           path: vendor
           key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
 
-      - name: Prepare Laravel
+      - name: Install Vault CLI
+        run: |
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt update && sudo apt install vault -y
+
+      - name: Fetch secrets from Vault          # ✅ FIXED: only fetch fields that exist
+        id: vault-secrets
+        run: |
+          echo "Fetching dev-auth secrets..."
+          APP_KEY=$(vault kv get -field=APP_KEY $DEV_AUTH_PATH)
+          JWT_SECRET=$(vault kv get -field=JWT_SECRET $DEV_AUTH_PATH)
+          DB_CONNECTION=$(vault kv get -field=DB_CONNECTION $DEV_AUTH_PATH)
+          DB_DATABASE=$(vault kv get -field=DB_DATABASE $DEV_AUTH_PATH)
+          DB_HOST=$(vault kv get -field=DB_HOST $DEV_AUTH_PATH)
+          DB_PASSWORD=$(vault kv get -field=DB_PASSWORD $DEV_AUTH_PATH)
+          DB_PORT=$(vault kv get -field=DB_PORT $DEV_AUTH_PATH)
+          DB_USERNAME=$(vault kv get -field=DB_USERNAME $DEV_AUTH_PATH)
+
+          echo "APP_KEY=$APP_KEY" >> $GITHUB_ENV
+          echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
+          echo "DB_CONNECTION=$DB_CONNECTION" >> $GITHUB_ENV
+          echo "DB_DATABASE=$DB_DATABASE" >> $GITHUB_ENV
+          echo "DB_HOST=$DB_HOST" >> $GITHUB_ENV
+          echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
+          echo "DB_PORT=$DB_PORT" >> $GITHUB_ENV
+          echo "DB_USERNAME=$DB_USERNAME" >> $GITHUB_ENV
+
+          # OTEL disabled in CI - hardcoded to avoid Vault timeout
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> $GITHUB_ENV
+          echo "OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf" >> $GITHUB_ENV
+
+      - name: Prepare Laravel                   # ✅ FIXED: SQLite for CI, all OTEL disabled
         run: |
           cp .env.example .env
 
           sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env
           sed -i "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" .env
 
+          # Use SQLite for CI (MySQL is internal cluster only)
           sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
           echo "DB_DATABASE=/home/runner/work/tvm-backend/tvm-backend/database/database.sqlite" >> .env
 
@@ -200,11 +159,13 @@ jobs:
           echo "OTEL_LOGS_EXPORTER=none" >> .env
           echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> .env
 
+          # Use array drivers
           sed -i "s|CACHE_DRIVER=.*|CACHE_DRIVER=array|" .env
           sed -i "s|CACHE_STORE=.*|CACHE_STORE=array|" .env
           sed -i "s|SESSION_DRIVER=.*|SESSION_DRIVER=array|" .env
           sed -i "s|QUEUE_CONNECTION=.*|QUEUE_CONNECTION=sync|" .env
 
+          # Create SQLite file
           mkdir -p database
           touch database/database.sqlite
 
@@ -212,18 +173,8 @@ jobs:
           php artisan cache:clear
           php artisan migrate --force
 
-          # Verify .env has correct OTEL endpoint
-          echo "=== Verifying OTEL config ==="
-          grep "OTEL" .env
-
-         
       - name: Run PHPUnit Tests
         run: |
-          unset OTEL_EXPORTER_OTLP_ENDPOINT
-          unset OTEL_EXPORTER_OTLP_PROTOCOL
-          unset OTEL_SDK_DISABLED
-          php artisan config:clear
-          APP_ENV=testing \
           OTEL_SDK_DISABLED=true \
           OTEL_PHP_AUTOLOAD_ENABLED=false \
           OTEL_PROPAGATORS=none \
