@@ -22,9 +22,9 @@ jobs:
           git config --global --add safe.directory "*"
           gitleaks detect --verbose --source . -f json -r gitleaks.json || true
 
-          if [ -s gitleaks.json ]; then
-            echo "Leaks found"
-            exit 1
+          if grep -q '"Finding"' gitleaks.json; then
+           echo "Leaks found"
+           exit 1
           fi
 
   semgrep-scan:
