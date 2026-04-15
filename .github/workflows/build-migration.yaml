@@ -172,6 +172,7 @@ jobs:
        touch database/database.sqlite
        php artisan config:clear
        php artisan cache:clear
+       php artisan cache:clear --verbose 2>&1
        php artisan migrate --force
        php artisan test --parallel
 
