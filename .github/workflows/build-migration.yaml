@@ -193,7 +193,21 @@ jobs:
           if [ -f config/app.php ]; then
             sed -i 's|Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|//Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|g' config/app.php
             echo "Patched config/app.php"
-          fi
+          fi 
+
+      - name: Debug OTEL registration
+        run: |
+          echo "=== bootstrap/providers.php ==="
+          cat bootstrap/providers.php 2>/dev/null || echo "NOT FOUND"
+          
+          echo "=== config/app.php providers section ==="
+          grep -n -A 50 "'providers'" config/app.php 2>/dev/null || echo "NOT FOUND"
+          
+          echo "=== checking for opentelemetry in composer.json ==="
+          grep -i "opentelemetry\|keepsuit" composer.json
+          
+          echo "=== checking for auto-discovery ==="
+          grep -i "opentelemetry\|keepsuit" vendor/keepsuit/laravel-opentelemetry/composer.json 2>/dev/null | head -20  
 
       - name: Install Vault CLI
         run: |
