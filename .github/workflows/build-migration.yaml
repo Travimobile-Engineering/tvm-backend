@@ -130,23 +130,20 @@ jobs:
 
     - name: Install dependencies for Laravel
       run: |
-        cd server
         cp .env.example .env
         composer install
     - name: Execute PHP tests
       run: |
-        cd server
         touch database/database.sqlite
         php artisan key:generate
         php artisan migrate
         vendor/bin/phpunit --testdox
     - name: Install dependencies for React and run test
       run: |
-        cd client
         npm install
         npm run test
 
-        
+
   build-and-push-docker:
     runs-on: ubuntu-latest
     needs: [unit-test-backend]
