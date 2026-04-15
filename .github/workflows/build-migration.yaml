@@ -28,23 +28,29 @@ jobs:
           fi
 
   semgrep-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+   runs-on: ubuntu-latest
+   steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip
+    - name: Install Semgrep and requests
+      run: |
+        python -m pip install --upgrade pip
+        pip install semgrep requests
 
-      - run: |
-          pip install semgrep
-          semgrep scan --config=auto
+    - name: Run Semgrep
+      id: semgrep
+      continue-on-error: true
+      run: semgrep scan --config=auto --json --output semgrep.json
+
+    - name: Fail job if Semgrep found issues
+      if: steps.semgrep.outcome != 'success'
+      run: exit 1
 
   dependency-scan:
     runs-on: ubuntu-latest
