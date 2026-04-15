@@ -52,7 +52,6 @@ jobs:
 
   dependency-scan:
    runs-on: ubuntu-latest
-
    steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -73,18 +72,13 @@ jobs:
     - name: Install JS dependencies
       run: npm install
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-
     - name: Install dependency-check CLI
       run: |
         VERSION="10.0.4"
-        wget "https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip"
-        unzip -o "dependency-check-${VERSION}-release.zip"
+        wget https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
+        unzip dependency-check-${VERSION}-release.zip
         sudo mv dependency-check /opt/dependency-check
-        sudo ln -sf /opt/dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
+        sudo ln -s /opt/dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
 
     - name: Run dependency-check scan
       id: dependencycheck
@@ -115,7 +109,9 @@ jobs:
     - name: Install requests package
       if: always()
       run: |
-        python -m pip install --upgrade pip
+        python3 -m venv venv
+        . venv/bin/activate
+        pip install --upgrade pip
         pip install requests
 
     - name: Upload to DefectDojo
@@ -126,11 +122,14 @@ jobs:
         DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
         DEFECT_DOJO_SCAN_TYPE: "Dependency Check Scan"
         DEFECT_DOJO_URL: "https://defectdojo.travimobile.com/api/v2/import-scan/"
-      run: python upload-scan-report.py
+      run: |
+        . venv/bin/activate
+        python upload-scan-report.py
 
     - name: Fail job if dependency-check found issues
       if: steps.dependencycheck.outcome != 'success'
       run: exit 1
+
   sast-test:
     runs-on: ubuntu-latest
     container:
