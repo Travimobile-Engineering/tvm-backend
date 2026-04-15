@@ -1,4 +1,4 @@
-name: Laravel Backend CI/CD Migration
+name: Laravel Backend CI/CD Migration 
 
 on:
   push:
@@ -17,25 +17,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Run Gitleaks + Upload to DefectDojo
-        env:
-          DEFECT_DOJO_FILE: gitleaks.json
-          DEFECT_DOJO_ENGAGEMENT: 1
-          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          DEFECT_DOJO_SCAN_TYPE: Gitleaks Scan
-          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          DEFECT_DOJO_PRODUCT_NAME: Backend
+      - name: Run Gitleaks
         run: |
-          apk add --no-cache python3 py3-pip
-          pip3 install requests --break-system-packages
           git config --global --add safe.directory "*"
           gitleaks detect --verbose --source . -f json -r gitleaks.json || true
+
           if [ -s gitleaks.json ]; then
-            echo "Leaks found, uploading to DefectDojo..."
-            python3 upload-scan-report.py
+            echo " Leaks found"
             exit 1
           else
-            echo "No leaks found"
+            echo " No leaks found"
           fi
 
   semgrep-scan:
@@ -49,46 +40,19 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Semgrep and requests
+      - name: Install Semgrep
         run: |
           python -m pip install --upgrade pip
-          pip install semgrep requests
+          pip install semgrep
 
       - name: Run Semgrep
-        id: semgrep
-        continue-on-error: true
-        run: semgrep scan --config=auto --json --output semgrep.json
-
-      - name: Upload to DefectDojo
-        if: always()
-        env:
-          DEFECT_DOJO_FILE: semgrep.json
-          DEFECT_DOJO_ENGAGEMENT: 1
-          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          DEFECT_DOJO_SCAN_TYPE: Semgrep JSON Report
-          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          DEFECT_DOJO_PRODUCT_NAME: Backend
-        run: python upload-scan-report.py
-
-      - name: Fail job if Semgrep found issues
-        if: steps.semgrep.outcome != 'success'
-        run: exit 1
+        run: semgrep scan --config=auto
 
   dependency-scan:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install requests
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -130,22 +94,9 @@ jobs:
             --scan . \
             --log ./reports/dependency-check.log \
             --enableExperimental \
-            --format JSON \
-            --format XML \
             --failOnCVSS 4.0 \
             --project "tvm-backend" \
             --out ./reports/
-
-      - name: Upload to DefectDojo
-        if: failure()
-        env:
-          DEFECT_DOJO_FILE: ./reports/dependency-check-report.xml
-          DEFECT_DOJO_ENGAGEMENT: 1
-          DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
-          DEFECT_DOJO_SCAN_TYPE: Dependency Check Scan
-          DEFECT_DOJO_URL: https://defectdojo.travimobile.com/api/v2/import-scan/
-          DEFECT_DOJO_PRODUCT_NAME: Backend
-        run: python upload-scan-report.py
 
   unit-test:
     runs-on: ubuntu-latest
@@ -187,27 +138,10 @@ jobs:
         run: |
           if [ -f bootstrap/providers.php ]; then
             sed -i 's|Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|//Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|g' bootstrap/providers.php
-            echo "Patched bootstrap/providers.php"
-            cat bootstrap/providers.php
           fi
           if [ -f config/app.php ]; then
             sed -i 's|Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|//Keepsuit\\LaravelOpenTelemetry\\LaravelOpenTelemetryServiceProvider::class|g' config/app.php
-            echo "Patched config/app.php"
           fi 
-
-      - name: Debug OTEL registration
-        run: |
-          echo "=== bootstrap/providers.php ==="
-          cat bootstrap/providers.php 2>/dev/null || echo "NOT FOUND"
-          
-          echo "=== config/app.php providers section ==="
-          grep -n -A 50 "'providers'" config/app.php 2>/dev/null || echo "NOT FOUND"
-          
-          echo "=== checking for opentelemetry in composer.json ==="
-          grep -i "opentelemetry\|keepsuit" composer.json
-          
-          echo "=== checking for auto-discovery ==="
-          grep -i "opentelemetry\|keepsuit" vendor/keepsuit/laravel-opentelemetry/composer.json 2>/dev/null | head -20  
 
       - name: Install Vault CLI
         run: |
@@ -223,14 +157,6 @@ jobs:
           echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
 
       - name: Prepare Laravel
-        env:
-          OTEL_SDK_DISABLED: "true"
-          OTEL_PHP_AUTOLOAD_ENABLED: "false"
-          OTEL_PROPAGATORS: "none"
-          OTEL_TRACES_EXPORTER: "none"
-          OTEL_METRICS_EXPORTER: "none"
-          OTEL_LOGS_EXPORTER: "none"
-          OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318"
         run: |
           cp .env.example .env
 
@@ -238,18 +164,9 @@ jobs:
           sed -i "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" .env
 
           sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
-          echo "DB_DATABASE=/home/runner/work/tvm-backend/tvm-backend/database/database.sqlite" >> .env
-
-          echo "OTEL_SDK_DISABLED=true" >> .env
-          echo "OTEL_PHP_AUTOLOAD_ENABLED=false" >> .env
-          echo "OTEL_PROPAGATORS=none" >> .env
-          echo "OTEL_TRACES_EXPORTER=none" >> .env
-          echo "OTEL_METRICS_EXPORTER=none" >> .env
-          echo "OTEL_LOGS_EXPORTER=none" >> .env
-          echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318" >> .env
+          echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
 
           sed -i "s|CACHE_DRIVER=.*|CACHE_DRIVER=array|" .env
-          sed -i "s|CACHE_STORE=.*|CACHE_STORE=array|" .env
           sed -i "s|SESSION_DRIVER=.*|SESSION_DRIVER=array|" .env
           sed -i "s|QUEUE_CONNECTION=.*|QUEUE_CONNECTION=sync|" .env
 
@@ -261,14 +178,6 @@ jobs:
           php artisan migrate --force
 
       - name: Run PHPUnit Tests
-        env:
-          OTEL_SDK_DISABLED: "true"
-          OTEL_PHP_AUTOLOAD_ENABLED: "false"
-          OTEL_PROPAGATORS: "none"
-          OTEL_TRACES_EXPORTER: "none"
-          OTEL_METRICS_EXPORTER: "none"
-          OTEL_LOGS_EXPORTER: "none"
-          OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318"
         run: php artisan test --parallel --coverage-text
 
   build-and-push-docker:
