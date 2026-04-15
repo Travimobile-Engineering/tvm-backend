@@ -93,8 +93,7 @@ jobs:
 
   unit-test-backend:
     runs-on: ubuntu-latest
-    needs: [check-for-leaked-secrets, semgrep-scan, dependency-scan]
-
+    needs: [check-for-leaked-secrets, semgrep-scan]
     steps:
       - uses: actions/checkout@v4
 
