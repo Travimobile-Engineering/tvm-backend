@@ -52,6 +52,7 @@ jobs:
 
   dependency-scan:
    runs-on: ubuntu-latest
+
    steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -72,22 +73,47 @@ jobs:
     - name: Install JS dependencies
       run: npm install
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Cache Dependency-Check data
+      uses: actions/cache@v4
+      with:
+        path: ./dc-data
+        key: dependency-check-${{ runner.os }}-v1
+        restore-keys: |
+          dependency-check-${{ runner.os }}-
+
+    - name: Check NVD API secret
+      run: |
+        if [ -z "${{ secrets.NVD_API }}" ]; then
+          echo "NVD_API secret is empty or missing"
+          exit 1
+        else
+          echo "NVD_API secret is present"
+        fi
+
     - name: Install dependency-check CLI
       run: |
         VERSION="10.0.4"
-        wget https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
-        unzip dependency-check-${VERSION}-release.zip
+        wget "https://github.com/jeremylong/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip"
+        unzip -o "dependency-check-${VERSION}-release.zip"
         sudo mv dependency-check /opt/dependency-check
-        sudo ln -s /opt/dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
+        sudo ln -sf /opt/dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
+        dependency-check --version
 
     - name: Run dependency-check scan
       id: dependencycheck
       continue-on-error: true
+      env:
+        NVD_API_KEY: ${{ secrets.NVD_API }}
       run: |
         mkdir -p ./dc-data ./reports
         dependency-check \
-          --nvdApiDelay 7000 \
-          --nvdApiKey "${{ secrets.NVD_API }}" \
+          --nvdApiKey "$NVD_API_KEY" \
+          --nvdApiDelay 3500 \
           --data ./dc-data \
           --scan . \
           --log ./reports/dependency-check.log \
@@ -109,9 +135,7 @@ jobs:
     - name: Install requests package
       if: always()
       run: |
-        python3 -m venv venv
-        . venv/bin/activate
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install requests
 
     - name: Upload to DefectDojo
@@ -122,14 +146,11 @@ jobs:
         DEFECT_DOJO_API_TOKEN: ${{ secrets.DEFECT_DOJO_API_TOKEN }}
         DEFECT_DOJO_SCAN_TYPE: "Dependency Check Scan"
         DEFECT_DOJO_URL: "https://defectdojo.travimobile.com/api/v2/import-scan/"
-      run: |
-        . venv/bin/activate
-        python upload-scan-report.py
+      run: python upload-scan-report.py
 
     - name: Fail job if dependency-check found issues
       if: steps.dependencycheck.outcome != 'success'
       run: exit 1
-
   sast-test:
     runs-on: ubuntu-latest
     container:
