@@ -11,21 +11,28 @@ on:
 
 jobs:
   check-for-leaked-secrets:
-    runs-on: ubuntu-latest
-    container:
-      image: zricethezav/gitleaks:v8.26.0
-    steps:
-      - uses: actions/checkout@v3
+   runs-on: ubuntu-latest
+   container:
+     image: zricethezav/gitleaks:v8.26.0
 
-      - name: Run Gitleaks
-        run: |
-          git config --global --add safe.directory "*"
-          gitleaks detect --verbose --source . -f json -r gitleaks.json || true
+   steps:
+    - uses: actions/checkout@v3
 
-          if grep -q '"Finding"' gitleaks.json; then
-           echo "Leaks found"
-           exit 1
-          fi
+    - name: Run Gitleaks
+      run: |
+        git config --global --add safe.directory "*"
+
+        set +e
+        gitleaks detect --verbose --source . -f json -r gitleaks.json
+        STATUS=$?
+        set -e
+
+        if [ $STATUS -ne 0 ]; then
+          echo "Leaks found"
+          exit 1
+        fi
+
+        echo "No leaks found"
 
   semgrep-scan:
    runs-on: ubuntu-latest
