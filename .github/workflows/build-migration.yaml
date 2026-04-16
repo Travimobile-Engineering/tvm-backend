@@ -243,6 +243,18 @@ jobs:
           echo "CLIENT_ID=dummy" >> .env
           echo "CLIENT_SECRET=dummy" >> .env
 
+      - name: Disable OTEL Service Provider for CI
+        run: |
+          # Disable via composer package auto-discovery
+          composer config extra.laravel.dont-discover keepsuit/laravel-opentelemetry
+          composer config extra.laravel.dont-discover open-telemetry/opentelemetry-auto-laravel
+
+          # Regenerate the package manifest
+          php artisan package:discover --ansi
+
+          echo "=== Verifying OTEL is removed from bootstrap/cache/packages.php ==="
+          grep -i "opentelemetry\|keepsuit" bootstrap/cache/packages.php 2>/dev/null || echo "OTEL successfully disabled"      
+
       - name: Setup database
         run: |
           mkdir -p database
@@ -261,27 +273,7 @@ jobs:
           OTEL_LOGS_EXPORTER: "none"
           LARAVEL_OPENTELEMETRY_ENABLED: "false"
 
-      - name: Debug OTEL registration
-        run: |
-          echo "=== bootstrap/providers.php ==="
-          cat bootstrap/providers.php 2>/dev/null || echo "NOT FOUND"
-
-          echo "=== config/app.php providers ==="
-          grep -n "opentelemetry\|keepsuit\|Telemetry\|otel\|Otel" config/app.php 2>/dev/null
-
-          echo "=== composer.json extra ==="
-          grep -A 20 '"extra"' composer.json
-
-          echo "=== keepsuit composer.json auto-discovery ==="
-          cat vendor/keepsuit/laravel-opentelemetry/composer.json 2>/dev/null | grep -A 20 "laravel\|providers\|extra"
-
-          echo "=== config/opentelemetry.php exporter section ==="
-          cat config/opentelemetry.php 2>/dev/null
-
-          echo "=== .env OTEL values ==="
-          grep "OTEL" .env    
-
-
+      
   build-and-push-docker:
     runs-on: ubuntu-latest
     needs: [unit-test-backend]
