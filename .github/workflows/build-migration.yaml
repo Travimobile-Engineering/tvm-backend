@@ -251,6 +251,26 @@ jobs:
           php artisan cache:clear
           php artisan migrate --force
 
+      - name: Debug OTEL registration
+        run: |
+          echo "=== bootstrap/providers.php ==="
+          cat bootstrap/providers.php 2>/dev/null || echo "NOT FOUND"
+
+          echo "=== config/app.php providers ==="
+          grep -n "opentelemetry\|keepsuit\|Telemetry\|otel\|Otel" config/app.php 2>/dev/null
+
+          echo "=== composer.json extra ==="
+          grep -A 20 '"extra"' composer.json
+
+          echo "=== keepsuit composer.json auto-discovery ==="
+          cat vendor/keepsuit/laravel-opentelemetry/composer.json 2>/dev/null | grep -A 20 "laravel\|providers\|extra"
+
+          echo "=== config/opentelemetry.php exporter section ==="
+          cat config/opentelemetry.php 2>/dev/null
+
+          echo "=== .env OTEL values ==="
+          grep "OTEL" .env    
+
       - name: Run tests
         run: php artisan test --parallel
         env:
