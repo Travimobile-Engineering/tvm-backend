@@ -125,94 +125,114 @@ jobs:
       - name: Setup environment
         run: |
           cp .env.example .env
-          php artisan key:generate
 
           # App
-          echo "APP_ENV=testing" >> .env
-          echo "APP_URL=http://localhost" >> .env
+          sed -i "s|APP_ENV=.*|APP_ENV=testing|" .env
+          sed -i "s|APP_URL=.*|APP_URL=http://localhost|" .env
+          sed -i "s|APP_DEBUG=.*|APP_DEBUG=false|" .env
           echo "ASSET_URL=http://localhost" >> .env
+
+          php artisan key:generate
 
           # Database - SQLite
           sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
-          sed -i "/^DB_HOST/d" .env
-          sed -i "/^DB_PORT/d" .env
-          sed -i "/^DB_DATABASE/d" .env
-          sed -i "/^DB_USERNAME/d" .env
-          sed -i "/^DB_PASSWORD/d" .env
           echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
 
+          # Force log to file only - prevents ALL curl-based log handlers
+          sed -i "s|LOG_CHANNEL=.*|LOG_CHANNEL=single|" .env
+          sed -i "s|LOG_STACK=.*|LOG_STACK=single|" .env
+          echo "LOG_SLACK_WEBHOOK_URL=http://localhost" >> .env
+          echo "PAPERTRAIL_URL=localhost" >> .env
+          echo "PAPERTRAIL_PORT=514" >> .env
+
           # Drivers
-          echo "CACHE_DRIVER=array" >> .env
+          echo "CACHE_STORE=array" >> .env
           echo "SESSION_DRIVER=array" >> .env
           echo "QUEUE_CONNECTION=sync" >> .env
           echo "MAIL_MAILER=log" >> .env
-          echo "BROADCAST_DRIVER=log" >> .env
+          echo "BROADCAST_CONNECTION=log" >> .env
 
           # OpenTelemetry - disable completely
+          sed -i "s|OTEL_SDK_DISABLED=.*|OTEL_SDK_DISABLED=true|" .env
+          sed -i "s|LARAVEL_OPENTELEMETRY_ENABLED=.*|LARAVEL_OPENTELEMETRY_ENABLED=false|" .env
           echo "OTEL_PHP_DISABLED=true" >> .env
           echo "OTEL_TRACES_EXPORTER=none" >> .env
           echo "OTEL_METRICS_EXPORTER=none" >> .env
           echo "OTEL_LOGS_EXPORTER=none" >> .env
-          echo "OTEL_ENABLED=false" >> .env
 
-          # RabbitMQ - dummy values
-          echo "RABBITMQ_HOST=localhost" >> .env
-          echo "RABBITMQ_PORT=5672" >> .env
-          echo "RABBITMQ_USER=guest" >> .env
-          echo "RABBITMQ_PASSWORD=guest" >> .env
-          echo "RABBITMQ_VHOST=/" >> .env
+          # RabbitMQ - dummy values (queue is sync so won't connect)
+          sed -i "s|RABBITMQ_HOST=.*|RABBITMQ_HOST=localhost|" .env
+          sed -i "s|RABBITMQ_PORT=.*|RABBITMQ_PORT=5672|" .env
+          sed -i "s|RABBITMQ_USER=.*|RABBITMQ_USER=guest|" .env
+          sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=guest|" .env
+          sed -i "s|RABBITMQ_VHOST=.*|RABBITMQ_VHOST=/|" .env
+          echo "RABBITMQ_QUEUE=default" >> .env
 
-          # Cloudinary - dummy but valid format
-          echo "CLOUDINARY_URL=cloudinary://000000000000000:xxxxxxxxxxxxxxxx@dummy" >> .env
-
-          # Firebase - dummy
-          echo "FIREBASE_PROJECT_ID=dummy-project" >> .env
-          echo "FIREBASE_CREDENTIALS=" >> .env
+          # Cloudinary - valid format dummy
+          sed -i "s|CLOUDINARY_URL=.*|CLOUDINARY_URL=cloudinary://000000000000000:xxxxxxxxxxxxxxxx@dummy|" .env
+          echo "CLOUDINARY_UPLOAD_PRESET=dummy" >> .env
+          echo "CLOUDINARY_NOTIFICATION_URL=http://localhost" >> .env
 
           # Paystack - dummy
           echo "PAYSTACK_PUBLIC_KEY=pk_test_dummy" >> .env
           echo "PAYSTACK_SECRET_KEY=sk_test_dummy" >> .env
           echo "PAYSTACK_PAYMENT_URL=https://api.paystack.co" >> .env
+          echo "MERCHANT_EMAIL=test@test.com" >> .env
+
+          # JWT
+          echo "JWT_SECRET=dummy_jwt_secret_key_for_testing_only" >> .env
+
+          # Reverb - dummy
+          echo "REVERB_APP_ID=dummy" >> .env
+          echo "REVERB_APP_KEY=dummy" >> .env
+          echo "REVERB_APP_SECRET=dummy" >> .env
+          echo "REVERB_HOST=localhost" >> .env
+          echo "REVERB_PORT=8080" >> .env
+          echo "REVERB_SCHEME=http" >> .env
+
+          # AWS - dummy
+          echo "AWS_ACCESS_KEY_ID=dummy" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=dummy" >> .env
+          echo "AWS_DEFAULT_REGION=us-east-1" >> .env
+          echo "AWS_BUCKET=dummy" >> .env
 
           # ImageKit - dummy
           echo "IMAGEKIT_PUBLIC_KEY=dummy" >> .env
           echo "IMAGEKIT_PRIVATE_KEY=dummy" >> .env
           echo "IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/dummy" >> .env
 
-          # Papertrail - fix malformed tls:// connectionString
-          echo "PAPERTRAIL_URL=localhost" >> .env
-          echo "PAPERTRAIL_PORT=514" >> .env
-
-          # Slack log channel
-          echo "LOG_SLACK_WEBHOOK_URL=https://localhost" >> .env
-          echo "SLACK_BOT_USER_OAUTH_TOKEN=dummy" >> .env
-          echo "SLACK_BOT_USER_DEFAULT_CHANNEL=dummy" >> .env
-
-          # Travi payment
-          echo "TRAVI_PAYMENT_URL=https://localhost" >> .env
-          echo "TRAVI_PAYMENT_KEY=dummy" >> .env
-          echo "TRAVI_PAYMENT_SECRET=dummy" >> .env
-          echo "TRAVI_PAYMENT_HEADER_VALUE=dummy" >> .env
-
-          # Termii SMS
+          # Termii SMS - dummy
           echo "TERMII_API_KEY=dummy" >> .env
           echo "TERMII_SENDER_ID=dummy" >> .env
           echo "TERMII_DEFAULT_SENDER_ID=dummy" >> .env
 
-          # Africa's Talking SMS
+          # Africa's Talking - dummy
           echo "AFRICASTALKING_USERNAME=dummy" >> .env
           echo "AFRICASTALKING_API_KEY=dummy" >> .env
           echo "AFRICASTALKING_SENDER_ID=dummy" >> .env
 
-          # Google OAuth
+          # Google OAuth - dummy
           echo "GOOGLE_CLIENT_ID=dummy" >> .env
           echo "GOOGLE_CLIENT_SECRET=dummy" >> .env
           echo "GOOGLE_REDIRECT=http://localhost" >> .env
 
-          # AWS / SES
-          echo "AWS_ACCESS_KEY_ID=dummy" >> .env
-          echo "AWS_SECRET_ACCESS_KEY=dummy" >> .env
-          echo "AWS_DEFAULT_REGION=us-east-1" >> .env
+          # Travi payment - dummy
+          echo "TRAVI_PAYMENT_URL=http://localhost" >> .env
+          echo "TRAVI_PAYMENT_KEY=dummy" >> .env
+          echo "TRAVI_PAYMENT_SECRET=dummy" >> .env
+          echo "TRAVI_PAYMENT_HEADER_VALUE=dummy" >> .env
+
+          # Encoding / headers - dummy
+          echo "ENCODING_KEY=dummy" >> .env
+          echo "X_HEADER_KEY=dummy" >> .env
+          echo "X_HEADER_VALUE=dummy" >> .env
+
+          # SMS provider
+          echo "SMS_PROVIDER=termii" >> .env
+
+          # OAuth client
+          echo "CLIENT_ID=dummy" >> .env
+          echo "CLIENT_SECRET=dummy" >> .env
 
       - name: Setup database
         run: |
@@ -226,9 +246,11 @@ jobs:
         run: php artisan test --parallel
         env:
           OTEL_PHP_DISABLED: "true"
+          OTEL_SDK_DISABLED: "true"
           OTEL_TRACES_EXPORTER: "none"
           OTEL_METRICS_EXPORTER: "none"
           OTEL_LOGS_EXPORTER: "none"
+          LARAVEL_OPENTELEMETRY_ENABLED: "false"
 
   build-and-push-docker:
     runs-on: ubuntu-latest
