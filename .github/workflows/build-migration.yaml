@@ -251,6 +251,16 @@ jobs:
           php artisan cache:clear
           php artisan migrate --force
 
+      - name: Run tests
+        run: php artisan test --parallel
+        env:
+          OTEL_PHP_DISABLED: "true"
+          OTEL_SDK_DISABLED: "true"
+          OTEL_TRACES_EXPORTER: "none"
+          OTEL_METRICS_EXPORTER: "none"
+          OTEL_LOGS_EXPORTER: "none"
+          LARAVEL_OPENTELEMETRY_ENABLED: "false"
+
       - name: Debug OTEL registration
         run: |
           echo "=== bootstrap/providers.php ==="
@@ -271,15 +281,6 @@ jobs:
           echo "=== .env OTEL values ==="
           grep "OTEL" .env    
 
-      - name: Run tests
-        run: php artisan test --parallel
-        env:
-          OTEL_PHP_DISABLED: "true"
-          OTEL_SDK_DISABLED: "true"
-          OTEL_TRACES_EXPORTER: "none"
-          OTEL_METRICS_EXPORTER: "none"
-          OTEL_LOGS_EXPORTER: "none"
-          LARAVEL_OPENTELEMETRY_ENABLED: "false"
 
   build-and-push-docker:
     runs-on: ubuntu-latest
