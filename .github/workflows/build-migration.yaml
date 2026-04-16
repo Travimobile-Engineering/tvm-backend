@@ -121,7 +121,53 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      
+      - name: Install Composer dependencies
+        run: composer install --no-progress --prefer-dist --no-interaction
 
+      - name: Disable OTEL Service Provider for CI
+        run: |
+          mkdir -p bootstrap/cache
+
+          php -r "
+            \$path = 'vendor/composer/installed.json';
+            \$data = json_decode(file_get_contents(\$path), true);
+            \$packages = isset(\$data['packages']) ? \$data['packages'] : \$data;
+            foreach (\$packages as &\$pkg) {
+              if (stripos(\$pkg['name'], 'opentelemetry') !== false || stripos(\$pkg['name'], 'keepsuit') !== false) {
+                unset(\$pkg['extra']['laravel']);
+              }
+            }
+            if (isset(\$data['packages'])) \$data['packages'] = \$packages;
+            else \$data = \$packages;
+            file_put_contents(\$path, json_encode(\$data, JSON_PRETTY_PRINT));
+            echo 'Patched installed.json' . PHP_EOL;
+          "
+
+          php -r "
+            \$path = 'bootstrap/cache/packages.php';
+            if (file_exists(\$path)) {
+              \$packages = include \$path;
+              foreach (\$packages as \$key => \$val) {
+                if (stripos(\$key, 'opentelemetry') !== false || stripos(\$key, 'keepsuit') !== false) {
+                  unset(\$packages[\$key]);
+                  echo 'Removed: ' . \$key . PHP_EOL;
+                }
+              }
+              file_put_contents(\$path, '<?php return ' . var_export(\$packages, true) . ';');
+              echo 'Patched bootstrap/cache/packages.php' . PHP_EOL;
+            } else {
+              echo 'No packages.php cache found' . PHP_EOL;
+            }
+          "
+
+          echo "=== Verifying OTEL removed ==="
+          grep -i "opentelemetry\|keepsuit" bootstrap/cache/packages.php 2>/dev/null || echo "OTEL successfully removed"
+
+      - name: Install Vault CLI
+        run: |
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | ...
+        
       - name: Setup environment
         run: |
           cp .env.example .env
@@ -242,18 +288,6 @@ jobs:
           # OAuth client
           echo "CLIENT_ID=dummy" >> .env
           echo "CLIENT_SECRET=dummy" >> .env
-
-      - name: Disable OTEL Service Provider for CI
-        run: |
-          # Disable via composer package auto-discovery
-          composer config extra.laravel.dont-discover keepsuit/laravel-opentelemetry
-          composer config extra.laravel.dont-discover open-telemetry/opentelemetry-auto-laravel
-
-          # Regenerate the package manifest
-          php artisan package:discover --ansi
-
-          echo "=== Verifying OTEL is removed from bootstrap/cache/packages.php ==="
-          grep -i "opentelemetry\|keepsuit" bootstrap/cache/packages.php 2>/dev/null || echo "OTEL successfully disabled"      
 
       - name: Setup database
         run: |
