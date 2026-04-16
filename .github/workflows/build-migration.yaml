@@ -102,6 +102,11 @@ jobs:
     name: Unit testing
     runs-on: ubuntu-latest
 
+    env:
+      DEV_AUTH_PATH: ${{ secrets.DEV_AUTH_PATH }}
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -121,10 +126,10 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
-      
-      - name: Install Composer dependencies
-        run: composer install --no-progress --prefer-dist --no-interaction
 
+      # =========================
+      # Disable OpenTelemetry
+      # =========================
       - name: Disable OTEL Service Provider for CI
         run: |
           mkdir -p bootstrap/cache
@@ -141,40 +146,52 @@ jobs:
             if (isset(\$data['packages'])) \$data['packages'] = \$packages;
             else \$data = \$packages;
             file_put_contents(\$path, json_encode(\$data, JSON_PRETTY_PRINT));
-            echo 'Patched installed.json' . PHP_EOL;
           "
 
-          php -r "
-            \$path = 'bootstrap/cache/packages.php';
-            if (file_exists(\$path)) {
-              \$packages = include \$path;
-              foreach (\$packages as \$key => \$val) {
-                if (stripos(\$key, 'opentelemetry') !== false || stripos(\$key, 'keepsuit') !== false) {
-                  unset(\$packages[\$key]);
-                  echo 'Removed: ' . \$key . PHP_EOL;
-                }
-              }
-              file_put_contents(\$path, '<?php return ' . var_export(\$packages, true) . ';');
-              echo 'Patched bootstrap/cache/packages.php' . PHP_EOL;
-            } else {
-              echo 'No packages.php cache found' . PHP_EOL;
-            }
-          "
-
-          echo "=== Verifying OTEL removed ==="
-          grep -i "opentelemetry\|keepsuit" bootstrap/cache/packages.php 2>/dev/null || echo "OTEL successfully removed"
-      
+      # =========================
+      # Install Vault CLI
+      # =========================
       - name: Install Vault CLI
         run: |
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
           sudo apt update && sudo apt install vault -y
 
+      # =========================
+      # Fetch JWT from Vault
+      # =========================
       - name: Fetch secrets from Vault
         run: |
-          JWT_SECRET=$(vault kv get -field=JWT_SECRET $DEV_AUTH_PATH)
-          echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV    
-        
+          if [ -z "$DEV_AUTH_PATH" ]; then
+            echo "DEV_AUTH_PATH is not set"
+            exit 1
+          fi
+
+          if [ -z "$VAULT_ADDR" ]; then
+            echo "VAULT_ADDR is not set"
+            exit 1
+          fi
+
+          if [ -z "$VAULT_TOKEN" ]; then
+            echo "VAULT_TOKEN is not set"
+            exit 1
+          fi
+
+          export VAULT_ADDR=$VAULT_ADDR
+          export VAULT_TOKEN=$VAULT_TOKEN
+
+          JWT_SECRET=$(vault kv get -field=JWT_SECRET "$DEV_AUTH_PATH")
+
+          if [ -z "$JWT_SECRET" ]; then
+            echo "Failed to fetch JWT_SECRET"
+            exit 1
+          fi
+
+          echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
+
+      # =========================
+      # Setup Laravel Environment
+      # =========================
       - name: Setup environment
         run: |
           cp .env.example .env
@@ -183,141 +200,43 @@ jobs:
           sed -i "s|APP_URL=.*|APP_URL=http://localhost|" .env
           sed -i "s|APP_DEBUG=.*|APP_DEBUG=false|" .env
 
-          # Generate a fresh app key for CI
           php artisan key:generate --force
 
-          # JWT from Vault
+          # Inject JWT from Vault
           sed -i "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" .env
 
-          php artisan key:generate
-
-          # Database - SQLite
+          # SQLite DB
           sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
           echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
 
-          # Force log to file only - prevents ALL curl-based log handlers
+          # Logging
           sed -i "s|LOG_CHANNEL=.*|LOG_CHANNEL=single|" .env
-          sed -i "s|LOG_STACK=.*|LOG_STACK=single|" .env
-          echo "LOG_SLACK_WEBHOOK_URL=http://localhost" >> .env
-          echo "PAPERTRAIL_URL=localhost" >> .env
-          echo "PAPERTRAIL_PORT=514" >> .env
 
           # Drivers
           echo "CACHE_STORE=array" >> .env
           echo "SESSION_DRIVER=array" >> .env
           echo "QUEUE_CONNECTION=sync" >> .env
           echo "MAIL_MAILER=log" >> .env
-          echo "BROADCAST_CONNECTION=log" >> .env
 
-          # OpenTelemetry - disable completely
-          sed -i "s|OTEL_SDK_DISABLED=.*|OTEL_SDK_DISABLED=true|" .env
-          sed -i "s|LARAVEL_OPENTELEMETRY_ENABLED=.*|LARAVEL_OPENTELEMETRY_ENABLED=false|" .env
-          echo "OTEL_PHP_DISABLED=true" >> .env
-          echo "OTEL_TRACES_EXPORTER=none" >> .env
-          echo "OTEL_METRICS_EXPORTER=none" >> .env
-          echo "OTEL_LOGS_EXPORTER=none" >> .env
-          echo "OTEL_INSTRUMENTATION_HTTP_SERVER=false" >> .env
-          echo "OTEL_INSTRUMENTATION_HTTP_CLIENT=false" >> .env
-          echo "OTEL_INSTRUMENTATION_QUERY=false" >> .env
-          echo "OTEL_INSTRUMENTATION_REDIS=false" >> .env
-          echo "OTEL_INSTRUMENTATION_QUEUE=false" >> .env
-          echo "OTEL_INSTRUMENTATION_CACHE=false" >> .env
-          echo "OTEL_INSTRUMENTATION_EVENT=false" >> .env
-          echo "OTEL_INSTRUMENTATION_VIEW=false" >> .env
-          echo "OTEL_INSTRUMENTATION_LIVEWIRE=false" >> .env
-          echo "OTEL_INSTRUMENTATION_CONSOLE=false" >> .env
+          # Disable OTEL fully
+          echo "OTEL_SDK_DISABLED=true" >> .env
+          echo "LARAVEL_OPENTELEMETRY_ENABLED=false" >> .env
 
-          # RabbitMQ - dummy values (queue is sync so won't connect)
-          sed -i "s|RABBITMQ_HOST=.*|RABBITMQ_HOST=localhost|" .env
-          sed -i "s|RABBITMQ_PORT=.*|RABBITMQ_PORT=5672|" .env
-          sed -i "s|RABBITMQ_USER=.*|RABBITMQ_USER=guest|" .env
-          sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=guest|" .env
-          sed -i "s|RABBITMQ_VHOST=.*|RABBITMQ_VHOST=/|" .env
-          echo "RABBITMQ_QUEUE=default" >> .env
-
-          # Cloudinary - valid format dummy
-          sed -i "s|CLOUDINARY_URL=.*|CLOUDINARY_URL=cloudinary://000000000000000:xxxxxxxxxxxxxxxx@dummy|" .env
-          echo "CLOUDINARY_UPLOAD_PRESET=dummy" >> .env
-          echo "CLOUDINARY_NOTIFICATION_URL=http://localhost" >> .env
-
-          # Paystack - dummy
-          echo "PAYSTACK_PUBLIC_KEY=pk_test_dummy" >> .env
-          echo "PAYSTACK_SECRET_KEY=sk_test_dummy" >> .env
-          echo "PAYSTACK_PAYMENT_URL=https://api.paystack.co" >> .env
-          echo "MERCHANT_EMAIL=test@test.com" >> .env
-
-          # JWT
-          echo "JWT_SECRET=dummy_jwt_secret_key_for_testing_only_32chars" >> .env
-
-          # Reverb - dummy
-          echo "REVERB_APP_ID=dummy" >> .env
-          echo "REVERB_APP_KEY=dummy" >> .env
-          echo "REVERB_APP_SECRET=dummy" >> .env
-          echo "REVERB_HOST=localhost" >> .env
-          echo "REVERB_PORT=8080" >> .env
-          echo "REVERB_SCHEME=http" >> .env
-
-          # AWS - dummy
-          echo "AWS_ACCESS_KEY_ID=dummy" >> .env
-          echo "AWS_SECRET_ACCESS_KEY=dummy" >> .env
-          echo "AWS_DEFAULT_REGION=us-east-1" >> .env
-          echo "AWS_BUCKET=dummy" >> .env
-
-          # ImageKit - dummy
-          echo "IMAGEKIT_PUBLIC_KEY=dummy" >> .env
-          echo "IMAGEKIT_PRIVATE_KEY=dummy" >> .env
-          echo "IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/dummy" >> .env
-
-          # Termii SMS - dummy
-          echo "TERMII_API_KEY=dummy" >> .env
-          echo "TERMII_SENDER_ID=dummy" >> .env
-          echo "TERMII_DEFAULT_SENDER_ID=dummy" >> .env
-
-          # Africa's Talking - dummy
-          echo "AFRICASTALKING_USERNAME=dummy" >> .env
-          echo "AFRICASTALKING_API_KEY=dummy" >> .env
-          echo "AFRICASTALKING_SENDER_ID=dummy" >> .env
-
-          # Google OAuth - dummy
-          echo "GOOGLE_CLIENT_ID=dummy" >> .env
-          echo "GOOGLE_CLIENT_SECRET=dummy" >> .env
-          echo "GOOGLE_REDIRECT=http://localhost" >> .env
-
-          # Travi payment - dummy
-          echo "TRAVI_PAYMENT_URL=http://localhost" >> .env
-          echo "TRAVI_PAYMENT_KEY=dummy" >> .env
-          echo "TRAVI_PAYMENT_SECRET=dummy" >> .env
-          echo "TRAVI_PAYMENT_HEADER_VALUE=dummy" >> .env
-
-          # Encoding / headers - dummy
-          echo "ENCODING_KEY=dummy" >> .env
-          echo "X_HEADER_KEY=dummy" >> .env
-          echo "X_HEADER_VALUE=dummy" >> .env
-
-          # SMS provider
-          echo "SMS_PROVIDER=termii" >> .env
-
-          # OAuth client
-          echo "CLIENT_ID=dummy" >> .env
-          echo "CLIENT_SECRET=dummy" >> .env
-
+      # =========================
+      # Setup DB
+      # =========================
       - name: Setup database
         run: |
           mkdir -p database
           touch database/database.sqlite
           php artisan config:clear
-          php artisan cache:clear
           php artisan migrate --force
 
+      # =========================
+      # Run Tests
+      # =========================
       - name: Run tests
-        run: php artisan test --parallel
-        env:
-          OTEL_PHP_DISABLED: "true"
-          OTEL_SDK_DISABLED: "true"
-          OTEL_TRACES_EXPORTER: "none"
-          OTEL_METRICS_EXPORTER: "none"
-          OTEL_LOGS_EXPORTER: "none"
-          LARAVEL_OPENTELEMETRY_ENABLED: "false"
+        run: php artisan test --parallel"
 
       
   build-and-push-docker:
