@@ -102,31 +102,79 @@ jobs:
     name: Unit testing
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Cache Composer dependencies
-        uses: actions/cache@v3
-        with:
-          path: /tmp/composer-cache
-          key: ${{ runner.os }}-${{ hashFiles('composer.lock') }}
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: "8.4"
+        extensions: json, zip, sodium, pcntl, bcmath, curl, mbstring, pdo, sqlite, pdo_sqlite, sockets
+        coverage: none
 
-      - name: Installing dependencies
-        uses: php-actions/composer@v6
-        with:
-          php_version: 8.4
-          php_extensions: "json zip sodium pcntl bcmath"
+    - name: Cache Composer dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.composer/cache/files
+        key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
 
-      - name: Running unit test
-        uses: php-actions/phpunit@v3
-        with:
-          version: 9.6
-          php_version: 8.4
-          php_extensions: "json zip sodium pcntl bcmath"
-          args: "-d date.timezone=Asia/Jakarta"
-          memory_limit: 300M
-          configuration: phpunit.xml
-          testsuite: unittest
+    - name: Install dependencies
+      run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+    - name: Setup environment
+      run: |
+        cp .env.example .env
+        php artisan key:generate
+        echo "APP_ENV=testing" >> .env
+        echo "APP_URL=http://localhost" >> .env
+        echo "ASSET_URL=http://localhost" >> .env
+        sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
+        sed -i "/^DB_HOST/d" .env
+        sed -i "/^DB_PORT/d" .env
+        sed -i "/^DB_DATABASE/d" .env
+        sed -i "/^DB_USERNAME/d" .env
+        sed -i "/^DB_PASSWORD/d" .env
+        echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
+        echo "CACHE_DRIVER=array" >> .env
+        echo "SESSION_DRIVER=array" >> .env
+        echo "QUEUE_CONNECTION=sync" >> .env
+        echo "MAIL_MAILER=log" >> .env
+        echo "BROADCAST_DRIVER=log" >> .env
+        echo "OTEL_PHP_DISABLED=true" >> .env
+        echo "OTEL_TRACES_EXPORTER=none" >> .env
+        echo "OTEL_METRICS_EXPORTER=none" >> .env
+        echo "OTEL_LOGS_EXPORTER=none" >> .env
+        echo "OTEL_ENABLED=false" >> .env
+        echo "RABBITMQ_HOST=localhost" >> .env
+        echo "RABBITMQ_PORT=5672" >> .env
+        echo "RABBITMQ_USER=guest" >> .env
+        echo "RABBITMQ_PASSWORD=guest" >> .env
+        echo "RABBITMQ_VHOST=/" >> .env
+        echo "CLOUDINARY_URL=cloudinary://000000000000000:xxxxxxxxxxxxxxxx@dummy" >> .env
+        echo "FIREBASE_PROJECT_ID=dummy-project" >> .env
+        echo "FIREBASE_CREDENTIALS=" >> .env
+        echo "PAYSTACK_PUBLIC_KEY=pk_test_dummy" >> .env
+        echo "PAYSTACK_SECRET_KEY=sk_test_dummy" >> .env
+        echo "PAYSTACK_PAYMENT_URL=https://api.paystack.co" >> .env
+        echo "IMAGEKIT_PUBLIC_KEY=dummy" >> .env
+        echo "IMAGEKIT_PRIVATE_KEY=dummy" >> .env
+        echo "IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/dummy" >> .env
+
+    - name: Setup database
+      run: |
+        mkdir -p database
+        touch database/database.sqlite
+        php artisan config:clear
+        php artisan cache:clear
+        php artisan migrate --force
+
+    - name: Run tests
+      run: php artisan test --parallel
+      env:
+        OTEL_PHP_DISABLED: "true"
+        OTEL_TRACES_EXPORTER: "none"
+        OTEL_METRICS_EXPORTER: "none"
+        OTEL_LOGS_EXPORTER: "none"
 
   build-and-push-docker:
     runs-on: ubuntu-latest
