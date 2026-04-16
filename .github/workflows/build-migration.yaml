@@ -130,7 +130,6 @@ jobs:
           sed -i "s|APP_ENV=.*|APP_ENV=testing|" .env
           sed -i "s|APP_URL=.*|APP_URL=http://localhost|" .env
           sed -i "s|APP_DEBUG=.*|APP_DEBUG=false|" .env
-          echo "ASSET_URL=http://localhost" >> .env
 
           php artisan key:generate
 
@@ -159,6 +158,16 @@ jobs:
           echo "OTEL_TRACES_EXPORTER=none" >> .env
           echo "OTEL_METRICS_EXPORTER=none" >> .env
           echo "OTEL_LOGS_EXPORTER=none" >> .env
+          echo "OTEL_INSTRUMENTATION_HTTP_SERVER=false" >> .env
+          echo "OTEL_INSTRUMENTATION_HTTP_CLIENT=false" >> .env
+          echo "OTEL_INSTRUMENTATION_QUERY=false" >> .env
+          echo "OTEL_INSTRUMENTATION_REDIS=false" >> .env
+          echo "OTEL_INSTRUMENTATION_QUEUE=false" >> .env
+          echo "OTEL_INSTRUMENTATION_CACHE=false" >> .env
+          echo "OTEL_INSTRUMENTATION_EVENT=false" >> .env
+          echo "OTEL_INSTRUMENTATION_VIEW=false" >> .env
+          echo "OTEL_INSTRUMENTATION_LIVEWIRE=false" >> .env
+          echo "OTEL_INSTRUMENTATION_CONSOLE=false" >> .env
 
           # RabbitMQ - dummy values (queue is sync so won't connect)
           sed -i "s|RABBITMQ_HOST=.*|RABBITMQ_HOST=localhost|" .env
@@ -180,7 +189,7 @@ jobs:
           echo "MERCHANT_EMAIL=test@test.com" >> .env
 
           # JWT
-          echo "JWT_SECRET=dummy_jwt_secret_key_for_testing_only" >> .env
+          echo "JWT_SECRET=dummy_jwt_secret_key_for_testing_only_32chars" >> .env
 
           # Reverb - dummy
           echo "REVERB_APP_ID=dummy" >> .env
