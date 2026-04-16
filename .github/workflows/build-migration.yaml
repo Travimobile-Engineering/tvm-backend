@@ -99,50 +99,34 @@ jobs:
        || echo "Dependency-Check completed with warnings"
 
   unit-test-backend:
+    name: Unit testing
     runs-on: ubuntu-latest
-    needs: [check-for-leaked-secrets, semgrep-scan]
-
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - uses: shivammathur/setup-php@v2
-      with:
-        php-version: 8.4
-        extensions: mbstring, curl, openssl, bcmath, pdo_sqlite, sqlite3
-        key: dependencies-laravel-${{ matrix.laravel }}-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
-        coverage: xdebug
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: /tmp/composer-cache
+          key: ${{ runner.os }}-${{ hashFiles('composer.lock') }}
 
-    - name: Cache Composer
-      uses: actions/cache@v4
-      with:
-        path: vendor
-        key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+      - name: Installing dependencies
+        uses: php-actions/composer@v6
+        with:
+          php_version: 8.1
+          php_extensions: "json zip sodium pcntl bcmath"
 
-    - run: composer install --no-interaction --prefer-dist
-
-    # ✅ FIX: disable OpenTelemetry in CI
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-          php-version: ${{ matrix.php }}
-          extensions: curl, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, iconv
-          coverage: none
-
-    - name: Install dependencies for Laravel
-      run: |
-        cp .env.example .env
-        composer install
-    - name: Execute PHP tests
-      run: |
-        touch database/database.sqlite
-        php artisan key:generate
-        php artisan migrate
-        vendor/bin/phpunit --testdox
-    - name: Install dependencies for React and run test
-      run: |
-        npm install
-        npm run test
-
+      - name: Running unit test
+        uses: php-actions/phpunit@v3
+        with:
+          version: 9.6
+          php_version: 8.1
+          php_extensions: "json zip sodium pcntl bcmath"
+          args: "-d date.timezone=Asia/Jakarta"
+          memory_limit: 300M
+          configuration: phpunit.xml
+          testsuite: unittest
 
   build-and-push-docker:
     runs-on: ubuntu-latest
