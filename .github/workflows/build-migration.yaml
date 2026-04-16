@@ -172,19 +172,22 @@ jobs:
 
       - name: Fetch secrets from Vault
         run: |
-          APP_KEY=$(vault kv get -field=APP_KEY $DEV_AUTH_PATH)
           JWT_SECRET=$(vault kv get -field=JWT_SECRET $DEV_AUTH_PATH)
-          echo "APP_KEY=$APP_KEY" >> $GITHUB_ENV
           echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV    
         
       - name: Setup environment
         run: |
           cp .env.example .env
 
-          # App
           sed -i "s|APP_ENV=.*|APP_ENV=testing|" .env
           sed -i "s|APP_URL=.*|APP_URL=http://localhost|" .env
           sed -i "s|APP_DEBUG=.*|APP_DEBUG=false|" .env
+
+          # Generate a fresh app key for CI
+          php artisan key:generate --force
+
+          # JWT from Vault
+          sed -i "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" .env
 
           php artisan key:generate
 
