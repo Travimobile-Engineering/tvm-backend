@@ -180,7 +180,7 @@ jobs:
           export VAULT_ADDR=$VAULT_ADDR
           export VAULT_TOKEN=$VAULT_TOKEN
 
-          JWT_SECRET=$(vault kv get -field=JWT_SECRET "$DEV_AUTH_PATH")
+          JWT_SECRET=$(vault kv get -mount="kv/org" -field=JWT_SECRET dev-auth-secrets)
 
           if [ -z "$JWT_SECRET" ]; then
             echo "Failed to fetch JWT_SECRET"
