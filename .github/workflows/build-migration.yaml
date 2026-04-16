@@ -101,80 +101,134 @@ jobs:
   unit-test-backend:
     name: Unit testing
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: "8.4"
-        extensions: json, zip, sodium, pcntl, bcmath, curl, mbstring, pdo, sqlite, pdo_sqlite, sockets
-        coverage: none
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: json, zip, sodium, pcntl, bcmath, curl, mbstring, pdo, sqlite, pdo_sqlite, sockets
+          coverage: none
 
-    - name: Cache Composer dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.composer/cache/files
-        key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
 
-    - name: Install dependencies
-      run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-    - name: Setup environment
-      run: |
-        cp .env.example .env
-        php artisan key:generate
-        echo "APP_ENV=testing" >> .env
-        echo "APP_URL=http://localhost" >> .env
-        echo "ASSET_URL=http://localhost" >> .env
-        sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
-        sed -i "/^DB_HOST/d" .env
-        sed -i "/^DB_PORT/d" .env
-        sed -i "/^DB_DATABASE/d" .env
-        sed -i "/^DB_USERNAME/d" .env
-        sed -i "/^DB_PASSWORD/d" .env
-        echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
-        echo "CACHE_DRIVER=array" >> .env
-        echo "SESSION_DRIVER=array" >> .env
-        echo "QUEUE_CONNECTION=sync" >> .env
-        echo "MAIL_MAILER=log" >> .env
-        echo "BROADCAST_DRIVER=log" >> .env
-        echo "OTEL_PHP_DISABLED=true" >> .env
-        echo "OTEL_TRACES_EXPORTER=none" >> .env
-        echo "OTEL_METRICS_EXPORTER=none" >> .env
-        echo "OTEL_LOGS_EXPORTER=none" >> .env
-        echo "OTEL_ENABLED=false" >> .env
-        echo "RABBITMQ_HOST=localhost" >> .env
-        echo "RABBITMQ_PORT=5672" >> .env
-        echo "RABBITMQ_USER=guest" >> .env
-        echo "RABBITMQ_PASSWORD=guest" >> .env
-        echo "RABBITMQ_VHOST=/" >> .env
-        echo "CLOUDINARY_URL=cloudinary://000000000000000:xxxxxxxxxxxxxxxx@dummy" >> .env
-        echo "FIREBASE_PROJECT_ID=dummy-project" >> .env
-        echo "FIREBASE_CREDENTIALS=" >> .env
-        echo "PAYSTACK_PUBLIC_KEY=pk_test_dummy" >> .env
-        echo "PAYSTACK_SECRET_KEY=sk_test_dummy" >> .env
-        echo "PAYSTACK_PAYMENT_URL=https://api.paystack.co" >> .env
-        echo "IMAGEKIT_PUBLIC_KEY=dummy" >> .env
-        echo "IMAGEKIT_PRIVATE_KEY=dummy" >> .env
-        echo "IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/dummy" >> .env
+      - name: Setup environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
 
-    - name: Setup database
-      run: |
-        mkdir -p database
-        touch database/database.sqlite
-        php artisan config:clear
-        php artisan cache:clear
-        php artisan migrate --force
+          # App
+          echo "APP_ENV=testing" >> .env
+          echo "APP_URL=http://localhost" >> .env
+          echo "ASSET_URL=http://localhost" >> .env
 
-    - name: Run tests
-      run: php artisan test --parallel
-      env:
-        OTEL_PHP_DISABLED: "true"
-        OTEL_TRACES_EXPORTER: "none"
-        OTEL_METRICS_EXPORTER: "none"
-        OTEL_LOGS_EXPORTER: "none"
+          # Database - SQLite
+          sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
+          sed -i "/^DB_HOST/d" .env
+          sed -i "/^DB_PORT/d" .env
+          sed -i "/^DB_DATABASE/d" .env
+          sed -i "/^DB_USERNAME/d" .env
+          sed -i "/^DB_PASSWORD/d" .env
+          echo "DB_DATABASE=$(pwd)/database/database.sqlite" >> .env
+
+          # Drivers
+          echo "CACHE_DRIVER=array" >> .env
+          echo "SESSION_DRIVER=array" >> .env
+          echo "QUEUE_CONNECTION=sync" >> .env
+          echo "MAIL_MAILER=log" >> .env
+          echo "BROADCAST_DRIVER=log" >> .env
+
+          # OpenTelemetry - disable completely
+          echo "OTEL_PHP_DISABLED=true" >> .env
+          echo "OTEL_TRACES_EXPORTER=none" >> .env
+          echo "OTEL_METRICS_EXPORTER=none" >> .env
+          echo "OTEL_LOGS_EXPORTER=none" >> .env
+          echo "OTEL_ENABLED=false" >> .env
+
+          # RabbitMQ - dummy values
+          echo "RABBITMQ_HOST=localhost" >> .env
+          echo "RABBITMQ_PORT=5672" >> .env
+          echo "RABBITMQ_USER=guest" >> .env
+          echo "RABBITMQ_PASSWORD=guest" >> .env
+          echo "RABBITMQ_VHOST=/" >> .env
+
+          # Cloudinary - dummy but valid format
+          echo "CLOUDINARY_URL=cloudinary://000000000000000:xxxxxxxxxxxxxxxx@dummy" >> .env
+
+          # Firebase - dummy
+          echo "FIREBASE_PROJECT_ID=dummy-project" >> .env
+          echo "FIREBASE_CREDENTIALS=" >> .env
+
+          # Paystack - dummy
+          echo "PAYSTACK_PUBLIC_KEY=pk_test_dummy" >> .env
+          echo "PAYSTACK_SECRET_KEY=sk_test_dummy" >> .env
+          echo "PAYSTACK_PAYMENT_URL=https://api.paystack.co" >> .env
+
+          # ImageKit - dummy
+          echo "IMAGEKIT_PUBLIC_KEY=dummy" >> .env
+          echo "IMAGEKIT_PRIVATE_KEY=dummy" >> .env
+          echo "IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/dummy" >> .env
+
+          # Papertrail - fix malformed tls:// connectionString
+          echo "PAPERTRAIL_URL=localhost" >> .env
+          echo "PAPERTRAIL_PORT=514" >> .env
+
+          # Slack log channel
+          echo "LOG_SLACK_WEBHOOK_URL=https://localhost" >> .env
+          echo "SLACK_BOT_USER_OAUTH_TOKEN=dummy" >> .env
+          echo "SLACK_BOT_USER_DEFAULT_CHANNEL=dummy" >> .env
+
+          # Travi payment
+          echo "TRAVI_PAYMENT_URL=https://localhost" >> .env
+          echo "TRAVI_PAYMENT_KEY=dummy" >> .env
+          echo "TRAVI_PAYMENT_SECRET=dummy" >> .env
+          echo "TRAVI_PAYMENT_HEADER_VALUE=dummy" >> .env
+
+          # Termii SMS
+          echo "TERMII_API_KEY=dummy" >> .env
+          echo "TERMII_SENDER_ID=dummy" >> .env
+          echo "TERMII_DEFAULT_SENDER_ID=dummy" >> .env
+
+          # Africa's Talking SMS
+          echo "AFRICASTALKING_USERNAME=dummy" >> .env
+          echo "AFRICASTALKING_API_KEY=dummy" >> .env
+          echo "AFRICASTALKING_SENDER_ID=dummy" >> .env
+
+          # Google OAuth
+          echo "GOOGLE_CLIENT_ID=dummy" >> .env
+          echo "GOOGLE_CLIENT_SECRET=dummy" >> .env
+          echo "GOOGLE_REDIRECT=http://localhost" >> .env
+
+          # AWS / SES
+          echo "AWS_ACCESS_KEY_ID=dummy" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=dummy" >> .env
+          echo "AWS_DEFAULT_REGION=us-east-1" >> .env
+
+      - name: Setup database
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan migrate --force
+
+      - name: Run tests
+        run: php artisan test --parallel
+        env:
+          OTEL_PHP_DISABLED: "true"
+          OTEL_TRACES_EXPORTER: "none"
+          OTEL_METRICS_EXPORTER: "none"
+          OTEL_LOGS_EXPORTER: "none"
 
   build-and-push-docker:
     runs-on: ubuntu-latest
