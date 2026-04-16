@@ -114,7 +114,7 @@ jobs:
       - name: Installing dependencies
         uses: php-actions/composer@v6
         with:
-          php_version: 8.1
+          php_version: 8.4
           php_extensions: "json zip sodium pcntl bcmath"
 
       - name: Running unit test
