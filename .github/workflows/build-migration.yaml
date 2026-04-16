@@ -163,10 +163,19 @@ jobs:
 
           echo "=== Verifying OTEL removed ==="
           grep -i "opentelemetry\|keepsuit" bootstrap/cache/packages.php 2>/dev/null || echo "OTEL successfully removed"
-
+      
       - name: Install Vault CLI
         run: |
-          curl -fsSL https://apt.releases.hashicorp.com/gpg | ...
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt update && sudo apt install vault -y
+
+      - name: Fetch secrets from Vault
+        run: |
+          APP_KEY=$(vault kv get -field=APP_KEY $DEV_AUTH_PATH)
+          JWT_SECRET=$(vault kv get -field=JWT_SECRET $DEV_AUTH_PATH)
+          echo "APP_KEY=$APP_KEY" >> $GITHUB_ENV
+          echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV    
         
       - name: Setup environment
         run: |
