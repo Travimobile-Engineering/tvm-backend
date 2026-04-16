@@ -121,7 +121,7 @@ jobs:
         uses: php-actions/phpunit@v3
         with:
           version: 9.6
-          php_version: 8.1
+          php_version: 8.4
           php_extensions: "json zip sodium pcntl bcmath"
           args: "-d date.timezone=Asia/Jakarta"
           memory_limit: 300M
