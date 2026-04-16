@@ -162,32 +162,17 @@ jobs:
       # =========================
       - name: Fetch secrets from Vault
         run: |
-          if [ -z "$DEV_AUTH_PATH" ]; then
-            echo "DEV_AUTH_PATH is not set"
-            exit 1
-          fi
-
-          if [ -z "$VAULT_ADDR" ]; then
-            echo "VAULT_ADDR is not set"
-            exit 1
-          fi
-
-          if [ -z "$VAULT_TOKEN" ]; then
-            echo "VAULT_TOKEN is not set"
-            exit 1
-          fi
-
           export VAULT_ADDR=$VAULT_ADDR
           export VAULT_TOKEN=$VAULT_TOKEN
 
-          JWT_SECRET=$(vault kv get -mount="kv/org" -field=JWT_SECRET dev-auth-secrets)
+           JWT_SECRET=$(vault kv get -mount="kv/org" -field=JWT_SECRET dev-auth-secrets)
 
           if [ -z "$JWT_SECRET" ]; then
-            echo "Failed to fetch JWT_SECRET"
-            exit 1
+          echo "Failed to fetch JWT_SECRET"
+          exit 1
           fi
 
-          echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
+           echo "JWT_SECRET=$JWT_SECRET" >> $GITHUB_ENV
 
       # =========================
       # Setup Laravel Environment
