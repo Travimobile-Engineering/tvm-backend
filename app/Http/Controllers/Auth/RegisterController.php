@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AccountSignUpRequest;
+use App\Http\Requests\AirlineSignUpRequest;
 use App\Http\Requests\CreateDriverRequest;
 use App\Services\Auth\AuthService;
 use App\Trait\HttpResponse;
@@ -40,5 +41,25 @@ class RegisterController extends Controller
     public function verifyDriverAccount(Request $request)
     {
         return $this->service->verifyDriverAccount($request);
+    }
+
+    // Airline
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'email', 'unique:users,email'],
+        ]);
+
+        return $this->service->verifyEmail($request);
+    }
+
+    public function verifyCode(Request $request)
+    {
+        return $this->service->verifyCode($request);
+    }
+
+    public function airlineSignUp(AirlineSignUpRequest $request)
+    {
+        return $this->service->airlineSignUp($request);
     }
 }

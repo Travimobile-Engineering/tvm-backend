@@ -320,27 +320,27 @@ if (! function_exists('decryptData')) {
 }
 
 if (! function_exists('formatPhoneNumber')) {
-    function formatPhoneNumber(string $phone_number): ?string
+    function formatPhoneNumber(string $phoneNumber): ?string
     {
-        if (empty($phone_number)) {
+        if (empty($phoneNumber)) {
             return null;
         }
 
-        $phone_number = preg_replace('/\D/', '', $phone_number);
+        $phoneNumber = preg_replace('/\D/', '', $phoneNumber);
 
-        if (preg_match('/^234[789][01]\d{8}$/', $phone_number)) {
-            return $phone_number;
+        if (preg_match('/^234[789][01]\d{8}$/', $phoneNumber)) {
+            return $phoneNumber;
         }
 
-        if (preg_match('/^0[789][01]\d{8}$/', $phone_number)) {
-            return '234'.substr($phone_number, 1);
+        if (preg_match('/^0[789][01]\d{8}$/', $phoneNumber)) {
+            return '234'.substr($phoneNumber, 1);
         }
 
-        if (preg_match('/^\+234[789][01]\d{8}$/', $phone_number)) {
-            return substr($phone_number, 1); // remove the '+' sign
+        if (preg_match('/^\+234[789][01]\d{8}$/', $phoneNumber)) {
+            return substr($phoneNumber, 1); // remove the '+' sign
         }
 
-        return $phone_number;
+        return $phoneNumber;
     }
 }
 

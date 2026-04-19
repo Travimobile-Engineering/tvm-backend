@@ -32,6 +32,10 @@ class ApiKeyController extends Controller
 
     public function rotate(Request $request, int $id): JsonResponse
     {
+        $request->validate([
+            'airline_id' => ['required', 'integer', 'exists:airlines,id'],
+        ]);
+
         return $this->airlineService->rotate($request, $id);
     }
 
@@ -48,6 +52,7 @@ class ApiKeyController extends Controller
     public function toggleEnvironment(Request $request): JsonResponse
     {
         $request->validate([
+            'airline_id' => ['required', 'integer', 'exists:airlines,id'],
             'environment' => ['required', Rule::in(['test', 'production'])],
         ]);
 

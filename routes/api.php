@@ -104,11 +104,20 @@ Route::middleware(['validate.header'])
                 Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verifyPasswordResetOtp']);
                 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
                 Route::post('/verify/account', [RegisterController::class, 'verifyAcount']);
+
+                // Airline
+                Route::prefix('airline')
+                    ->group(function () {
+                        Route::post('/verify', [RegisterController::class, 'verifyEmail']);
+                        Route::post('/verify/email', [RegisterController::class, 'verifyCode']);
+                        Route::post('/signup', [RegisterController::class, 'airlineSignUp']);
+                    });
             });
 
         Route::prefix('payment')
             ->controller(PaymentController::class)
             ->group(function () {
+                // Current webhook
                 Route::post('/callback', 'callback');
 
                 // Deprecating soon
@@ -494,7 +503,6 @@ Route::middleware(['validate.header'])
 
         Route::prefix('airline')
             ->group(function () {
-
                 // Profile
                 Route::get('/me', [AuthenticateController::class, 'me']);
 
@@ -510,7 +518,7 @@ Route::middleware(['validate.header'])
                         // API Key management
                         Route::prefix('keys')->group(function () {
                             Route::get('/', 'index');
-                            Route::post('/', 'generate');
+                            Route::post('/generate', 'generate');
                             Route::get('/{id}', 'show');
                             Route::post('/{id}/rotate', 'rotate');
                             Route::delete('/{id}', 'revoke');
@@ -532,22 +540,34 @@ Route::middleware(['validate.header'])
                         Route::delete('/{id}', 'destroy');
                         Route::patch('/{id}/toggle', 'toggle');
                     });
-            });
 
-        Route::prefix('v1')
-            ->controller(AirlineController::class)
-            ->middleware(['validate.api.key', 'ip.whitelist', 'ip.ratelimit:30,10'])
-            ->group(function () {
-
-                Route::get('/flights', 'getFlights');
-                Route::get('/flights/{id}', 'getFlight');
-
-                Route::prefix('manifest')
-                    ->middleware(['force.production.key'])
-                    ->name('manifest.')
+                Route::prefix('v1')
+                    ->controller(AirlineController::class)
+                    ->middleware(['validate.api.key', 'ip.whitelist', 'ip.ratelimit:30,10'])
                     ->group(function () {
-                        Route::post('/', 'createManifest');
-                        Route::get('/{id}', 'getManifest');
+                        Route::get('/dashboard/overview/{user_id}/{airline_id}', 'overview')
+                            ->whereNumber('user_id')
+                            ->whereNumber('airline_id');
+
+                        // Manifest
+                        Route::prefix('manifest')
+                            ->middleware(['force.production.key'])
+                            ->name('manifest.')
+                            ->group(function () {
+                                Route::get('/', 'getManifests');
+                                Route::post('/create', 'createManifest')->middleware('airline.check.balance');
+                                Route::post('/upload', 'uploadManifest')->middleware('airline.check.balance');
+                                Route::get('/{manifest}', 'getManifest');
+                                Route::patch('/{manifest}', 'updateManifest');
+                                Route::delete('/{manifest}', 'destroyManifest');
+                                Route::post('/{manifest}/export', 'exportManifest');
+                            });
+
+                        // Wallet
+                        Route::prefix('wallet')
+                            ->group(function () {
+                                Route::post('top-up', 'topUp');
+                            });
                     });
             });
     });

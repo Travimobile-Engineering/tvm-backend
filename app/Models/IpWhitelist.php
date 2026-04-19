@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class IpWhitelist extends Model
 {
     protected $fillable = [
+        'airline_id',
         'ip_address',
         'label',
         'is_active',

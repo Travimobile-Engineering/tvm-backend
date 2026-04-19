@@ -13,30 +13,13 @@ class ValidateApiKey
 
     public function handle(Request $request, Closure $next, ?string $environment = null): Response
     {
-        [$publicKey, $secretKey] = $this->extractCredentials($request);
+        $airlineId = $request->route('airline_id') ??
+            $request->query('airline_id') ??
+            $request->input('airline_id');
 
-        if (! $publicKey || ! $secretKey) {
-            return $this->unauthorized('API credentials missing. Provide X-Public-Key and X-Secret-Key headers.');
+        if (! $airlineId) {
+            return $this->switchToCredentials($request, $environment);
         }
-
-        $apiKey = $this->keyService->authenticate($publicKey, $secretKey);
-
-        if (! $apiKey) {
-            return $this->unauthorized('Invalid API credentials.');
-        }
-
-        // If a specific environment is required by the route (e.g. "production")
-        if ($environment && $apiKey->environment !== $environment) {
-            return $this->forbidden(
-                "This endpoint requires {$environment} keys. You provided {$apiKey->environment} keys."
-            );
-        }
-
-        $apiKey->recordUsage($request->ip());
-
-        $request->attributes->set('authenticated_airline', $apiKey->airline);
-        $request->attributes->set('authenticated_api_key', $apiKey);
-        $request->attributes->set('api_environment', $apiKey->environment);
 
         return $next($request);
     }
@@ -82,5 +65,35 @@ class ValidateApiKey
             'message' => $message,
             'code' => 'WRONG_ENVIRONMENT',
         ], 403);
+    }
+
+    private function switchToCredentials($request, $environment): ?Response
+    {
+        [$publicKey, $secretKey] = $this->extractCredentials($request);
+
+        if (! $publicKey || ! $secretKey) {
+            return $this->unauthorized('API credentials missing. Provide X-Public-Key and X-Secret-Key headers.');
+        }
+
+        $apiKey = $this->keyService->authenticate($publicKey, $secretKey);
+
+        if (! $apiKey) {
+            return $this->unauthorized('Invalid API credentials.');
+        }
+
+        // If a specific environment is required by the route (e.g. "production")
+        if ($environment && $apiKey->environment !== $environment) {
+            return $this->forbidden(
+                "This endpoint requires {$environment} keys. You provided {$apiKey->environment} keys."
+            );
+        }
+
+        $apiKey->recordUsage($request->ip());
+
+        $request->attributes->set('authenticated_airline', $apiKey->airline);
+        $request->attributes->set('authenticated_api_key', $apiKey);
+        $request->attributes->set('api_environment', $apiKey->environment);
+
+        return null;
     }
 }

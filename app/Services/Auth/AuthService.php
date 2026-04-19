@@ -3,13 +3,16 @@
 namespace App\Services\Auth;
 
 use App\Contracts\SMS;
+use App\Enum\EnvironmentType;
 use App\Enum\MailingEnum;
 use App\Enum\UserStatus;
 use App\Enum\UserType;
 use App\Mail\ConfirmationEmail;
 use App\Mail\VerifyPinMail;
+use App\Models\Airline;
 use App\Models\User;
 use App\Trait\HttpResponse;
+use Illuminate\Support\Facades\DB;
 
 class AuthService
 {
@@ -191,6 +194,115 @@ class AuthService
         return $this->success($user, 'Account verified successfully');
     }
 
+    // Airline
+
+    public function verifyEmail($request)
+    {
+        $code = generateUniqueNumber('users', 'verification_code', 5);
+
+        User::create([
+            'email' => $request->email,
+            'verification_code' => $code,
+            'verification_code_expires_at' => now()->addMinutes(10),
+            'user_category' => UserType::AIRLINE->value,
+            'status' => UserStatus::INACTIVE->value,
+        ]);
+
+        $data = [
+            'name' => 'User',
+            'verification_code' => $code,
+        ];
+
+        mailSend(
+            MailingEnum::SIGN_UP_OTP,
+            $request,
+            'Verify Account',
+            "App\Mail\ConfirmationEmail",
+            $data
+        );
+
+        return $this->success(null, 'Email sent for verification', 201);
+    }
+
+    public function verifyCode($request)
+    {
+        $user = User::where('email', $request->email)
+            ->where('verification_code', $request->code)
+            ->where('verification_code_expires_at', '>=', now())
+            ->first();
+
+        if (! $user) {
+            return $this->error(null, 'Invalid code!', 400);
+        }
+
+        $user->update([
+            'email_verified' => 1,
+            'email_verified_at' => now(),
+            'verification_code' => 0,
+            'verification_code_expires_at' => null,
+            'status' => UserStatus::ACTIVE->value,
+        ]);
+
+        return $this->success(['user_id' => $user->id], 'Account verified successfully');
+    }
+
+    public function airlineSignUp($request)
+    {
+        $user = User::find($request->user_id);
+
+        if (! $user) {
+            return $this->error(null, 'User not found!', 404);
+        }
+
+        if (strtolower(trim($request->email)) !== strtolower(trim($user->email))) {
+            return $this->error(null, 'Incorrect email used', 400);
+        }
+
+        try {
+            return DB::transaction(function () use ($request, $user) {
+                $airline = Airline::create([
+                    'name' => $request->airline,
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'email' => $request->email,
+                    'manifest_submission_method' => $request->manifest_submission_method,
+                    'role' => $request->role,
+                ]);
+
+                $user->update([
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'email' => $request->email,
+                    'user_category' => UserType::AIRLINE->value,
+                    'phone_number' => formatPhoneNumber($request->phone_number),
+                    'password' => bcrypt($request->password),
+                    'airline_id' => $airline->id,
+                ]);
+
+                $airline->wallets()->insert([
+                    [
+                        'airline_id' => $airline->id,
+                        'environment' => EnvironmentType::TEST->value,
+                        'balance' => 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                    [
+                        'airline_id' => $airline->id,
+                        'environment' => EnvironmentType::PRODUCTION->value,
+                        'balance' => 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                ]);
+
+                return $this->success(null, 'Account created successfully', 201);
+            });
+        } catch (\Throwable $th) {
+            return $this->error(null, "An error occured: {$th->getMessage()}", 400);
+        }
+    }
+
     private function findUserByEmailOrPhone($request): ?User
     {
         $normalizedPhone = $request->filled('phone_number')
@@ -314,7 +426,7 @@ class AuthService
             $subject = 'Resend code';
             $mail_class = ConfirmationEmail::class;
             $data = [
-                'name' => $user->first_name,
+                'name' => $user->first_name ?? 'User',
                 'verification_code' => $code,
             ];
             mailSend($type, $user, $subject, $mail_class, $data);
