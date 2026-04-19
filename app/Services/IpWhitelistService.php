@@ -11,11 +11,19 @@ class IpWhitelistService
 {
     use HttpResponse;
 
-    public function index(): JsonResponse
+    public function index($request): JsonResponse
     {
-        $ips = IpWhitelist::latest()->paginate(20);
+        $airlineId = $request->query('airline_id');
 
-        return $this->success($ips, 'Ip list');
+        if (blank($airlineId)) {
+            return $this->error(null, 'Airline Id required', 422);
+        }
+
+        $ips = IpWhitelist::where('airline_id', $airlineId)
+            ->latest()
+            ->paginate(20);
+
+        return $this->withPagination($ips, 'Ip list');
     }
 
     public function store($request): JsonResponse
@@ -31,8 +39,14 @@ class IpWhitelistService
         return $this->success(null, 'Ip Address added successfully', 201);
     }
 
-    public function show(int $id): JsonResponse
+    public function show($request, int $id): JsonResponse
     {
+        $airlineId = $request->query('airline_id');
+
+        if (blank($airlineId)) {
+            return $this->error(null, 'Airline Id required', 422);
+        }
+
         $ip = IpWhitelist::findOrFail($id);
 
         return $this->success($ip, 'Ip details');
@@ -46,9 +60,22 @@ class IpWhitelistService
         return $this->success($ip->fresh(), 'Updated successfully');
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy($request, int $id): JsonResponse
     {
-        $ip = IpWhitelist::findOrFail($id);
+        $airlineId = $request->query('airline_id');
+
+        if (blank($airlineId)) {
+            return $this->error(null, 'Airline Id required', 422);
+        }
+
+        $ip = IpWhitelist::where('airline_id', $request->airline_id)
+            ->where('id', $id)
+            ->first();
+
+        if (! $ip) {
+            return $this->error(null, 'Ip address not found!', 404);
+        }
+
         Cache::forget("ip_whitelist:{$ip->ip_address}");
         $ip->delete();
 
@@ -58,6 +85,7 @@ class IpWhitelistService
     public function toggle(int $id): JsonResponse
     {
         $ip = IpWhitelist::findOrFail($id);
+
         $ip->update(['is_active' => ! $ip->is_active]);
         Cache::forget("ip_whitelist:{$ip->ip_address}");
 

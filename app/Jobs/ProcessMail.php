@@ -4,10 +4,10 @@ namespace App\Jobs;
 
 use App\Enum\MailingEnum;
 use App\Models\Mailing;
+use App\Services\Mail\FallbackMailer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class ProcessMail implements ShouldQueue
 {
@@ -23,7 +23,7 @@ class ProcessMail implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(FallbackMailer $mailer): void
     {
         $email = Mailing::where('id', $this->mailingId)
             ->where('status', MailingEnum::PENDING)
@@ -40,13 +40,20 @@ class ProcessMail implements ShouldQueue
 
         try {
             $mailableInstance = new $mailableClass(...array_values($payload));
-            Mail::to($email->email)->send($mailableInstance);
+            $sent = $mailer->send($email->email, $mailableInstance);
 
-            $email->update(['status' => MailingEnum::SENT]);
-
+            if ($sent) {
+                $email->update(['status' => MailingEnum::SENT]);
+            } else {
+                // All providers were down — FallbackMailer already logged it
+                $email->increment('attempts');
+                $email->update([
+                    'status' => MailingEnum::FAILED,
+                    'error_response' => 'All mail providers failed. Email was not delivered.',
+                ]);
+            }
         } catch (\Exception $e) {
             $email->increment('attempts');
-
             $email->update([
                 'status' => MailingEnum::FAILED,
                 'error_response' => $e->getMessage(),

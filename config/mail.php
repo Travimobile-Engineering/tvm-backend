@@ -18,6 +18,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Fallback order — list of mailer keys to try in priority order
+    |--------------------------------------------------------------------------
+    | Set MAIL_FALLBACK_ORDER in .env as a comma-separated list, e.g.:
+    |   MAIL_FALLBACK_ORDER=ses,mailgun,smtp_backup
+    */
+    'fallback_order' => array_filter(
+        array_map('trim', explode(',', env('MAIL_FALLBACK_ORDER', 'smtp,mailtrap,zoho')))
+    ),
+
+    /*
+    |--------------------------------------------------------------------------
     | Mailer Configurations
     |--------------------------------------------------------------------------
     |
@@ -45,7 +56,7 @@ return [
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            'timeout' => env('MAIL_TIMEOUT', 20),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
@@ -97,6 +108,27 @@ return [
 
         'mailersend' => [
             'transport' => 'mailersend',
+        ],
+
+        'mailtrap' => [
+            'transport' => 'smtp',
+            'host' => env('MAILTRAP_HOST', 'sandbox.smtp.mailtrap.io'),
+            'port' => env('MAILTRAP_PORT', 2525),
+            'encryption' => env('MAILTRAP_ENCRYPTION', 'tls'),
+            'username' => env('MAILTRAP_USERNAME'),
+            'password' => env('MAILTRAP_PASSWORD'),
+            'timeout' => env('MAIL_TIMEOUT', 10),
+        ],
+
+        'zoho' => [
+            'transport' => 'smtp',
+            'host' => env('ZOHO_MAIL_HOST', 'smtp.zoho.com'),
+            'port' => env('ZOHO_MAIL_PORT', 587),
+            'encryption' => env('ZOHO_MAIL_ENCRYPTION', 'tls'),
+            'username' => env('ZOHO_MAIL_USERNAME'),  // your full Zoho email
+            'password' => env('ZOHO_MAIL_PASSWORD'),  // app-specific password
+            'timeout' => env('MAIL_TIMEOUT', 10),
+            'encryption' => 'ssl',
         ],
     ],
 

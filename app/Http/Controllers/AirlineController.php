@@ -2,31 +2,67 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateAirlineManifestRequest;
+use App\Http\Requests\UpdateAirlineManifestRequest;
+use App\Http\Requests\UploadAirlineManifestRequest;
+use App\Models\AirlineManifest;
 use App\Services\Airline\AirlineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AirlineController extends Controller
 {
     public function __construct(protected AirlineService $airlineService) {}
 
-    public function getFlights(Request $request): JsonResponse
+    public function getManifests(Request $request): JsonResponse
     {
-        return $this->airlineService->getFlights($request);
+        return $this->airlineService->getManifests($request);
     }
 
-    public function getFlight(Request $request, int $id): JsonResponse
+    public function createManifest(CreateAirlineManifestRequest $request): JsonResponse
     {
-        return $this->airlineService->getFlight($request, $id);
+        return $this->airlineService->createManifest($request);
     }
 
-    public function issueTicket(Request $request): JsonResponse
+    public function getManifest(AirlineManifest $manifest): JsonResponse
     {
-        return $this->airlineService->issueTicket($request);
+        return $this->airlineService->getManifest($manifest);
     }
 
-    public function getTicket(Request $request, string $id): JsonResponse
+    public function uploadManifest(UploadAirlineManifestRequest $request): JsonResponse
     {
-        return $this->airlineService->getTicket($request, $id);
+        return $this->airlineService->uploadManifest($request);
+    }
+
+    public function exportManifest(AirlineManifest $manifest, Request $request): BinaryFileResponse
+    {
+        return $this->airlineService->exportManifest($manifest, $request);
+    }
+
+    public function updateManifest(UpdateAirlineManifestRequest $request, AirlineManifest $manifest): JsonResponse
+    {
+        return $this->airlineService->updateManifest($request, $manifest);
+    }
+
+    public function destroyManifest(AirlineManifest $manifest): JsonResponse
+    {
+        return $this->airlineService->destroyManifest($manifest);
+    }
+
+    public function overview($userId)
+    {
+        return $this->airlineService->overview($userId);
+    }
+
+    public function topUp(Request $request)
+    {
+        $request->validate([
+            'airline_id' => ['required', 'integer', 'exists:airlines,id'],
+            'amount' => ['required', 'numeric'],
+            'redirect_url' => ['required', 'string', 'url'],
+        ]);
+
+        return $this->airlineService->topUp($request);
     }
 }

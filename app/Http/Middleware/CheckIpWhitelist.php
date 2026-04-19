@@ -19,9 +19,20 @@ class CheckIpWhitelist
     {
         $ip = $request->ip();
 
-        // Cache the whitelist for 60 s to avoid per-request DB hits
         $allowed = Cache::remember("ip_whitelist:{$ip}", 60, function () use ($ip) {
-            return IpWhitelist::allowed()->where('ip_address', $ip)->exists();
+
+            // Check if whitelist table has any records
+            $hasWhitelist = IpWhitelist::allowed()->exists();
+
+            // If no records → allow all
+            if (! $hasWhitelist) {
+                return true;
+            }
+
+            // If records exist → enforce whitelist
+            return IpWhitelist::allowed()
+                ->where('ip_address', $ip)
+                ->exists();
         });
 
         if (! $allowed) {

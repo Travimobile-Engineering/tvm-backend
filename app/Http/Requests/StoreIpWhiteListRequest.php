@@ -24,6 +24,7 @@ class StoreIpWhiteListRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'airline_id' => ['required', 'integer', 'exists:airlines,id'],
             'ip_address' => ['required', 'ip', Rule::unique('ip_whitelists', 'ip_address')],
             'label' => ['nullable', 'string', 'max:100'],
             'expires_at' => ['nullable', 'date', 'after:now'],

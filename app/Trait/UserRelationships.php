@@ -3,6 +3,7 @@
 namespace App\Trait;
 
 use App\Models\AgentClassification;
+use App\Models\Airline;
 use App\Models\Announcement;
 use App\Models\BusStop;
 use App\Models\Commission;
@@ -213,6 +214,11 @@ trait UserRelationships
     public function agentTrips()
     {
         return $this->hasMany(Trip::class, 'agent_id');
+    }
+
+    public function airline()
+    {
+        return $this->belongsTo(Airline::class, 'airline_id');
     }
 
     public static function bootDeletesUserRelationships(): void

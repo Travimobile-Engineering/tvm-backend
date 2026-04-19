@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class GenerateApiKeyRequest extends FormRequest
 {
@@ -12,7 +13,7 @@ class GenerateApiKeyRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +24,9 @@ class GenerateApiKeyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'airline_id' => ['required', 'integer', 'exists:airlines,id'],
+            'name' => ['required', 'string', 'max:50'],
+            'environment' => ['required', Rule::in(['test', 'production'])],
         ];
     }
 }
