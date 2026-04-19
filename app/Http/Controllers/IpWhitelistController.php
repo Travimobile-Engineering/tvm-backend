@@ -5,19 +5,22 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreIpWhiteListRequest;
 use App\Models\IpWhitelist;
 use App\Services\IpWhitelistService;
+use App\Trait\HttpResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class IpWhitelistController extends Controller
 {
+    use HttpResponse;
+
     public function __construct(
         private readonly IpWhitelistService $ipWhiteListService
     ) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return $this->ipWhiteListService->index();
+        return $this->ipWhiteListService->index($request);
     }
 
     public function store(StoreIpWhiteListRequest $request): JsonResponse
@@ -25,14 +28,22 @@ class IpWhitelistController extends Controller
         return $this->ipWhiteListService->store($request);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
-        return $this->ipWhiteListService->show($id);
+        return $this->ipWhiteListService->show($request, $id);
     }
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $ip = IpWhitelist::findOrFail($id);
+        $request->validate(['airline_id' => ['required', 'integer']]);
+
+        $ip = IpWhitelist::where('airline_id', $request->airline_id)
+            ->where('id', $id)
+            ->first();
+
+        if (! $ip) {
+            return $this->error(null, 'Ip address not found!', 404);
+        }
 
         $data = $request->validate([
             'label' => ['nullable', 'string', 'max:100'],
@@ -44,9 +55,9 @@ class IpWhitelistController extends Controller
         return $this->ipWhiteListService->update($ip, $data);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        return $this->ipWhiteListService->destroy($id);
+        return $this->ipWhiteListService->destroy($request, $id);
     }
 
     public function toggle(int $id): JsonResponse

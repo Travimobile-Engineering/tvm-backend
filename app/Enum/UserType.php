@@ -10,6 +10,7 @@ enum UserType: string
     case SECURITY = 'security';
     case FOO = 'foo';
     case AFOO = 'afoo';
+    case AIRLINE = 'airline';
 
     /**
      * Return only specific user type group values
@@ -30,6 +31,7 @@ enum UserType: string
             self::PASSENGER,
             self::FOO,
             self::AFOO,
+            self::AIRLINE,
         ];
     }
 
@@ -40,6 +42,7 @@ enum UserType: string
     {
         return [
             self::SECURITY,
+            self::AIRLINE,
         ];
     }
 }

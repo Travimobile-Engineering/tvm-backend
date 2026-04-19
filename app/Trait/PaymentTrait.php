@@ -8,6 +8,7 @@ use App\Enum\PaymentStatus;
 use App\Enum\PaymentType;
 use App\Enum\TransactionTitle;
 use App\Enum\TripStatus;
+use App\Models\Airline;
 use App\Models\Notification;
 use App\Models\PaymentLog;
 use App\Models\PremiumHireBooking;
@@ -29,44 +30,13 @@ trait PaymentTrait
     protected function handleFundWallet($event)
     {
         $paymentData = $event['data'];
-        $userId = $paymentData['metadata']['user_id'];
         $amount = $paymentData['amount'];
-        $formattedAmount = number_format($amount / 100, 2, '.', '');
-        $ref = $paymentData['reference'];
+        $isAirline = $paymentData['metadata']['is_airline'];
 
-        try {
-            $user = User::with('transactions')->findOrFail($userId);
-
-            DB::beginTransaction();
-
-            $this->userIncrementBalance($user, $formattedAmount);
-
-            $user->createTransaction(
-                TransactionTitle::CREDIT_WALLET->value,
-                $formattedAmount,
-                PaymentType::CR,
-                $ref,
-                null,
-                'Wallet funded successfully'
-            );
-
-            DB::commit();
-
-            $this->notifier->send(new NotificationDispatchData(
-                events: [],
-                recipients: $user,
-                title: 'Wallet Funded',
-                body: "₦{$formattedAmount} has been added to your wallet.",
-                data: [
-                    'type' => 'wallet_funded',
-                    'amount' => $formattedAmount,
-                ]
-            ));
-
-            info("User with ID: {$user->id} topped up wallet with amount: {$formattedAmount}");
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw $th;
+        if ($isAirline) {
+            $this->airLineFund($paymentData, $amount);
+        } else {
+            $this->walletFund($paymentData, $amount);
         }
     }
 
@@ -220,6 +190,88 @@ trait PaymentTrait
             ->exists();
 
         return $paymentLogExists || $tripBookingExists;
+    }
+
+    private function walletFund($paymentData, $amount)
+    {
+        $formattedAmount = number_format($amount / 100, 2, '.', '');
+        $ref = $paymentData['reference'];
+        $userId = $paymentData['metadata']['user_id'];
+
+        try {
+            $user = User::with('transactions')->findOrFail($userId);
+
+            DB::beginTransaction();
+
+            $this->userIncrementBalance($user, $formattedAmount);
+
+            $user->createTransaction(
+                TransactionTitle::CREDIT_WALLET->value,
+                $formattedAmount,
+                PaymentType::CR,
+                $ref,
+                null,
+                'Wallet funded successfully'
+            );
+
+            DB::commit();
+
+            $this->notifier->send(new NotificationDispatchData(
+                events: [],
+                recipients: $user,
+                title: 'Wallet Funded',
+                body: "₦{$formattedAmount} has been added to your wallet.",
+                data: [
+                    'type' => 'wallet_funded',
+                    'amount' => $formattedAmount,
+                ]
+            ));
+
+            info("User with ID: {$user->id} topped up wallet with amount: {$formattedAmount}");
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw $th;
+        }
+    }
+
+    private function airLineFund($paymentData, $amount)
+    {
+        $formattedAmount = number_format($amount / 100, 2, '.', '');
+        $ref = $paymentData['reference'];
+        $airlineId = $paymentData['metadata']['airline_id'];
+
+        try {
+            $airline = Airline::with('wallets')->findOrFail($airlineId);
+
+            DB::beginTransaction();
+
+            $wallet = $airline->wallets()
+                ->where('environment', $airline->active_environment)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $wallet) {
+                throw new \Exception('Airline wallet not found');
+            }
+
+            $wallet->increment('balance', $formattedAmount);
+
+            $wallet->createTransaction(
+                'Wallet topup',
+                $formattedAmount,
+                'CR',
+                $airline->active_environment,
+                $ref,
+                'success'
+            );
+
+            DB::commit();
+
+            info("Airline {$airline->id} funded {$amount}");
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw $th;
+        }
     }
 
     /**

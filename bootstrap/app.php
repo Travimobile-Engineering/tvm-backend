@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AgentAuthMiddleware;
 use App\Http\Middleware\BurstGuard;
+use App\Http\Middleware\CheckAirlineWalletBalance;
 use App\Http\Middleware\CheckIpWhitelist;
 use App\Http\Middleware\DecryptIds;
 use App\Http\Middleware\ForceProductionKey;
@@ -45,17 +46,20 @@ return Application::configure(basePath: dirname(__DIR__))
             'force.production.key' => ForceProductionKey::class,
             'ip.whitelist' => CheckIpWhitelist::class,
             'ip.ratelimit' => RateLimitByIp::class,
+            'airline.check.balance' => CheckAirlineWalletBalance::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->reportable(function (Throwable $e): void {
-            Log::channel('slack')->error($e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'code' => $e->getCode(),
-                'url' => request()->fullUrl(),
-                'input' => request()->all(),
-            ]);
+            if (app()->isProduction()) {
+                Log::channel('slack')->error($e->getMessage(), [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'code' => $e->getCode(),
+                    'url' => request()->fullUrl(),
+                    'input' => request()->all(),
+                ]);
+            }
         });
 
         $exceptions->renderable(function (NotFoundHttpException $e, $request) {
