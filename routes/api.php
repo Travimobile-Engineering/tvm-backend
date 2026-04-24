@@ -60,6 +60,13 @@ Route::post('/seed/run', function () {
     }
 });
 
+Route::prefix('admin')
+    ->controller(OtherController::class)
+    ->group(function () {
+        Route::post('/cache/route/clear', 'clearRouteCache');
+        Route::post('/cache/clear-all', 'clearAllCache');
+    });
+
 Route::get('/', fn () => response('Welcome to the API', 200));
 
 Route::resource('transport-route-management', TransportRouteManagementController::class);
