@@ -25,4 +25,14 @@ class OtherController extends Controller
     {
         return $this->service->accountLookUp($request);
     }
+
+    public function clearRouteCache()
+    {
+        return $this->service->clearRouteCache();
+    }
+
+    public function clearAllCache()
+    {
+        return $this->service->clearAllCache();
+    }
 }

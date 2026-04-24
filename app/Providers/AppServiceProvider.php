@@ -72,6 +72,8 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureUrl(): void
     {
-        URL::formatScheme('https');
+        if ($this->app->environment('production')) {
+            URL::formatScheme('https');
+        }
     }
 }
