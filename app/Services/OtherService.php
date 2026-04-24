@@ -6,6 +6,8 @@ use App\Models\Bank;
 use App\Models\State;
 use App\Services\Curl\GetCurlService;
 use App\Trait\HttpResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 
 class OtherService
@@ -49,5 +51,44 @@ class OtherService
         ];
 
         return (new GetCurlService($url, $headers))->execute();
+    }
+
+    public function clearRouteCache(): JsonResponse
+    {
+        try {
+            Artisan::call('route:clear');
+            Artisan::call('route:cache');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Route cache cleared and rebuilt successfully.',
+                'output' => trim(Artisan::output()),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to clear route cache.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function clearAllCache(): JsonResponse
+    {
+        try {
+            Artisan::call('optimize:clear');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All caches cleared successfully.',
+                'output' => trim(Artisan::output()),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to clear cache.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
