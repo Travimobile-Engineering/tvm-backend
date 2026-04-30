@@ -66,7 +66,7 @@ trait LoginTrait
             return $this->error(null, 'Credentials do not match', 401);
 
         } catch (JWTException $e) {
-            return $this->error(null, 'An error occurred: '.$e->getMessage(), 500);
+            return $this->error(null, 'An error occurred: '.$e->getMessage(), 400);
         }
     }
 

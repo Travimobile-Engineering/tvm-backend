@@ -99,7 +99,8 @@ Route::middleware(['validate.header'])
 
         Route::prefix('auth')
             ->group(function () {
-                Route::post('/signup', [RegisterController::class, 'accountSignUp']);
+                Route::post('/signup', [RegisterController::class, 'accountSignUp'])
+                    ->middleware('throttle:6,1');
                 Route::post('/login', [AuthenticateController::class, 'authLogin'])
                     ->middleware('login.attempt');
 
@@ -107,10 +108,18 @@ Route::middleware(['validate.header'])
                     ->middleware('login.attempt');
 
                 Route::post('/forgot-password-email', [ForgotPasswordController::class, 'sendPasswordResetOtp']);
-                Route::post('/resend-code', [RegisterController::class, 'resendCode']);
+                Route::post('/resend-code', [RegisterController::class, 'resendCode'])->middleware('throttle:6,1');
                 Route::post('/verify-reset-password-otp', [ForgotPasswordController::class, 'verifyPasswordResetOtp']);
                 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
                 Route::post('/verify/account', [RegisterController::class, 'verifyAcount']);
+
+                // Agent login to be used externally (Hotel service).
+                Route::prefix('agent')
+                    ->controller(AuthenticateController::class)
+                    ->group(function () {
+                        Route::post('/login', 'agentLogin')->middleware('throttle:6,1');
+                        Route::post('/data/update', 'updateData');
+                    });
 
                 // Airline
                 Route::prefix('airline')
