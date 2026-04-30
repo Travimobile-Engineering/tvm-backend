@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\Enum\UserType;
+use App\Models\Agent;
 use App\Trait\HttpResponse;
 use App\Trait\LoginTrait;
 use Illuminate\Http\JsonResponse;
@@ -60,6 +61,53 @@ class LoginService
         }
 
         return $result;
+    }
+
+    public function agentLogin($request)
+    {
+        $credentials = [
+            'email' => $request->email,
+            'password' => $request->password,
+        ];
+
+        try {
+            $token = Auth::guard('agent')->attempt($credentials);
+
+            if (! $token) {
+                return $this->error(null, 'Credentials do not match', 401);
+            }
+
+            $agent = Auth::guard('agent')->user();
+
+            return $this->success([
+                'token' => $token,
+                'user' => $agent?->load('states:id,name'),
+            ], 'Login successful');
+
+        } catch (JWTException $e) {
+            return $this->error(null, 'An error occurred: '.$e->getMessage(), 500);
+        }
+    }
+
+    public function updateData($request)
+    {
+        $user = Agent::where('email', $request->email)->first();
+
+        if (! $user) {
+            return $this->error(null, 'User not found', 404);
+        }
+
+        $allowed = ['is_default_password', 'password']; // extend as needed
+
+        $data = $request->only($allowed);
+
+        if (empty($data)) {
+            return $this->error(null, 'No valid fields provided to update', 400);
+        }
+
+        $user->update($data);
+
+        return $this->success(null, 'Updated successfully');
     }
 
     public function logout()
