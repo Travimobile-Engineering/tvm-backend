@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Services\Auth\LoginService;
+use Illuminate\Http\Request;
 
 class AuthenticateController extends Controller
 {
@@ -43,5 +44,16 @@ class AuthenticateController extends Controller
     public function agencyLogin(LoginRequest $request)
     {
         return $this->service->agencyLogin($request);
+    }
+
+    // Agent (Hotel)
+    public function agentLogin(Request $request)
+    {
+        return $this->service->agentLogin($request);
+    }
+
+    public function updateData(Request $request)
+    {
+        return $this->service->updateData($request);
     }
 }
