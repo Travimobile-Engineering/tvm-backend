@@ -195,33 +195,36 @@ class AuthService
     }
 
     // Airline
-
     public function verifyEmail($request)
     {
         $code = generateUniqueNumber('users', 'verification_code', 5);
 
-        User::create([
-            'email' => $request->email,
-            'verification_code' => $code,
-            'verification_code_expires_at' => now()->addMinutes(10),
-            'user_category' => UserType::AIRLINE->value,
-            'status' => UserStatus::INACTIVE->value,
-        ]);
+        try {
+            User::create([
+                'email' => $request->email,
+                'verification_code' => $code,
+                'verification_code_expires_at' => now()->addMinutes(10),
+                'user_category' => UserType::AIRLINE->value,
+                'status' => UserStatus::INACTIVE->value,
+            ]);
 
-        $data = [
-            'name' => 'User',
-            'verification_code' => $code,
-        ];
+            $data = [
+                'name' => 'User',
+                'verification_code' => $code,
+            ];
 
-        mailSend(
-            MailingEnum::SIGN_UP_OTP,
-            $request,
-            'Verify Account',
-            "App\Mail\ConfirmationEmail",
-            $data
-        );
+            mailSend(
+                MailingEnum::SIGN_UP_OTP,
+                $request,
+                'Verify Account',
+                "App\Mail\ConfirmationEmail",
+                $data
+            );
 
-        return $this->success(null, 'Email sent for verification', 201);
+            return $this->success(null, 'Email sent for verification', 201);
+        } catch (\Throwable $th) {
+            return $this->error(null, "An error occured: {$th->getMessage()}", 400);
+        }
     }
 
     public function verifyCode($request)
