@@ -8,12 +8,18 @@ use Kreait\Firebase\Messaging\Notification;
 
 class FirebaseService
 {
-    protected $messaging;
+    protected $messaging = null;
 
-    public function __construct()
+    protected function messaging()
     {
-        $factory = (new Factory)->withServiceAccount(json_decode(config('services.firebase.credentials'), true));
-        $this->messaging = $factory->createMessaging();
+        if ($this->messaging === null) {
+            $credentials = config('services.firebase.credentials');
+
+            $factory = (new Factory)->withServiceAccount($credentials);
+            $this->messaging = $factory->createMessaging();
+        }
+
+        return $this->messaging;
     }
 
     public function sendToToken(string $deviceToken, string $title, string $body, array $data = [])
