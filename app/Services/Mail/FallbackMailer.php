@@ -55,7 +55,12 @@ class FallbackMailer
                 return true;
 
             } catch (Throwable $e) {
-                $this->errors[$mailerName] = $e->getMessage();
+                $this->errors[$mailerName] = [
+                    'mailer' => $mailerName,
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ];
 
                 Log::channel($this->logChannel)->warning("[FallbackMailer] Mailer '{$mailerName}' failed. Trying next.", [
                     'error' => $e->getMessage(),
@@ -93,7 +98,12 @@ class FallbackMailer
                 return true;
 
             } catch (Throwable $e) {
-                $this->errors[$mailerName] = $e->getMessage();
+                $this->errors[$mailerName] = [
+                    'mailer' => $mailerName,
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ];
 
                 Log::channel($this->logChannel)->warning("[FallbackMailer] Mailer '{$mailerName}' failed to queue. Trying next.", [
                     'error' => $e->getMessage(),
