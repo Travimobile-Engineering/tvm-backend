@@ -15,6 +15,8 @@ class FallbackMailer
      */
     protected array $mailers;
 
+    protected string $logChannel = 'fallback_mailer';
+
     public function __construct()
     {
         $order = config('mail.fallback_order', []);
@@ -34,7 +36,7 @@ class FallbackMailer
     public function send(string|array $to, Mailable $mailable): bool
     {
         if (empty($this->mailers)) {
-            Log::error('[FallbackMailer] No mailers configured in mail.fallback_order.');
+            Log::channel($this->logChannel)->error('[FallbackMailer] No mailers configured in mail.fallback_order.');
 
             return false;
         }
@@ -43,7 +45,7 @@ class FallbackMailer
             try {
                 Mail::mailer($mailerName)->to($to)->send(clone $mailable);
 
-                Log::info("[FallbackMailer] Mail sent successfully via '{$mailerName}'.", [
+                Log::channel($this->logChannel)->info("[FallbackMailer] Mail sent successfully via '{$mailerName}'.", [
                     'to' => $to,
                     'subject' => $this->resolveSubject($mailable),
                 ]);
@@ -51,7 +53,7 @@ class FallbackMailer
                 return true;
 
             } catch (Throwable $e) {
-                Log::warning("[FallbackMailer] Mailer '{$mailerName}' failed. Trying next.", [
+                Log::channel($this->logChannel)->warning("[FallbackMailer] Mailer '{$mailerName}' failed. Trying next.", [
                     'error' => $e->getMessage(),
                     'to' => $to,
                     'subject' => $this->resolveSubject($mailable),
@@ -60,7 +62,7 @@ class FallbackMailer
         }
 
         // All providers exhausted — fail silently but log it
-        Log::error('[FallbackMailer] All mail providers failed. Email was NOT delivered.', [
+        Log::channel($this->logChannel)->error('[FallbackMailer] All mail providers failed. Email was NOT delivered.', [
             'to' => $to,
             'subject' => $this->resolveSubject($mailable),
             'tried' => $this->mailers,
@@ -79,7 +81,7 @@ class FallbackMailer
             try {
                 Mail::mailer($mailerName)->to($to)->queue(clone $mailable);
 
-                Log::info("[FallbackMailer] Mail queued via '{$mailerName}'.", [
+                Log::channel($this->logChannel)->info("[FallbackMailer] Mail queued via '{$mailerName}'.", [
                     'to' => $to,
                     'subject' => $this->resolveSubject($mailable),
                 ]);
@@ -87,13 +89,13 @@ class FallbackMailer
                 return true;
 
             } catch (Throwable $e) {
-                Log::warning("[FallbackMailer] Mailer '{$mailerName}' failed to queue. Trying next.", [
+                Log::channel($this->logChannel)->warning("[FallbackMailer] Mailer '{$mailerName}' failed to queue. Trying next.", [
                     'error' => $e->getMessage(),
                 ]);
             }
         }
 
-        Log::error('[FallbackMailer] All mail providers failed to queue. Email was NOT queued.', [
+        Log::channel($this->logChannel)->error('[FallbackMailer] All mail providers failed to queue. Email was NOT queued.', [
             'to' => $to,
             'tried' => $this->mailers,
         ]);
