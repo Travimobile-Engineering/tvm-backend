@@ -73,4 +73,8 @@ return [
         'header_value' => env('TRAVI_PAYMENT_HEADER_VALUE'),
         'url' => env('TRAVI_PAYMENT_URL'),
     ],
+
+    'firebase' => [
+        'credentials' => env('FIREBASE_CREDENTIALS'),
+    ],
 ];
