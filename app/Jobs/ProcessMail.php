@@ -49,7 +49,7 @@ class ProcessMail implements ShouldQueue
                 $email->increment('attempts');
                 $email->update([
                     'status' => MailingEnum::FAILED,
-                    'error_response' => 'All mail providers failed. Email was not delivered.',
+                    'error_response' => json_encode($mailer->getErrors()),
                 ]);
             }
         } catch (\Exception $e) {

@@ -17,6 +17,8 @@ class FallbackMailer
 
     protected string $logChannel = 'fallback_mailer';
 
+    protected array $errors = []; // track per-mailer errors
+
     public function __construct()
     {
         $order = config('mail.fallback_order', []);
@@ -53,6 +55,8 @@ class FallbackMailer
                 return true;
 
             } catch (Throwable $e) {
+                $this->errors[$mailerName] = $e->getMessage();
+
                 Log::channel($this->logChannel)->warning("[FallbackMailer] Mailer '{$mailerName}' failed. Trying next.", [
                     'error' => $e->getMessage(),
                     'to' => $to,
@@ -89,6 +93,8 @@ class FallbackMailer
                 return true;
 
             } catch (Throwable $e) {
+                $this->errors[$mailerName] = $e->getMessage();
+
                 Log::channel($this->logChannel)->warning("[FallbackMailer] Mailer '{$mailerName}' failed to queue. Trying next.", [
                     'error' => $e->getMessage(),
                 ]);
@@ -109,6 +115,11 @@ class FallbackMailer
     public function getMailers(): array
     {
         return $this->mailers;
+    }
+
+    public function getErrors(): array
+    {
+        return $this->errors;
     }
 
     private function resolveSubject(Mailable $mailable): string
