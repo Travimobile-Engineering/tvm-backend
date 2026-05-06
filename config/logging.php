@@ -127,6 +127,11 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'fallback_mailer' => [
+            'driver' => 'stack',
+            'channels' => ['daily', 'slack'],
+        ],
+
     ],
 
 ];
