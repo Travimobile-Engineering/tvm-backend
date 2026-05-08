@@ -26,6 +26,9 @@ class FirebaseService
     {
         $notification = Notification::create($title, $body);
 
+        // FCM requires all data payload values to be strings
+        $data = array_map('strval', $data);
+
         $message = CloudMessage::fromArray(['token' => $deviceToken])
             ->withNotification($notification)
             ->withData($data);
