@@ -5,7 +5,7 @@ on:
     branches: [ master, staging, dev ]
 
 env:
-  IMAGE_NAME: travi3/backend-dev
+  IMAGE_NAME: travi3/backend
 
 jobs:
   build-image:
