@@ -31,7 +31,7 @@ trait PaymentTrait
     {
         $paymentData = $event['data'];
         $amount = $paymentData['amount'];
-        $isAirline = $paymentData['metadata']['is_airline'];
+        $isAirline = $paymentData['metadata']['is_airline'] ?? false;
 
         if ($isAirline) {
             $this->airLineFund($paymentData, $amount);
