@@ -11,8 +11,8 @@ class ChargeData
         public float $amount,
         public string $title,
         public string $referencePrefix,
-        public string $source = 'wallet',
-        public string $chargeFrom = 'balance',
+        public ?string $source = 'wallet',
+        public ?string $chargeFrom = 'balance',
         public ?string $message = null,
     ) {}
 }

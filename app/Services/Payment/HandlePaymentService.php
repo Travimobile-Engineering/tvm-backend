@@ -6,12 +6,7 @@ use App\Contracts\Payment;
 
 class HandlePaymentService
 {
-    protected $paymentProcessor;
-
-    public function __construct(Payment $paymentProcessor)
-    {
-        $this->paymentProcessor = $paymentProcessor;
-    }
+    public function __construct(protected Payment $paymentProcessor) {}
 
     public function process(array $paymentDetails)
     {
