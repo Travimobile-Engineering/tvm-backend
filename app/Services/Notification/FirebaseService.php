@@ -26,10 +26,10 @@ class FirebaseService
     {
         $notification = Notification::create($title, $body);
 
-        $message = CloudMessage::withTarget('token', $deviceToken)
+        $message = CloudMessage::fromArray(['token' => $deviceToken])
             ->withNotification($notification)
             ->withData($data);
 
-        return $this->messaging->send($message);
+        return $this->messaging()->send($message);
     }
 }
