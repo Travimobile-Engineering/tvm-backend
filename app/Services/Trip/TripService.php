@@ -23,7 +23,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Spatie\ResponseCache\Facades\ResponseCache;
 
 class TripService
 {
@@ -408,8 +407,6 @@ class TripService
                 'status' => 2,
             ]);
         });
-
-        ResponseCache::clear();
 
         return $this->success(null, 'Trip Completed Successfully', 200);
     }
