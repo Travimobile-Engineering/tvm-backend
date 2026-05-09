@@ -18,8 +18,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Facades\Log;
-use Spatie\ResponseCache\Middlewares\CacheResponse;
-use Spatie\ResponseCache\Middlewares\DoNotCacheResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -32,8 +30,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'transaction.pin' => TransactionPinMiddleware::class,
-            'cacheResponse' => CacheResponse::class,
-            'doNotCacheResponse' => DoNotCacheResponse::class,
             'agent.auth' => AgentAuthMiddleware::class,
             'validate.header' => ValidateHeader::class,
             'impersonation.throttle' => ImpersonationThrottle::class,
