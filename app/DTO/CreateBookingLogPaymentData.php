@@ -2,14 +2,14 @@
 
 namespace App\DTO;
 
-use App\Http\Requests\AgentBookingRequest;
 use App\Models\Trip;
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class CreateBookingLogPaymentData
 {
     public function __construct(
-        public readonly AgentBookingRequest $request,
+        public readonly Request $request,
         public readonly User $passenger,
         public readonly User $user,
         public readonly float $amountPaid,
