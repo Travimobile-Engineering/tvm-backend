@@ -113,13 +113,14 @@ jobs:
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
-      - run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+      - run: composer update brianium/paratest --lock --no-interaction
 
       - name: Set up .env
         run: cp .env.example .env && php artisan key:generate
 
       - name: Run unit tests
-        run: php artisan test 
+        run: php artisan test --parallel
 
   build-and-push-docker:
     runs-on: ubuntu-latest
