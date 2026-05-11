@@ -128,10 +128,31 @@ jobs:
       - name: Run unit tests
         run: echo "run unit test"
 
+  sonarqube-scan:
+    runs-on: ubuntu-latest
+    needs: [SAST-test, unit-test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: SonarQube Quality Gate Check
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
   build-and-push-docker:
     runs-on: ubuntu-latest
-    needs: [unit-test]
-
+    needs: [unit-test, sonarqube-scan]
     steps:
       - uses: actions/checkout@v4
 
