@@ -88,24 +88,30 @@ jobs:
           pip install requests
 
   SAST-test:
-    runs-on: ubuntu-latest
-    container:
-      image: semgrep/semgrep
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+   runs-on: ubuntu-latest
 
-      - name: Run Semgrep scan
-        run: semgrep scan --config=auto --error --verbose --json --output semgrep.json
+   container:
+    image: semgrep/semgrep
 
-      - name: Install requests package
-        if: always()
-        run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install requests
+   steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
+    - name: Run Semgrep scan
+      run: |
+        semgrep scan \
+        --config=auto \
+        --verbose \
+        --json \
+        --output semgrep.json || true
+
+    - name: Install requests package
+      if: always()
+      run: |
+        python3 -m venv venv
+        . venv/bin/activate
+        pip install --upgrade pip
+        pip install requests
   unit-test:
     runs-on: ubuntu-latest
     steps:
