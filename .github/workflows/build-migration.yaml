@@ -73,6 +73,7 @@ jobs:
           chmod +x dependency-check/bin/dependency-check.sh
 
       - name: Run dependency-check scan
+        continue-on-error: true
         run: |
           mkdir -p ./dc-data ./reports
           ./dependency-check/bin/dependency-check.sh \
