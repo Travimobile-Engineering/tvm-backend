@@ -33,4 +33,20 @@ class NpisController extends Controller
     {
         return $this->npisService->getEvent($id);
     }
+
+    public function createNtemEvent(Request $request)
+    {
+        $request->validate([
+            'full_name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email'],
+            'phone_number' => ['required', 'string', 'max:20'],
+            'organization' => ['required', 'string', 'max:100'],
+            'job_title' => ['required', 'string', 'max:100'],
+            'state' => ['required', 'string'],
+            'referral_source' => ['nullable', 'string'],
+            'dietary_preference' => ['required', 'string', 'in:none,vegetarian,halal,vegan'],
+        ]);
+
+        return $this->npisService->createNtemEvent($request);
+    }
 }

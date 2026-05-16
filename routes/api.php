@@ -78,6 +78,12 @@ Route::prefix('npis')
         Route::get('/{id}', 'getEvent');
     });
 
+Route::prefix('ntem')
+    ->controller(NpisController::class)
+    ->group(function () {
+        Route::post('/event/create', 'createNtemEvent');
+    });
+
 Route::middleware(['validate.header'])
     ->group(function () {
         Route::controller(OtherController::class)
