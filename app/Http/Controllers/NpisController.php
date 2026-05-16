@@ -49,4 +49,14 @@ class NpisController extends Controller
 
         return $this->npisService->createNtemEvent($request);
     }
+
+    public function getNtemEvents()
+    {
+        return $this->npisService->getNtemEvents();
+    }
+
+    public function getNtemEvent($id)
+    {
+        return $this->npisService->getNtemEvent($id);
+    }
 }
