@@ -45,7 +45,7 @@ class NpisService
 
     public function createNtemEvent($request)
     {
-        $ntemEvent = NtemEvent::create($request->validated());
+        $ntemEvent = NtemEvent::create($request->all());
 
         return $this->success($ntemEvent, 'NTM Event created successfully', 201);
     }
