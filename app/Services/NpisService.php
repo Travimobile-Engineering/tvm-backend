@@ -49,4 +49,24 @@ class NpisService
 
         return $this->success($ntemEvent, 'NTM Event created successfully', 201);
     }
+
+    public function getNtemEvents()
+    {
+        $ntemEvents = NtemEvent::select('id', 'full_name', 'email', 'phone_number', 'organization', 'job_title', 'state', 'referral_source', 'dietary_preference')
+            ->get();
+
+        return $this->success($ntemEvents, 'NTM Events retrieved successfully');
+    }
+
+    public function getNtemEvent($id)
+    {
+        $ntemEvent = NtemEvent::select('id', 'full_name', 'email', 'phone_number', 'organization', 'job_title', 'state', 'referral_source', 'dietary_preference')
+            ->find($id);
+
+        if (! $ntemEvent) {
+            return $this->error(null, 'NTM Event not found', 404);
+        }
+
+        return $this->success($ntemEvent, 'NTM Event retrieved successfully');
+    }
 }
