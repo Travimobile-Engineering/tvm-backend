@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\NpisEvent;
+use App\Models\NtemEvent;
 use App\Trait\HttpResponse;
 
 class NpisService
@@ -40,5 +41,12 @@ class NpisService
         }
 
         return $this->success($npisEvent, 'NPI Event retrieved successfully');
+    }
+
+    public function createNtemEvent($request)
+    {
+        $ntemEvent = NtemEvent::create($request->validated());
+
+        return $this->success($ntemEvent, 'NTM Event created successfully', 201);
     }
 }
