@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Mail\NtemEventConfirmationMail;
 use App\Models\NpisEvent;
 use App\Models\NtemEvent;
 use App\Trait\HttpResponse;
+use Illuminate\Support\Facades\Mail;
 
 class NpisService
 {
@@ -45,9 +47,20 @@ class NpisService
 
     public function createNtemEvent($request)
     {
-        $ntemEvent = NtemEvent::create($request->all());
+        $ntemEvent = NtemEvent::create([
+            'full_name' => $request->full_name,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'organization' => $request->organization,
+            'job_title' => $request->job_title,
+            'state' => $request->state,
+            'referral_source' => $request->referral_source,
+            'dietary_preference' => $request->dietary_preference,
+        ]);
 
-        return $this->success($ntemEvent, 'NTM Event created successfully', 201);
+        Mail::to($ntemEvent->email)->send(new NtemEventConfirmationMail($ntemEvent)); // we can remove this later I just added a temp mail to assist send confirmation email to attendees.
+
+        return $this->success($ntemEvent, 'NTEM Event registration successful', 201);
     }
 
     public function getNtemEvents()
