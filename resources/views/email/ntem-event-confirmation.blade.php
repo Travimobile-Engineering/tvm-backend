@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="x-apple-disable-message-reformatting">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>NTEM Event Registration Confirmed</title>
+    <title>NTEM Abuja Event Registration Confirmed</title>
 
     <style type="text/css">
         @media only screen and (min-width: 560px) {
@@ -79,7 +79,7 @@
                         <p style="margin-top:20px;font-size:13px;color:#A8C0E0;
                                   letter-spacing:2px;text-transform:uppercase;
                                   font-weight:600;">
-                            National Transport Exhibition &amp; Meet
+                            Hotel Onboarding & Check-In App Exhibition &amp; Meet
                         </p>
                     </td>
                 </tr>
@@ -104,7 +104,7 @@
                         </p>
                         <p style="font-size:15px;color:#4A5568;line-height:1.7;
                                   margin-bottom:28px;">
-                            Your registration for the <strong>NTEM Event</strong> has been
+                            Your registration for the <strong>NTEM Abuja Event</strong> has been
                             received and confirmed. We look forward to welcoming you.
                         </p>
 
@@ -221,9 +221,9 @@
                                 <td style="background-color:#EBF8FF;border-left:4px solid #08d786;
                                            border-radius:0 6px 6px 0;padding:14px 16px;">
                                     <p style="font-size:13px;color:#2D3748;line-height:1.7;">
-                                        Further event details — including venue, schedule, and
-                                        access instructions — will be sent to your registered
-                                        email address closer to the event date.
+                                        Further details — including onboardings, schedule, and
+                                        full trainings — will be sent to your registered
+                                        email address.
                                     </p>
                                 </td>
                             </tr>
