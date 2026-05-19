@@ -207,12 +207,12 @@ trait TripBookingTrait
         $passengers = collect($travellingWith ?? []);
 
         $passengers->prepend([
-            'name' => "{$data->user->first_name } {$data->user->last_name}",
-            'email' => $data->user->email,
-            'phone_number' => $data->user->phone_number,
-            'gender' => $data->user->gender ?? 'unknown',
-            'next_of_kin' => $data->user->next_of_kin_full_name ?? null,
-            'next_of_kin_phone_number' => $data->user->next_of_kin_phone_number ?? null,
+            'name' => "{$data->passenger->first_name } {$data->passenger->last_name}",
+            'email' => $data->passenger->email,
+            'phone_number' => $data->passenger->phone_number,
+            'gender' => $data->passenger->gender ?? 'unknown',
+            'next_of_kin' => $data->passenger->next_of_kin_full_name ?? null,
+            'next_of_kin_phone_number' => $data->passenger->next_of_kin_phone_number ?? null,
         ]);
 
         $bookingData = [
