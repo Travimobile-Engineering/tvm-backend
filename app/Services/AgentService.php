@@ -20,6 +20,7 @@ use App\Models\TripBooking;
 use App\Models\TripLog;
 use App\Models\User;
 use App\Notifications\PassengerTripNotification;
+use App\Services\Booking\AgentBookingService;
 use App\Services\Notification\NotificationDispatcher;
 use App\Trait\AgentTrait;
 use App\Trait\DriverTrait;
@@ -38,7 +39,8 @@ class AgentService
     use AgentTrait, DriverTrait, HttpResponse, TripBookingTrait;
 
     public function __construct(
-        protected NotificationDispatcher $notifier
+        protected NotificationDispatcher $notifier,
+        private readonly AgentBookingService $agentBookingService,
     ) {}
 
     public function profile()
@@ -154,26 +156,11 @@ class AgentService
 
         $user = User::with(['transactions', 'walletAccount'])->findOrFail($authUser->id);
 
-        if ($user->user_category == UserType::AGENT->value && $user->wallet_balance < 1000) {
-            return $this->error(null, 'Your wallet balance must be at least 1000 to make a booking', 400);
+        if ($user->user_category == UserType::AGENT->value) {
+            return $this->agentBookingService->execute($user, $request, $amount_paid);
         }
 
         $chargeAmount = 0;
-
-        // Charge agent for booking
-        if ($user->user_category == UserType::AGENT->value) {
-            $charges = $request->charges;
-
-            if (! $charges || ! isset($charges['Admin Charges'])) {
-                return $this->error(null, 'Charges not found', 400);
-            }
-
-            if ($charges['Admin Charges'] == 0) {
-                return $this->error(null, 'Admin charges cannot be zero', 400);
-            }
-
-            $chargeAmount = $charges['Admin Charges'];
-        }
 
         match ($request->payment_method) {
             PaymentMethod::WALLET => $result = $this->walletPayment($amount_paid, $request, $user, $chargeAmount),
@@ -613,10 +600,10 @@ class AgentService
         }
     }
 
-    public function getTrips($userId)
+    public function getTrips($userId, $request)
     {
-        $date = request()->query('date');
-        $status = request()->query('status', TripStatus::UPCOMING);
+        $date = $request->query('date');
+        $status = $request->query('status', TripStatus::UPCOMING);
 
         if (! in_array($status, [
             TripStatus::UPCOMING,
@@ -661,7 +648,7 @@ class AgentService
 
         $trip = Trip::with(['user', 'tripBookings' => function ($query) {
             $query->where('payment_status', 1);
-        }, 'manifest', 'departureRegion', 'destinationRegion', 'departureRegion.state', 'destinationRegion.state'])
+        }, 'tripBookings.tripBookingPassengers', 'manifest', 'departureRegion', 'destinationRegion', 'departureRegion.state', 'destinationRegion.state'])
             ->find($request->trip_id);
 
         if (! $trip) {
@@ -672,16 +659,20 @@ class AgentService
             return $this->error(null, "Sorry {$trip->status}", 400);
         }
 
-        if ($request->payment_method === 'driver_wallet' && $user->wallet_amount < $request->amount) {
+        if ($trip->tripBookings->isEmpty()) {
+            return $this->error(null, 'No bookings available!', 400);
+        }
+
+        $manifestFee = getFee('manifest');
+        $passengerCount = $trip->tripBookings->sum(fn ($booking) => is_array($booking->selected_seat) ? count($booking->selected_seat) : 1);
+        $totalManifestFee = $manifestFee * $passengerCount;
+
+        if (in_array($request->payment_method, [PaymentMethod::DRIVERWALLET, PaymentMethod::WALLET]) && $user->wallet_amount < $totalManifestFee) {
             return $this->error(null, 'Insufficient wallet balance!', 400);
         }
 
         try {
             DB::beginTransaction();
-
-            if ($trip->tripBookings->isEmpty()) {
-                return $this->error(null, 'No bookings available!', 400);
-            }
 
             foreach ($trip->tripBookings as $booking) {
                 $booking->update(['manifest_status' => ManifestStatus::COMPLETED]);
@@ -696,14 +687,14 @@ class AgentService
             TripLog::create([
                 'user_id' => $user->id,
                 'trip_id' => $trip->id,
-                'amount_charged' => $request->amount ?? getFee('manifest'),
+                'amount_charged' => $totalManifestFee,
                 'retry_attempt' => 1,
                 'status' => 'success',
                 'message' => 'Trip started successfully and manifest created.',
             ]);
 
             if (in_array($request->payment_method, [PaymentMethod::DRIVERWALLET, PaymentMethod::WALLET])) {
-                $this->chargeWallet($user, $request->amount, $trip, $trip?->user);
+                $this->chargeWallet($user, $totalManifestFee, $trip, $trip?->user);
             }
 
             DB::commit();

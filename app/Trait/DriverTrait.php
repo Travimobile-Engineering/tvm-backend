@@ -130,13 +130,17 @@ trait DriverTrait
             return;
         }
 
+        if ($user->user_category !== UserType::DRIVER->value) {
+            return;
+        }
+
         $pendingAmount = (float) $user->pending_balance;
 
         DB::transaction(function () use ($user, $pendingAmount) {
             // Increment driver earnings
             $this->driverIncrementEarning($user, $pendingAmount);
 
-            // Update pending payments status (using query builder for efficiency)
+            // Update pending payments status
             $user->driverTripPayments()
                 ->where('status', General::PENDING)
                 ->update(['status' => General::PAID]);
@@ -250,12 +254,12 @@ trait DriverTrait
      */
     private function determineEarningRecipient($user, $driver): ?object
     {
-        if ($user->user_category !== UserType::DRIVER->value && $driver) {
-            return $driver;
+        if (in_array($user->user_category, [UserType::DRIVER->value, UserType::AGENT->value])) {
+            return $user;
         }
 
-        if ($user->user_category === UserType::DRIVER->value) {
-            return $user;
+        if ($driver) {
+            return $driver;
         }
 
         return null;

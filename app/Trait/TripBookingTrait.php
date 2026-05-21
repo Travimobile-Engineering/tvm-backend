@@ -5,7 +5,6 @@ namespace App\Trait;
 use App\DTO\CreateBookingLogPaymentData;
 use App\DTO\NotificationDispatchData;
 use App\Enum\ChargeType;
-use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
 use App\Enum\PaymentType;
 use App\Enum\TransactionTitle;
@@ -74,9 +73,12 @@ trait TripBookingTrait
 
     protected function walletPayment($amount_paid, $request, $user, $chargeAmount = 0)
     {
-        $validationResponse = $this->validatePayment($request, $amount_paid, $user);
-        if ($validationResponse) {
-            return $validationResponse;
+        if ($user->user_category != UserType::AGENT->value) {
+            $validationResponse = $this->validatePayment($request, $amount_paid, $user);
+
+            if ($validationResponse) {
+                return $validationResponse;
+            }
         }
 
         $trip = $this->handleTripCheck($request, $user);
@@ -130,7 +132,9 @@ trait TripBookingTrait
                 ->findOrFail($request->trip_id);
 
             // Process Wallet and Transactions
-            $this->updateUserWallet($amount_paid, $user);
+            if ($user->user_category != UserType::AGENT->value) {
+                $this->updateUserWallet($amount_paid, $user);
+            }
 
             // Create Booking and Log Payment
             $bookingData = $this->createBookingAndLogPayment(
@@ -147,7 +151,10 @@ trait TripBookingTrait
             // Send Notifications
             $data = $this->sendBookingNotification($user, $bookingData['booking_id'], $getTrip, $bookingData['ref']);
 
-            if ($user->user_category == UserType::AGENT->value) {
+            // A flag to disable some operations till further notice.
+            $proceed = false;
+
+            if ($proceed && $user->user_category == UserType::AGENT->value) {
                 $passengerCollect = collect($bookingData['travelling_with'] ?? []);
                 $passengerCount = 1 + $passengerCollect->count();
 
@@ -158,8 +165,10 @@ trait TripBookingTrait
                 $user->checkAndUpgradeLevel(); // This will upgrade the agent if their bookings exceed the threshold
             }
 
-            $charges = $request->charges ?? [];
-            app(ChargeService::class)->transferCharges($charges, $user, 'balance', 'wallet');
+            if ($proceed) {
+                $charges = $request->charges ?? [];
+                app(ChargeService::class)->transferCharges($charges, $user, 'balance', 'wallet');
+            }
 
             DB::commit();
 
@@ -185,7 +194,9 @@ trait TripBookingTrait
             ? $data->chargeAmount
             : $data->amountPaid;
 
-        $this->userDecrementBalance($data->user, $amount);
+        if ($amount > 0) {
+            $this->userDecrementBalance($data->user, $amount);
+        }
 
         do {
             $booking_id = getRandomNumber();
@@ -306,15 +317,7 @@ trait TripBookingTrait
 
     protected function handleTripCheck($request, $user)
     {
-        if ($request->payment_method === PaymentMethod::PAYSTACK) {
-            return $this->tripCheck($request, $user);
-        }
-
-        if ($request->payment_method === PaymentMethod::WALLET) {
-            return $this->tripCheck($request, $user);
-        }
-
-        return null;
+        return $this->tripCheck($request, $user);
     }
 
     protected function tripCheck($request, $user, $lock = false)

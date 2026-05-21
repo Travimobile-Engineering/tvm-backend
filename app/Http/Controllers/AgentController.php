@@ -147,9 +147,9 @@ class AgentController extends Controller
         return $this->service->createRecurringTrip($request);
     }
 
-    public function getTrips($userId)
+    public function getTrips($userId, Request $request)
     {
-        return $this->service->getTrips($userId);
+        return $this->service->getTrips($userId, $request);
     }
 
     public function tripDetails($tripId)
