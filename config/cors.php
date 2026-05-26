@@ -28,6 +28,7 @@ return [
         'https://v.travimobile.com',
         'https://v1.travimobile.com',
         'https://travimobile.com',
+        'https://ntem.com.ng',
         'https://dev.travimobile.com',
         'https://api.dev.travimobile.com',
         'https://admin.dev.travimobile.com',

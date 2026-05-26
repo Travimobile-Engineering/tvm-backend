@@ -39,7 +39,7 @@ class AgentBookingRequest extends FormRequest
             'next_of_kin.*.phone_number' => 'required|string',
             'amount_paid' => 'required|int',
             'payment_method' => 'required|in:wallet,paystack',
-            'pin' => 'required_if:payment_method,wallet',
+            'pin' => 'nullable|string', // 'required_if:payment_method,wallet',
         ];
     }
 }
