@@ -8,7 +8,7 @@ if ! php artisan migrate --force; then
 fi
 
 echo "⚙️  Caching config..."
-if ! php artisan cache:clear; then
+if ! php artisan optimize:clear; then
   echo "❌ Config cache failed. Exiting..."
   exit 1
 fi
@@ -18,6 +18,7 @@ echo "🚀 Starting queue worker and reverb..."
 php artisan queue:work rabbitmq &    # background
 php artisan reverb:start &  # background
 php artisan schedule:work &  # background
+php artisan nightwatch:agent # background
 
 # Start php-fpm in the foreground so the container doesn't exit
 echo "📦 Starting php-fpm..."

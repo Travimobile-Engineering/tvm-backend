@@ -22,6 +22,7 @@
         "keepsuit/laravel-opentelemetry": "^2.1",
         "kreait/firebase-php": "^8.2",
         "laravel/framework": "^12.55",
+        "laravel/nightwatch": "^1.27",
         "laravel/reverb": "^1.5",
         "laravel/socialite": "^5.20",
         "laravel/tinker": "^3.0",
