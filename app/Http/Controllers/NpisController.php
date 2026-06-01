@@ -29,6 +29,7 @@ class NpisController extends Controller
         return $this->npisService->getEvents();
     }
 
+    //
     public function getEvent($id)
     {
         return $this->npisService->getEvent($id);
@@ -38,7 +39,7 @@ class NpisController extends Controller
     {
         $request->validate([
             'full_name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'unique:ntem_events,email'],
             'phone_number' => ['required', 'string', 'max:20'],
             'organization' => ['required', 'string', 'max:100'],
             'job_title' => ['required', 'string', 'max:100'],
