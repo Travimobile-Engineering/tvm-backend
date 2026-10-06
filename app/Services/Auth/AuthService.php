@@ -11,6 +11,8 @@ use App\Mail\ConfirmationEmail;
 use App\Mail\VerifyPinMail;
 use App\Models\Airline;
 use App\Models\User;
+use App\Rules\ExistingUserEmail;
+use App\Services\DataProtection\DataProtector;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -229,7 +231,7 @@ class AuthService
 
     public function verifyCode($request)
     {
-        $user = User::where('email', $request->email)
+        $user = User::byEmail((string) $request->email)
             ->where('verification_code', $request->code)
             ->where('verification_code_expires_at', '>=', now())
             ->first();
@@ -312,13 +314,17 @@ class AuthService
             ? formatPhoneNumber($request->phone_number)
             : null;
 
-        return User::where(function ($query) use ($request, $normalizedPhone) {
+        $protector = app(DataProtector::class);
+
+        return User::where(function ($query) use ($request, $normalizedPhone, $protector) {
             if ($request->filled('email')) {
-                $query->where('email', $request->email);
+                $query->where('email_hash', $protector->blindIndex((string) $request->email))
+                    ->orWhere('email', $request->email);
             }
 
             if ($normalizedPhone) {
-                $query->orWhere('phone_number', $normalizedPhone);
+                $query->orWhere('phone_number_hash', $protector->blindIndex($normalizedPhone))
+                    ->orWhere('phone_number', $normalizedPhone);
             }
         })->first();
     }
@@ -390,13 +396,13 @@ class AuthService
     private function validateEmail($request)
     {
         $request->validate([
-            'email' => ['required', 'email', 'exists:users,email'],
+            'email' => ['required', 'email', new ExistingUserEmail],
         ]);
     }
 
     private function validatePhone(string $value)
     {
-        $exists = User::where('phone_number', $value)->exists();
+        $exists = User::byPhone((string) formatPhoneNumber($value))->exists();
 
         if (! $exists) {
             return $this->error(null, 'Phone number not found.', 422);

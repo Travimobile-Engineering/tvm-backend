@@ -7,8 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use App\Services\DataProtection\DataProtector;
 use App\Services\EmailService;
 use App\Trait\HttpResponse;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -44,21 +46,21 @@ class SampleController extends Controller
         } while (strlen($verification_code) < 5);
 
         if (! empty($request->phone_number)) {
-            $user = User::where('phone_number', $request->phone_number)->first();
+            $user = User::byPhone((string) $request->phone_number)->first();
             if ($user && $user->email_verified == 1) {
                 return response()->json(['error' => 'Phone number already exist'], status: 400);
             }
         }
 
         if (! empty($request->email)) {
-            $user = User::where('email', $request->email)->first();
+            $user = User::byEmail((string) $request->email)->first();
             if ($user && $user->email_verified == 1) {
                 return response()->json(['error' => 'Email address already exist'], status: 400);
             }
         }
 
-        $user = User::where('email', $request->email)
-            ->where('phone_number', $request->phone_number)->first();
+        $user = $this->findUserByEmailAndPhone($request->email, $request->phone_number)->first();
+
         if ($user && (! isset($request->verification_code) || empty($request->verification_code))) {
             $user->verification_code = $verification_code;
             $user->verification_code_expires_at = Carbon::now()->addMinutes(10);
@@ -77,8 +79,7 @@ class SampleController extends Controller
             // Get the first name and last name
             $names = explode(' ', $request->full_name, 2);
 
-            $user = User::where('email', $request->email)
-                ->where('phone_number', $request->phone_number)
+            $user = $this->findUserByEmailAndPhone($request->email, $request->phone_number)
                 ->update([
                     'phone_number' => $request->phone_number,
                     'first_name' => $names[0],
@@ -116,7 +117,7 @@ class SampleController extends Controller
     {
         $email = $request->email;
         if (! empty($email)) {
-            $user = User::where('email', $email)->first();
+            $user = User::byEmail((string) $email)->first();
             if ($user) {
                 if (empty($verification_code)) {
 
@@ -154,11 +155,9 @@ class SampleController extends Controller
         // $email = $is_email == false ? "" : $is_email;
         // $phone_number = $is_email == false ? $request->contact : "";
 
-        $user = User::where([
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'verification_code' => $request->verification_code,
-        ])->first();
+        $user = $this->findUserByEmailAndPhone($request->email, $request->phone_number)
+            ->where('verification_code', $request->verification_code)
+            ->first();
 
         if ($user) {
             if ($user->verification_code_expires_at > Carbon::now()) {
@@ -175,5 +174,22 @@ class SampleController extends Controller
         } else {
             return ['status' => false, 'error' => 'Invalid contact or verification code'];
         }
+    }
+
+    /**
+     * Match a user by both email and phone using the deterministic blind
+     * indexes, with a legacy plaintext fallback for un-migrated rows.
+     *
+     * @return Builder<User>
+     */
+    private function findUserByEmailAndPhone(?string $email, ?string $phone): Builder
+    {
+        $protector = app(DataProtector::class);
+
+        return User::byEmail((string) $email)
+            ->where(function (Builder $query) use ($protector, $phone): void {
+                $query->where('phone_number_hash', $protector->blindIndex((string) $phone))
+                    ->orWhere('phone_number', $phone);
+            });
     }
 }

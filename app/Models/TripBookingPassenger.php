@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedAttribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,6 +26,10 @@ class TripBookingPassenger extends Model
     {
         return [
             'on_seat' => 'boolean',
+            'email' => EncryptedAttribute::class,
+            'phone_number' => EncryptedAttribute::class,
+            'next_of_kin' => EncryptedAttribute::class,
+            'next_of_kin_phone_number' => EncryptedAttribute::class,
         ];
     }
 

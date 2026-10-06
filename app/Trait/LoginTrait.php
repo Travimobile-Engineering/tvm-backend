@@ -5,7 +5,9 @@ namespace App\Trait;
 use App\Enum\UserStatus;
 use App\Enum\UserType;
 use App\Models\AgentClassification;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -22,15 +24,14 @@ trait LoginTrait
             $loginValue = formatPhoneNumber($loginValue);
         }
 
-        $credentials = [
-            $loginField => $loginValue,
-            'password' => $request->password,
-        ];
-
         try {
-            if (JWTAuth::attempt($credentials)) {
-                $user = JWTAuth::user();
+            // Email and phone are encrypted at rest, so users are matched via
+            // their deterministic blind index and the password is verified here.
+            $user = $loginField === 'email'
+                ? User::byEmail((string) $loginValue)->first()
+                : User::byPhone((string) $loginValue)->first();
 
+            if ($user && Hash::check((string) $request->password, (string) $user->password)) {
                 if (! in_array($user->user_category, $allowedCategories)) {
                     return $this->error(null, 'Unauthorized access.', 403);
                 }

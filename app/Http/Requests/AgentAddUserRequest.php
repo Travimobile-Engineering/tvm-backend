@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\UniqueUserPhone;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -24,7 +25,7 @@ class AgentAddUserRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'phone_number' => 'required|string|unique:users,phone_number',
+            'phone_number' => ['required', 'string', new UniqueUserPhone],
             'gender' => 'required|string',
             'nin' => 'nullable|string',
             'next_of_kin_full_name' => 'nullable|string',

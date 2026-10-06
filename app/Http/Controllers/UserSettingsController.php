@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SetSecurityAnswerRequest;
+use App\Rules\ExistingUserEmail;
 use App\Services\UserSettingsService;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
@@ -56,7 +57,7 @@ class UserSettingsController extends Controller
     public function verifySecurityAnswer(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:users,email',
+            'email' => ['required', 'email', new ExistingUserEmail],
             'answer' => 'required|string|min:3',
         ]);
 

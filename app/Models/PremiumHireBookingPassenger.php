@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedAttribute;
 use Illuminate\Database\Eloquent\Model;
 
 class PremiumHireBookingPassenger extends Model
@@ -16,6 +17,16 @@ class PremiumHireBookingPassenger extends Model
         'next_of_kin',
         'next_of_kin_phone_number',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'email' => EncryptedAttribute::class,
+            'phone_number' => EncryptedAttribute::class,
+            'next_of_kin' => EncryptedAttribute::class,
+            'next_of_kin_phone_number' => EncryptedAttribute::class,
+        ];
+    }
 
     public function premiumHireBooking()
     {

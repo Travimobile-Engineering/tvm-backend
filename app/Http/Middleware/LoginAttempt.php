@@ -8,8 +8,8 @@ use App\Trait\HttpResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
 class LoginAttempt
 {
@@ -34,12 +34,11 @@ class LoginAttempt
             $loginValue = formatPhoneNumber($loginValue);
         }
 
-        $credentials = [
-            $loginField => $loginValue,
-            'password' => $request->input('password'),
-        ];
-
-        $user = User::where($loginField, $loginValue)->first();
+        // Email and phone are encrypted at rest, so users are matched via their
+        // deterministic blind index and the password is verified here.
+        $user = $loginField === 'email'
+            ? User::byEmail((string) $loginValue)->first()
+            : User::byPhone((string) $loginValue)->first();
 
         if (! $user) {
             return $this->error(null, "User doesn't exist", 404);
@@ -54,7 +53,7 @@ class LoginAttempt
             return $this->error($data, 'Your account has been blocked due to too many failed attempts.', 403);
         }
 
-        if (! JWTAuth::attempt($credentials)) {
+        if (! Hash::check((string) $request->input('password'), (string) $user->password)) {
             $attempts = Cache::get($key, 0) + 1;
             Cache::put($key, $attempts, now()->addMinutes(30));
 

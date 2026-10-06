@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\UniqueUserEmail;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -26,7 +27,7 @@ class CreateDriverRequest extends FormRequest
             'agent_id' => 'required|integer|exists:users,id',
             'first_name' => 'required|string',
             'last_name' => 'required|string',
-            'email' => 'required|email|unique:users,email',
+            'email' => ['required', 'email', new UniqueUserEmail],
             'phone_number' => 'required_if:email,null',
             'password' => 'required|string|confirmed|min:8',
         ];

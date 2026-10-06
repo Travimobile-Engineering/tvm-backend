@@ -52,7 +52,7 @@ class GoogleAuthController extends Controller
             $firstName = $nameParts[0] ?? '';
             $lastName = $nameParts[1] ?? '';
 
-            $user = User::where('email', $googleUser->getEmail())->first();
+            $user = User::byEmail((string) $googleUser->getEmail())->first();
 
             if (! $user) {
                 $user = User::create([
