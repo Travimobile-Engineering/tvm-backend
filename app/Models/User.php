@@ -4,11 +4,14 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Casts\EncryptedAttribute;
 use App\Enum\General;
 use App\Enum\TripStatus;
 use App\Enum\UserStatus;
+use App\Services\DataProtection\DataProtector;
 use App\Trait\UserRelationships;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -102,6 +105,8 @@ class User extends Authenticatable implements JWTSubject
         'updated_at',
         'inbox_notifications',
         'email_notifications',
+        'email_hash',
+        'phone_number_hash',
     ];
 
     // The JWT Identifier method required by the JWT package
@@ -132,6 +137,13 @@ class User extends Authenticatable implements JWTSubject
             'email_notifications' => 'boolean',
             'status' => UserStatus::class,
             'is_premium_driver' => 'boolean',
+            'email' => EncryptedAttribute::class,
+            'phone_number' => EncryptedAttribute::class,
+            'address' => EncryptedAttribute::class,
+            'next_of_kin_full_name' => EncryptedAttribute::class,
+            'next_of_kin_phone_number' => EncryptedAttribute::class,
+            'lng' => EncryptedAttribute::class,
+            'lat' => EncryptedAttribute::class,
         ];
     }
 
@@ -141,7 +153,54 @@ class User extends Authenticatable implements JWTSubject
         static::creating(function ($trip): void {
             $trip->uuid = Str::uuid();
         });
+
+        // Keep the login blind indexes in sync with their encrypted values.
+        static::saving(function (self $user): void {
+            $protector = app(DataProtector::class);
+            $attributes = $user->getAttributes();
+
+            if (array_key_exists('email', $attributes)) {
+                $email = $user->getAttribute('email');
+                $user->email_hash = filled($email) ? $protector->blindIndex((string) $email) : null;
+            }
+
+            if (array_key_exists('phone_number', $attributes)) {
+                $phone = $user->getAttribute('phone_number');
+                $user->phone_number_hash = filled($phone) ? $protector->blindIndex((string) $phone) : null;
+            }
+        });
+
         static::bootDeletesUserRelationships();
+    }
+
+    /**
+     * Find users by email using the deterministic blind index, falling back to
+     * any legacy plaintext rows that have not been encrypted yet.
+     *
+     * @return Builder<static>
+     */
+    public static function byEmail(string $email): Builder
+    {
+        $hash = app(DataProtector::class)->blindIndex($email);
+
+        return static::query()->where(function (Builder $query) use ($hash, $email): void {
+            $query->where('email_hash', $hash)->orWhere('email', $email);
+        });
+    }
+
+    /**
+     * Find users by phone number using the deterministic blind index, falling
+     * back to any legacy plaintext rows that have not been encrypted yet.
+     *
+     * @return Builder<static>
+     */
+    public static function byPhone(string $phone): Builder
+    {
+        $hash = app(DataProtector::class)->blindIndex($phone);
+
+        return static::query()->where(function (Builder $query) use ($hash, $phone): void {
+            $query->where('phone_number_hash', $hash)->orWhere('phone_number', $phone);
+        });
     }
 
     // Attributes

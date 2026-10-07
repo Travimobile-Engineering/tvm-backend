@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\UserBank;
+use App\Services\DataProtection\DataProtector;
 use Database\Seeders\BankSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -48,9 +50,14 @@ class WalletSetupTest extends TestCase
 
         $this->assertDatabaseHas('user_banks', [
             'bank_name' => $payload['bank_name'],
-            'account_number' => $payload['account_number'],
-            'account_name' => $payload['account_name'],
         ]);
+
+        // Account details are encrypted at rest but round-trip on read.
+        $bank = UserBank::where('user_id', $this->user->id)->firstOrFail();
+
+        $this->assertSame($payload['account_number'], $bank->account_number);
+        $this->assertSame($payload['account_name'], $bank->account_name);
+        $this->assertTrue(app(DataProtector::class)->isEncrypted($bank->getRawOriginal('account_number')));
 
         $this->assertDatabaseCount('user_pins', 1);
         $response->assertStatus(201);

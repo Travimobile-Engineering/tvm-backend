@@ -9,6 +9,7 @@ use App\Http\Middleware\ForceProductionKey;
 use App\Http\Middleware\ImpersonationThrottle;
 use App\Http\Middleware\LoginAttempt;
 use App\Http\Middleware\RateLimitByIp;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TransactionPinMiddleware;
 use App\Http\Middleware\TransactionReplayShield;
 use App\Http\Middleware\ValidateApiKey;
@@ -28,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(SecurityHeaders::class);
+
         $middleware->alias([
             'transaction.pin' => TransactionPinMiddleware::class,
             'agent.auth' => AgentAuthMiddleware::class,

@@ -2,15 +2,18 @@
 
 namespace App\Providers;
 
+use App\Auth\BlindIndexUserProvider;
 use App\Contracts\SMS;
 use App\Models\TripBooking;
 use App\Models\User;
 use App\Observers\TripBookingObserver;
 use App\Observers\UserObserver;
+use App\Services\DataProtection\DataProtector;
 use App\Services\SMS\SmsServiceFactory;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +31,19 @@ class AppServiceProvider extends ServiceProvider
 
             return SmsServiceFactory::make($provider);
         });
+
+        $this->app->singleton(DataProtector::class, function (): DataProtector {
+            $previousKeys = array_values(array_map(
+                'strval',
+                (array) config('data-protection.previous_keys', [])
+            ));
+
+            return new DataProtector(
+                (string) config('data-protection.key'),
+                $previousKeys,
+                (string) config('data-protection.index_key', ''),
+            );
+        });
     }
 
     /**
@@ -35,6 +51,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Encrypted email/phone columns are matched via their blind index so
+        // Auth::attempt() (e.g. the JWT "agent" guard) keeps working.
+        Auth::provider('blind-index', function ($app, array $config) {
+            return new BlindIndexUserProvider($app['hash'], $config['model']);
+        });
+
         Password::defaults(function () {
             return Password::min(8)
                 ->letters()

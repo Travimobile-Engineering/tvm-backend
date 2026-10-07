@@ -7,6 +7,7 @@ use App\Enum\UserStatus;
 use App\Mail\ConfirmationEmail;
 use App\Models\SecurityQuestion;
 use App\Models\User;
+use App\Rules\ExistingUserEmail;
 use App\Trait\HttpResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -208,13 +209,13 @@ class UserSettingsService
     private function validateEmail($request)
     {
         $request->validate([
-            'email' => ['required', 'email', 'exists:users,email'],
+            'email' => ['required', 'email', new ExistingUserEmail],
         ]);
     }
 
     private function validatePhone(string $value)
     {
-        $exists = User::where('phone_number', $value)->exists();
+        $exists = User::byPhone((string) formatPhoneNumber($value))->exists();
 
         if (! $exists) {
             return $this->error(null, 'Phone number not found.', 422);

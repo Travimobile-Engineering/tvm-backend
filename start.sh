@@ -13,6 +13,9 @@ if ! php artisan optimize:clear; then
   exit 1
 fi
 
+echo "🔐 Encrypting existing sensitive data..."
+php artisan data-protection:encrypt || echo "⚠️  Data protection backfill failed; existing data remains readable and will be retried on the next deploy."
+
 # Optional: You can skip sleep in Kubernetes since pod startup time isn't tight
 echo " Starting queue worker and reverb..."
 php artisan queue:work rabbitmq &    # background

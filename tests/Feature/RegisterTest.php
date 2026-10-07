@@ -33,11 +33,13 @@ class RegisterTest extends TestCase
             'password_confirmation' => 'password',
         ];
         $response = $this->postJson('/api/auth/signup', $data, $this->headers);
-        $response->dump();
-        $this->assertDatabaseHas('users', [
-            'first_name' => 'Test',
-            'email' => 'testuser@example.com',
-        ]);
+
+        // Email is encrypted at rest, so match via the blind index lookup and
+        // confirm it round-trips back to plaintext on read.
+        $user = User::byEmail('testuser@example.com')->where('first_name', 'Test')->first();
+
+        $this->assertNotNull($user);
+        $this->assertSame('testuser@example.com', $user->email);
 
         $response->assertStatus(201);
     }
@@ -45,16 +47,18 @@ class RegisterTest extends TestCase
     public function test_account_verification(): void
     {
         User::factory()->create(['email' => 'testuser@example.com']);
-        $user = User::where('email', 'testuser@example.com')
+        $user = User::byEmail('testuser@example.com')
             ->where('verification_code_expires_at', '>=', now())
             ->first();
 
         $response = $this->postJson('/api/auth/verify/account', ['code' => $user->verification_code], $this->headers);
 
         $this->assertDatabaseHas('users', [
-            'email' => 'testuser@example.com',
+            'id' => $user->id,
             'email_verified' => 1,
         ]);
+
+        $this->assertSame('testuser@example.com', $user->fresh()->email);
 
         $response->assertStatus(200);
     }

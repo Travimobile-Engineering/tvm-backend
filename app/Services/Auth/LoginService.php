@@ -4,10 +4,12 @@ namespace App\Services\Auth;
 
 use App\Enum\UserType;
 use App\Models\Agent;
+use App\Models\User;
 use App\Trait\HttpResponse;
 use App\Trait\LoginTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -19,19 +21,26 @@ class LoginService
     public function login($request): array
     {
         $emailOrPhone = filter_var($request->email, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
-        $credentials = $request->only('email', 'password');
+        $loginValue = $emailOrPhone === 'phone_number' ? formatPhoneNumber($request->email) : $request->email;
 
-        // Attempt to verify the credentials and create a token for the user
+        // Email and phone are encrypted at rest, so users are matched via their
+        // deterministic blind index and the password is verified here.
         try {
-            if (! $token = JWTAuth::attempt([$emailOrPhone => $request->email, 'password' => $request->password])) {
+            $user = $emailOrPhone === 'email'
+                ? User::byEmail((string) $loginValue)->first()
+                : User::byPhone((string) $loginValue)->first();
+
+            if (! $user || ! Hash::check((string) $request->password, (string) $user->password)) {
                 return ['status' => false, 'message' => 'Incorrect login credentials', 'code' => 400];
             }
+
+            $token = JWTAuth::fromUser($user);
         } catch (JWTException $e) {
             Log::error($e->getMessage());
 
             return ['status' => false, 'message' => 'Could not create token', 'code' => 500];
         }
-        $user = JWTAuth::user();
+
         $status = true;
 
         return compact('status', 'token', 'user');
@@ -77,6 +86,9 @@ class LoginService
                 return $this->error(null, 'Credentials do not match', 401);
             }
 
+            /**
+             * @var User $agent
+             */
             $agent = Auth::guard('agent')->user();
 
             return $this->success([
@@ -91,7 +103,7 @@ class LoginService
 
     public function updateData($request)
     {
-        $user = Agent::where('email', $request->email)->first();
+        $user = Agent::byEmail($request->email)->first();
 
         if (! $user) {
             return $this->error(null, 'User not found', 404);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AccountSignUpRequest;
 use App\Http\Requests\AirlineSignUpRequest;
 use App\Http\Requests\CreateDriverRequest;
+use App\Rules\UniqueUserEmail;
 use App\Services\Auth\AuthService;
 use App\Trait\HttpResponse;
 use Illuminate\Http\Request;
@@ -47,7 +48,7 @@ class RegisterController extends Controller
     public function verifyEmail(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'email', 'unique:users,email'],
+            'email' => ['required', 'email', new UniqueUserEmail],
         ]);
 
         return $this->service->verifyEmail($request);

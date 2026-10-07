@@ -21,6 +21,7 @@ use App\Models\TripLog;
 use App\Models\User;
 use App\Notifications\PassengerTripNotification;
 use App\Services\Booking\AgentBookingService;
+use App\Services\DataProtection\DataProtector;
 use App\Services\Notification\NotificationDispatcher;
 use App\Trait\AgentTrait;
 use App\Trait\DriverTrait;
@@ -196,11 +197,13 @@ class AgentService
         $search = $request->input('search');
 
         $formattedPhone = is_numeric($search) ? formatPhoneNumber($search) : null;
+        $phoneHash = $formattedPhone ? app(DataProtector::class)->blindIndex($formattedPhone) : null;
 
         $users = User::select('id', 'first_name', 'last_name', 'phone_number', 'email', 'gender', 'profile_photo')
-            ->where(function ($query) use ($search, $formattedPhone) {
-                if ($formattedPhone) {
-                    $query->where('phone_number', $formattedPhone);
+            ->where(function ($query) use ($search, $formattedPhone, $phoneHash) {
+                if ($phoneHash) {
+                    $query->where('phone_number_hash', $phoneHash)
+                        ->orWhere('phone_number', $formattedPhone);
                 }
 
                 $query->orWhere('first_name', 'LIKE', "%{$search}%")
@@ -224,7 +227,7 @@ class AgentService
             'last_name' => $lastName,
             'phone_number' => formatPhoneNumber($request->phone_number),
             'gender' => $request->gender,
-            'nin' => $request->nin,
+            'nin' => $request->filled('nin') ? encryptData($request->nin) : null,
             'next_of_kin_full_name' => $request->next_of_kin_full_name,
             'next_of_kin_phone_number' => $request->next_of_kin_phone_number,
             'next_of_kin_gender' => $request->next_of_kin_gender,
@@ -450,13 +453,20 @@ class AgentService
     {
         $search = $request->input('search');
 
+        $formattedPhone = is_numeric($search) ? formatPhoneNumber($search) : null;
+        $phoneHash = $formattedPhone ? app(DataProtector::class)->blindIndex($formattedPhone) : null;
+
         $users = User::select('id', 'first_name', 'last_name', 'profile_photo')
             ->with('vehicle:id,user_id,plate_no,model,color')
             ->where('user_category', UserType::DRIVER->value)
             ->where('is_premium_driver', false)
-            ->where(function ($query) use ($search) {
-                $query->where('phone_number', $search)
-                    ->orWhere('first_name', 'LIKE', "%{$search}%")
+            ->where(function ($query) use ($search, $formattedPhone, $phoneHash) {
+                if ($phoneHash) {
+                    $query->where('phone_number_hash', $phoneHash)
+                        ->orWhere('phone_number', $formattedPhone);
+                }
+
+                $query->orWhere('first_name', 'LIKE', "%{$search}%")
                     ->orWhere('last_name', 'LIKE', "%{$search}%");
             })
             ->get();
