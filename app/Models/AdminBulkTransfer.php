@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedJson;
 use Illuminate\Database\Eloquent\Model;
 
 class AdminBulkTransfer extends Model
@@ -17,7 +18,7 @@ class AdminBulkTransfer extends Model
     ];
 
     protected $casts = [
-        'response' => 'array',
+        'response' => EncryptedJson::class,
         'processed_at' => 'datetime',
     ];
 

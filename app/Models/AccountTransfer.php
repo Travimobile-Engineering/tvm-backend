@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedJson;
 use Illuminate\Database\Eloquent\Model;
 
 class AccountTransfer extends Model
@@ -19,7 +20,7 @@ class AccountTransfer extends Model
     protected function casts(): array
     {
         return [
-            'response' => 'array',
+            'response' => EncryptedJson::class,
         ];
     }
 

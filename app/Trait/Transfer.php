@@ -12,13 +12,27 @@ use App\Models\User;
 use App\Models\UserWithdrawLog;
 use App\Notifications\WithdrawalNotification;
 use App\Notifications\WithdrawalRefundNotification;
+use App\Services\Admin\AccountService;
 use App\Services\Admin\PayoutService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 trait Transfer
 {
+    /**
+     * The console command using this trait, or null when it is used elsewhere.
+     */
+    private function consoleCommand(): ?Command
+    {
+        if ($this instanceof Command) {
+            return $this;
+        }
+
+        return null;
+    }
+
     // Deprecated for admin transfer (Ignore, don't use - it will be removed once new implementation is confirmed to be working fine.)
     protected function collectRequests(): array
     {
@@ -122,49 +136,20 @@ trait Transfer
         ]);
     }
 
-    protected function isValidTransferRequest(array $payload): bool
-    {
-        if (
-            ! isset($payload['reference']) ||
-            ! isset($payload['amount'])
-        ) {
-            return false;
-        }
-
-        $reference = $payload['reference'];
-        $amount = intval($payload['amount']);
-
-        $request = AccountTransfer::where('reference', $reference)->first();
-
-        if (! $request) {
-            $request = UserWithdrawLog::where('reference', $reference)->first();
-        }
-
-        if (! $request) {
-            return false;
-        }
-
-        if (intval($request->amount * 100) !== $amount) {
-            return false;
-        }
-
-        return true;
-    }
-
     // New implementation for admin accounts transfer
     protected function processPayout()
     {
-        $this->info('Processing payout(s)...');
+        $this->consoleCommand()?->info('Processing payout(s)...');
         $this->processAccumulatedTransfers();
-        $this->info('Payout(s) processing done.');
+        $this->consoleCommand()?->info('Payout(s) processing done.');
     }
 
     protected function processAccumulatedTransfers()
     {
-        $accumulated = $this->accountService->accumulateTransfersByAccount();
+        $accumulated = app(AccountService::class)->accumulateTransfersByAccount();
 
         if (empty($accumulated)) {
-            $this->info('No transfers to process.');
+            $this->consoleCommand()?->info('No transfers to process.');
 
             return;
         }
@@ -174,7 +159,7 @@ trait Transfer
 
             // Validate account
             if (! $account->recipient_code || $account->type !== 'admin') {
-                $this->error("Skipping invalid account: {$accountId}");
+                $this->consoleCommand()?->error("Skipping invalid account: {$accountId}");
                 $this->markTransfersFailed($data['transfers'], 'Invalid account configuration');
 
                 continue;
@@ -187,7 +172,7 @@ trait Transfer
             }
 
             try {
-                $bulkTransfer = $this->accountService->createBulkTransferForAccount(
+                $bulkTransfer = app(AccountService::class)->createBulkTransferForAccount(
                     $data['transfers'],
                     $data['total_amount']
                 );
@@ -226,15 +211,19 @@ trait Transfer
                     'response' => $result,
                 ]);
 
-                // Update all individual transfers
+                // Update all individual transfers. Route through the models so
+                // the encrypted "response" cast is applied.
                 AccountTransfer::where('admin_bulk_transfer_id', $bulkTransfer->id)
-                    ->update([
-                        'status' => AccountTransferStatus::PROCESSED->value,
-                        'transfer_code' => $transferCode,
-                        'response' => ['bulk_reference' => $bulkTransfer->reference],
-                    ]);
+                    ->get()
+                    ->each(function (AccountTransfer $transfer) use ($transferCode, $bulkTransfer): void {
+                        $transfer->update([
+                            'status' => AccountTransferStatus::PROCESSED->value,
+                            'transfer_code' => $transferCode,
+                            'response' => ['bulk_reference' => $bulkTransfer->reference],
+                        ]);
+                    });
 
-                $this->info("Bulk transfer processed: {$bulkTransfer->reference}");
+                $this->consoleCommand()?->info("Bulk transfer processed: {$bulkTransfer->reference}");
 
             } else {
                 $this->handleBulkTransferFailure($bulkTransfer, $result);
@@ -254,13 +243,17 @@ trait Transfer
             'response' => $errorResponse,
         ]);
 
-        // Reset individual transfers back to PENDING so they get picked up again
+        // Reset individual transfers back to PENDING so they get picked up again.
+        // Route through the models so the encrypted "response" cast is applied.
         AccountTransfer::where('admin_bulk_transfer_id', $bulkTransfer->id)
-            ->update([
-                'status' => AccountTransferStatus::PENDING->value,
-                'admin_bulk_transfer_id' => null, // Remove association with failed bulk transfer
-                'response' => $errorResponse,
-            ]);
+            ->get()
+            ->each(function (AccountTransfer $transfer) use ($errorResponse): void {
+                $transfer->update([
+                    'status' => AccountTransferStatus::PENDING->value,
+                    'admin_bulk_transfer_id' => null, // Remove association with failed bulk transfer
+                    'response' => $errorResponse,
+                ]);
+            });
 
         Log::error("Bulk transfer failed: {$bulkTransfer->reference} - ".json_encode($errorResponse));
     }
