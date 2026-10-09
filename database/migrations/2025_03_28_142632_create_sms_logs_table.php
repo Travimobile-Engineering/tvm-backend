@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sms_logs', function (Blueprint $table) {
-            $table->id();
-            $table->string('phone_number');
-            $table->longText('request');
-            $table->longText('response');
-            $table->string('provider');
-            $table->string('status');
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('sms_logs')) {
+            Schema::create('sms_logs', function (Blueprint $table) {
+                $table->id();
+                $table->string('phone_number');
+                $table->longText('request');
+                $table->longText('response');
+                $table->string('provider');
+                $table->string('status');
+                $table->timestamps();
+            });
+        }
     }
 
     /**
