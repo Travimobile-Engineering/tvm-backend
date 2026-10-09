@@ -11,14 +11,6 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Transparently encrypts a JSON attribute at rest and decodes it on access.
  *
- * Register on a model via the casts() method:
- *     'response' => EncryptedJson::class,
- *
- * The value is JSON encoded before encryption (the encrypted payload is not
- * valid JSON, so the underlying column must be widened to TEXT). Reads are
- * backwards compatible: plaintext JSON stored before encryption was introduced
- * is decoded as before.
- *
  * @implements CastsAttributes<mixed, mixed>
  */
 class EncryptedJson implements CastsAttributes

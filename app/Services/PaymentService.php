@@ -2,15 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\AccountTransfer;
+use App\Models\UserWithdrawLog;
 use App\Services\Paystack\PaystackEventHandler;
 use App\Trait\HttpResponse;
 use App\Trait\PaymentTrait;
-use App\Trait\Transfer;
 use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
-    use HttpResponse, PaymentTrait, Transfer;
+    use HttpResponse, PaymentTrait;
 
     // Deprecated
     public function webhook($request)
@@ -73,5 +74,34 @@ class PaymentService
         }
 
         return response()->json(['message' => 'Transfer approved'], 200);
+    }
+
+    private function isValidTransferRequest(array $payload): bool
+    {
+        if (
+            ! isset($payload['reference']) ||
+            ! isset($payload['amount'])
+        ) {
+            return false;
+        }
+
+        $reference = $payload['reference'];
+        $amount = intval($payload['amount']);
+
+        $request = AccountTransfer::where('reference', $reference)->first();
+
+        if (! $request) {
+            $request = UserWithdrawLog::where('reference', $reference)->first();
+        }
+
+        if (! $request) {
+            return false;
+        }
+
+        if (intval($request->amount * 100) !== $amount) {
+            return false;
+        }
+
+        return true;
     }
 }

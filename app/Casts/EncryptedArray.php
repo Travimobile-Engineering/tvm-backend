@@ -12,9 +12,6 @@ use Illuminate\Database\Eloquent\Model;
  * Encrypts a JSON/array attribute at rest while keeping array access on the
  * model. The value is JSON encoded, then encrypted, and reversed on access.
  *
- * Reads are backwards compatible: plaintext JSON stored before encryption was
- * introduced is decoded and returned as-is.
- *
  * @implements CastsAttributes<array<array-key, mixed>|null, array<array-key, mixed>|null>
  */
 class EncryptedArray implements CastsAttributes
