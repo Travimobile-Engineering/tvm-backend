@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedAttribute;
 use Illuminate\Database\Eloquent\Model;
 
 class Account extends Model
@@ -22,6 +23,8 @@ class Account extends Model
     {
         return [
             'data' => 'array',
+            'account_name' => EncryptedAttribute::class,
+            'account_number' => EncryptedAttribute::class,
         ];
     }
 

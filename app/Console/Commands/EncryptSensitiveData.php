@@ -54,6 +54,16 @@ class EncryptSensitiveData extends Command
         'agents' => [
             'residential_address',
         ],
+        'accounts' => [
+            'account_name',
+            'account_number',
+        ],
+        'account_transfers' => [
+            'response',
+        ],
+        'admin_bulk_transfers' => [
+            'response',
+        ],
     ];
 
     /**

@@ -128,12 +128,16 @@ class PaystackService
                     'response' => $event,
                 ]);
 
-                // Update all associated individual transfers
-                AccountTransfer::where('bulk_transfer_id', $bulkTransfer->id)
-                    ->update([
-                        'status' => $status->value,
-                        'response' => ['bulk_reason' => $reason, 'bulk_reference' => $reference],
-                    ]);
+                // Update all associated individual transfers. Route through the
+                // models so the encrypted "response" cast is applied.
+                AccountTransfer::where('admin_bulk_transfer_id', $bulkTransfer->id)
+                    ->get()
+                    ->each(function (AccountTransfer $transfer) use ($status, $reason, $reference): void {
+                        $transfer->update([
+                            'status' => $status->value,
+                            'response' => ['bulk_reason' => $reason, 'bulk_reference' => $reference],
+                        ]);
+                    });
 
                 Log::info("{$logPrefix} for AdminBulkTransfer ID {$bulkTransfer->id} - Ref: {$reference}, affecting ".
                         $bulkTransfer->accountTransfers()->count().' transfers');

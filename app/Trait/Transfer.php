@@ -226,13 +226,17 @@ trait Transfer
                     'response' => $result,
                 ]);
 
-                // Update all individual transfers
+                // Update all individual transfers. Route through the models so
+                // the encrypted "response" cast is applied.
                 AccountTransfer::where('admin_bulk_transfer_id', $bulkTransfer->id)
-                    ->update([
-                        'status' => AccountTransferStatus::PROCESSED->value,
-                        'transfer_code' => $transferCode,
-                        'response' => ['bulk_reference' => $bulkTransfer->reference],
-                    ]);
+                    ->get()
+                    ->each(function (AccountTransfer $transfer) use ($transferCode, $bulkTransfer): void {
+                        $transfer->update([
+                            'status' => AccountTransferStatus::PROCESSED->value,
+                            'transfer_code' => $transferCode,
+                            'response' => ['bulk_reference' => $bulkTransfer->reference],
+                        ]);
+                    });
 
                 $this->info("Bulk transfer processed: {$bulkTransfer->reference}");
 
@@ -254,13 +258,17 @@ trait Transfer
             'response' => $errorResponse,
         ]);
 
-        // Reset individual transfers back to PENDING so they get picked up again
+        // Reset individual transfers back to PENDING so they get picked up again.
+        // Route through the models so the encrypted "response" cast is applied.
         AccountTransfer::where('admin_bulk_transfer_id', $bulkTransfer->id)
-            ->update([
-                'status' => AccountTransferStatus::PENDING->value,
-                'admin_bulk_transfer_id' => null, // Remove association with failed bulk transfer
-                'response' => $errorResponse,
-            ]);
+            ->get()
+            ->each(function (AccountTransfer $transfer) use ($errorResponse): void {
+                $transfer->update([
+                    'status' => AccountTransferStatus::PENDING->value,
+                    'admin_bulk_transfer_id' => null, // Remove association with failed bulk transfer
+                    'response' => $errorResponse,
+                ]);
+            });
 
         Log::error("Bulk transfer failed: {$bulkTransfer->reference} - ".json_encode($errorResponse));
     }
