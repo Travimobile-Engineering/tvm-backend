@@ -129,13 +129,17 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: Set up .env
-        run: cp .env.example .env && php artisan key:generate
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan jwt:secret --force
 
       - name: Run unit tests
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
           APP_ENV: testing
+          OTEL_SDK_DISABLED: 'true'
         run: php artisan test
 
   # ---------------------------------------------------------------
@@ -165,8 +169,22 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-dev
 
-      - name: Composer audit (known advisories)
-        run: composer audit --locked --abandoned=report
+      - name: Composer audit (fails on HIGH/CRITICAL advisories)
+        run: |
+          composer audit --locked --abandoned=report --format=json > composer-audit.json || true
+          jq -e . composer-audit.json > /dev/null || { echo "::error::composer audit produced no valid output"; cat composer-audit.json; exit 1; }
+
+          echo "Lower-severity advisories (reported, not blocking):"
+          jq -r '.advisories[]?[]? | select(.severity!="high" and .severity!="critical") | "  [\(.severity)] \(.packageName): \(.title)"' composer-audit.json
+
+          echo "Blocking advisories (HIGH/CRITICAL):"
+          jq -r '.advisories[]?[]? | select(.severity=="high" or .severity=="critical") | "  [\(.severity)] \(.packageName) (\(.affectedVersions)): \(.title)"' composer-audit.json
+
+          BLOCKING=$(jq '[.advisories[]?[]? | select(.severity=="high" or .severity=="critical")] | length' composer-audit.json)
+          if [ "$BLOCKING" -gt 0 ]; then
+            echo "::error::$BLOCKING HIGH/CRITICAL dependency advisories found - update the affected packages"
+            exit 1
+          fi
 
       - name: Set up Node.js
         if: hashFiles('package.json') != ''
@@ -232,7 +250,7 @@ jobs:
               --severity ERROR \
               --error \
               --metrics=off \
-              --json --output semgrep.json
+              --json-output=semgrep.json
 
       - name: Upload report
         if: always()
