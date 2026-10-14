@@ -7,37 +7,143 @@ on:
       - master
       - staging
       - dev
+  pull_request:
+    branches:
+      - master
+      - staging
+      - dev
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
 
 jobs:
+  # ---------------------------------------------------------------
+  # Secret / credential scanning (full git history). Blocking.
+  # ---------------------------------------------------------------
   check-for-leaked-secrets:
     runs-on: ubuntu-latest
-    container:
-      image: zricethezav/gitleaks:v8.26.0
+    timeout-minutes: 10
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Install Python (Alpine Linux)
-        run: |
-          apk update
-          apk add --no-cache python3 py3-pip
-
-      - name: Disable Git ownership check
-        run: git config --global --add safe.directory "*"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Scan the code for leaked secrets
-        run: gitleaks detect --verbose --source . -f json -r gitleaks.json
-
-      - name: Install requests package
-        if: always()
         run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install requests
+          docker run --rm -v "$PWD:/repo" --entrypoint sh zricethezav/gitleaks:v8.26.0 -c '
+            git config --global --add safe.directory /repo &&
+            gitleaks detect --source /repo --redact --verbose --exit-code 1 \
+              -f json -r /repo/gitleaks.json'
 
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks.json
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------
+  # Syntax / build validation and code quality (lint). Blocking.
+  # ---------------------------------------------------------------
+  build-and-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, bcmath, intl
+          tools: composer
+
+      - name: Validate composer files
+        run: composer validate --strict
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: PHP syntax check
+        run: |
+          find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -not -path './storage/*' -print0 \
+            | xargs -0 -n1 -P4 php -l > /dev/null
+
+      - name: Code style (Laravel Pint)
+        run: |
+          if [ -x vendor/bin/pint ]; then
+            vendor/bin/pint --test
+          else
+            echo "::warning::Laravel Pint is not installed - style check skipped (composer require --dev laravel/pint)"
+          fi
+
+      - name: Static analysis (PHPStan / Larastan)
+        run: |
+          if [ -x vendor/bin/phpstan ]; then
+            vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+          else
+            echo "::warning::PHPStan is not installed - static analysis skipped (composer require --dev larastan/larastan)"
+          fi
+
+      - name: Set up Node.js
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Build frontend assets
+        if: hashFiles('package.json') != ''
+        run: |
+          npm ci
+          npm run build --if-present
+
+  # ---------------------------------------------------------------
+  # Unit / application tests. Blocking.
+  # ---------------------------------------------------------------
+  unit-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, bcmath, intl, pdo_sqlite, sqlite3
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Set up .env
+        run: cp .env.example .env && php artisan key:generate
+
+      - name: Run unit tests
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          APP_ENV: testing
+        run: php artisan test
+
+  # ---------------------------------------------------------------
+  # Dependency vulnerability scanning. Blocking.
+  # ---------------------------------------------------------------
   dependency-scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -53,98 +159,122 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer
 
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-dev
 
+      - name: Composer audit (known advisories)
+        run: composer audit --locked --abandoned=report
+
       - name: Set up Node.js
+        if: hashFiles('package.json') != ''
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install JS dependencies
-        run: npm install
+      - name: Install JS dependencies and audit
+        if: hashFiles('package-lock.json') != ''
+        run: |
+          npm ci --omit=dev
+          npm audit --omit=dev --audit-level=high
 
       - name: Install dependency-check CLI
         run: |
-          wget https://github.com/jeremylong/DependencyCheck/releases/download/v11.1.1/dependency-check-11.1.1-release.zip
-          unzip dependency-check-11.1.1-release.zip
+          wget -q https://github.com/jeremylong/DependencyCheck/releases/download/v11.1.1/dependency-check-11.1.1-release.zip
+          unzip -q dependency-check-11.1.1-release.zip
           chmod +x dependency-check/bin/dependency-check.sh
 
-      - name: Run dependency-check scan
-        continue-on-error: true
+      - name: Run dependency-check scan (fails on CVSS 7.0+)
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API }}
         run: |
           mkdir -p ./dc-data ./reports
           ./dependency-check/bin/dependency-check.sh \
             --nvdApiDelay 10000 \
-            --nvdApiKey ${{ secrets.NVD_API }} \
+            --nvdApiKey "$NVD_API_KEY" \
             --data ./dc-data \
             --scan . \
             --log ./reports/dependency-check.log \
             --enableExperimental \
             --format JSON \
             --format XML \
-            --failOnCVSS 4.0 \
+            --failOnCVSS 7.0 \
             --out ./reports/
 
-      - name: Install requests package
+      - name: Upload reports
         if: always()
-        run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install requests
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-reports
+          path: ./reports
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------
+  # Static application security testing. Blocking on ERROR severity.
+  # ---------------------------------------------------------------
   SAST-test:
-   runs-on: ubuntu-latest
-
-   container:
-    image: semgrep/semgrep
-
-   steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    - name: Run Semgrep scan
-      run: |
-        semgrep scan \
-        --config=auto \
-        --verbose \
-        --json \
-        --output semgrep.json || true
-
-    - name: Install requests package
-      if: always()
-      run: |
-        python3 -m venv venv
-        . venv/bin/activate
-        pip install --upgrade pip
-        pip install requests
-  unit-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+      - name: Run Semgrep scan
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep \
+            semgrep scan \
+              --config p/php \
+              --config p/security-audit \
+              --config p/owasp-top-ten \
+              --config p/secrets \
+              --severity ERROR \
+              --error \
+              --metrics=off \
+              --json --output semgrep.json
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          php-version: '8.4'
-          extensions: mbstring, bcmath, intl
-          tools: composer
+          name: semgrep-report
+          path: semgrep.json
+          if-no-files-found: ignore
 
-      - name: Install dependencies
-        run: composer install
+  # ---------------------------------------------------------------
+  # Basic security checks (repo hygiene + Dockerfile/IaC misconfig). Blocking.
+  # ---------------------------------------------------------------
+  security-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Set up .env
-        run: cp .env.example .env && php artisan key:generate
+      - name: Repository hygiene checks
+        run: |
+          set -euo pipefail
+          if git ls-files --error-unmatch .env > /dev/null 2>&1; then
+            echo "::error::.env is committed to the repository"; exit 1
+          fi
+          if git ls-files | grep -Ei '(\.pem|\.p12|\.pfx|id_rsa|id_ed25519)$'; then
+            echo "::error::Private key material is committed to the repository"; exit 1
+          fi
+          test -f composer.lock || { echo "::error::composer.lock is missing"; exit 1; }
 
-      - name: Run unit tests
-        run: echo "run unit test"
+      - name: Dockerfile / config misconfiguration scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          severity: HIGH,CRITICAL
+          exit-code: '1'
 
+  # ---------------------------------------------------------------
+  # Code quality gate. Blocking.
+  # ---------------------------------------------------------------
   sonarqube-scan:
     runs-on: ubuntu-latest
-    needs: [SAST-test, unit-test]
+    needs: [SAST-test, unit-test, build-and-lint]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -164,24 +294,71 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
+  # ---------------------------------------------------------------
+  # Build image, scan it, and only then push. Only for deployable branches,
+  # and only when EVERY check above has passed.
+  # ---------------------------------------------------------------
   build-and-push-docker:
     runs-on: ubuntu-latest
-    needs: [unit-test, sonarqube-scan]
+    needs:
+      - check-for-leaked-secrets
+      - build-and-lint
+      - unit-test
+      - dependency-scan
+      - SAST-test
+      - security-checks
+      - sonarqube-scan
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/master' ||
+       github.ref == 'refs/heads/staging' ||
+       github.ref == 'refs/heads/dev')
+    timeout-minutes: 30
+    env:
+      IMAGE: ${{ secrets.DOCKER_USERNAME }}/laravel-backend
     steps:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
+
+      - name: Compute image tag
+        id: tag
+        run: echo "branch_tag=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - uses: docker/build-push-action@v6
+      - name: Build image (not pushed yet)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          push: false
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan image for HIGH/CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Push image (only reached when the scan passed)
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/laravel-backend:${{ github.ref_name }}
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.tag.outputs.branch_tag }}
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
 
       - run: docker logout
+        if: always()
