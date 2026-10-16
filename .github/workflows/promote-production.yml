@@ -3,7 +3,6 @@ name: Propose backend production release
 on:
   workflow_run:
     workflows:
-      - Backend CI
       - Laravel Backend CI/CD Migration
       - Build and Push Travi Backend Image to Docker Hub
       - Build and Push Travi Backend Nginx Image to Docker Hub
@@ -60,7 +59,6 @@ jobs:
           sha = os.environ["SOURCE_SHA"]
 
           required = {
-              "Backend CI",
               "Laravel Backend CI/CD Migration",
               "Build and Push Travi Backend Image to Docker Hub",
               "Build and Push Travi Backend Nginx Image to Docker Hub",
