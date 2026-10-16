@@ -1,0 +1,201 @@
+name: Production deployment
+
+on:
+  workflow_call:
+    inputs:
+      gitops_revision:
+        description: Approved production commit SHA from the GitOps repository
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: travi-backend-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy through Argo CD
+
+    if: >-
+      github.ref == 'refs/heads/master' ||
+      github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    environment:
+      name: production
+
+    env:
+      ARGOCD_URL: https://argocd.travimobile.com
+      ARGOCD_APPLICATION: travi-backend
+      ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+      GITOPS_REVISION: ${{ inputs.gitops_revision }}
+
+    steps:
+      - name: Deploy approved GitOps revision and verify
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import time
+          import urllib.error
+          import urllib.request
+
+          server = os.environ["ARGOCD_URL"].rstrip("/")
+          app = os.environ["ARGOCD_APPLICATION"]
+          token = os.environ.get("ARGOCD_AUTH_TOKEN", "")
+          revision = os.environ["GITOPS_REVISION"]
+
+          if not token:
+              raise SystemExit("ARGOCD_AUTH_TOKEN is missing.")
+
+          if not re.fullmatch(r"[a-fA-F0-9]{40}", revision):
+              raise SystemExit(
+                  "Supply the full approved GitOps commit SHA."
+              )
+
+          def api(path, method="GET", payload=None):
+              body = (
+                  json.dumps(payload).encode()
+                  if payload is not None
+                  else None
+              )
+
+              request = urllib.request.Request(
+                  server + "/api/v1/" + path,
+                  data=body,
+                  headers={
+                      "Authorization": "Bearer " + token,
+                      "Content-Type": "application/json",
+                  },
+                  method=method,
+              )
+
+              try:
+                  # HTTPS certificate validation stays enabled.
+                  with urllib.request.urlopen(
+                      request, timeout=30
+                  ) as response:
+                      return json.load(response)
+              except urllib.error.HTTPError as error:
+                  raise SystemExit(
+                      f"Argo CD API failed: HTTP {error.code}"
+                  )
+              except urllib.error.URLError:
+                  raise SystemExit(
+                      "Cannot securely reach the Argo CD API."
+                  )
+
+          path = f"applications/{app}"
+          application = api(path + "?refresh=hard")
+          spec = application.get("spec", {})
+          source = spec.get("source", {})
+
+          if (
+              source.get("repoURL", "").removesuffix(".git")
+              != "https://github.com/Travimobile-Engineering/gitops"
+              or source.get("path")
+              != "services/backend/overlays/prod"
+              or source.get("targetRevision") != "new-iac"
+          ):
+              raise SystemExit(
+                  "Unexpected Argo CD source configuration."
+              )
+
+          if spec.get("destination", {}).get("namespace") != "travi":
+              raise SystemExit("Unexpected destination namespace.")
+
+          status = application.get("status", {})
+          observed = status.get("sync", {}).get("revision")
+
+          # Prevent an older queued release from restoring an old revision.
+          if observed != revision:
+              raise SystemExit(
+                  "The approved GitOps revision is not the current "
+                  "revision resolved by Argo CD. Refusing stale deployment."
+              )
+
+          def healthy(application):
+              status = application.get("status", {})
+              operation = status.get("operationState", {})
+
+              return (
+                  not application.get("operation")
+                  and status.get("sync", {}).get("revision") == revision
+                  and status.get("sync", {}).get("status") == "Synced"
+                  and status.get("health", {}).get("status") == "Healthy"
+                  and operation.get("phase")
+                  not in ("Running", "Terminating", "Failed", "Error")
+              )
+
+          # Automatic sync may already have completed.
+          if not healthy(application):
+              operation = status.get("operationState", {})
+
+              if (
+                  not application.get("operation")
+                  and operation.get("phase")
+                  not in ("Running", "Terminating")
+              ):
+                  api(
+                      path + "/sync",
+                      method="POST",
+                      payload={
+                          "revision": revision,
+                          "prune": False,
+                          "dryRun": False,
+                      },
+                  )
+
+              deadline = time.monotonic() + 900
+
+              while time.monotonic() < deadline:
+                  application = api(path + "?refresh=normal")
+                  status = application.get("status", {})
+                  operation = status.get("operationState", {})
+
+                  if (
+                      status.get("sync", {}).get("revision")
+                      not in (None, revision)
+                  ):
+                      raise SystemExit(
+                          "GitOps advanced to another revision. "
+                          "This release will not overwrite it."
+                      )
+
+                  if (
+                      operation.get("syncResult", {}).get("revision")
+                      == revision
+                      and operation.get("phase") in ("Failed", "Error")
+                  ):
+                      raise SystemExit(
+                          "Argo CD deployment failed. "
+                          "Inspect the application operation."
+                      )
+
+                  if healthy(application):
+                      break
+
+                  print("Waiting for the approved release to become healthy.")
+                  time.sleep(15)
+              else:
+                  raise SystemExit(
+                      "Timed out waiting for Argo CD deployment."
+                  )
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(
+                  "## Production deployment verified\n"
+                  f"- Application: {app}\n"
+                  f"- GitOps commit: {revision}\n"
+                  "- Argo CD: Synced and Healthy\n"
+              )
+
+          print("Approved GitOps release is Synced and Healthy.")
+          PY
