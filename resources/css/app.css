@@ -1,3 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4 automatic content detection hangs on this repository (it walks
+   vendor/ on Windows), so it is disabled and the sources from the previous
+   tailwind.config.js are declared explicitly below. */
+@import 'tailwindcss' source(none);
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../resources/views/**/*.blade.php';
+@source '../../resources/**/*.js';
+@source '../../resources/**/*.vue';
+
+@theme {
+    --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}

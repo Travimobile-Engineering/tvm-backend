@@ -1,0 +1,16 @@
+# Gitleaks configuration for tvm-backend.
+# Extends the built-in rule set (all default rules stay enabled) and only
+# suppresses findings that have been reviewed and confirmed as false positives.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Reviewed false positives"
+# Match against the whole line instead of just the detected secret value.
+regexTarget = "line"
+regexes = [
+  # Internal auth header used by the feature test suite. The header value comes
+  # from config('security.header_value') at runtime, no credential is committed.
+  '''X-SECURE-AUTH''',
+]
