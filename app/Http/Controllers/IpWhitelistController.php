@@ -49,6 +49,9 @@ class IpWhitelistController extends Controller
             'label' => ['nullable', 'string', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date'],
+            // $ip is loaded from the database above, not taken from request
+            // input, and Laravel parameter-binds the ignore() value.
+            // nosemgrep: php.laravel.security.laravel-unsafe-validator.laravel-unsafe-validator
             'ip_address' => ['nullable', 'ip', Rule::unique('ip_whitelists')->ignore($ip->id)],
         ]);
 
