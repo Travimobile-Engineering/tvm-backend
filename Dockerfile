@@ -1,19 +1,16 @@
-
 FROM php:8.4-fpm
 
 WORKDIR /var/www
 ARG MAX_CHILDREN=40
 
-RUN apt-get update && apt-get install -y libicu-dev \
-    && docker-php-ext-install -j$(nproc) intl \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libicu-dev \
+    && docker-php-ext-install -j"$(nproc)" intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && apt-get install -y bash
-
 
 RUN sed -i "s/^pm\.max_children\s*=.*/pm.max_children = ${MAX_CHILDREN}/" /usr/local/etc/php-fpm.d/www.conf
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpng-dev \
     libjpeg-dev \
@@ -36,11 +33,10 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libonig-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd
+    && docker-php-ext-install -j"$(nproc)" gd \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath opcache sockets
-
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -48,28 +44,12 @@ COPY ./custom.ini /usr/local/etc/php/conf.d/custom.ini
 
 COPY ./ ./
 
-COPY ./database  ./database
-
-COPY ./database/migrations  ./database/migrations
-
-COPY ./start.sh ./start.sh
-
-RUN chmod +x ./start.sh
-
-COPY ./database/migrations  ./database/migrations
-
-COPY ./start.sh ./start.sh
-
 RUN chmod +x ./start.sh
 
 RUN composer install --no-dev --optimize-autoloader
 
-RUN chown -R www-data:www-data /var/www
-
-RUN chmod -R 775 /var/www/
-
 RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
-    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
+    && chown -R www-data:www-data /var/www \
     && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
 USER www-data
@@ -77,4 +57,3 @@ USER www-data
 EXPOSE 9000
 
 CMD ["./start.sh"]
-
