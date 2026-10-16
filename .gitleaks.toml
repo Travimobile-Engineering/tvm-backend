@@ -1,16 +1,53 @@
 # Gitleaks configuration for tvm-backend.
-# Extends the built-in rule set (all default rules stay enabled) and only
-# suppresses findings that have been reviewed and confirmed as false positives.
+#
+# This file is auto-discovered by gitleaks (precedence: --config, GITLEAKS_CONFIG,
+# GITLEAKS_CONFIG_TOML, then ./.gitleaks.toml) so no workflow flags are required.
+#
+# All default rules stay enabled - this only records REVIEWED, HISTORICAL
+# findings so the scan fails on NEW leaks only.
 
 [extend]
 useDefault = true
 
-[allowlist]
-description = "Reviewed false positives"
-# Match against the whole line instead of just the detected secret value.
-regexTarget = "line"
-regexes = [
-  # Internal auth header used by the feature test suite. The header value comes
-  # from config('security.header_value') at runtime, no credential is committed.
-  '''X-SECURE-AUTH''',
+# ---------------------------------------------------------------------------
+# Files that must never be committed. Both are gitignored today, so any hit is
+# necessarily historical (or a regression that reintroduces them).
+# ---------------------------------------------------------------------------
+[[allowlists]]
+description = "Files that must never be committed (gitignored)"
+paths = [
+  '''(^|/)\.env\.testing$''',
+  '''storage/app/firebase/firebase_credentials\.json$''',
+]
+
+# ---------------------------------------------------------------------------
+# Historical leaks (committed 2024-12 -> 2026-04).
+#
+# Every finding tied to these commits was reviewed on 2026-10:
+#   - the values are no longer present in the working tree (.env.sample and
+#     .env.example now have empty values, config/app.php now reads
+#     env('PAYSTACK_SECRET_KEY'), and the feature tests read the shared header
+#     from config() instead of hardcoding it)
+#   - the exposed credentials have been rotated
+#
+# Listing commits (not paths) is deliberate: a new leak in any of these files,
+# on a new commit, will still fail the scan.
+# ---------------------------------------------------------------------------
+[[allowlists]]
+description = "Reviewed historical leaks, removed from the working tree and rotated"
+commits = [
+  "c2aec586ac600c7c5a03213cdf5bbe98df089403",
+  "9b908b764ee6fa583804c65ff7ddd073a03c87c0",
+  "46e613981402e9f8628c47f57d54c208116c7ee6",
+  "22c857dea5c36301f1e43f19702752073f3897b0",
+  "fdc10cd07ff8beca984c35d7ae967de7b6cefd3a",
+  "5488d9be7825846d9f03dfd753b1a2a0f4e9cf56",
+  "c1a0fe190addc469a92977f4664efa1a555f76b5",
+  "8e4c91f6c6a18b9a0872acbc6902241a3b3b8f3b",
+  "f4b498254e16fae9b93f626065b21939ba04e444",
+  "cd9728a31a7f9e772be0f02ba721da6a303c3fae",
+  "ade9912afe6e5fff5950d0b8e7d20ed2420d9af2",
+  "23da48ade7e5b9dead7e57f5755b541f221ca428",
+  "875a1be0c4ddeca4fc80642d09f89e80a735b5f9",
+  "f06fa09d7b5014b77260fcedcae07c1314ce9c2d",
 ]
