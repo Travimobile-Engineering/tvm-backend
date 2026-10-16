@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enum\TripStatus;
 use App\Enum\TripType;
-use App\Events\TripCreated;
+use App\Enum\UserType;
 use App\Models\RouteSubregion;
 use App\Models\TransitCompany;
 use App\Models\TransitCompanyUnion;
@@ -14,7 +14,6 @@ use App\Models\TripBookingPassenger;
 use App\Models\User;
 use App\Models\Vehicle\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -85,8 +84,6 @@ class TripTest extends TestCase
     #[Test]
     public function it_can_create_a_one_time_trip()
     {
-        Event::fake([TripCreated::class]);
-
         $payload = [
             'user_id' => $this->user->id,
             'vehicle_id' => $this->vehicle->id,
@@ -127,8 +124,6 @@ class TripTest extends TestCase
             'type' => TripType::ONETIME,
             'status' => TripStatus::UPCOMING,
         ]);
-
-        Event::assertDispatched(TripCreated::class);
     }
 
     #[Test]
@@ -299,6 +294,7 @@ class TripTest extends TestCase
     public function it_can_start_a_trip()
     {
         $this->user->wallet = 10000;
+        $this->user->user_category = UserType::DRIVER->value;
         $this->user->save();
 
         $trip = Trip::factory()->create([

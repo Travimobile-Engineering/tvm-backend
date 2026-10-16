@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Bank;
 use App\Models\User;
 use App\Models\UserBank;
 use App\Services\DataProtection\DataProtector;
-use Database\Seeders\BankSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -33,7 +34,21 @@ class WalletSetupTest extends TestCase
             'Authorization' => 'Bearer '.$this->token,
         ];
 
-        (new BankSeeder)->run();
+        Bank::create([
+            'name' => 'Access Bank',
+            'slug' => 'access-bank',
+            'code' => '044',
+            'currency' => 'NGN',
+        ]);
+
+        // The wallet setup flow calls the payment service to create a transfer
+        // recipient; stub it so the test never makes a real HTTP request.
+        Http::fake([
+            '*' => Http::response([
+                'status' => true,
+                'data' => ['recipient_code' => 'RCP_test_recipient'],
+            ]),
+        ]);
     }
 
     public function test_wallet_setup(): void

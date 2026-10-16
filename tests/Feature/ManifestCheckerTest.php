@@ -42,6 +42,8 @@ class ManifestCheckerTest extends TestCase
             'date' => now()->format('Y-m-d'),
             'time' => now(),
             'location' => 'Rivers, Port Harcourt',
+            'state_id' => 33,
+            'city' => 'Port Harcourt',
             'description' => 'A slight incident',
             'media_url' => 'https://example.com',
             'severity_level' => 'Informational',
@@ -107,14 +109,21 @@ class ManifestCheckerTest extends TestCase
 
         $response = $this->post('api/manifest-checker/watch-list/add', $payload, $this->headers);
 
+        $watchListId = json_decode($response->getContent())->data->id;
+
+        // This endpoint records an observation against the watch list entry
+        // rather than mutating the watch list row itself.
         $payload = [
-            'full_name' => 'User Example2',
+            'observation' => 'Sighted in Port Harcourt',
+            'state_id' => 33,
+            'city' => 'Port Harcourt',
+            'watchlist_id' => $watchListId,
         ];
-        $response = $this->post('api/manifest-checker/watch-list/update/'.json_decode($response->getContent())->data->id, $payload, $this->headers);
-        $this->assertDatabaseHas('watch_lists', [
-            'full_name' => 'User Example2',
-            'phone' => '09012345678',
-            'email' => 'email@example.com',
+        $response = $this->post('api/manifest-checker/watch-list/update/'.$watchListId, $payload, $this->headers);
+
+        $this->assertDatabaseHas('watchlist_updates', [
+            'watchlist_id' => $watchListId,
+            'observation' => 'Sighted in Port Harcourt',
         ]);
         $response->assertStatus(200);
     }
