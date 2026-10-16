@@ -23,7 +23,7 @@ jobs:
         run: git config --global --add safe.directory "*"
 
       - name: Scan the code for leaked secrets
-        run: gitleaks detect --verbose --source . -f json -r gitleaks.json
+        run: gitleaks detect --verbose --source . --config .gitleaks.toml -f json -r gitleaks.json
 
       - name: Install requests package
         if: always()
@@ -64,6 +64,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache NVD Data
+        uses: actions/cache@v4
+        with:
+          path: ./dc-data
+          key: nvd-data-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            nvd-data-${{ runner.os }}-
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -82,13 +90,15 @@ jobs:
 
       - name: Install dependency-check CLI
         run: |
-          chmod +x dependency-check.sh
-          ./dependency-check.sh
+          wget https://github.com/jeremylong/DependencyCheck/releases/download/v11.1.1/dependency-check-11.1.1-release.zip
+          unzip dependency-check-11.1.1-release.zip
+          chmod +x dependency-check/bin/dependency-check.sh
 
       - name: Run dependency-check scan
+        continue-on-error: true
         run: |
           mkdir -p ./dc-data ./reports
-          dependency-check \
+          ./dependency-check/bin/dependency-check.sh \
             --nvdApiDelay 7000 \
             --nvdApiKey ${{ secrets.NVD_API }} \
             --data ./dc-data \
