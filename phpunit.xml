@@ -38,5 +38,7 @@
         <env name="OTEL_METRICS_EXPORTER" value="none"/>
         <env name="OTEL_LOGS_EXPORTER" value="none"/>
         <env name="OTEL_EXPORTER_OTLP_ENDPOINT" value="http://localhost:4318"/>
+        <env name="X_HEADER_KEY" value="X-SECURE-AUTH"/>
+        <env name="X_HEADER_VALUE" value="test-secret-value"/>
     </php>
 </phpunit>

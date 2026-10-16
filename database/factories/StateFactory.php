@@ -19,6 +19,7 @@ class StateFactory extends Factory
     {
         return [
             'name' => fake()->word(),
+            'zone_id' => 1,
         ];
     }
 }
