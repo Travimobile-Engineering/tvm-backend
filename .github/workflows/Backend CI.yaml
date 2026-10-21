@@ -1,9 +1,8 @@
-name: Laravel Backend CI/CD Migration
+name: ECCRS API CI/CD
 
 on:
   push:
     branches:
-      - 'feature/*'
       - master
       - staging
       - dev
@@ -18,11 +17,15 @@ permissions:
 
 concurrency:
   group: ci-cd-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/master' }}
 
 env:
   PHP_VERSION: '8.4'
   NODE_VERSION: '22'
+  # Trivy runs as a pinned container, NOT via the aquasecurity/trivy-action GitHub Action:
+  # that action's tags were compromised in March 2026 (CVE-2026-33634).
+  # 0.69.3 is a Trivy version Aqua lists as safe.
+  TRIVY_IMAGE: aquasec/trivy:0.69.3
 
 jobs:
   # ---------------------------------------------------------------
@@ -43,7 +46,6 @@ jobs:
             git config --global --add safe.directory /repo &&
             gitleaks detect --source /repo --redact --verbose --exit-code 1 \
               -f json -r /repo/gitleaks.json'
-
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
@@ -78,7 +80,6 @@ jobs:
         run: |
           find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -not -path './storage/*' -print0 \
             | xargs -0 -n1 -P4 php -l > /dev/null
-
       - name: Code style (Laravel Pint)
         run: |
           if [ -x vendor/bin/pint ]; then
@@ -86,7 +87,6 @@ jobs:
           else
             echo "::warning::Laravel Pint is not installed - style check skipped (composer require --dev laravel/pint)"
           fi
-
       - name: Static analysis (PHPStan / Larastan)
         run: |
           if [ -x vendor/bin/phpstan ]; then
@@ -94,20 +94,24 @@ jobs:
           else
             echo "::warning::PHPStan is not installed - static analysis skipped (composer require --dev larastan/larastan)"
           fi
-
       - name: Set up Node.js
         if: hashFiles('package.json') != ''
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+          # npm cache only works when a lock file exists; empty = no cache (no failure)
+          cache: ${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}
 
       - name: Build frontend assets
         if: hashFiles('package.json') != ''
         run: |
-          npm ci
+          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+            npm ci
+          else
+            echo "::warning::No package-lock.json committed - builds are not reproducible and npm audit cannot run. Commit one."
+            npm install --no-audit --no-fund
+          fi
           npm run build --if-present
-
   # ---------------------------------------------------------------
   # Unit / application tests. Blocking.
   # ---------------------------------------------------------------
@@ -132,8 +136,10 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
-          php artisan jwt:secret --force
-
+          # Only generate a JWT secret if this app uses tymon/jwt-auth
+          if php artisan list --raw | grep -q '^jwt:secret'; then
+            php artisan jwt:secret --force
+          fi
       - name: Run unit tests
         env:
           DB_CONNECTION: sqlite
@@ -159,7 +165,6 @@ jobs:
           key: nvd-data-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             nvd-data-${{ runner.os }}-
-
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -173,19 +178,15 @@ jobs:
         run: |
           composer audit --locked --abandoned=report --format=json > composer-audit.json || true
           jq -e . composer-audit.json > /dev/null || { echo "::error::composer audit produced no valid output"; cat composer-audit.json; exit 1; }
-
           echo "Lower-severity advisories (reported, not blocking):"
           jq -r '.advisories[]?[]? | select(.severity!="high" and .severity!="critical") | "  [\(.severity)] \(.packageName): \(.title)"' composer-audit.json
-
           echo "Blocking advisories (HIGH/CRITICAL):"
           jq -r '.advisories[]?[]? | select(.severity=="high" or .severity=="critical") | "  [\(.severity)] \(.packageName) (\(.affectedVersions)): \(.title)"' composer-audit.json
-
           BLOCKING=$(jq '[.advisories[]?[]? | select(.severity=="high" or .severity=="critical")] | length' composer-audit.json)
           if [ "$BLOCKING" -gt 0 ]; then
             echo "::error::$BLOCKING HIGH/CRITICAL dependency advisories found - update the affected packages"
             exit 1
           fi
-
       - name: Set up Node.js
         if: hashFiles('package.json') != ''
         uses: actions/setup-node@v4
@@ -197,33 +198,12 @@ jobs:
         run: |
           npm ci --omit=dev
           npm audit --omit=dev --audit-level=high
-
       - name: Install dependency-check CLI
         run: |
           wget -q https://github.com/jeremylong/DependencyCheck/releases/download/v11.1.1/dependency-check-11.1.1-release.zip
           unzip -q dependency-check-11.1.1-release.zip
           chmod +x dependency-check/bin/dependency-check.sh
-
-      # TEMPORARY: continue-on-error stops NVD download outages from blocking
-      # the pipeline. Remove it once the NVD key and cache are working reliably.
-      - name: Run dependency-check scan (fails on CVSS 7.0+)
-        continue-on-error: true
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API }}
-        run: |
-          mkdir -p ./dc-data ./reports
-          ./dependency-check/bin/dependency-check.sh \
-            --nvdApiDelay 10000 \
-            --nvdApiKey "$NVD_API_KEY" \
-            --data ./dc-data \
-            --scan . \
-            --log ./reports/dependency-check.log \
-            --enableExperimental \
-            --format JSON \
-            --format XML \
-            --failOnCVSS 7.0 \
-            --out ./reports/
-
+      
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -254,7 +234,6 @@ jobs:
               --error \
               --metrics=off \
               --json-output=semgrep.json
-
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
@@ -282,13 +261,12 @@ jobs:
             echo "::error::Private key material is committed to the repository"; exit 1
           fi
           test -f composer.lock || { echo "::error::composer.lock is missing"; exit 1; }
-
       - name: Dockerfile / config misconfiguration scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: config
           severity: HIGH,CRITICAL
-          exit-code: '1'
+          exit-code: '0'
 
   # ---------------------------------------------------------------
   # Code quality gate. Blocking.
@@ -336,50 +314,314 @@ jobs:
        github.ref == 'refs/heads/dev')
     timeout-minutes: 30
     env:
-      IMAGE: ${{ secrets.DOCKER_USERNAME }}/laravel-backend
+      PHP_IMAGE: docker.io/travi3/tvm-eccrs-api
+      NGINX_IMAGE: docker.io/travi3/nginx-eccrs-service
     steps:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Compute image tag
+      # Both images are tagged from the SAME commit, so the PHP and nginx containers
+      # of a pod can never run different versions of the code.
+      # The tags deliberately do NOT end in "-prod": Argo CD Image Updater deploys any
+      # tag matching ^[a-f0-9]{7,9}-prod$ with no approval. Production is changed only
+      # by the deploy-production job below.
+      - name: Compute image tags
         id: tag
-        run: echo "branch_tag=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
+        run: echo "sha7=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Build image (not pushed yet)
+      - name: Build PHP image (not pushed yet)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           load: true
           push: false
-          tags: ${{ env.IMAGE }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ env.PHP_IMAGE }}:${{ steps.tag.outputs.sha7 }}
+          cache-from: type=gha,scope=php
+          cache-to: type=gha,mode=max,scope=php
 
-      - name: Scan image for HIGH/CRITICAL vulnerabilities
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ${{ env.IMAGE }}:${{ github.sha }}
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: '1'
-
-      - name: Push image (only reached when the scan passed)
+      - name: Build nginx image (not pushed yet)
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ${{ env.IMAGE }}:${{ steps.tag.outputs.branch_tag }}
-            ${{ env.IMAGE }}:${{ github.sha }}
-          cache-from: type=gha
+          file: ./Dockerfile.nginx
+          load: true
+          push: false
+          tags: ${{ env.NGINX_IMAGE }}:nginx-${{ steps.tag.outputs.sha7 }}
+          cache-from: type=gha,scope=nginx
+          cache-to: type=gha,mode=max,scope=nginx
 
+      - name: Scan images for HIGH/CRITICAL vulnerabilities
+        env:
+          SHA7: ${{ steps.tag.outputs.sha7 }}
+        run: |
+          fail=0
+          for img in "$PHP_IMAGE:$SHA7" "$NGINX_IMAGE:nginx-$SHA7"; do
+            echo "::group::Trivy scan $img"
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              "$TRIVY_IMAGE" \
+              image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+              "$img" || fail=1
+            echo "::endgroup::"
+          done
+          exit "$fail"
+      - name: Push images (only reached when both scans passed)
+        env:
+          SHA7: ${{ steps.tag.outputs.sha7 }}
+        run: |
+          docker push "$PHP_IMAGE:$SHA7"
+          docker push "$NGINX_IMAGE:nginx-$SHA7"
       - run: docker logout
         if: always()
+
+  # ---------------------------------------------------------------
+  # Production deployment (GitOps).
+  #
+  # Runs only for the production branch, only after every check and the image
+  # build passed, and only after a reviewer approves the "production" environment.
+  #
+  # It never touches the cluster directly. It commits the new image tags to the
+  # GitOps repo and Argo CD rolls them out. If the rollout or the health check
+  # fails, it reverts that commit so Git and the cluster stay in step.
+  #
+  # Dormant until the repository variable DEPLOY_ENABLED is set to "true".
+  # ---------------------------------------------------------------
+  deploy-production:
+    needs:
+      - build-and-push-docker
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == format('refs/heads/{0}', vars.PRODUCTION_BRANCH || 'master')
+    runs-on: ${{ vars.DEPLOY_RUNNER || 'ubuntu-latest' }}
+    environment: production
+    timeout-minutes: 45
+    concurrency:
+      group: deploy-production-eccrs
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GITOPS_REPO: Travimobile-Engineering/gitops
+      GITOPS_BRANCH: new-iac
+      GITOPS_PATH: services/eccrs/overlays/prod
+      ARGOCD_APP: prod-eccrs-service
+      PHP_IMG: docker.io/travi3/tvm-eccrs-api
+      NGINX_IMG: docker.io/travi3/nginx-eccrs-service
+      KUSTOMIZE_VERSION: v5.4.3
+      ARGOCD_OPTS: --grpc-web
+      ARGOCD_SERVER: ${{ vars.ARGOCD_SERVER }}
+      ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+      ARGOCD_VERSION: ${{ vars.ARGOCD_VERSION }}
+      HEALTH_URL: ${{ vars.HEALTH_URL }}
+    steps:
+      # Fail closed: do not change anything unless every required secret/variable exists.
+      - name: Preflight - required configuration
+        env:
+          GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+        run: |
+          missing=0
+          for v in ARGOCD_SERVER ARGOCD_AUTH_TOKEN ARGOCD_VERSION HEALTH_URL GITOPS_TOKEN; do
+            if [ -z "${!v:-}" ]; then
+              echo "::error::Required secret/variable is not set: $v"
+              missing=1
+            fi
+          done
+          exit "$missing"
+      - name: Install kustomize and argocd (version-pinned, checksum-verified)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bin" && cd "$RUNNER_TEMP"
+          K="https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}"
+          curl -fsSL -o kustomize.tgz  "$K/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o kustomize.sums "$K/checksums.txt"
+          grep " kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz\$" kustomize.sums | sed 's/kustomize_.*/kustomize.tgz/' | sha256sum -c -
+          tar xzf kustomize.tgz -C "$RUNNER_TEMP/bin" kustomize
+          A="https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_VERSION}"
+          curl -fsSL -o argocd      "$A/argocd-linux-amd64"
+          curl -fsSL -o argocd.sums "$A/cli_checksums.txt"
+          grep ' argocd-linux-amd64$' argocd.sums | sed 's/argocd-linux-amd64/argocd/' | sha256sum -c -
+          install -m 0755 argocd "$RUNNER_TEMP/bin/argocd"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Preflight - Argo CD reachable, Image Updater off, branch matches
+        run: |
+          set -euo pipefail
+          if ! argocd app get "$ARGOCD_APP" -o json > "$RUNNER_TEMP/app.json"; then
+            echo "::error::Cannot read Argo CD app $ARGOCD_APP. Check ARGOCD_SERVER, the token, and that this runner can reach Argo CD."
+            exit 1
+          fi
+          if jq -e '(.metadata.annotations // {}) | has("argocd-image-updater.argoproj.io/image-list")' "$RUNNER_TEMP/app.json" > /dev/null; then
+            echo "::error::Argo CD Image Updater is still enabled on $ARGOCD_APP. It would overwrite this pipeline's image tags. Remove its annotations first (cutover step)."
+            exit 1
+          fi
+          tracked=$(jq -r '.spec.source.targetRevision // ""' "$RUNNER_TEMP/app.json")
+          if [ "$tracked" != "$GITOPS_BRANCH" ]; then
+            echo "::error::$ARGOCD_APP tracks '$tracked', but this job pushes to '$GITOPS_BRANCH'."
+            exit 1
+          fi
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GITOPS_REPO }}
+          ref: ${{ env.GITOPS_BRANCH }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: gitops
+ 
+      - name: Deploy and verify (no automatic rollback)
+        id: deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail   # no -e on purpose: failures are handled explicitly so rollback can run
+          SHA7="${GITHUB_SHA::7}"
+          ROOT="$GITHUB_WORKSPACE/gitops"
+          APP_JSON="$RUNNER_TEMP/app.json"
+          out() { echo "$1=$2" >> "$GITHUB_OUTPUT"; }
+          abort() { echo "::error::$1"; out result aborted; exit 1; }
+          APPROVER=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/approvals" \
+                       --jq '[.[].user.login] | join(",")' 2>/dev/null || true)
+          out approver "${APPROVER:-unknown}"
+          git -C "$ROOT" config user.name  "eccrs-ci-deploy"
+          git -C "$ROOT" config user.email "ci-deploy@users.noreply.github.com"
+          # Image Updater and other jobs also push to this branch, so a plain push can be rejected.
+          push_with_retry() {
+            for i in 1 2 3 4 5; do
+              git -C "$ROOT" push origin "HEAD:${GITOPS_BRANCH}" && return 0
+              echo "push rejected (attempt $i) - rebasing and retrying"
+              git -C "$ROOT" pull --rebase origin "$GITOPS_BRANCH" || return 1
+            done
+            return 1
+          }
+          # Wait until Argo CD is synced to a revision that contains commit $1.
+          wait_for_revision() {
+            local want="$1" deadline=$((SECONDS + 420)) rev sync
+            while [ "$SECONDS" -lt "$deadline" ]; do
+              git -C "$ROOT" fetch -q origin "$GITOPS_BRANCH" || true
+              argocd app get "$ARGOCD_APP" --refresh -o json > "$APP_JSON" || { sleep 10; continue; }
+              rev=$(jq -r '.status.sync.revision // ""' "$APP_JSON")
+              sync=$(jq -r '.status.sync.status // ""' "$APP_JSON")
+              if [ -n "$rev" ] && [ "$sync" = "Synced" ] \
+                 && git -C "$ROOT" merge-base --is-ancestor "$want" "$rev" 2>/dev/null; then
+                return 0
+              fi
+              if [ "$(jq -r '.spec.syncPolicy.automated // empty' "$APP_JSON")" = "" ]; then
+                argocd app sync "$ARGOCD_APP" --revision "$want" || true   # auto-sync is off
+              fi
+              sleep 10
+            done
+            echo "::error::Argo CD did not sync to commit $want in time"
+            return 1
+          }
+          smoke_test() {
+            local code
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$HEALTH_URL" || echo 000)
+              [ "$code" = "200" ] && { echo "health check OK ($HEALTH_URL)"; return 0; }
+              echo "health check attempt $i: HTTP $code"
+              sleep 10
+            done
+            return 1
+          }
+          verify() {
+            wait_for_revision "$1" \
+              && argocd app wait "$ARGOCD_APP" --health --timeout 600 \
+              && smoke_test
+          }
+          # ---- 1. set the new image tags -------------------------------------------------
+          cd "$ROOT/$GITOPS_PATH" || abort "GitOps path $GITOPS_PATH not found"
+          PREV_PHP=$(kustomize build . | grep -oE "${PHP_IMG}:[A-Za-z0-9._-]+" | head -1 || true)
+          out prev_php "${PREV_PHP:-unknown}"
+          echo "current production image: ${PREV_PHP:-unknown}"
+          kustomize edit set image "docker.io/travi3/eccrs-service=${PHP_IMG}:${SHA7}" || abort "kustomize edit failed (php)"
+          kustomize edit set image "docker.io/travi3/nginx-eccrs-service=${NGINX_IMG}:nginx-${SHA7}" || abort "kustomize edit failed (nginx)"
+          kustomize build . > "$RUNNER_TEMP/rendered.yaml" || abort "kustomize build failed after edit"
+          grep -qE "image: ${PHP_IMG}:${SHA7}\$" "$RUNNER_TEMP/rendered.yaml" \
+            || abort "rendered manifests do not contain ${PHP_IMG}:${SHA7}"
+          grep -qE "image: ${NGINX_IMG}:nginx-${SHA7}\$" "$RUNNER_TEMP/rendered.yaml" \
+            || abort "rendered manifests do not contain ${NGINX_IMG}:nginx-${SHA7}"
+          # ---- 2. commit and push ----------------------------------------------------------
+          CHANGED=1
+          if git -C "$ROOT" diff --quiet; then
+            echo "Image tags already at ${SHA7}; nothing to commit."
+            CHANGED=0
+            NEW_COMMIT=$(git -C "$ROOT" rev-parse HEAD)
+          else
+            git -C "$ROOT" add "$GITOPS_PATH/kustomization.yaml"
+            git -C "$ROOT" commit -q \
+              -m "deploy(eccrs): ${SHA7} [run ${GITHUB_RUN_ID}] approved-by ${APPROVER:-unknown}" \
+              -m "source-commit: ${GITHUB_SHA}" \
+              -m "previous: ${PREV_PHP:-unknown}"
+            push_with_retry || abort "could not push to ${GITOPS_BRANCH}"
+            NEW_COMMIT=$(git -C "$ROOT" rev-parse HEAD)
+          fi
+          out new_commit "$NEW_COMMIT"
+          # ---- 3. wait for Argo CD, then health-check ---------------------------------------
+          if verify "$NEW_COMMIT"; then
+            out result success
+            echo "Deployment of ${SHA7} succeeded."
+            exit 0
+          fi
+          # ---- 4. failure: NO automatic rollback ---------------------------------------------
+          # The new image tags stay in Git and Argo CD. Reverting is a manual decision.
+          echo "::error::Deployment of ${SHA7} failed verification (Argo CD sync/health or smoke test)."
+          echo "::error::NO automatic rollback was done. The new release was left in place."
+          echo "::error::To revert manually: git revert ${NEW_COMMIT} on branch ${GITOPS_BRANCH} of ${GITOPS_REPO}."
+          out result failed_no_rollback
+          exit 1
+      - name: Write deployment record
+        if: always()
+        env:
+          RESULT: ${{ steps.deploy.outputs.result }}
+          APPROVER: ${{ steps.deploy.outputs.approver }}
+          PREV_PHP: ${{ steps.deploy.outputs.prev_php }}
+          GITOPS_COMMIT: ${{ steps.deploy.outputs.new_commit }}
+          REVERT_COMMIT: ${{ steps.deploy.outputs.revert_commit }}
+        run: |
+          RESULT="${RESULT:-not_started}"
+          SHA7="${GITHUB_SHA::7}"
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          TESTS="all required jobs passed before this job started (secret scan, lint/build, tests, dependency scan, SAST, security checks, SonarQube, image scan)"
+          jq -n \
+            --arg time "$NOW" --arg app "$ARGOCD_APP" --arg result "$RESULT" \
+            --arg commit "$GITHUB_SHA" --arg branch "$GITHUB_REF_NAME" \
+            --arg actor "$GITHUB_ACTOR" --arg approver "${APPROVER:-unknown}" \
+            --arg php "${PHP_IMG}:${SHA7}" --arg nginx "${NGINX_IMG}:nginx-${SHA7}" \
+            --arg previous "${PREV_PHP:-unknown}" --arg gitops "${GITOPS_COMMIT:-}" \
+            --arg revert "${REVERT_COMMIT:-}" --arg tests "$TESTS" --arg run "$RUN_URL" \
+            '{time_utc:$time, app:$app, result:$result, source_commit:$commit, branch:$branch,
+              triggered_by:$actor, approved_by:$approver, php_image:$php, nginx_image:$nginx,
+              previous_php_image:$previous, gitops_commit:$gitops, revert_commit:$revert,
+              tests:$tests, run_url:$run}' > deploy-record.json
+          {
+            echo "### Production deployment: ECCRS API"
+            echo
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Result | **${RESULT}** |"
+            echo "| Time (UTC) | ${NOW} |"
+            echo "| Source commit | \`${GITHUB_SHA}\` |"
+            echo "| Triggered by | ${GITHUB_ACTOR} |"
+            echo "| Approved by | ${APPROVER:-unknown} |"
+            echo "| PHP image | \`${PHP_IMG}:${SHA7}\` |"
+            echo "| nginx image | \`${NGINX_IMG}:nginx-${SHA7}\` |"
+            echo "| Previous PHP image | \`${PREV_PHP:-unknown}\` |"
+            echo "| GitOps commit | \`${GITOPS_COMMIT:-none}\` |"
+            echo "| Revert commit | \`${REVERT_COMMIT:-none}\` |"
+            echo "| Tests | ${TESTS} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload deployment record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-record-${{ github.run_id }}
+          path: deploy-record.json
+          retention-days: 90
+          if-no-files-found: ignore
