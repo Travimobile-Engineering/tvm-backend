@@ -1,4 +1,4 @@
-name: ECCRS API CI/CD
+name: tvm_backend API CI/CD
 
 on:
   push:
@@ -314,8 +314,8 @@ jobs:
        github.ref == 'refs/heads/dev')
     timeout-minutes: 30
     env:
-      PHP_IMAGE: docker.io/travi3/tvm-eccrs-api
-      NGINX_IMAGE: docker.io/travi3/nginx-eccrs-service
+      PHP_IMAGE: docker.io/travi3/backend
+      NGINX_IMAGE: docker.io/travi3/backend-nginx-prod
     steps:
       - uses: actions/checkout@v4
 
@@ -411,10 +411,10 @@ jobs:
     env:
       GITOPS_REPO: Travimobile-Engineering/gitops
       GITOPS_BRANCH: new-iac
-      GITOPS_PATH: services/eccrs/overlays/prod
-      ARGOCD_APP: prod-eccrs-service
-      PHP_IMG: docker.io/travi3/tvm-eccrs-api
-      NGINX_IMG: docker.io/travi3/nginx-eccrs-service
+      GITOPS_PATH: services/backend/overlays/prod 
+      ARGOCD_APP: travi-backend
+      PHP_IMG: docker.io/travi3/travi3/backend
+      NGINX_IMG: docker.io/travi3/backend-nginx-prod
       KUSTOMIZE_VERSION: v5.4.3
       ARGOCD_OPTS: --grpc-web
       ARGOCD_SERVER: ${{ vars.ARGOCD_SERVER }}
@@ -488,7 +488,7 @@ jobs:
           APPROVER=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/approvals" \
                        --jq '[.[].user.login] | join(",")' 2>/dev/null || true)
           out approver "${APPROVER:-unknown}"
-          git -C "$ROOT" config user.name  "eccrs-ci-deploy"
+          git -C "$ROOT" config user.name  "tvm_backend-ci-deploy"
           git -C "$ROOT" config user.email "ci-deploy@users.noreply.github.com"
           # Image Updater and other jobs also push to this branch, so a plain push can be rejected.
           push_with_retry() {
@@ -539,8 +539,8 @@ jobs:
           PREV_PHP=$(kustomize build . | grep -oE "${PHP_IMG}:[A-Za-z0-9._-]+" | head -1 || true)
           out prev_php "${PREV_PHP:-unknown}"
           echo "current production image: ${PREV_PHP:-unknown}"
-          kustomize edit set image "docker.io/travi3/eccrs-service=${PHP_IMG}:${SHA7}" || abort "kustomize edit failed (php)"
-          kustomize edit set image "docker.io/travi3/nginx-eccrs-service=${NGINX_IMG}:nginx-${SHA7}" || abort "kustomize edit failed (nginx)"
+          kustomize edit set image "docker.io/travi3/backend=${PHP_IMG}:${SHA7}" || abort "kustomize edit failed (php)"
+          kustomize edit set image "docker.io/travi3/backend-nginx-prod=${NGINX_IMG}:nginx-${SHA7}" || abort "kustomize edit failed (nginx)"
           kustomize build . > "$RUNNER_TEMP/rendered.yaml" || abort "kustomize build failed after edit"
           grep -qE "image: ${PHP_IMG}:${SHA7}\$" "$RUNNER_TEMP/rendered.yaml" \
             || abort "rendered manifests do not contain ${PHP_IMG}:${SHA7}"
@@ -555,7 +555,7 @@ jobs:
           else
             git -C "$ROOT" add "$GITOPS_PATH/kustomization.yaml"
             git -C "$ROOT" commit -q \
-              -m "deploy(eccrs): ${SHA7} [run ${GITHUB_RUN_ID}] approved-by ${APPROVER:-unknown}" \
+              -m "deploy(backend): ${SHA7} [run ${GITHUB_RUN_ID}] approved-by ${APPROVER:-unknown}" \
               -m "source-commit: ${GITHUB_SHA}" \
               -m "previous: ${PREV_PHP:-unknown}"
             push_with_retry || abort "could not push to ${GITOPS_BRANCH}"
@@ -601,7 +601,7 @@ jobs:
               previous_php_image:$previous, gitops_commit:$gitops, revert_commit:$revert,
               tests:$tests, run_url:$run}' > deploy-record.json
           {
-            echo "### Production deployment: ECCRS API"
+            echo "### Production deployment: BACKEND API"
             echo
             echo "| Field | Value |"
             echo "|---|---|"
