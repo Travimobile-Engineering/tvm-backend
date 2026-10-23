@@ -316,6 +316,7 @@ jobs:
     env:
       PHP_IMAGE: docker.io/travi3/backend
       NGINX_IMAGE: docker.io/travi3/backend-nginx-prod
+      TRIVY_IMAGE: aquasec/trivy:0.57.1
     steps:
       - uses: actions/checkout@v4
 
