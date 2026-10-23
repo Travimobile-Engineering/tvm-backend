@@ -316,7 +316,8 @@ jobs:
     env:
       PHP_IMAGE: docker.io/travi3/backend
       NGINX_IMAGE: docker.io/travi3/backend-nginx-prod
-      TRIVY_IMAGE: aquasec/trivy:0.57.1
+      # FIX: removed the job-level TRIVY_IMAGE (0.57.1). It overrode the safe
+      # pinned version defined at the top of this file (0.69.3).
     steps:
       - uses: actions/checkout@v4
 
@@ -358,19 +359,20 @@ jobs:
           cache-from: type=gha,scope=nginx
           cache-to: type=gha,mode=max,scope=nginx
 
+      # FIX: removed ::group:: / ::endgroup:: so the scan output (CVE table or
+      # Docker error) is visible instead of collapsed.
       - name: Scan images for HIGH/CRITICAL vulnerabilities
         env:
           SHA7: ${{ steps.tag.outputs.sha7 }}
         run: |
           fail=0
           for img in "$PHP_IMAGE:$SHA7" "$NGINX_IMAGE:nginx-$SHA7"; do
-            echo "::group::Trivy scan $img"
+            echo "=== Trivy scan $img"
             docker run --rm \
               -v /var/run/docker.sock:/var/run/docker.sock \
               "$TRIVY_IMAGE" \
               image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
-              "$img" || fail=1
-            echo "::endgroup::"
+              "$img" || { echo "::error::Trivy failed for $img"; fail=1; }
           done
           exit "$fail"
       - name: Push images (only reached when both scans passed)
@@ -416,9 +418,10 @@ jobs:
       GITOPS_PATH: services/backend/overlays/prod
       ARGOCD_APP: travi-backend
       PHP_IMG: docker.io/travi3/backend
-      # FIX: the backend image in production is tagged <sha7>-prod (e.g. 02d45e1-prod).
-      # This MUST match the tag pushed by the build-and-push-docker job.
-      PHP_TAG_SUFFIX: -prod
+      # FIX: the build job pushes backend:<sha7> with NO "-prod" suffix (on purpose:
+      # Image Updater auto-deploys tags matching ^[a-f0-9]{7,9}-prod$).
+      # Keep this empty so the deploy tag matches what the build pushed.
+      PHP_TAG_SUFFIX: ""
       NGINX_IMG: docker.io/travi3/backend-nginx-prod
       KUSTOMIZE_VERSION: v5.4.3
       ARGOCD_OPTS: --grpc-web
@@ -609,7 +612,7 @@ jobs:
         run: |
           RESULT="${RESULT:-not_started}"
           SHA7="${GITHUB_SHA::7}"
-          # FIX: report the real tags (with -prod suffix for the backend image)
+          # FIX: report the real tags
           PHP_TAG="${SHA7}${PHP_TAG_SUFFIX}"
           NGINX_TAG="nginx-${SHA7}"
           NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
