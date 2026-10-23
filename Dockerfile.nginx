@@ -48,21 +48,25 @@ RUN chmod -R 755 /var/www/storage
 # second stage
 
 # second stage
+
+# Second stage
 FROM nginxinc/nginx-unprivileged:alpine
 
-# Fix the vulnerable Alpine Brotli package
+USER root
+
+# Upgrade the vulnerable Brotli package
 RUN apk upgrade --no-cache brotli-libs \
     && apk info -v brotli-libs
 
 WORKDIR /var/www/
 
-COPY --from=builder /var/www .
+COPY --from=builder --chown=nginx:nginx /var/www .
 
 COPY ./server/default.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 8080
 
+# Run Nginx as a non-root user
 USER nginx
 
 CMD ["nginx", "-g", "daemon off;"]
-
