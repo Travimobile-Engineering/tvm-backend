@@ -46,7 +46,13 @@ RUN chown -R www-data:www-data /var/www
 RUN chmod -R 755 /var/www/storage
 
 # second stage
+
+# second stage
 FROM nginxinc/nginx-unprivileged:alpine
+
+# Fix the vulnerable Alpine Brotli package
+RUN apk upgrade --no-cache brotli-libs \
+    && apk info -v brotli-libs
 
 WORKDIR /var/www/
 
@@ -59,3 +65,4 @@ EXPOSE 8080
 USER nginx
 
 CMD ["nginx", "-g", "daemon off;"]
+
