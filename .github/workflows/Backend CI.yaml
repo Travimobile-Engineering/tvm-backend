@@ -403,7 +403,8 @@ jobs:
     environment: production
     timeout-minutes: 45
     concurrency:
-      group: deploy-production-eccrs
+      # FIX: was deploy-production-eccrs (copied from another service)
+      group: deploy-production-backend
       cancel-in-progress: false
     permissions:
       contents: read
@@ -411,9 +412,12 @@ jobs:
     env:
       GITOPS_REPO: Travimobile-Engineering/gitops
       GITOPS_BRANCH: new-iac
-      GITOPS_PATH: services/backend/overlays/prod 
+      GITOPS_PATH: services/backend/overlays/prod
       ARGOCD_APP: travi-backend
-      PHP_IMG: docker.io/travi3/travi3/backend
+      PHP_IMG: docker.io/travi3/backend
+      # FIX: the backend image in production is tagged <sha7>-prod (e.g. 02d45e1-prod).
+      # This MUST match the tag pushed by the build-and-push-docker job.
+      PHP_TAG_SUFFIX: -prod
       NGINX_IMG: docker.io/travi3/backend-nginx-prod
       KUSTOMIZE_VERSION: v5.4.3
       ARGOCD_OPTS: --grpc-web
@@ -473,14 +477,16 @@ jobs:
           ref: ${{ env.GITOPS_BRANCH }}
           token: ${{ secrets.GITOPS_TOKEN }}
           path: gitops
- 
+
       - name: Deploy and verify (no automatic rollback)
         id: deploy
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -uo pipefail   # no -e on purpose: failures are handled explicitly so rollback can run
+          set -uo pipefail   # no -e on purpose: failures are handled explicitly
           SHA7="${GITHUB_SHA::7}"
+          PHP_TAG="${SHA7}${PHP_TAG_SUFFIX}"
+          NGINX_TAG="nginx-${SHA7}"
           ROOT="$GITHUB_WORKSPACE/gitops"
           APP_JSON="$RUNNER_TEMP/app.json"
           out() { echo "$1=$2" >> "$GITHUB_OUTPUT"; }
@@ -536,16 +542,32 @@ jobs:
           }
           # ---- 1. set the new image tags -------------------------------------------------
           cd "$ROOT/$GITOPS_PATH" || abort "GitOps path $GITOPS_PATH not found"
-          PREV_PHP=$(kustomize build . | grep -oE "${PHP_IMG}:[A-Za-z0-9._-]+" | head -1 || true)
+
+          # FIX: tolerant match, so a wrong PHP_IMG can no longer make this "unknown".
+          PREV_PHP=$(kustomize build . | grep -oE 'image: [^ ]*/backend:[A-Za-z0-9._-]+' | head -1 | sed 's/^image: //' || true)
           out prev_php "${PREV_PHP:-unknown}"
           echo "current production image: ${PREV_PHP:-unknown}"
-          kustomize edit set image "docker.io/travi3/backend=${PHP_IMG}:${SHA7}" || abort "kustomize edit failed (php)"
-          kustomize edit set image "docker.io/travi3/backend-nginx-prod=${NGINX_IMG}:nginx-${SHA7}" || abort "kustomize edit failed (nginx)"
+
+          # FIX: use the "name:tag" form. It changes ONLY newTag and never writes newName,
+          # which is what produced docker.io/travi3/travi3/backend.
+          # FIX: nginx entry in the overlay is named docker.io/travi3/backend-nginx
+          # (it already has newName -> backend-nginx-prod), so edit that name.
+          kustomize edit set image "docker.io/travi3/backend:${PHP_TAG}" \
+            || abort "kustomize edit failed (php)"
+          kustomize edit set image "docker.io/travi3/backend-nginx:${NGINX_TAG}" \
+            || abort "kustomize edit failed (nginx)"
+
           kustomize build . > "$RUNNER_TEMP/rendered.yaml" || abort "kustomize build failed after edit"
-          grep -qE "image: ${PHP_IMG}:${SHA7}\$" "$RUNNER_TEMP/rendered.yaml" \
-            || abort "rendered manifests do not contain ${PHP_IMG}:${SHA7}"
-          grep -qE "image: ${NGINX_IMG}:nginx-${SHA7}\$" "$RUNNER_TEMP/rendered.yaml" \
-            || abort "rendered manifests do not contain ${NGINX_IMG}:nginx-${SHA7}"
+
+          # FIX: guards that would have caught the bad file before it was pushed.
+          if grep -q 'travi3/travi3' "$RUNNER_TEMP/rendered.yaml" kustomization.yaml; then
+            abort "doubled org (travi3/travi3) found in rendered manifests or kustomization.yaml"
+          fi
+          grep -qE "image: ${PHP_IMG}:${PHP_TAG}\$" "$RUNNER_TEMP/rendered.yaml" \
+            || abort "rendered manifests do not contain ${PHP_IMG}:${PHP_TAG}"
+          grep -qE "image: ${NGINX_IMG}:${NGINX_TAG}\$" "$RUNNER_TEMP/rendered.yaml" \
+            || abort "rendered manifests do not contain ${NGINX_IMG}:${NGINX_TAG}"
+
           # ---- 2. commit and push ----------------------------------------------------------
           CHANGED=1
           if git -C "$ROOT" diff --quiet; then
@@ -586,6 +608,9 @@ jobs:
         run: |
           RESULT="${RESULT:-not_started}"
           SHA7="${GITHUB_SHA::7}"
+          # FIX: report the real tags (with -prod suffix for the backend image)
+          PHP_TAG="${SHA7}${PHP_TAG_SUFFIX}"
+          NGINX_TAG="nginx-${SHA7}"
           NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           TESTS="all required jobs passed before this job started (secret scan, lint/build, tests, dependency scan, SAST, security checks, SonarQube, image scan)"
@@ -593,7 +618,7 @@ jobs:
             --arg time "$NOW" --arg app "$ARGOCD_APP" --arg result "$RESULT" \
             --arg commit "$GITHUB_SHA" --arg branch "$GITHUB_REF_NAME" \
             --arg actor "$GITHUB_ACTOR" --arg approver "${APPROVER:-unknown}" \
-            --arg php "${PHP_IMG}:${SHA7}" --arg nginx "${NGINX_IMG}:nginx-${SHA7}" \
+            --arg php "${PHP_IMG}:${PHP_TAG}" --arg nginx "${NGINX_IMG}:${NGINX_TAG}" \
             --arg previous "${PREV_PHP:-unknown}" --arg gitops "${GITOPS_COMMIT:-}" \
             --arg revert "${REVERT_COMMIT:-}" --arg tests "$TESTS" --arg run "$RUN_URL" \
             '{time_utc:$time, app:$app, result:$result, source_commit:$commit, branch:$branch,
@@ -610,8 +635,8 @@ jobs:
             echo "| Source commit | \`${GITHUB_SHA}\` |"
             echo "| Triggered by | ${GITHUB_ACTOR} |"
             echo "| Approved by | ${APPROVER:-unknown} |"
-            echo "| PHP image | \`${PHP_IMG}:${SHA7}\` |"
-            echo "| nginx image | \`${NGINX_IMG}:nginx-${SHA7}\` |"
+            echo "| PHP image | \`${PHP_IMG}:${PHP_TAG}\` |"
+            echo "| nginx image | \`${NGINX_IMG}:${NGINX_TAG}\` |"
             echo "| Previous PHP image | \`${PREV_PHP:-unknown}\` |"
             echo "| GitOps commit | \`${GITOPS_COMMIT:-none}\` |"
             echo "| Revert commit | \`${REVERT_COMMIT:-none}\` |"
