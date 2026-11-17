@@ -1,12 +1,18 @@
+
+# PHP build stage
 FROM php:8.4.27-fpm AS builder
 
 WORKDIR /var/www
 
-RUN apk update \
-    && apk upgrade --no-cache \
-    && apk info -v curl libcurl libexpat libxslt musl musl-utils zlib \
-    && apk list -I | grep -E '^(curl|libcurl|expat|libexpat|libxslt|musl|musl-utils|zlib)-'
+# UPDATE 1: PHP system package upgrade
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        libicu-dev \
+    && docker-php-ext-install -j"$(nproc)" intl \
+    && rm -rf /var/lib/apt/lists/*
 
+# UPDATE 2: PHP dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpng-dev \
@@ -31,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libonig-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" gd \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath opcache sockets
 
@@ -45,18 +51,17 @@ RUN chown -R www-data:www-data /var/www
 
 RUN chmod -R 755 /var/www/storage
 
-# second stage
 
-# second stage
-
-# Second stage
+# UPDATE 3: Nginx production stage
 FROM nginxinc/nginx-unprivileged:alpine
 
 USER root
 
-# Upgrade the vulnerable Brotli package
-RUN apk upgrade --no-cache brotli-libs \
-    && apk info -v brotli-libs
+# Upgrade all Alpine packages to available patched versions
+RUN apk update \
+    && apk upgrade --no-cache \
+    && apk info -v curl libcurl libexpat libxslt musl musl-utils zlib \
+    && apk list -I | grep -E '^(curl|libcurl|expat|libexpat|libxslt|musl|musl-utils|zlib)-'
 
 WORKDIR /var/www/
 
