@@ -3,17 +3,22 @@
 namespace App\Providers;
 
 use App\Auth\BlindIndexUserProvider;
+use App\Contracts\NpisCloudStorage;
 use App\Contracts\SMS;
+use App\Models\Npis\Registration;
 use App\Models\TripBooking;
 use App\Models\User;
 use App\Observers\TripBookingObserver;
 use App\Observers\UserObserver;
+use App\Policies\Npis\RegistrationPolicy;
 use App\Services\DataProtection\DataProtector;
+use App\Services\Npis\CloudinaryImageKitStorage;
 use App\Services\SMS\SmsServiceFactory;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -64,6 +69,13 @@ class AppServiceProvider extends ServiceProvider
                 ->numbers()
                 ->symbols();
         });
+
+        Gate::policy(
+            Registration::class,
+            RegistrationPolicy::class
+        );
+
+        $this->app->singleton(NpisCloudStorage::class, CloudinaryImageKitStorage::class);
 
         RateLimiter::for('apis', function (Request $request) {
             return $request->user() ?

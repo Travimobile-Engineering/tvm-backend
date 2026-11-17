@@ -12,3 +12,4 @@ Schedule::command('app:rotate-security-questions')->quarterly();
 Schedule::command('app:account-payout')->everyFiveMinutes();
 Schedule::command('app:withdraw-request-payout')->everyThirtySeconds();
 Schedule::command('drivers:charge-usage')->dailyAt('23:00');
+Schedule::command('npis:prune')->dailyAt('02:00');

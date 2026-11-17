@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\NpisApiException;
 use App\Http\Middleware\AgentAuthMiddleware;
 use App\Http\Middleware\BurstGuard;
 use App\Http\Middleware\CheckAirlineWalletBalance;
@@ -15,10 +16,17 @@ use App\Http\Middleware\TransactionReplayShield;
 use App\Http\Middleware\ValidateApiKey;
 use App\Http\Middleware\ValidateHeader;
 use App\Http\Middleware\VerifyPinChange;
+use App\Support\Npis\NpisResponseFactory;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -49,6 +57,81 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $npisError = static function ($request, int $status, string $code, string $message, array $details = [], ?int $retryAfter = null) {
+            return app(NpisResponseFactory::class)
+                ->apiError($request, $status, $code, $message, $details, $retryAfter);
+        };
+
+        $exceptions->renderable(function (NpisApiException $e, $request) use ($npisError) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return $npisError($request, $e->status, $e->errorCode, $e->getMessage(), $e->details, $e->retryAfterSeconds);
+        });
+
+        $exceptions->renderable(function (ValidationException $e, $request) use ($npisError) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return $npisError(
+                $request,
+                422,
+                'VALIDATION_FAILED',
+                'Some details need attention.',
+                ['fields' => $e->errors()]
+            );
+        });
+
+        $exceptions->renderable(function (AuthenticationException $e, $request) use ($npisError) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return $npisError($request, 401, 'UNAUTHENTICATED', 'Authentication is required.');
+        });
+
+        $exceptions->renderable(function (ThrottleRequestsException $e, $request) use ($npisError) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return $npisError($request, 429, 'RATE_LIMITED', 'Too many requests. Try again shortly.', [], (int) ($e->getHeaders()['Retry-After'] ?? 60));
+        });
+
+        $exceptions->renderable(function (AuthorizationException $e, $request) use ($npisError) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return $npisError($request, 403, 'FORBIDDEN', 'Your role does not have access to this action.');
+        });
+
+        $exceptions->renderable(function (MethodNotAllowedHttpException $e, $request) use ($npisError) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return $npisError($request, 405, 'METHOD_NOT_ALLOWED', 'This method is not supported for this endpoint.');
+        });
+
+        $exceptions->renderable(function (ModelNotFoundException $e, $request) use ($npisError) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return $npisError($request, 404, 'NOT_FOUND', 'Resource not found.');
+        });
+
+        $exceptions->renderable(function (NotFoundHttpException $e, $request) use ($npisError) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return $npisError($request, 404, 'NOT_FOUND', 'Resource not found.');
+        });
+
         $exceptions->reportable(function (Throwable $e): void {
             if (app()->isProduction()) {
                 Log::channel('slack')->error($e->getMessage(), [

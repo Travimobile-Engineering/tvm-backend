@@ -1,0 +1,30 @@
+# NPIS module analysis.
+# The legacy application currently has 1000+ pre-existing Larastan findings;
+# these paths keep CI focused on the newly delivered API without touching
+# unrelated production code. Raise the paths/level as legacy code is cleaned.
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/Console/Commands/NpisPrune.php
+        - app/Contracts/NpisCloudStorage.php
+        - app/Enum/Npis
+        - app/Exceptions/NpisApiException.php
+        - app/Http/Controllers/Api/V1
+        - app/Http/Middleware/Npis
+        - app/Http/Requests/Npis
+        - app/Http/Resources/Npis
+        - app/Jobs/Npis
+        - app/Mail/NpisNotificationMail.php
+        - app/Models/Npis
+        - app/Policies/Npis
+        - app/Services/Npis
+        - app/Support/Npis
+        - database/seeders/Npis
+        - tests/Feature/Npis
+        - tests/Support/Npis
+        - tests/Unit/Npis
+    level: 6
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
