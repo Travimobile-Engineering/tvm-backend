@@ -2,9 +2,10 @@ FROM php:8.4.27-fpm AS builder
 
 WORKDIR /var/www
 
-RUN apk update \
-    && apk upgrade --no-cache \
-    && apk info -v curl libcurl libexpat libxslt musl musl-utils zlib brotli-libs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libicu-dev \
+    && docker-php-ext-install -j"$(nproc)" intl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
