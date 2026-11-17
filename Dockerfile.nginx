@@ -4,11 +4,17 @@ FROM php:8.4.27-fpm AS builder
 
 WORKDIR /var/www
 
-# UPDATE 1: PHP system package upgrade
+# UPDATE 1: Check and upgrade linux-libc-dev
 RUN apt-get update \
-    && apt-get upgrade -y \
+    && echo "=== linux-libc-dev available versions ===" \
+    && apt-cache policy linux-libc-dev \
+    && echo "=== Installed linux-libc-dev version ===" \
+    && dpkg-query -W -f='${Version}\n' linux-libc-dev \
     && apt-get install -y --no-install-recommends \
         libicu-dev \
+    && apt-get install -y --only-upgrade linux-libc-dev \
+    && echo "=== Version after upgrade ===" \
+    && dpkg-query -W -f='${Version}\n' linux-libc-dev \
     && docker-php-ext-install -j"$(nproc)" intl \
     && rm -rf /var/lib/apt/lists/*
 
