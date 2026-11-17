@@ -21,6 +21,16 @@ paths = [
 ]
 
 # ---------------------------------------------------------------------------
+# False positives: example payload values in the generated Postman collection
+# script. The value below is a truncated JWT header prefix used as sample
+# request data, not a usable token.
+# ---------------------------------------------------------------------------
+[[allowlists]]
+description = "Documented JWT placeholder in the generated Postman collection script"
+paths = ['''postman/generate-collection\.mjs$''']
+regexes = ['''eyJhbGciOiJSUzI1NiIsImtpZCI6''']
+
+# ---------------------------------------------------------------------------
 # Historical leaks (committed 2024-12 -> 2026-04).
 #
 # Every finding tied to these commits was reviewed on 2026-10:
