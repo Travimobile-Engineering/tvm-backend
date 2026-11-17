@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Npis;
 
 use App\Services\Npis\EventService;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TrainingSessionRequest extends FormRequest
@@ -29,6 +30,9 @@ class TrainingSessionRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return array<int, callable(Validator): void>
+     */
     public function after(): array
     {
         return [

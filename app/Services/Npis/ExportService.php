@@ -38,7 +38,9 @@ class ExportService
             throw NpisApiException::validation('Unknown report filters.', ['filters' => implode(', ', $unknownFilters)]);
         }
 
-        $available = collect(config('npis.exports.fields', []));
+        /** @var list<array{key: string, label: string, permission?: string}> $configFields */
+        $configFields = config('npis.exports.fields', []);
+        $available = collect($configFields);
         $selected = $fields ?: $available
             ->filter(fn (array $field): bool => ! isset($field['permission']) || $admin->hasPermission($field['permission']))
             ->pluck('key')

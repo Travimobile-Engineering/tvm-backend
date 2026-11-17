@@ -10,8 +10,10 @@ use App\Models\Npis\Registration;
 use App\Models\Npis\SummitEvent;
 use App\Models\Npis\VerifiedContact;
 use App\Support\Npis\Destination;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class VerificationService
 {
@@ -53,7 +55,7 @@ class VerificationService
                 'ip' => $ip,
             ]);
 
-            $this->issueCode($verification, $contact, $policy);
+            $this->issueCode($verification, $policy);
 
             return $this->contract($verification->fresh());
         });
@@ -112,7 +114,7 @@ class VerificationService
                 (string) $verification->destination
             );
 
-            $this->issueCode($verification, $contact, $policy);
+            $this->issueCode($verification, $policy);
 
             return $this->contract($verification->fresh());
         });
@@ -187,7 +189,7 @@ class VerificationService
                 ->update(['consumed_at' => $verifiedAt]);
 
             $contact = VerifiedContact::query()->lockForUpdate()->findOrFail($verification->contact_id);
-            $contact->verified_at = $contact->verified_at ?? $verifiedAt;
+            $contact->verified_at ??= $verifiedAt;
             $contact->last_verified_at = $verifiedAt;
             $contact->save();
 
@@ -210,12 +212,12 @@ class VerificationService
                     'destination' => (string) $contact->destination,
                     'verifiedAt' => $verifiedAt->toIso8601String(),
                 ],
-                'existingRegistration' => $existing ? [
+                'existingRegistration' => $existing instanceof Registration ? [
                     'registrationId' => $existing->id,
                     'summitTagNumber' => $existing->summit_tag_number,
-                    'status' => $existing->status?->value ?? (string) $existing->status,
-                    'source' => $existing->source?->value ?? (string) $existing->source,
-                    'isComplete' => ($existing->status?->value ?? (string) $existing->status) !== 'incomplete',
+                    'status' => $existing->status->value,
+                    'source' => $existing->source->value,
+                    'isComplete' => ($existing->status->value) !== 'incomplete',
                 ] : null,
             ];
         });
@@ -273,7 +275,7 @@ class VerificationService
         try {
             $event = SummitEvent::query()->find(config('npis.event_id'));
             $eventPolicy = (array) ($event?->policies['verification'] ?? []);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             $eventPolicy = [];
         }
 
@@ -294,7 +296,7 @@ class VerificationService
         ];
     }
 
-    private function assertRateLimits(string $channel, string $destination, ?string $ip, \DateTimeInterface $now): void
+    private function assertRateLimits(string $channel, string $destination, ?string $ip, Carbon $now): void
     {
         $hash = Destination::hash($destination);
         $destinationCount = ContactVerification::query()
@@ -338,7 +340,10 @@ class VerificationService
         return $verification;
     }
 
-    private function issueCode(ContactVerification $verification, VerifiedContact $contact, array $policy): void
+    /**
+     * @param  array{code_length: int, code_ttl_seconds: int, resend_cooldown_seconds: int, max_resends: int, max_attempts: int}  $policy
+     */
+    private function issueCode(ContactVerification $verification, array $policy): void
     {
         $length = (int) ($policy['code_length'] ?? 5);
         $code = '';
@@ -366,7 +371,7 @@ class VerificationService
 
     private function hashCode(string $verificationId, string $code): string
     {
-        return hash_hmac('sha256', $code, (string) config('app.key').'|'.$verificationId);
+        return hash_hmac('sha256', $code, config('app.key').'|'.$verificationId);
     }
 
     private function deliveryStatus(ContactVerification $verification): string

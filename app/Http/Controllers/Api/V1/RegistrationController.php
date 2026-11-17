@@ -35,7 +35,7 @@ class RegistrationController extends NpisApiController
         $registration = $this->registrations->submit($contact, $request->validated());
 
         return $this->success(
-            (new RegistrationResource($registration))->resolve($request),
+            new RegistrationResource($registration)->resolve($request),
             'Registration submitted successfully',
             $existing?->status === RegistrationStatus::Incomplete ? 200 : 201
         );
@@ -44,7 +44,7 @@ class RegistrationController extends NpisApiController
     public function me(Request $request): JsonResponse
     {
         return $this->success(
-            (new RegistrationResource($this->participantRegistration($request)))->resolve($request),
+            new RegistrationResource($this->participantRegistration($request))->resolve($request),
             'Registration retrieved successfully'
         );
     }
@@ -74,7 +74,7 @@ class RegistrationController extends NpisApiController
         );
 
         return $this->success(
-            (new RegistrationResource($registration->fresh($this->registrations->responseRelations())))->resolve($request),
+            new RegistrationResource($registration->fresh($this->registrations->responseRelations()))->resolve($request),
             $photo === null ? 'Registration photo removed successfully' : 'Registration photo updated successfully'
         );
     }
@@ -89,7 +89,7 @@ class RegistrationController extends NpisApiController
         );
 
         return $this->success(
-            (new RegistrationResource($updated))->resolve($request),
+            new RegistrationResource($updated)->resolve($request),
             'Travel itinerary updated successfully'
         );
     }
@@ -104,7 +104,7 @@ class RegistrationController extends NpisApiController
         );
 
         return $this->success(
-            (new RegistrationResource($updated))->resolve($request),
+            new RegistrationResource($updated)->resolve($request),
             'Accommodation updated successfully'
         );
     }

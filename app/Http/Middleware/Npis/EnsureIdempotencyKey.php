@@ -115,7 +115,7 @@ class EnsureIdempotencyKey
     {
         if (is_array($value)) {
             if (array_is_list($value)) {
-                return '['.implode(',', array_map(fn (mixed $item): string => $this->canonicalJson($item), $value)).']';
+                return '['.implode(',', array_map($this->canonicalJson(...), $value)).']';
             }
 
             ksort($value);

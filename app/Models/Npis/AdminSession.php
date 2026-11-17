@@ -4,7 +4,21 @@ namespace App\Models\Npis;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $token_hash
+ * @property int $admin_user_id
+ * @property string $access_grant_id
+ * @property Carbon $expires_at
+ * @property Carbon|null $revoked_at
+ * @property Carbon|null $last_seen_at
+ * @property string|null $ip
+ * @property string|null $user_agent
+ * @property-read AdminUser $admin
+ * @property-read OrganizerAccessGrant $grant
+ */
 class AdminSession extends Model
 {
     protected $table = 'npis_admin_sessions';
@@ -36,11 +50,17 @@ class AdminSession extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<AdminUser, $this>
+     */
     public function admin(): BelongsTo
     {
         return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 
+    /**
+     * @return BelongsTo<OrganizerAccessGrant, $this>
+     */
     public function grant(): BelongsTo
     {
         return $this->belongsTo(OrganizerAccessGrant::class, 'access_grant_id');

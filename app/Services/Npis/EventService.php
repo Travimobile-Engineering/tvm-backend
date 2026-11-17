@@ -50,15 +50,13 @@ class EventService
      */
     public function publishedFaqs(): array
     {
-        return Cache::remember(self::CACHE_FAQS, $this->ttl(), function (): array {
-            return Faq::query()
-                ->where('event_id', config('npis.event_id'))
-                ->where('published', true)
-                ->orderBy('sort_order')
-                ->get()
-                ->map(fn (Faq $faq): array => $this->faqContract($faq))
-                ->all();
-        });
+        return Cache::remember(self::CACHE_FAQS, $this->ttl(), fn (): array => Faq::query()
+            ->where('event_id', config('npis.event_id'))
+            ->where('published', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (Faq $faq): array => $this->faqContract($faq))
+            ->all());
     }
 
     /**
@@ -192,7 +190,7 @@ class EventService
                 $event->brochure_published_at = $brochure['publishedAt'] ?? $event->brochure_published_at;
             }
 
-            if ($brochureFile) {
+            if ($brochureFile instanceof UploadedFile) {
                 if ($event->brochure_public_id) {
                     $this->cloud->delete($event->brochure_public_id);
                 }

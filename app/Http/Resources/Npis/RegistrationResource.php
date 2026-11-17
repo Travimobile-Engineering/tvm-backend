@@ -2,14 +2,20 @@
 
 namespace App\Http\Resources\Npis;
 
+use App\Models\Npis\Registration;
 use App\Services\Npis\BadgeService;
 use App\Services\Npis\RegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Registration
+ *
+ * @property-read Registration $resource
+ */
 class RegistrationResource extends JsonResource
 {
-    public static $wrap = null;
+    public static $wrap;
 
     /**
      * @return array<string, mixed>
@@ -28,9 +34,9 @@ class RegistrationResource extends JsonResource
         return [
             'registrationId' => $this->id,
             'summitTagNumber' => $this->summit_tag_number,
-            'status' => $this->status?->value ?? (string) $this->status,
-            'source' => $this->source?->value ?? (string) $this->source,
-            'participantType' => $this->participant_type?->value ?? (string) $this->participant_type,
+            'status' => $this->status->value,
+            'source' => $this->source->value,
+            'participantType' => $this->participant_type->value,
             'badge' => $badge,
             'contact' => $can('contact:read') && $this->contact ? [
                 'phone' => $this->contact->channel === 'sms' ? (string) $this->contact->destination : null,

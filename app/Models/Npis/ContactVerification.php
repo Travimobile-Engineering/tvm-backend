@@ -6,7 +6,25 @@ use App\Casts\EncryptedAttribute;
 use App\Support\Npis\Destination;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string|null $contact_id
+ * @property string $channel
+ * @property string $destination
+ * @property string $destination_hash
+ * @property string $purpose
+ * @property string $code_hash
+ * @property Carbon $expires_at
+ * @property Carbon $resend_available_at
+ * @property int $resends_remaining
+ * @property int $attempts_remaining
+ * @property Carbon|null $consumed_at
+ * @property string $delivery_status
+ * @property string|null $ip
+ * @property-read VerifiedContact|null $contact
+ */
 class ContactVerification extends Model
 {
     protected $table = 'npis_contact_verifications';
@@ -48,6 +66,9 @@ class ContactVerification extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<VerifiedContact, $this>
+     */
     public function contact(): BelongsTo
     {
         return $this->belongsTo(VerifiedContact::class, 'contact_id');

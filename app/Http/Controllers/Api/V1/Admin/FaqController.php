@@ -29,7 +29,7 @@ class FaqController extends NpisApiController
         $faqs = $this->events->replaceFaqs($request->validated('items'), $this->admin($request));
 
         return $this->success(
-            array_map(fn (Faq $faq): array => $this->events->faqContract($faq), $faqs),
+            array_map($this->events->faqContract(...), $faqs),
             'FAQs updated successfully'
         );
     }

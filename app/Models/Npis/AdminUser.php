@@ -3,13 +3,22 @@
 namespace App\Models\Npis;
 
 use App\Enum\Npis\OrganizerRole;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property OrganizerRole $role
+ * @property string|null $oidc_subject
+ * @property bool $is_active
+ * @property Carbon|null $last_login_at
+ */
 class AdminUser extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use Notifiable;
 
     protected $table = 'npis_admin_users';
 

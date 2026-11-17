@@ -20,6 +20,7 @@ use App\Support\Npis\TagNumber;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class RegistrationService
 {
@@ -96,7 +97,7 @@ class RegistrationService
                 $flags[] = 'unlisted_unit';
             }
 
-            if ($duplicate) {
+            if ($duplicate instanceof Registration) {
                 $flags[] = 'possible_duplicate';
             }
 
@@ -148,13 +149,13 @@ class RegistrationService
                 ]);
             }
 
-            $this->persistProfile($registration, $profile, $participantType);
+            $this->persistProfile($registration, $profile);
             $this->persistItinerary($registration, $payload['itinerary'] ?? null);
             $this->persistAccommodation($registration, $payload['accommodation'] ?? null);
             $this->persistInterests($registration, $payload['interests'] ?? null);
             $this->badges->ensureBadge($registration->fresh(['profile', 'badge']));
 
-            if (isset($payload['photo']) && $payload['photo'] !== null) {
+            if (isset($payload['photo'])) {
                 $this->media->storePhoto($registration, (string) $payload['photo'], 'registrant');
             }
 
@@ -177,7 +178,7 @@ class RegistrationService
                     $registration->summit_tag_number
                 ),
                 [
-                    'source' => $registration->source?->value ?? (string) $registration->source,
+                    'source' => $registration->source->value,
                     'participantType' => $participantType,
                     'reviewFlags' => $flags,
                 ],
@@ -471,7 +472,10 @@ class RegistrationService
         ]);
     }
 
-    private function persistProfile(Registration $registration, array $profile, string $participantType): void
+    /**
+     * @param  array<string, mixed>  $profile
+     */
+    private function persistProfile(Registration $registration, array $profile): void
     {
         ParticipantProfile::query()->updateOrCreate(
             ['registration_id' => $registration->id],
@@ -622,9 +626,12 @@ class RegistrationService
 
     private function isAccommodationEligible(Registration $registration): bool
     {
+        $profile = $registration->profile;
+
         return $registration->participant_type === ParticipantType::Delegate
-            && $registration->profile?->sector !== null
-            && $registration->profile?->sector !== 'police';
+            && $profile !== null
+            && $profile->sector !== null
+            && $profile->sector !== 'police';
     }
 
     private function normalizeName(string $value): string
@@ -652,7 +659,7 @@ class RegistrationService
     {
         try {
             return Carbon::parse($date)->format('D, j M Y');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return $date;
         }
     }

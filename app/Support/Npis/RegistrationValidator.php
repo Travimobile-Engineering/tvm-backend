@@ -30,7 +30,6 @@ class RegistrationValidator
         $profile = $payload['profile'] ?? [];
         $errors = $this->profileErrors($profile, $participantType);
         $delegate = $participantType === 'delegate';
-        $police = $delegate && ($profile['sector'] ?? null) === 'police';
 
         if ($delegate) {
             $errors += isset($payload['itinerary']) && is_array($payload['itinerary'])
@@ -60,7 +59,7 @@ class RegistrationValidator
             $errors['interests'] = 'Programme interests only apply to delegates.';
         }
 
-        if (isset($payload['photo']) && $payload['photo'] !== null) {
+        if (isset($payload['photo'])) {
             if (! is_string($payload['photo'])
                 || ! preg_match('/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/', $payload['photo'])) {
                 $errors['photo'] = 'Upload a JPEG, PNG or WebP photo.';

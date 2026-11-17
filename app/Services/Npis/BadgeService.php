@@ -36,7 +36,7 @@ class BadgeService
     public function effectiveCode(Registration $registration): string
     {
         return $registration->protocol_category
-            ?? $registration->badge?->category
+            ?? ($registration->badge ? $registration->badge->category : null)
             ?? $this->derivedCode($registration);
     }
 
@@ -75,7 +75,7 @@ class BadgeService
     {
         $badge = $this->ensureBadge($registration);
         $derived = $this->derivedCode($registration);
-        $before = $this->effectiveCode($registration);
+        $this->effectiveCode($registration);
 
         if ($category === null || $category === $derived) {
             $registration->protocol_category = null;

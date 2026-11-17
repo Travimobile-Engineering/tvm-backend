@@ -334,6 +334,9 @@ class NpisAdminWorkflowTest extends TestCase
         $this->assertNull($this->cloud->contentsForPublicId($photoPublicId));
     }
 
+    /**
+     * @return array{0: string, 1: array<string, mixed>}
+     */
     private function verifyContact(string $destination): array
     {
         $verification = $this->postJson('/api/v1/verifications', ['channel' => 'sms', 'destination' => $destination])->assertCreated();
@@ -366,6 +369,9 @@ class NpisAdminWorkflowTest extends TestCase
             ->json('data.token');
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function policeDelegatePayload(string $fullName): array
     {
         return [
@@ -397,6 +403,9 @@ class NpisAdminWorkflowTest extends TestCase
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function hotelDelegatePayload(): array
     {
         return [

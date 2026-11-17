@@ -4,7 +4,16 @@ namespace App\Models\Npis;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $contact_id
+ * @property string $token_hash
+ * @property Carbon $expires_at
+ * @property Carbon|null $revoked_at
+ * @property-read VerifiedContact $contact
+ */
 class ParticipantSession extends Model
 {
     protected $table = 'npis_participant_sessions';
@@ -25,6 +34,9 @@ class ParticipantSession extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<VerifiedContact, $this>
+     */
     public function contact(): BelongsTo
     {
         return $this->belongsTo(VerifiedContact::class, 'contact_id');

@@ -55,11 +55,11 @@ class CheckInService
         }
 
         if ($registration->status !== RegistrationStatus::Approved) {
-            $status = $registration->status?->value ?? (string) $registration->status;
+            $status = $registration->status->value;
             throw NpisApiException::make(
                 409,
                 'NOT_ELIGIBLE',
-                'This registration is '.str_replace('_', ' ', $status).'. Send the '.($registration->participant_type?->value ?? 'delegate').' to the registration desk.',
+                'This registration is '.str_replace('_', ' ', $status).'. Send the '.$registration->participant_type->value.' to the registration desk.',
                 ['status' => $status]
             );
         }
@@ -132,6 +132,10 @@ class CheckInService
      */
     private function contract(CheckIn $checkIn): array
     {
+        $recorder = $checkIn->recorded_by_admin_id
+            ? AdminUser::query()->whereKey($checkIn->recorded_by_admin_id)->first()
+            : null;
+
         return [
             'checkInId' => $checkIn->id,
             'registrationId' => $checkIn->registration_id,
@@ -139,9 +143,7 @@ class CheckInService
             'eventDate' => $checkIn->event_date->format('Y-m-d'),
             'checkedInAt' => $checkIn->checked_in_at->toIso8601String(),
             'method' => $checkIn->method,
-            'recordedBy' => $checkIn->recorded_by_admin_id
-                ? (AdminUser::query()->find($checkIn->recorded_by_admin_id)?->name ?? 'Organizer')
-                : 'Organizer',
+            'recordedBy' => $recorder?->name ?: 'Organizer',
         ];
     }
 
@@ -154,7 +156,7 @@ class CheckInService
         $profile = $registration->profile;
 
         return [
-            'participantType' => $registration->participant_type?->value ?? (string) $registration->participant_type,
+            'participantType' => $registration->participant_type->value,
             'fullName' => $profile?->full_name,
             'sector' => $profile?->sector,
             'rankCode' => $profile?->rank_code,
@@ -162,7 +164,7 @@ class CheckInService
             'organization' => $profile?->organization,
             'vendorService' => $profile?->vendor_service,
             'vendorServiceOther' => $profile?->vendor_service_other,
-            'status' => $registration->status?->value ?? (string) $registration->status,
+            'status' => $registration->status->value,
             'badge' => $badge,
             'zones' => $badge['category']['zoneAccess'] ?? [],
             'missingPhotoWarning' => $badge['photoMissing'],

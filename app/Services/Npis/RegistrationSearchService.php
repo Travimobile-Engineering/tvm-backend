@@ -8,6 +8,7 @@ use App\Models\Npis\ProtocolCategory;
 use App\Models\Npis\Registration;
 use App\Support\Npis\Destination;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 class RegistrationSearchService
@@ -38,6 +39,7 @@ class RegistrationSearchService
 
     /**
      * @param  array<string, mixed>  $filters
+     * @return Builder<Registration>
      */
     public function build(array $filters, AdminUser $admin): Builder
     {
@@ -294,7 +296,7 @@ class RegistrationSearchService
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return array{data: list<array<string, mixed>>, pagination: array<string, int>}
+     * @return array{registrations: Collection<int, Registration>, pagination: array{page: int, pageSize: int, totalItems: int, totalPages: int}}
      */
     public function paginate(array $filters, AdminUser $admin): array
     {
@@ -324,6 +326,9 @@ class RegistrationSearchService
         ];
     }
 
+    /**
+     * @param  Builder<Registration>  $query
+     */
     private function applySort(Builder $query, string $sort): void
     {
         $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
@@ -341,6 +346,9 @@ class RegistrationSearchService
         };
     }
 
+    /**
+     * @param  Builder<Registration>  $query
+     */
     private function applyWindowFilter(Builder $query, string $window, string $timeColumn, string $windowColumn): void
     {
         $ranges = [
@@ -378,6 +386,9 @@ class RegistrationSearchService
         });
     }
 
+    /**
+     * @param  Builder<Registration>  $query
+     */
     private function applyCertificateFilter(Builder $query, string $value, int $minimumAttendance): void
     {
         $attendanceSubquery = '(select count(distinct event_date) from npis_check_ins where npis_check_ins.registration_id = npis_registrations.id)';

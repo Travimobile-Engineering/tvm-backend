@@ -101,6 +101,9 @@ class OidcService
         throw NpisApiException::make(401, 'UNAUTHENTICATED', 'The organizer identity token signing key is unknown.');
     }
 
+    /**
+     * @param  array<string, string>  $jwk
+     */
     private function rsaPublicKeyFromJwk(array $jwk): string
     {
         $modulus = $this->base64UrlDecode((string) $jwk['n']);

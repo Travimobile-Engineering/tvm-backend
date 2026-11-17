@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Npis;
 
 use App\Services\Npis\EventService;
-use Carbon\Carbon;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateEventRequest extends FormRequest
@@ -58,6 +58,9 @@ class UpdateEventRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return array<int, callable(Validator): void>
+     */
     public function after(): array
     {
         return [
@@ -82,11 +85,6 @@ class UpdateEventRequest extends FormRequest
                     $validator->errors()->add('policies.accommodationCheckOutBy', 'Must be after the earliest check-in date.');
                 }
 
-                foreach (($this->input('deadlines', [])) as $key => $value) {
-                    if (Carbon::parse($value) === null) {
-                        $validator->errors()->add("deadlines.{$key}", 'Must be an ISO 8601 date-time.');
-                    }
-                }
             },
         ];
     }

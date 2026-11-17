@@ -2,6 +2,8 @@
 
 namespace App\Support\Npis;
 
+use RuntimeException;
+
 class TagNumber
 {
     public static function charset(): string
@@ -51,7 +53,7 @@ class TagNumber
         }
 
         $remainder = substr($normalized, strlen($prefix));
-        $charset = self::charset();
+        self::charset();
 
         if (strlen($remainder) === 6 && $remainder[0] === 'V') {
             $candidate = substr($remainder, 1);
@@ -79,13 +81,7 @@ class TagNumber
 
     private static function containsInvalidCharacter(string $value): bool
     {
-        foreach (str_split($value) as $character) {
-            if (! str_contains(self::charset(), $character)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any(str_split($value), fn (string $character): bool => ! str_contains(self::charset(), $character));
     }
 
     public static function unique(callable $exists, bool $vendor = false): string
@@ -98,6 +94,6 @@ class TagNumber
             }
         }
 
-        throw new \RuntimeException('Unable to generate a unique Summit Tag Number.');
+        throw new RuntimeException('Unable to generate a unique Summit Tag Number.');
     }
 }

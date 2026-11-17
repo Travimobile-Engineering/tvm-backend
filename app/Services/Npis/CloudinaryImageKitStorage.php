@@ -85,6 +85,12 @@ class CloudinaryImageKitStorage implements NpisCloudStorage
         return $response->successful() ? $response->body() : null;
     }
 
+    /**
+     * @return array{url: string, public_id: string, provider: string}
+     */
+    /**
+     * @return array{url: string, public_id: string, provider: string}
+     */
     private function uploadContentsToImageKit(string $contents, string $fileName, string $folder, string $mime): array
     {
         $imageKit = new ImageKit(

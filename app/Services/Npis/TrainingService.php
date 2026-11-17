@@ -279,14 +279,16 @@ class TrainingService
      */
     private function assignmentContract(TrainingAssignment $assignment): array
     {
+        $assigner = $assignment->assigned_by_admin_id
+            ? AdminUser::query()->whereKey($assignment->assigned_by_admin_id)->first()
+            : null;
+
         return [
             'assignmentId' => $assignment->id,
             'registrationId' => $assignment->registration_id,
             'sessionId' => $assignment->session_id,
             'assignedAt' => $assignment->assigned_at->toIso8601String(),
-            'assignedBy' => $assignment->assigned_by_admin_id
-                ? (AdminUser::query()->find($assignment->assigned_by_admin_id)?->name ?? 'Organizer')
-                : 'Organizer',
+            'assignedBy' => $assigner?->name ?: 'Organizer',
         ];
     }
 }

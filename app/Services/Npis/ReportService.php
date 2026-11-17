@@ -6,6 +6,7 @@ use App\Models\Npis\AdminUser;
 use App\Models\Npis\Airport;
 use App\Models\Npis\Certificate;
 use App\Models\Npis\Command;
+use App\Models\Npis\Itinerary;
 use App\Models\Npis\ProtocolCategory;
 use App\Models\Npis\Registration;
 use App\Models\Npis\State;
@@ -14,10 +15,11 @@ use App\Models\Npis\TrainingSession;
 use App\Models\Npis\Unit;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Throwable;
 
 class ReportService
 {
-    private const STATUS_LABELS = [
+    private const array STATUS_LABELS = [
         'incomplete' => 'Incomplete',
         'pending_approval' => 'Pending approval',
         'approved' => 'Approved',
@@ -25,9 +27,9 @@ class ReportService
         'cancelled' => 'Cancelled',
     ];
 
-    private const PARTICIPANT_LABELS = ['delegate' => 'Delegate', 'vendor' => 'Vendor'];
+    private const array PARTICIPANT_LABELS = ['delegate' => 'Delegate', 'vendor' => 'Vendor'];
 
-    private const SECTOR_LABELS = [
+    private const array SECTOR_LABELS = [
         'police' => 'Nigeria Police Force',
         'security_agency' => 'Other security or enforcement agency',
         'government' => 'Government ministry, department or regulator',
@@ -38,7 +40,7 @@ class ReportService
         'other' => 'Other',
     ];
 
-    private const VENDOR_LABELS = [
+    private const array VENDOR_LABELS = [
         'usher' => 'Usher',
         'caterer' => 'Caterer',
         'cleaner' => 'Cleaner',
@@ -51,13 +53,13 @@ class ReportService
         'other' => 'Other service',
     ];
 
-    private const TRAVEL_LABELS = ['air' => 'Air', 'road' => 'Road', 'rail' => 'Rail', 'sea' => 'Sea / waterway', 'undecided' => 'Undecided'];
+    private const array TRAVEL_LABELS = ['air' => 'Air', 'road' => 'Road', 'rail' => 'Rail', 'sea' => 'Sea / waterway', 'undecided' => 'Undecided'];
 
-    private const TRACK_LABELS = ['transportation' => 'Transportation', 'hospitality' => 'Hospitality', 'both' => 'Both'];
+    private const array TRACK_LABELS = ['transportation' => 'Transportation', 'hospitality' => 'Hospitality', 'both' => 'Both'];
 
-    private const SUBSECTOR_LABELS = ['road' => 'Road', 'air' => 'Air', 'sea' => 'Sea', 'rail' => 'Rail'];
+    private const array SUBSECTOR_LABELS = ['road' => 'Road', 'air' => 'Air', 'sea' => 'Sea', 'rail' => 'Rail'];
 
-    private const ALLOCATION_LABELS = [
+    private const array ALLOCATION_LABELS = [
         'not_requested' => 'Not requested',
         'requested' => 'Requested — awaiting allocation',
         'allocated' => 'Allocated',
@@ -65,13 +67,13 @@ class ReportService
         'declined' => 'Declined',
     ];
 
-    private const POST_SUMMIT_LABELS = [
+    private const array POST_SUMMIT_LABELS = [
         'leave_immediately' => 'Leave immediately after the summit',
         'extend_stay' => 'Extend stay in Abuja',
         'undecided' => 'Undecided',
     ];
 
-    private const WINDOW_LABELS = [
+    private const array WINDOW_LABELS = [
         'early_morning' => 'Early morning (05:00–08:59)',
         'morning' => 'Morning (09:00–11:59)',
         'afternoon' => 'Afternoon (12:00–15:59)',
@@ -101,13 +103,13 @@ class ReportService
             'total' => $registrations->count(),
             'byStatus' => $this->buckets(
                 $registrations,
-                fn (Registration $registration): string => $registration->status?->value ?? (string) $registration->status,
+                fn (Registration $registration): string => $registration->status->value,
                 fn (string $key): string => self::STATUS_LABELS[$key] ?? $key,
                 array_keys(self::STATUS_LABELS),
             ),
             'byParticipantType' => $this->buckets(
                 $registrations,
-                fn (Registration $registration): string => $registration->participant_type?->value ?? (string) $registration->participant_type,
+                fn (Registration $registration): string => $registration->participant_type->value,
                 fn (string $key): string => self::PARTICIPANT_LABELS[$key] ?? $key,
                 array_keys(self::PARTICIPANT_LABELS),
             ),
@@ -127,16 +129,16 @@ class ReportService
             ),
             'byProtocolCategory' => $this->buckets(
                 $registrations,
-                fn (Registration $registration): string => $registration->badge?->category ?? 'DL',
+                fn (Registration $registration): string => $registration->badge ? $registration->badge->category : 'DL',
                 fn (string $key): string => isset($categories[$key])
                     ? $key.' · '.$categories[$key]->name
                     : $key,
                 $categories->keys()->all(),
             ),
             'photosMissing' => $registrations->filter(function (Registration $registration) use ($categories): bool {
-                $category = $categories[$registration->badge?->category ?? 'DL'] ?? null;
+                $category = $categories[$registration->badge ? $registration->badge->category : 'DL'] ?? null;
 
-                return $category?->photo_required && ! $registration->badge?->photo_url;
+                return $category !== null && $category->photo_required && (! $registration->badge || ! $registration->badge->photo_url);
             })->count(),
             'byState' => $this->buckets(
                 $registrations,
@@ -150,9 +152,13 @@ class ReportService
             ),
             'byUnit' => $this->buckets(
                 $registrations,
-                fn (Registration $registration): ?string => $registration->profile?->command_id
-                    ? ($registration->profile?->unit_id ?? 'unlisted')
-                    : null,
+                function (Registration $registration): ?string {
+                    $profile = $registration->profile;
+
+                    return $profile && $profile->command_id
+                        ? ($profile->unit_id ?? 'unlisted')
+                        : null;
+                },
                 fn (?string $key): string => $key === 'unlisted'
                     ? 'Unlisted (pending review)'
                     : ($units[$key] ?? '—'),
@@ -276,20 +282,18 @@ class ReportService
             ->orderBy('session_date')
             ->orderBy('start_time')
             ->get()
-            ->map(function ($session) {
-                return [
-                    'sessionId' => $session->id,
-                    'title' => $session->title,
-                    'track' => $session->track,
-                    'subsector' => $session->subsector,
-                    'date' => $session->session_date->format('Y-m-d'),
-                    'startTime' => $session->start_time,
-                    'endTime' => $session->end_time,
-                    'room' => $session->room,
-                    'capacity' => $session->capacity,
-                    'assignedCount' => $session->assignments()->count(),
-                ];
-            });
+            ->map(fn ($session): array => [
+                'sessionId' => $session->id,
+                'title' => $session->title,
+                'track' => $session->track,
+                'subsector' => $session->subsector,
+                'date' => $session->session_date->format('Y-m-d'),
+                'startTime' => $session->start_time,
+                'endTime' => $session->end_time,
+                'room' => $session->room,
+                'capacity' => $session->capacity,
+                'assignedCount' => $session->assignments()->count(),
+            ]);
 
         return [
             'total' => $registrations->count(),
@@ -337,7 +341,7 @@ class ReportService
                 ['eligible', 'issued', 'not_eligible'],
             ),
             'byDeliveryStatus' => $this->buckets(
-                $certificates->map(fn ($certificate) => ['key' => $certificate->delivery_status]),
+                $certificates->map(fn ($certificate): array => ['key' => $certificate->delivery_status]),
                 fn (array $item): string => $item['key'],
                 fn (string $key): string => ucfirst($key),
                 ['queued', 'sent', 'delivered', 'failed'],
@@ -347,6 +351,7 @@ class ReportService
 
     /**
      * @param  array<string, mixed>  $filters
+     * @return Collection<int, Registration>
      */
     public function filteredRegistrations(array $filters, AdminUser $admin): Collection
     {
@@ -355,6 +360,10 @@ class ReportService
 
     /**
      * @param  array<string, mixed>  $filters
+     */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, Registration>
      */
     private function filtered(array $filters, AdminUser $admin): Collection
     {
@@ -384,7 +393,7 @@ class ReportService
             }
         }
 
-        $keys = $order !== null ? $order : array_keys($counts);
+        $keys = $order ?? array_keys($counts);
 
         return array_values(array_map(
             fn (string $key): array => [
@@ -397,10 +406,10 @@ class ReportService
     }
 
     /**
-     * @param  Collection<int, string|null>  $values
+     * @param  iterable<string|null>  $values
      * @return list<array{key: string, label: string, count: int}>
      */
-    private function datesBuckets(Collection $values): array
+    private function datesBuckets(iterable $values): array
     {
         $counts = [];
 
@@ -476,8 +485,12 @@ class ReportService
         return $window ?? 'undecided';
     }
 
-    private function planStatus($itinerary): string
+    private function planStatus(?Itinerary $itinerary): string
     {
+        if (! $itinerary instanceof Itinerary) {
+            return 'undecided';
+        }
+
         if ($itinerary->travel_mode === 'undecided'
             || $itinerary->arrival_plan_status === 'undecided'
             || $itinerary->departure_plan_status === 'undecided') {
@@ -493,7 +506,7 @@ class ReportService
     {
         try {
             return Carbon::parse($date)->timezone('Africa/Lagos')->format('D, j M Y');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return $date;
         }
     }

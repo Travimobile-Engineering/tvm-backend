@@ -38,7 +38,7 @@ class NotificationService
             ->first();
 
         $subject = $template?->subject;
-        $body = $template?->body ?? $this->fallbackBody($templateKey);
+        $body = $template ? $template->body : $this->fallbackBody($templateKey);
 
         foreach ($variables as $key => $value) {
             $body = str_replace(['{{'.$key.'}}', '{'.$key.'}'], (string) $value, $body);
@@ -86,7 +86,7 @@ class NotificationService
             [
                 'name' => $registration->profile?->full_name,
                 'tag' => $registration->summit_tag_number,
-                'status' => $registration->status?->value ?? (string) $registration->status,
+                'status' => $registration->status->value,
             ],
             'registration',
             $registration->id,

@@ -308,13 +308,13 @@ class NpisApiTest extends TestCase
 
         $exportId = $export->json('data.exportId');
         $job = new GenerateExportJob($exportId);
-        app()->call([$job, 'handle']);
+        app()->call($job->handle(...));
 
         $this->withToken($adminToken)->getJson("/api/v1/admin/exports/{$exportId}")
             ->assertOk()
             ->assertJsonPath('data.status', 'ready')
             ->assertJsonPath('data.rowCount', 1)
-            ->assertJsonPath('data.downloadUrl', fn ($value) => is_string($value));
+            ->assertJsonPath('data.downloadUrl', fn ($value): bool => is_string($value));
 
         $exportModel = ExportJob::query()->findOrFail($exportId);
         $csv = $this->cloud->contentsForPublicId($exportModel->file_public_id);
@@ -323,6 +323,9 @@ class NpisApiTest extends TestCase
         $this->assertSame(1, substr_count($csv, $registration->summit_tag_number));
     }
 
+    /**
+     * @return array{0: string, 1: array<string, mixed>}
+     */
     private function verifyContact(string $destination = '+2348031234567'): array
     {
         $verification = $this->postJson('/api/v1/verifications', [
@@ -364,6 +367,9 @@ class NpisApiTest extends TestCase
             ->json('data.token');
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function delegatePayload(string $fullName = 'Musa Abdullahi Bello'): array
     {
         return [
@@ -395,6 +401,9 @@ class NpisApiTest extends TestCase
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function vendorPayload(): array
     {
         return [
@@ -420,6 +429,9 @@ class NpisApiTest extends TestCase
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function nonPoliceDelegatePayload(): array
     {
         return [

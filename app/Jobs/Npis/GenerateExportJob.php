@@ -5,6 +5,8 @@ namespace App\Jobs\Npis;
 use App\Contracts\NpisCloudStorage;
 use App\Models\Npis\AdminUser;
 use App\Models\Npis\ExportJob;
+use App\Models\Npis\Itinerary;
+use App\Models\Npis\Registration;
 use App\Services\Npis\RegistrationSearchService;
 use App\Services\Npis\ReportService;
 use Illuminate\Bus\Queueable;
@@ -12,6 +14,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use RuntimeException;
+use Throwable;
 
 class GenerateExportJob implements ShouldQueue
 {
@@ -35,7 +39,7 @@ class GenerateExportJob implements ShouldQueue
             $admin = AdminUser::find($export->admin_user_id);
 
             if (! $admin) {
-                throw new \RuntimeException('The organizer who created this export no longer exists.');
+                throw new RuntimeException('The organizer who created this export no longer exists.');
             }
 
             $registrations = $search->build($export->filters ?? [], $admin)
@@ -43,7 +47,9 @@ class GenerateExportJob implements ShouldQueue
                 ->get();
 
             $fields = $export->fields;
-            $labels = collect(config('npis.exports.fields'))->keyBy('key');
+            /** @var list<array{key: string, label: string, permission?: string}> $configFields */
+            $configFields = config('npis.exports.fields', []);
+            $labels = collect($configFields)->keyBy('key');
             $header = array_map(fn (string $key): string => $labels[$key]['label'] ?? $key, $fields);
 
             $lines = [$this->csvRow($header)];
@@ -72,7 +78,7 @@ class GenerateExportJob implements ShouldQueue
                 'error' => null,
                 'expires_at' => now()->addSeconds((int) config('npis.exports.url_ttl', 900)),
             ])->save();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $export->forceFill([
                 'status' => 'failed',
                 'error' => $exception->getMessage(),
@@ -87,7 +93,7 @@ class GenerateExportJob implements ShouldQueue
      */
     private function csvRow(array $values): string
     {
-        return implode(',', array_map(fn (string $value): string => $this->escapeCell($value), $values));
+        return implode(',', array_map($this->escapeCell(...), $values));
     }
 
     private function escapeCell(string $value): string
@@ -99,7 +105,7 @@ class GenerateExportJob implements ShouldQueue
         return '"'.str_replace('"', '""', $value).'"';
     }
 
-    private function value($registration, string $field): string
+    private function value(Registration $registration, string $field): string
     {
         $profile = $registration->profile;
         $itinerary = $registration->itinerary;
@@ -107,24 +113,24 @@ class GenerateExportJob implements ShouldQueue
 
         return match ($field) {
             'summitTagNumber' => (string) $registration->summit_tag_number,
-            'participantType' => (string) ($registration->participant_type?->value ?? $registration->participant_type),
+            'participantType' => $registration->participant_type->value,
             'fullName' => (string) $profile?->full_name,
             'sector' => (string) $profile?->sector,
             'organization' => (string) $profile?->organization,
             'designation' => (string) $profile?->designation,
             'vendorService' => (string) ($profile?->vendor_service_other ?: $profile?->vendor_service),
-            'protocolCategory' => (string) ($registration->badge?->category ?? ''),
-            'photo' => $registration->badge?->photo_url ? 'Yes' : 'No',
-            'rank' => (string) ($profile?->rank?->name ?? $profile?->rank_code),
-            'state' => (string) ($profile?->state?->name ?? $profile?->state_code),
-            'command' => (string) ($profile?->command?->name ?? $profile?->command_id),
-            'unit' => (string) ($profile?->unit?->name ?? $profile?->unit_other_name),
-            'status' => (string) ($registration->status?->value ?? $registration->status),
-            'phone' => (string) ($registration->contact?->channel === 'sms' ? $registration->contact?->destination : ''),
-            'email' => (string) ($registration->contact?->channel === 'email' ? $registration->contact?->destination : ''),
+            'protocolCategory' => (string) ($registration->badge ? $registration->badge->category : ''),
+            'photo' => $registration->badge && $registration->badge->photo_url ? 'Yes' : 'No',
+            'rank' => (string) ($profile?->rank ? $profile->rank->name : $profile?->rank_code),
+            'state' => (string) ($profile?->state ? $profile->state->name : $profile?->state_code),
+            'command' => (string) ($profile?->command ? $profile->command->name : $profile?->command_id),
+            'unit' => (string) ($profile?->unit ? $profile->unit->name : $profile?->unit_other_name),
+            'status' => $registration->status->value,
+            'phone' => (string) ($registration->contact && $registration->contact->channel === 'sms' ? $registration->contact->destination : ''),
+            'email' => (string) ($registration->contact && $registration->contact->channel === 'email' ? $registration->contact->destination : ''),
             'travelMode' => (string) $itinerary?->travel_mode,
-            'arrival' => $itinerary?->arrival_date?->format('Y-m-d').' '.($itinerary?->arrival_time ?? $itinerary?->arrival_time_window ?? ''),
-            'departure' => $itinerary?->departure_date?->format('Y-m-d').' '.($itinerary?->departure_time ?? $itinerary?->departure_time_window ?? ''),
+            'arrival' => $itinerary ? $itinerary->arrival_date?->format('Y-m-d').' '.($itinerary->arrival_time ?? $itinerary->arrival_time_window ?? '') : '',
+            'departure' => $itinerary ? $itinerary->departure_date?->format('Y-m-d').' '.($itinerary->departure_time ?? $itinerary->departure_time_window ?? '') : '',
             'planStatus' => $this->planStatus($itinerary),
             'airport' => (string) $itinerary?->departure_airport_code,
             'accommodation' => (string) $accommodation?->preference,
@@ -135,16 +141,16 @@ class GenerateExportJob implements ShouldQueue
             'payoutAccountNumber' => (string) $accommodation?->payout_account_number,
             'payoutAccountName' => (string) $accommodation?->payout_account_name,
             'track' => (string) $registration->interests?->track,
-            'subsectors' => implode('; ', $registration->interests?->transport_subsectors ?? []),
+            'subsectors' => implode('; ', $registration->interests ? $registration->interests->transport_subsectors : []),
             'sessions' => $registration->assignments->pluck('session_id')->implode('; '),
             'attendance' => (string) $registration->checkIns->pluck('event_date')->unique()->count(),
             default => '',
         };
     }
 
-    private function planStatus($itinerary): string
+    private function planStatus(?Itinerary $itinerary): string
     {
-        if (! $itinerary) {
+        if (! $itinerary instanceof Itinerary) {
             return '';
         }
 

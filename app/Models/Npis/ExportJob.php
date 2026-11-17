@@ -3,7 +3,22 @@
 namespace App\Models\Npis;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property int|null $admin_user_id
+ * @property array<string, mixed> $filters
+ * @property list<string> $fields
+ * @property string $status
+ * @property int|null $row_count
+ * @property string|null $file_path
+ * @property string|null $file_url
+ * @property string|null $file_public_id
+ * @property string|null $error
+ * @property Carbon|null $expires_at
+ * @property Carbon|null $created_at
+ */
 class ExportJob extends Model
 {
     protected $table = 'npis_export_jobs';

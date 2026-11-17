@@ -5,12 +5,14 @@ namespace App\Services\Npis;
 use App\Models\Npis\AdminUser;
 use App\Models\Npis\AuditEvent;
 use App\Models\Npis\Registration;
+use BackedEnum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class AuditService
 {
     /**
+     * @param  AdminUser|Registration|array<string, mixed>|null  $actor
      * @param  array<string, mixed>  $metadata
      */
     public function record(
@@ -31,11 +33,11 @@ class AuditService
             $actorType = 'organizer';
             $actorId = (string) $actor->id;
             $actorName = $actor->name;
-            $actorRole = $actor->role instanceof \BackedEnum ? (string) $actor->role->value : (string) $actor->role;
+            $actorRole = $actor->role instanceof BackedEnum ? (string) $actor->role->value : (string) $actor->role;
         } elseif ($actor instanceof Registration) {
             $actorType = 'participant';
             $actorId = $actor->id;
-            $actorName = $actor->profile?->full_name ?? 'Participant';
+            $actorName = $actor->profile->full_name ?? 'Participant';
             $actorRole = 'officer';
         } elseif (is_array($actor)) {
             $actorType = (string) ($actor['type'] ?? 'system');

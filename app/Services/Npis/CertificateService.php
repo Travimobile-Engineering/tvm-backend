@@ -12,6 +12,8 @@ use App\Models\Npis\Registration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use RuntimeException;
+use Throwable;
 
 class CertificateService
 {
@@ -64,7 +66,7 @@ class CertificateService
                     'certificate_number' => $this->nextNumber(),
                     'issued_at' => now(),
                     'issued_by_admin_id' => $admin->id,
-                    'delivery_channel' => $registration->contact?->channel ?? 'email',
+                    'delivery_channel' => $registration->contact->channel,
                     'delivery_status' => 'queued',
                     'delivery_attempts' => 0,
                 ]);
@@ -158,13 +160,13 @@ class CertificateService
         $registration = $certificate->registration;
         $contact = $registration?->contact;
         $recipient = $contact ? (string) $contact->destination : null;
-        $channel = $contact?->channel ?? $certificate->delivery_channel;
+        $channel = $contact ? $contact->channel : $certificate->delivery_channel;
 
         try {
             $this->pdfs->ensureGenerated($certificate);
 
             if (! $recipient) {
-                throw new \RuntimeException('No verified destination is available for certificate delivery.');
+                throw new RuntimeException('No verified destination is available for certificate delivery.');
             }
 
             $certificate->forceFill([
@@ -191,7 +193,7 @@ class CertificateService
                 'attempted_at' => now(),
                 'provider_message_id' => $notification?->id,
             ]);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $certificate->forceFill([
                 'delivery_status' => 'failed',
                 'delivery_attempts' => $certificate->delivery_attempts + 1,
@@ -242,16 +244,19 @@ class CertificateService
      */
     public function contract(Certificate $certificate): array
     {
+        $issuer = $certificate->issued_by_admin_id
+            ? AdminUser::query()->whereKey($certificate->issued_by_admin_id)->first()
+            : null;
+
         return [
             'certificateId' => $certificate->id,
             'certificateNumber' => $certificate->certificate_number,
             'registrationId' => $certificate->registration_id,
-            'summitTagNumber' => $certificate->registration?->summit_tag_number
-                ?? Registration::query()->find($certificate->registration_id)?->summit_tag_number,
+            'summitTagNumber' => $certificate->registration
+                ? $certificate->registration->summit_tag_number
+                : Registration::query()->find($certificate->registration_id)?->summit_tag_number,
             'issuedAt' => $certificate->issued_at->toIso8601String(),
-            'issuedBy' => $certificate->issued_by_admin_id
-                ? (AdminUser::query()->find($certificate->issued_by_admin_id)?->name ?? 'Organizer')
-                : 'Organizer',
+            'issuedBy' => $issuer?->name ?: 'Organizer',
             'delivery' => [
                 'channel' => $certificate->delivery_channel,
                 'status' => $certificate->delivery_status,

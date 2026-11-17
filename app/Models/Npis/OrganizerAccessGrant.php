@@ -2,9 +2,20 @@
 
 namespace App\Models\Npis;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $token_hash
+ * @property Carbon $expires_at
+ * @property Carbon|null $revoked_at
+ * @property string|null $ip
+ * @property string|null $user_agent
+ * @property-read Collection<int, AdminSession> $sessions
+ */
 class OrganizerAccessGrant extends Model
 {
     protected $table = 'npis_organizer_access_grants';
@@ -32,6 +43,9 @@ class OrganizerAccessGrant extends Model
         ];
     }
 
+    /**
+     * @return HasMany<AdminSession, $this>
+     */
     public function sessions(): HasMany
     {
         return $this->hasMany(AdminSession::class, 'access_grant_id');

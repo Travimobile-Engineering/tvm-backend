@@ -30,7 +30,7 @@ class RegistrationAdminService
                 ->findOrFail($registration->id);
 
             $action = (string) $payload['action'];
-            $before = $registration->status?->value ?? (string) $registration->status;
+            $before = $registration->status->value;
 
             if ($registration->status === RegistrationStatus::Cancelled && $action !== 'merge_duplicate') {
                 throw NpisApiException::make(409, 'VALIDATION_FAILED', 'This registration has been cancelled.');
@@ -122,7 +122,7 @@ class RegistrationAdminService
             $registration->version += 1;
             $registration->save();
 
-            $after = $registration->status?->value ?? (string) $registration->status;
+            $after = $registration->status->value;
 
             $this->audit->record(
                 $admin,

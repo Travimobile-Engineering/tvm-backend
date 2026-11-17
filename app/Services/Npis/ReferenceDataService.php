@@ -20,8 +20,6 @@ class ReferenceDataService
 
     public const CACHE_BANKS = 'npis:reference:banks';
 
-    public function __construct(private readonly EventService $events) {}
-
     /**
      * @return list<array<string, mixed>>
      */

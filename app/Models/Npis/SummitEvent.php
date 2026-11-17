@@ -2,9 +2,38 @@
 
 namespace App\Models\Npis;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $name
+ * @property Carbon $start_date
+ * @property Carbon $end_date
+ * @property string $timezone
+ * @property string $venue_name
+ * @property string $venue_address
+ * @property string|null $theme
+ * @property string|null $welcome_message_title
+ * @property string|null $welcome_message_author
+ * @property string|null $welcome_message_author_title
+ * @property list<string>|null $welcome_message_paragraphs
+ * @property Carbon|null $welcome_message_approved_at
+ * @property string|null $brochure_title
+ * @property string|null $brochure_file_name
+ * @property string|null $brochure_path
+ * @property string|null $brochure_url
+ * @property string|null $brochure_public_id
+ * @property int|null $brochure_size_bytes
+ * @property string|null $brochure_version
+ * @property Carbon|null $brochure_published_at
+ * @property array<string, mixed> $deadlines
+ * @property array<string, mixed> $policies
+ * @property-read Collection<int, Faq> $faqs
+ * @property-read Collection<int, TrainingSession> $trainingSessions
+ */
 class SummitEvent extends Model
 {
     protected $table = 'npis_summit_events';
@@ -55,11 +84,17 @@ class SummitEvent extends Model
         ];
     }
 
+    /**
+     * @return HasMany<Faq, $this>
+     */
     public function faqs(): HasMany
     {
         return $this->hasMany(Faq::class, 'event_id');
     }
 
+    /**
+     * @return HasMany<TrainingSession, $this>
+     */
     public function trainingSessions(): HasMany
     {
         return $this->hasMany(TrainingSession::class, 'event_id');

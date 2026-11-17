@@ -46,7 +46,7 @@ class RegistrationController extends NpisApiController
         $registration = $this->find($registrationId);
 
         return $this->success(
-            (new RegistrationResource($registration))->resolve($request),
+            new RegistrationResource($registration)->resolve($request),
             'Registration retrieved successfully'
         );
     }
@@ -57,9 +57,9 @@ class RegistrationController extends NpisApiController
         Gate::forUser($this->admin($request))->authorize('review', $registration);
 
         return $this->success(
-            (new RegistrationResource(
+            new RegistrationResource(
                 $this->registrations->review($this->admin($request), $registration, $request->validated())
-            ))->resolve($request),
+            )->resolve($request),
             'Registration reviewed successfully'
         );
     }
@@ -86,7 +86,7 @@ class RegistrationController extends NpisApiController
         $registration->save();
 
         return $this->success(
-            (new RegistrationResource($registration->fresh(app(RegistrationService::class)->responseRelations())))->resolve($request),
+            new RegistrationResource($registration->fresh(app(RegistrationService::class)->responseRelations()))->resolve($request),
             'Badge category updated successfully'
         );
     }
@@ -116,7 +116,7 @@ class RegistrationController extends NpisApiController
         );
 
         return $this->success(
-            (new RegistrationResource($registration->fresh(app(RegistrationService::class)->responseRelations())))->resolve($request),
+            new RegistrationResource($registration->fresh(app(RegistrationService::class)->responseRelations()))->resolve($request),
             $photo === null ? 'Registration photo removed successfully' : 'Registration photo updated successfully'
         );
     }
@@ -126,9 +126,9 @@ class RegistrationController extends NpisApiController
         $registration = $this->find($registrationId);
 
         return $this->success(
-            (new RegistrationResource(
+            new RegistrationResource(
                 $this->registrations->allocate($this->admin($request), $registration, $request->validated())
-            ))->resolve($request),
+            )->resolve($request),
             'Accommodation allocation updated successfully'
         );
     }

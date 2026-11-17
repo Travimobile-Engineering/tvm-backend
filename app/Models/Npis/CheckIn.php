@@ -4,7 +4,18 @@ namespace App\Models\Npis;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $registration_id
+ * @property string $summit_tag_number
+ * @property Carbon $event_date
+ * @property Carbon $checked_in_at
+ * @property string $method
+ * @property int|null $recorded_by_admin_id
+ * @property-read Registration $registration
+ */
 class CheckIn extends Model
 {
     protected $table = 'npis_check_ins';
@@ -33,6 +44,9 @@ class CheckIn extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Registration, $this>
+     */
     public function registration(): BelongsTo
     {
         return $this->belongsTo(Registration::class, 'registration_id');

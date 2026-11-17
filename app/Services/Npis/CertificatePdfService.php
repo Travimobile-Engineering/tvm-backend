@@ -23,9 +23,9 @@ class CertificatePdfService
             'event' => $event,
             'certificate' => $certificate,
             'registration' => $registration,
-            'fullName' => $profile?->full_name ?? 'Participant',
+            'fullName' => $profile->full_name ?? 'Participant',
             'rank' => $rank,
-            'organisation' => $profile?->organization ?? ($profile?->sector === 'police' ? 'Nigeria Police Force' : null),
+            'organisation' => $profile->organization ?? ($profile->sector === 'police' ? 'Nigeria Police Force' : null),
             'signatures' => config('npis.certificate.signatures', []),
         ])->setPaper('a4', 'landscape');
 

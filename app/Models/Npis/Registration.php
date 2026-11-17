@@ -5,12 +5,44 @@ namespace App\Models\Npis;
 use App\Enum\Npis\ParticipantType;
 use App\Enum\Npis\RegistrationSource;
 use App\Enum\Npis\RegistrationStatus;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $event_id
+ * @property string $verified_contact_id
+ * @property string|null $active_contact_key
+ * @property string $summit_tag_number
+ * @property RegistrationStatus $status
+ * @property RegistrationSource $source
+ * @property ParticipantType $participant_type
+ * @property string|null $protocol_category
+ * @property string|null $duplicate_of_registration_id
+ * @property string|null $merged_into_registration_id
+ * @property list<string>|null $review_flags
+ * @property string|null $rejection_reason
+ * @property int $version
+ * @property Carbon|null $submitted_at
+ * @property Carbon|null $approved_at
+ * @property Carbon|null $rejected_at
+ * @property Carbon|null $cancelled_at
+ * @property-read SummitEvent $event
+ * @property-read VerifiedContact $contact
+ * @property-read ParticipantProfile|null $profile
+ * @property-read Itinerary|null $itinerary
+ * @property-read AccommodationRequest|null $accommodation
+ * @property-read Badge|null $badge
+ * @property-read ProgrammeInterest|null $interests
+ * @property-read Collection<int, TrainingAssignment> $assignments
+ * @property-read Collection<int, CheckIn> $checkIns
+ * @property-read Certificate|null $certificate
+ */
 class Registration extends Model
 {
     use SoftDeletes;
@@ -59,61 +91,97 @@ class Registration extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<SummitEvent, $this>
+     */
     public function event(): BelongsTo
     {
         return $this->belongsTo(SummitEvent::class, 'event_id');
     }
 
+    /**
+     * @return BelongsTo<VerifiedContact, $this>
+     */
     public function contact(): BelongsTo
     {
         return $this->belongsTo(VerifiedContact::class, 'verified_contact_id');
     }
 
+    /**
+     * @return HasOne<ParticipantProfile, $this>
+     */
     public function profile(): HasOne
     {
         return $this->hasOne(ParticipantProfile::class, 'registration_id');
     }
 
+    /**
+     * @return HasOne<Itinerary, $this>
+     */
     public function itinerary(): HasOne
     {
         return $this->hasOne(Itinerary::class, 'registration_id');
     }
 
+    /**
+     * @return HasOne<AccommodationRequest, $this>
+     */
     public function accommodation(): HasOne
     {
         return $this->hasOne(AccommodationRequest::class, 'registration_id');
     }
 
+    /**
+     * @return HasOne<Badge, $this>
+     */
     public function badge(): HasOne
     {
         return $this->hasOne(Badge::class, 'registration_id');
     }
 
+    /**
+     * @return HasOne<ProgrammeInterest, $this>
+     */
     public function interests(): HasOne
     {
         return $this->hasOne(ProgrammeInterest::class, 'registration_id');
     }
 
+    /**
+     * @return HasMany<TrainingAssignment, $this>
+     */
     public function assignments(): HasMany
     {
         return $this->hasMany(TrainingAssignment::class, 'registration_id');
     }
 
+    /**
+     * @return HasMany<CheckIn, $this>
+     */
     public function checkIns(): HasMany
     {
         return $this->hasMany(CheckIn::class, 'registration_id');
     }
 
+    /**
+     * @return HasOne<Certificate, $this>
+     */
     public function certificate(): HasOne
     {
         return $this->hasOne(Certificate::class, 'registration_id');
     }
 
+    /**
+     * @return BelongsTo<Registration, $this>
+     */
     public function duplicateOf(): BelongsTo
     {
         return $this->belongsTo(self::class, 'duplicate_of_registration_id');
     }
 
+    /**
+     * @return BelongsTo<Registration, $this>
+     */
     public function mergedInto(): BelongsTo
     {
         return $this->belongsTo(self::class, 'merged_into_registration_id');

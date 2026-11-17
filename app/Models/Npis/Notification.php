@@ -5,7 +5,27 @@ namespace App\Models\Npis;
 use App\Casts\EncryptedAttribute;
 use App\Support\Npis\Destination;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $template_key
+ * @property string $channel
+ * @property string $recipient
+ * @property string $recipient_hash
+ * @property string|null $subject
+ * @property string $body
+ * @property string $status
+ * @property string|null $provider
+ * @property string|null $provider_message_id
+ * @property array<string, mixed>|null $provider_response
+ * @property string|null $related_type
+ * @property string|null $related_id
+ * @property Carbon|null $sent_at
+ * @property Carbon|null $delivered_at
+ * @property Carbon|null $failed_at
+ * @property string|null $error
+ */
 class Notification extends Model
 {
     protected $table = 'npis_notifications';
