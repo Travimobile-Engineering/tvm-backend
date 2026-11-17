@@ -30,11 +30,13 @@
         "php-amqplib/php-amqplib": "^3.7",
         "tymon/jwt-auth": "^2.3",
         "unicodeveloper/laravel-paystack": "dev-master",
-        "vladimir-yuldashev/laravel-queue-rabbitmq": "^15.0"
+        "vladimir-yuldashev/laravel-queue-rabbitmq": "^15.0.2"
     },
     "require-dev": {
         "brianium/paratest": "^7.27",
+        "driftingly/rector-laravel": "^2.7",
         "fakerphp/faker": "^1.24",
+        "larastan/larastan": "^3.0",
         "laravel/pail": "^1.2",
         "laravel/pint": "^1.32",
         "laravel/sail": "^1.69",
@@ -78,6 +80,25 @@
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite"
+        ],
+        "analyse": [
+            "@php vendor/bin/rector process --dry-run",
+            "@php vendor/bin/phpstan analyse --memory-limit=1G --no-progress"
+        ],
+        "lint": "@php vendor/bin/pint --test app/Console/Commands/NpisPrune.php app/Contracts/NpisCloudStorage.php app/Enum/Npis app/Exceptions/NpisApiException.php app/Http/Controllers/Api/V1 app/Http/Middleware/Npis app/Http/Requests/Npis app/Http/Resources/Npis app/Jobs/Npis app/Mail/NpisNotificationMail.php app/Models/Npis app/Policies/Npis app/Services/Npis app/Support/Npis config/npis.php database/seeders/Npis routes/api/v1.php tests/Feature/Npis tests/Support/Npis tests/Unit/Npis rector.php",
+        "lint:fix": "@php vendor/bin/pint app/Console/Commands/NpisPrune.php app/Contracts/NpisCloudStorage.php app/Enum/Npis app/Exceptions/NpisApiException.php app/Http/Controllers/Api/V1 app/Http/Middleware/Npis app/Http/Requests/Npis app/Http/Resources/Npis app/Jobs/Npis app/Mail/NpisNotificationMail.php app/Models/Npis app/Policies/Npis app/Services/Npis app/Support/Npis config/npis.php database/seeders/Npis routes/api/v1.php tests/Feature/Npis tests/Support/Npis tests/Unit/Npis rector.php",
+        "format": "@lint:fix",
+        "test:parallel": "@php artisan test --parallel",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test:parallel"
+        ],
+        "check:fix": [
+            "@lint:fix",
+            "@php vendor/bin/rector process",
+            "@php vendor/bin/phpstan analyse --memory-limit=1G --no-progress",
+            "@test:parallel"
         ]
     },
     "extra": {
