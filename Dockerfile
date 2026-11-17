@@ -3,8 +3,10 @@ FROM php:8.4.27-fpm
 WORKDIR /var/www
 ARG MAX_CHILDREN=40
 
+# FIX: Upgrade it if it is installed and a patched version is available.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libicu-dev \
+    && if dpkg-query -W -f='${Status}' linux-libc-dev 2>/dev/null | grep -q 'install ok installed'; then apt-get install -y --only-upgrade linux-libc-dev; fi \
     && docker-php-ext-install -j"$(nproc)" intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -38,7 +40,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath opcache sockets
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# FIX 3: Use a stable Composer major version instead of latest.
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY ./custom.ini /usr/local/etc/php/conf.d/custom.ini
 
