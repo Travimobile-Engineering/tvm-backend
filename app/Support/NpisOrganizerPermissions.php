@@ -4,9 +4,6 @@ namespace App\Support;
 
 /**
  * Catalogue of organizer permissions used by the Users & Roles screen.
- *
- * Role defaults live in config/npis.php; this class only supplies the human
- * readable labels, descriptions and grouping for the permission picker.
  */
 final class NpisOrganizerPermissions
 {
