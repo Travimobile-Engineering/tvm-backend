@@ -29,7 +29,7 @@ class EnsureOrganizerSession
             throw NpisApiException::make(401, 'UNAUTHENTICATED', 'Sign in to the organizer dashboard.');
         }
 
-        if (! $session->grant || ! $session->grant->isActive()) {
+        if ($session->access_grant_id !== null && (! $session->grant || ! $session->grant->isActive())) {
             throw NpisApiException::make(
                 401,
                 'UNAUTHENTICATED',

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\NpisApiController;
 use App\Http\Requests\Npis\AccessCodeRequest;
 use App\Http\Requests\Npis\AdminAccessRequest;
 use App\Http\Requests\Npis\AdminSessionRequest;
+use App\Http\Requests\Npis\OrganizerLoginRequest;
 use App\Models\Npis\AdminSession;
 use App\Services\Npis\OrganizerAuthService;
 use Illuminate\Http\JsonResponse;
@@ -40,6 +41,20 @@ class AuthController extends NpisApiController
                 $request->userAgent(),
             ),
             'Organizer session created successfully',
+            201
+        );
+    }
+
+    public function login(OrganizerLoginRequest $request): JsonResponse
+    {
+        return $this->success(
+            $this->auth->loginWithPassword(
+                (string) $request->validated('email'),
+                (string) $request->validated('password'),
+                $request->ip(),
+                $request->userAgent(),
+            ),
+            'Signed in successfully',
             201
         );
     }
