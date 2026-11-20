@@ -11,6 +11,11 @@ class EventController extends NpisApiController
 {
     public function __construct(private readonly EventService $events) {}
 
+    public function settings(): JsonResponse
+    {
+        return $this->success($this->events->settings(), 'Event settings retrieved successfully');
+    }
+
     public function update(UpdateEventRequest $request): JsonResponse
     {
         $event = $this->events->update(
