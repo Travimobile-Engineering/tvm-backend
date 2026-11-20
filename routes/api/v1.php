@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardContr
 use App\Http\Controllers\Api\V1\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Api\V1\Admin\ExportController as AdminExportController;
 use App\Http\Controllers\Api\V1\Admin\FaqController as AdminFaqController;
+use App\Http\Controllers\Api\V1\Admin\OrganizerController as AdminOrganizerController;
 use App\Http\Controllers\Api\V1\Admin\RegistrationController as AdminRegistrationController;
 use App\Http\Controllers\Api\V1\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Api\V1\Admin\TrainingController as AdminTrainingController;
@@ -82,6 +83,9 @@ Route::prefix('v1')->middleware([NpisRequestId::class])->group(function (): void
         Route::post('session', [AdminAuthController::class, 'session'])
             ->middleware(EnsureAccessGrant::class);
 
+        Route::post('login', [AdminAuthController::class, 'login'])
+            ->middleware('throttle:10,1');
+
         Route::put('access-code', [AdminAuthController::class, 'rotateAccessCode'])
             ->middleware([EnsureOrganizerSession::class, EnsurePermission::class.':event:manage']);
 
@@ -101,6 +105,16 @@ Route::prefix('v1')->middleware([NpisRequestId::class])->group(function (): void
 
             Route::get('hotels', [AdminAccommodationController::class, 'index'])
                 ->middleware(EnsurePermission::class.':accommodation:read');
+
+            /*
+            |------------------------------------------------------------------
+            | Organizer accounts
+            |------------------------------------------------------------------
+            */
+            Route::get('organizer-options', [AdminOrganizerController::class, 'options'])
+                ->middleware(EnsurePermission::class.':organizers:manage');
+            Route::post('organizers', [AdminOrganizerController::class, 'store'])
+                ->middleware(EnsurePermission::class.':organizers:manage');
 
             /*
             |------------------------------------------------------------------

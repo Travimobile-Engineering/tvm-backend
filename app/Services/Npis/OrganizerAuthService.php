@@ -162,11 +162,41 @@ class OrganizerAuthService
             'last_login_at' => now(),
         ])->save();
 
-        return DB::transaction(function () use ($grant, $admin, $ip, $userAgent): array {
+        return $this->issueSession($admin, $grant, $ip, $userAgent, 'sso');
+    }
+
+    /**
+     * Email + password sign-in for organizer accounts created in the dashboard.
+     *
+     * @return array<string, mixed>
+     */
+    public function loginWithPassword(string $email, string $password, ?string $ip, ?string $userAgent): array
+    {
+        $admin = AdminUser::query()->where('email', strtolower(trim($email)))->first();
+
+        if (! $admin || ! is_string($admin->password) || ! Hash::check($password, $admin->password)) {
+            throw NpisApiException::make(401, 'UNAUTHENTICATED', 'The email or password is incorrect.');
+        }
+
+        if (! $admin->is_active) {
+            throw NpisApiException::make(403, 'FORBIDDEN', 'This organizer account is not active. Contact the organizing committee.');
+        }
+
+        $admin->forceFill(['last_login_at' => now()])->save();
+
+        return $this->issueSession($admin, null, $ip, $userAgent, 'password');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function issueSession(AdminUser $admin, ?OrganizerAccessGrant $grant, ?string $ip, ?string $userAgent, string $method): array
+    {
+        return DB::transaction(function () use ($admin, $grant, $ip, $userAgent, $method): array {
             $rawToken = Str::random(64);
             $expiresAt = now()->addSeconds((int) config('npis.organizer.admin_session_ttl', 28800));
 
-            if ($expiresAt->greaterThan($grant->expires_at)) {
+            if ($grant instanceof OrganizerAccessGrant && $expiresAt->greaterThan($grant->expires_at)) {
                 $expiresAt = $grant->expires_at->copy();
             }
 
@@ -174,7 +204,7 @@ class OrganizerAuthService
                 'id' => 'ads_'.Str::lower((string) Str::ulid()),
                 'token_hash' => hash('sha256', $rawToken),
                 'admin_user_id' => $admin->id,
-                'access_grant_id' => $grant->id,
+                'access_grant_id' => $grant?->id,
                 'expires_at' => $expiresAt,
                 'ip' => $ip,
                 'user_agent' => $userAgent,
@@ -186,7 +216,7 @@ class OrganizerAuthService
                 'admin_user',
                 (string) $admin->id,
                 'Organizer signed in as '.$admin->roleLabel(),
-                ['role' => $admin->role->value],
+                ['role' => $admin->role->value, 'method' => $method],
                 request(),
             );
 
@@ -198,6 +228,7 @@ class OrganizerAuthService
                     'role' => $admin->role->value,
                 ],
                 'permissions' => $admin->permissions(),
+                'expiresAt' => $expiresAt->toIso8601String(),
             ];
         });
     }
@@ -211,10 +242,10 @@ class OrganizerAuthService
             $access->save();
 
             $grants = OrganizerAccessGrant::query()->whereNull('revoked_at')->get();
-            $revokedSessions = AdminSession::query()->whereNull('revoked_at')->count();
+            $revokedSessions = AdminSession::query()->whereNull('revoked_at')->whereNotNull('access_grant_id')->count();
 
             OrganizerAccessGrant::query()->whereNull('revoked_at')->update(['revoked_at' => now()]);
-            AdminSession::query()->whereNull('revoked_at')->update(['revoked_at' => now()]);
+            AdminSession::query()->whereNull('revoked_at')->whereNotNull('access_grant_id')->update(['revoked_at' => now()]);
             OrganizerAccessAttempt::query()->delete();
 
             $this->audit->record(
@@ -222,7 +253,7 @@ class OrganizerAuthService
                 'access_code.rotated',
                 'access_code',
                 'organizer',
-                'Changed the organizer access code and signed out all organizers',
+                'Changed the organizer access code and signed out access-code sessions',
                 ['revokedGrants' => $grants->count(), 'revokedSessions' => $revokedSessions],
                 request(),
             );
