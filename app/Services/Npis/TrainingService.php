@@ -240,6 +240,38 @@ class TrainingService
     }
 
     /**
+     * Staff view of the officers assigned to a session.
+     *
+     * @return array<string, mixed>
+     */
+    public function assignments(TrainingSession $session): array
+    {
+        $assignments = TrainingAssignment::query()
+            ->where('session_id', $session->id)
+            ->with(['registration.profile'])
+            ->orderBy('assigned_at')
+            ->get();
+
+        $assigners = AdminUser::query()
+            ->whereIn('id', $assignments->pluck('assigned_by_admin_id')->filter()->unique()->all())
+            ->pluck('name', 'id');
+
+        return [
+            'session' => $this->contract($session),
+            'assignments' => $assignments->map(fn (TrainingAssignment $assignment): array => [
+                'assignmentId' => $assignment->id,
+                'registrationId' => $assignment->registration_id,
+                'summitTagNumber' => $assignment->registration?->summit_tag_number,
+                'fullName' => $assignment->registration?->profile?->full_name,
+                'organization' => $assignment->registration?->profile?->organization,
+                'participantType' => $assignment->registration?->participant_type?->value,
+                'assignedAt' => $assignment->assigned_at->toIso8601String(),
+                'assignedBy' => $assigners[$assignment->assigned_by_admin_id] ?? 'Organizer',
+            ])->all(),
+        ];
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function scheduleFor(Registration $registration): array

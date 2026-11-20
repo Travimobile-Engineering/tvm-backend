@@ -6,6 +6,7 @@ use App\Contracts\NpisCloudStorage;
 use App\Exceptions\NpisApiException;
 use App\Models\Npis\AdminUser;
 use App\Models\Npis\Faq;
+use App\Models\Npis\OrganizerAccess;
 use App\Models\Npis\ProtocolCategory;
 use App\Models\Npis\ProtocolZone;
 use App\Models\Npis\SummitEvent;
@@ -114,6 +115,27 @@ class EventService
             ],
             'deadlines' => $event->deadlines,
             'policies' => $event->policies,
+        ];
+    }
+
+    /**
+     * Full settings payload for the organizer "Event settings" screen.
+     *
+     * @return array<string, mixed>
+     */
+    public function settings(): array
+    {
+        $access = OrganizerAccess::current();
+        $updatedBy = $access->updated_by
+            ? AdminUser::query()->find($access->updated_by)
+            : null;
+
+        return [
+            ...$this->eventContract($this->current()),
+            'organizerAccess' => [
+                'updatedAt' => $access->updated_at?->toIso8601String(),
+                'updatedBy' => $updatedBy->name ?? 'System',
+            ],
         ];
     }
 

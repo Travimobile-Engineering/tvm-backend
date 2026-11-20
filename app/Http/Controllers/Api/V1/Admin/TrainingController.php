@@ -21,6 +21,20 @@ class TrainingController extends NpisApiController
         return $this->success($this->training->sessions(), 'Training sessions retrieved successfully');
     }
 
+    public function assignments(string $sessionId): JsonResponse
+    {
+        $session = TrainingSession::query()->find($sessionId);
+
+        if (! $session) {
+            throw NpisApiException::make(404, 'NOT_FOUND', 'Training session not found.');
+        }
+
+        return $this->success(
+            $this->training->assignments($session),
+            'Training assignments retrieved successfully'
+        );
+    }
+
     public function store(TrainingSessionRequest $request): JsonResponse
     {
         return $this->success(

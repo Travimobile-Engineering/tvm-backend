@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AccommodationController as AdminAccommodationController;
 use App\Http\Controllers\Api\V1\Admin\AuditController as AdminAuditController;
 use App\Http\Controllers\Api\V1\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Api\V1\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Api\V1\Admin\CheckInController as AdminCheckInController;
+use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Api\V1\Admin\ExportController as AdminExportController;
 use App\Http\Controllers\Api\V1\Admin\FaqController as AdminFaqController;
@@ -86,6 +88,22 @@ Route::prefix('v1')->middleware([NpisRequestId::class])->group(function (): void
         Route::middleware(EnsureOrganizerSession::class)->group(function (): void {
             /*
             |------------------------------------------------------------------
+            | Organizer session and dashboard
+            |------------------------------------------------------------------
+            */
+            Route::get('me', [AdminAuthController::class, 'me']);
+
+            Route::get('dashboard', [AdminDashboardController::class, 'index'])
+                ->middleware(EnsurePermission::class.':registrations:read');
+
+            Route::get('event', [AdminEventController::class, 'settings'])
+                ->middleware(EnsurePermission::class.':event:manage');
+
+            Route::get('hotels', [AdminAccommodationController::class, 'index'])
+                ->middleware(EnsurePermission::class.':accommodation:read');
+
+            /*
+            |------------------------------------------------------------------
             | Participant records
             |------------------------------------------------------------------
             */
@@ -124,6 +142,8 @@ Route::prefix('v1')->middleware([NpisRequestId::class])->group(function (): void
             |------------------------------------------------------------------
             */
             Route::get('training/sessions', [AdminTrainingController::class, 'sessions'])
+                ->middleware(EnsurePermission::class.':training:read');
+            Route::get('training/sessions/{sessionId}/assignments', [AdminTrainingController::class, 'assignments'])
                 ->middleware(EnsurePermission::class.':training:read');
             Route::post('training/sessions', [AdminTrainingController::class, 'store'])
                 ->middleware(EnsurePermission::class.':training:assign');

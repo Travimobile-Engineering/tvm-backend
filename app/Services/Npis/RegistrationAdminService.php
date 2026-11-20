@@ -6,6 +6,7 @@ use App\Enum\Npis\RegistrationStatus;
 use App\Exceptions\NpisApiException;
 use App\Models\Npis\AccommodationAllocation;
 use App\Models\Npis\AdminUser;
+use App\Models\Npis\Hotel;
 use App\Models\Npis\Registration;
 use App\Models\Npis\TrainingAssignment;
 use App\Models\Npis\Unit;
@@ -147,6 +148,25 @@ class RegistrationAdminService
 
             return $registration->fresh(['event', 'contact', 'profile', 'itinerary', 'accommodation.allocation', 'badge', 'interests', 'assignments', 'checkIns', 'certificate']);
         });
+    }
+
+    /**
+     * Accommodation partners and their room types for the allocation dialog.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function hotels(): array
+    {
+        return Hotel::query()
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Hotel $hotel): array => [
+                'hotelId' => $hotel->id,
+                'name' => $hotel->name,
+                'roomTypes' => $hotel->room_types ?? [],
+                'isActive' => (bool) $hotel->is_active,
+            ])
+            ->all();
     }
 
     /**
