@@ -344,23 +344,37 @@ jobs:
           file: ./Dockerfile
           load: true
           push: false
+          # FIX: always fetch the newest base image so OS security patches are picked up.
+          pull: true   # <<< FIXED (added)
           tags: ${{ env.PHP_IMAGE }}:${{ steps.tag.outputs.sha7 }}
           cache-from: type=gha,scope=php
           cache-to: type=gha,mode=max,scope=php
 
-      - name: Build nginx image (not pushed yet)
+      # <<< FIXED BLOCK START (nginx build) ---------------------------------
+      # FIX (Trivy: libxml2 CVE-2026-86144, fixed in 2.13.9-r3):
+      # the GitHub Actions layer cache kept an old layer with libxml2 2.13.9-r2.
+      # The nginx image is now built with pull + no-cache so apk packages and the
+      # base image are always fresh. The image is small, so the extra build time is minor.
+      # NOTE: if the scan still reports libxml2 after this, the base image itself is
+      # not yet patched. Add "RUN apk upgrade --no-cache" to Dockerfile.nginx
+      # (see the notes delivered with this file).
+      - name: Build nginx image (not pushed yet)   # <<< FIXED STEP
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile.nginx
           load: true
           push: false
+          pull: true       # <<< FIXED (added)
+          no-cache: true   # <<< FIXED (added) - this is the fix for the libxml2 finding
+          # <<< FIXED (removed): cache-from / cache-to lines that used to be here
           tags: ${{ env.NGINX_IMAGE }}:nginx-${{ steps.tag.outputs.sha7 }}
-          cache-from: type=gha,scope=nginx
-          cache-to: type=gha,mode=max,scope=nginx
 
       # FIX: removed ::group:: / ::endgroup:: so the scan output (CVE table or
       # Docker error) is visible instead of collapsed.
+      # <<< FIXED: the line '--skip-version-check \' below was added in this step
+      # FIX: added --skip-version-check to silence the Trivy "new version" notice
+      # (the Trivy version stays pinned on purpose).
       - name: Scan images for HIGH/CRITICAL vulnerabilities
         env:
           SHA7: ${{ steps.tag.outputs.sha7 }}
@@ -372,6 +386,7 @@ jobs:
               -v /var/run/docker.sock:/var/run/docker.sock \
               "$TRIVY_IMAGE" \
               image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+              --skip-version-check \
               "$img" || { echo "::error::Trivy failed for $img"; fail=1; }
           done
           exit "$fail"
