@@ -36,7 +36,11 @@ use Illuminate\Support\Str;
 Route::post('/seed/run', function () {
     $seederClass = Str::studly(request()->input('seeder_class'));
 
-    if (! class_exists("Database\\Seeders\\{$seederClass}")) {
+    $resolvedClass = class_exists($seederClass)
+        ? $seederClass
+        : "Database\\Seeders\\{$seederClass}";
+
+    if (! class_exists($resolvedClass)) {
         return response()->json([
             'error' => "Seeder class '{$seederClass}' not found in Database\\Seeders namespace.",
         ], 404);
@@ -44,7 +48,7 @@ Route::post('/seed/run', function () {
 
     try {
         Artisan::call('db:seed', [
-            '--class' => $seederClass,
+            '--class' => $resolvedClass,
             '--force' => true,
         ]);
 

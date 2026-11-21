@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property string $token_hash
  * @property int $admin_user_id
- * @property string $access_grant_id
+ * @property string|null $access_grant_id
  * @property Carbon $expires_at
  * @property Carbon|null $revoked_at
  * @property Carbon|null $last_seen_at
@@ -70,6 +70,6 @@ class AdminSession extends Model
     {
         return $this->revoked_at === null
             && $this->expires_at->isFuture()
-            && $this->grant?->isActive();
+            && ($this->access_grant_id === null || $this->grant?->isActive());
     }
 }
