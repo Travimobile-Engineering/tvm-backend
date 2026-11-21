@@ -18,12 +18,25 @@ class NpisAdminSeeder extends Seeder
             ['checkin', 'Sgt. Ahmed Lawal', 'ahmed.lawal@npis.ng'],
         ];
 
+        $password = config('npis.organizer.seed_password')
+            ?: (function () {
+                return app()->isProduction() ? null : 'Npis@2026#Dev';
+            })();
+
         foreach ($admins as [$role, $name, $email]) {
-            AdminUser::updateOrCreate(['email' => $email], [
+            $attributes = [
                 'name' => $name,
                 'role' => OrganizerRole::from($role),
                 'is_active' => true,
-            ]);
+            ];
+
+            // Optional password for email/password sign-in. Production keeps
+            // existing passwords unless NPIS_SEED_PASSWORD is explicitly set.
+            if (is_string($password) && $password !== '') {
+                $attributes['password'] = $password;
+            }
+
+            AdminUser::updateOrCreate(['email' => $email], $attributes);
         }
     }
 }

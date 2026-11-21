@@ -67,6 +67,7 @@ return [
     'organizer' => [
         'default_access_code' => env('NPIS_ORGANIZER_ACCESS_CODE', 'NPIS-ORG-2026'),
         'login_url' => env('NPIS_ORGANIZER_LOGIN_URL', 'https://npis.ng/#/organizer'),
+        'seed_password' => env('NPIS_SEED_PASSWORD'),
         'access_grant_ttl' => 28800, // eight hours
         'admin_session_ttl' => 28800, // eight hours
         'max_failed_attempts' => 5,
