@@ -602,6 +602,7 @@ Route::middleware(['validate.header'])
 
 require __DIR__.'/api/v1.php';
 require __DIR__.'/api/v1/manifest-checker.php';
+require __DIR__.'/api/v1/manifest-checker-field.php';
 
 Route::fallback(function () {
     return response('page not found', 400);

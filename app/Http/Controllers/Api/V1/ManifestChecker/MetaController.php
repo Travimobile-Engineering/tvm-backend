@@ -48,6 +48,12 @@ class MetaController extends EmfApiController
                 ['key' => '30d', 'label' => 'Last 30 days'],
                 ['key' => 'quarter', 'label' => 'Last quarter'],
             ],
+            'field' => [
+                'opsRoomPhone' => (string) config('emf.field.ops_room_phone'),
+                'flagReasons' => collect((array) config('emf.field.flag_reasons', []))->map(fn (string $label, string $key): array => ['key' => $key, 'label' => $label])->values()->all(),
+                'escalationCategories' => collect((array) config('emf.field.escalation_categories', []))->map(fn (string $label, string $key): array => ['key' => $key, 'label' => $label])->values()->all(),
+                'escalationActions' => collect((array) config('emf.field.escalation_actions', []))->map(fn (string $label, string $key): array => ['key' => $key, 'label' => $label])->values()->all(),
+            ],
             'states' => $this->stateList(true),
         ], 'Manifest Checker reference data.');
     }

@@ -30,10 +30,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property Carbon|null $checked_at
  * @property string $source
  * @property string|null $notes
+ * @property string $arrival_status
+ * @property Carbon|null $cleared_at
+ * @property string|null $clearance_reference
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, ManifestPassenger> $passengers
  * @property-read Collection<int, ManifestCheck> $checks
+ * @property-read Collection<int, FieldCheck> $fieldChecks
+ * @property-read Collection<int, FieldManifestEvent> $trackingEvents
  * @property-read DutyPoint|null $dutyPoint
  * @property-read Officer|null $officer
  */
@@ -45,11 +50,11 @@ class Manifest extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'manifest_number', 'mode', 'operator', 'vehicle_registration', 'driver_name', 'route_origin', 'route_destination', 'seats', 'passenger_count', 'checked_count', 'duty_point_id', 'state_code', 'lga_id', 'verdict', 'departed_at', 'expected_arrival_at', 'checked_by_officer_id', 'checked_at', 'source', 'notes'];
+    protected $fillable = ['id', 'manifest_number', 'mode', 'operator', 'vehicle_registration', 'driver_name', 'route_origin', 'route_destination', 'seats', 'passenger_count', 'checked_count', 'duty_point_id', 'state_code', 'lga_id', 'verdict', 'departed_at', 'expected_arrival_at', 'checked_by_officer_id', 'checked_at', 'source', 'notes', 'arrival_status', 'cleared_at', 'clearance_reference'];
 
     protected function casts(): array
     {
-        return ['seats' => 'integer', 'passenger_count' => 'integer', 'checked_count' => 'integer', 'departed_at' => 'datetime', 'expected_arrival_at' => 'datetime', 'checked_at' => 'datetime'];
+        return ['seats' => 'integer', 'passenger_count' => 'integer', 'checked_count' => 'integer', 'departed_at' => 'datetime', 'expected_arrival_at' => 'datetime', 'checked_at' => 'datetime', 'cleared_at' => 'datetime'];
     }
 
     /**
@@ -82,5 +87,21 @@ class Manifest extends Model
     public function officer(): BelongsTo
     {
         return $this->belongsTo(Officer::class, 'checked_by_officer_id');
+    }
+
+    /**
+     * @return HasMany<FieldCheck, $this>
+     */
+    public function fieldChecks(): HasMany
+    {
+        return $this->hasMany(FieldCheck::class, 'manifest_id');
+    }
+
+    /**
+     * @return HasMany<FieldManifestEvent, $this>
+     */
+    public function trackingEvents(): HasMany
+    {
+        return $this->hasMany(FieldManifestEvent::class, 'manifest_id');
     }
 }

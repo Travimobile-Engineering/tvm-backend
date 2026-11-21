@@ -34,6 +34,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $responder_name
  * @property string|null $resolution
  * @property array<string, mixed>|null $metadata
+ * @property string|null $match_rule
+ * @property string|null $boarding_point
+ * @property string|null $field_outcome
+ * @property string|null $alert_post
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Manifest|null $manifest
@@ -41,6 +45,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read Collection<int, AlertAction> $actions
  * @property-read Incident|null $incident
  * @property-read Officer|null $assignee
+ * @property-read FieldCheckSeat|null $fieldCheckSeat
  */
 class Alert extends Model
 {
@@ -50,7 +55,7 @@ class Alert extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'alert_number', 'type', 'title', 'summary', 'subject_type', 'subject_id', 'manifest_id', 'watchlist_entry_id', 'confidence', 'mode', 'route', 'duty_point_id', 'state_code', 'lga_id', 'status', 'sla_seconds', 'detected_at', 'verified_at', 'acknowledged_at', 'assigned_officer_id', 'responder_name', 'resolution', 'metadata'];
+    protected $fillable = ['id', 'alert_number', 'type', 'title', 'summary', 'subject_type', 'subject_id', 'manifest_id', 'watchlist_entry_id', 'confidence', 'mode', 'route', 'duty_point_id', 'state_code', 'lga_id', 'status', 'sla_seconds', 'detected_at', 'verified_at', 'acknowledged_at', 'assigned_officer_id', 'responder_name', 'resolution', 'metadata', 'match_rule', 'boarding_point', 'field_outcome', 'alert_post'];
 
     protected function casts(): array
     {
@@ -95,5 +100,13 @@ class Alert extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(Officer::class, 'assigned_officer_id');
+    }
+
+    /**
+     * @return HasOne<FieldCheckSeat, $this>
+     */
+    public function fieldCheckSeat(): HasOne
+    {
+        return $this->hasOne(FieldCheckSeat::class, 'alert_id');
     }
 }

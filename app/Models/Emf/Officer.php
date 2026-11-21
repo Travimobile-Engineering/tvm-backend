@@ -24,6 +24,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $language
  * @property string $password_hash
  * @property string|null $watchlist_edit_code_hash
+ * @property string|null $nin
+ * @property string|null $division
+ * @property string|null $reports_to
+ * @property string|null $ops_room
+ * @property string|null $photo_url
+ * @property Carbon|null $password_changed_at
+ * @property bool $two_factor_enabled
+ * @property string|null $two_factor_secret
+ * @property bool $biometric_enabled
+ * @property string $theme
+ * @property array<string, bool>|null $field_notification_preferences
+ * @property array<int, string>|null $backup_codes
  * @property Carbon|null $last_active_at
  * @property int $checks_today
  * @property Carbon|null $created_at
@@ -34,6 +46,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Collection<int, OfficerSession> $sessions
  * @property-read Collection<int, AccessGrant> $grants
  * @property-read Collection<int, Device> $devices
+ * @property-read Collection<int, FieldCheck> $fieldChecks
+ * @property-read Collection<int, SupportRequest> $supportRequests
  */
 class Officer extends Model
 {
@@ -43,11 +57,19 @@ class Officer extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'service_number', 'rank', 'full_name', 'email', 'phone', 'unit', 'state_code', 'lga_id', 'duty_point_id', 'role', 'status', 'language', 'password_hash', 'watchlist_edit_code_hash', 'last_active_at', 'checks_today'];
+    protected $fillable = ['id', 'service_number', 'rank', 'full_name', 'email', 'phone', 'unit', 'state_code', 'lga_id', 'duty_point_id', 'role', 'status', 'language', 'password_hash', 'watchlist_edit_code_hash', 'nin', 'division', 'reports_to', 'ops_room', 'photo_url', 'password_changed_at', 'two_factor_enabled', 'two_factor_secret', 'biometric_enabled', 'theme', 'field_notification_preferences', 'backup_codes', 'last_active_at', 'checks_today'];
 
     protected function casts(): array
     {
-        return ['last_active_at' => 'datetime', 'checks_today' => 'integer'];
+        return [
+            'last_active_at' => 'datetime',
+            'password_changed_at' => 'datetime',
+            'two_factor_enabled' => 'boolean',
+            'biometric_enabled' => 'boolean',
+            'field_notification_preferences' => 'array',
+            'backup_codes' => 'array',
+            'checks_today' => 'integer',
+        ];
     }
 
     /**
@@ -96,6 +118,22 @@ class Officer extends Model
     public function devices(): HasMany
     {
         return $this->hasMany(Device::class, 'officer_id');
+    }
+
+    /**
+     * @return HasMany<FieldCheck, $this>
+     */
+    public function fieldChecks(): HasMany
+    {
+        return $this->hasMany(FieldCheck::class, 'officer_id');
+    }
+
+    /**
+     * @return HasMany<SupportRequest, $this>
+     */
+    public function supportRequests(): HasMany
+    {
+        return $this->hasMany(SupportRequest::class, 'officer_id');
     }
 
     /**

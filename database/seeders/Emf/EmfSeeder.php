@@ -13,6 +13,7 @@ class EmfSeeder extends Seeder
             EmfAccessSeeder::class,
             EmfOperationsSeeder::class,
             EmfMetaSeeder::class,
+            EmfFieldSeeder::class,
         ]);
     }
 }

@@ -42,4 +42,11 @@ abstract class EmfApiController extends Controller
             throw NpisApiException::make(404, 'NOT_FOUND', 'This record is outside your state command.');
         }
     }
+
+    protected function sessionId(Request $request): ?string
+    {
+        $session = $request->attributes->get('emf_session');
+
+        return $session?->id;
+    }
 }

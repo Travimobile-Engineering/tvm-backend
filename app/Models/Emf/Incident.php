@@ -31,12 +31,22 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property Carbon|null $acknowledged_at
  * @property Carbon|null $resolved_at
  * @property array<string, mixed>|null $metadata
+ * @property string|null $category
+ * @property string $report_state
+ * @property string|null $client_report_id
+ * @property Carbon|null $signed_at
+ * @property string|null $signed_by
+ * @property string|null $gps_latitude
+ * @property string|null $gps_longitude
+ * @property string|null $linked_vehicle
+ * @property Carbon|null $occurred_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Manifest|null $manifest
  * @property-read Alert|null $alert
  * @property-read Officer|null $responder
  * @property-read Collection<int, IncidentEvent> $events
+ * @property-read Collection<int, IncidentAttachment> $attachments
  * @property-read CaseFile|null $case
  */
 class Incident extends Model
@@ -47,11 +57,11 @@ class Incident extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'incident_number', 'title', 'type', 'severity', 'status', 'summary', 'manifest_id', 'alert_id', 'watchlist_entry_id', 'location', 'duty_point_id', 'state_code', 'lga_id', 'reporter_name', 'reported_by', 'responder_officer_id', 'reported_at', 'acknowledged_at', 'resolved_at', 'metadata'];
+    protected $fillable = ['id', 'incident_number', 'title', 'type', 'severity', 'status', 'summary', 'manifest_id', 'alert_id', 'watchlist_entry_id', 'location', 'duty_point_id', 'state_code', 'lga_id', 'reporter_name', 'reported_by', 'responder_officer_id', 'reported_at', 'acknowledged_at', 'resolved_at', 'metadata', 'category', 'report_state', 'client_report_id', 'signed_at', 'signed_by', 'gps_latitude', 'gps_longitude', 'linked_vehicle', 'occurred_at'];
 
     protected function casts(): array
     {
-        return ['reported_at' => 'datetime', 'acknowledged_at' => 'datetime', 'resolved_at' => 'datetime', 'metadata' => 'array'];
+        return ['reported_at' => 'datetime', 'acknowledged_at' => 'datetime', 'resolved_at' => 'datetime', 'metadata' => 'array', 'signed_at' => 'datetime', 'occurred_at' => 'datetime', 'gps_latitude' => 'decimal:7', 'gps_longitude' => 'decimal:7'];
     }
 
     /**
@@ -84,6 +94,14 @@ class Incident extends Model
     public function events(): HasMany
     {
         return $this->hasMany(IncidentEvent::class, 'incident_id');
+    }
+
+    /**
+     * @return HasMany<IncidentAttachment, $this>
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(IncidentAttachment::class, 'incident_id');
     }
 
     /**

@@ -62,4 +62,29 @@ return [
     'severities' => ['critical', 'high', 'medium', 'low'],
     'case_statuses' => ['open', 'in_review', 'awaiting_approval', 'closed'],
     'duty_point_types' => ['motor_park', 'jetty', 'airport', 'rail', 'hotel', 'other'],
+
+    'field' => [
+        'ops_room_phone' => env('EMF_OPS_ROOM_PHONE', '+234 803 000 0000'),
+        'flag_reasons' => [
+            'photo_mismatch' => 'Photo mismatch',
+            'name_mismatch' => 'Name differs from NIN record',
+            'watchlist_hit' => 'Watchlist match',
+            'unverified_id' => 'Unverified ID',
+            'suspected_impersonation' => 'Suspected impersonation',
+            'other' => 'Other',
+        ],
+        'escalation_categories' => [
+            'watchlist_hit' => 'Watchlist / wanted hit',
+            'suspected_impersonation' => 'Suspected impersonation / fake ID',
+            'trafficking' => 'Trafficking / minor without guardian',
+            'refusal' => 'Refusal to cooperate / hostile',
+            'kidnapping' => 'Suspected kidnapping / duress',
+            'contraband' => 'Contraband / security threat',
+        ],
+        'escalation_actions' => [
+            'vehicle_detained' => 'Vehicle detained at checkpoint',
+            'subject_isolated' => 'Subject isolated for questioning',
+            'vehicle_fled' => 'Vehicle fled / evaded stop',
+        ],
+    ],
 ];
