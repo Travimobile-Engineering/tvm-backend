@@ -13,18 +13,25 @@ parameters:
         - app/Exceptions/NpisApiException.php
         - app/Http/Controllers/Api/V1
         - app/Http/Middleware/Npis
+        - app/Http/Middleware/Emf
         - app/Http/Requests/Npis
+        - app/Http/Requests/Emf
         - app/Http/Resources/Npis
         - app/Jobs/Npis
         - app/Mail/NpisNotificationMail.php
         - app/Models/Npis
+        - app/Models/Emf
         - app/Policies/Npis
         - app/Services/Npis
+        - app/Services/Emf
         - app/Support/Npis
         - database/seeders/Npis
+        - database/seeders/Emf
         - tests/Feature/Npis
+        - tests/Feature/Emf
         - tests/Support/Npis
         - tests/Unit/Npis
+        - tests/Unit/Emf
     level: 6
     treatPhpDocTypesAsCertain: false
     reportUnmatchedIgnoredErrors: false

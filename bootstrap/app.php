@@ -6,6 +6,8 @@ use App\Http\Middleware\BurstGuard;
 use App\Http\Middleware\CheckAirlineWalletBalance;
 use App\Http\Middleware\CheckIpWhitelist;
 use App\Http\Middleware\DecryptIds;
+use App\Http\Middleware\Emf\EnsureEmfOfficer;
+use App\Http\Middleware\Emf\EnsureEmfPermission;
 use App\Http\Middleware\ForceProductionKey;
 use App\Http\Middleware\ImpersonationThrottle;
 use App\Http\Middleware\LoginAttempt;
@@ -54,6 +56,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'ip.whitelist' => CheckIpWhitelist::class,
             'ip.ratelimit' => RateLimitByIp::class,
             'airline.check.balance' => CheckAirlineWalletBalance::class,
+            'emf.auth' => EnsureEmfOfficer::class,
+            'emf.can' => EnsureEmfPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
