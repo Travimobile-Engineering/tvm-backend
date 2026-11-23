@@ -3,16 +3,15 @@
 namespace App\Jobs\Npis;
 
 use App\Contracts\SMS;
-use App\Mail\NpisNotificationMail;
 use App\Models\Npis\Notification;
 use App\Models\Npis\Registration;
+use App\Services\Npis\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 class SendNotificationJob implements ShouldQueue
@@ -25,7 +24,7 @@ class SendNotificationJob implements ShouldQueue
 
     public function __construct(public readonly string $notificationId) {}
 
-    public function handle(SMS $sms): void
+    public function handle(SMS $sms, NotificationService $notifications): void
     {
         $notification = Notification::find($this->notificationId);
 
@@ -45,18 +44,7 @@ class SendNotificationJob implements ShouldQueue
                     'sent_at' => now(),
                 ])->save();
             } else {
-                Mail::to((string) $notification->recipient)->send(
-                    new NpisNotificationMail(
-                        $notification->subject ?? 'Nigeria Police Intelligence Summit',
-                        (string) $notification->body,
-                    )
-                );
-
-                $notification->forceFill([
-                    'provider' => 'zoho_zaptamail',
-                    'status' => 'sent',
-                    'sent_at' => now(),
-                ])->save();
+                $notifications->deliverEmail($notification);
             }
         } catch (Throwable $exception) {
             $notification->forceFill([

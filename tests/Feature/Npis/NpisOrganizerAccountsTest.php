@@ -3,12 +3,12 @@
 namespace Tests\Feature\Npis;
 
 use App\Mail\NpisOrganizerCredentialsMail;
+use App\Models\Mailing;
 use App\Models\Npis\AdminUser;
 use Database\Seeders\Npis\NpisDatabaseSeeder;
 use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -22,7 +22,6 @@ class NpisOrganizerAccountsTest extends TestCase
 
         $this->seed(NpisDatabaseSeeder::class);
         Queue::fake();
-        Mail::fake();
         config([
             'npis.oidc.dev_secret' => str_repeat('d', 32),
             'npis.oidc.issuer' => null,
@@ -61,15 +60,45 @@ class NpisOrganizerAccountsTest extends TestCase
         $this->assertContains('accommodation:allocate', $organizer->permissions());
         $this->assertContains('registrations:read', $organizer->permissions());
 
-        Mail::assertQueued(
-            NpisOrganizerCredentialsMail::class,
-            fn (NpisOrganizerCredentialsMail $mail): bool => $mail->hasTo('new.organizer@npis.ng')
-                && $mail->name === 'Tolu Adeyemi'
-                && $mail->password === 'Str0ngPassw0rd'
-                && $mail->roleLabel === 'Registration desk'
+        $mailing = Mailing::query()
+            ->where('mailable', NpisOrganizerCredentialsMail::class)
+            ->firstOrFail();
+
+        $this->assertSame('new.organizer@npis.ng', $mailing->email);
+        $this->assertSame('pending', $mailing->status);
+        $this->assertSame(
+            [
+                'Tolu Adeyemi',
+                'new.organizer@npis.ng',
+                'Str0ngPassw0rd',
+                'Registration desk',
+                (string) config('npis.organizer.login_url'),
+            ],
+            array_values((array) $mailing->payload)
         );
 
         $this->assertDatabaseHas('npis_audit_events', ['action' => 'organizer.created']);
+    }
+
+    public function test_organizers_can_be_listed(): void
+    {
+        $admin = $this->adminToken('super_admin');
+
+        $this->withToken($admin)->postJson('/api/v1/admin/organizers', $this->organizerPayload())->assertCreated();
+
+        $this->withToken($admin)->getJson('/api/v1/admin/organizers?q=desk.organizer')
+            ->assertOk()
+            ->assertJsonPath('data.pagination.totalItems', 1)
+            ->assertJsonPath('data.pagination.page', 1)
+            ->assertJsonPath('data.data.0.email', 'desk.organizer@npis.ng')
+            ->assertJsonPath('data.data.0.role', 'registration')
+            ->assertJsonPath('data.data.0.roleLabel', 'Registration desk')
+            ->assertJsonPath('data.data.0.isActive', true);
+
+        $this->withToken($this->adminToken('registration'))
+            ->getJson('/api/v1/admin/organizers')
+            ->assertStatus(403)
+            ->assertJsonPath('data.code', 'FORBIDDEN');
     }
 
     public function test_organizer_creation_validates_input_and_requires_the_manage_permission(): void

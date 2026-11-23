@@ -38,6 +38,7 @@ return [
         'https://www.travimobile.com',
         'https://route.manager.travimobile.com',
         'https://admin.travimobile.com',
+        'https://npis.ng',
     ],
 
     'allowed_origins_patterns' => [],

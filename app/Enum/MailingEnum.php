@@ -17,6 +17,10 @@ enum MailingEnum: string
 
     const VERIFY_OTP = 'verify_otp';
 
+    const NPIS_NOTIFICATION = 'npis_notification';
+
+    const NPIS_ORGANIZER_CREDENTIALS = 'npis_organizer_credentials';
+
     // Status
     const PENDING = 'pending';
 

@@ -19,9 +19,7 @@ class NpisAdminSeeder extends Seeder
         ];
 
         $password = config('npis.organizer.seed_password')
-            ?: (function () {
-                return app()->isProduction() ? null : 'Npis@2026#Dev';
-            })();
+            ?: (fn (): ?string => app()->isProduction() ? null : 'Npis@2026#Dev')();
 
         foreach ($admins as [$role, $name, $email]) {
             $attributes = [
