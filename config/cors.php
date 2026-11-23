@@ -39,6 +39,7 @@ return [
         'https://route.manager.travimobile.com',
         'https://admin.travimobile.com',
         'https://npis.ng',
+        'https://www.npis.ng',
     ],
 
     'allowed_origins_patterns' => [],
@@ -46,7 +47,7 @@ return [
     // 'allowed_headers' => ['*'],
     'allowed_headers' => ['Origin', 'Content-Type', 'X-Auth-Token', 'Cookie', 'Authorization', 'X-Tvm-Auth', 'Idempotency-Key'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['X-Request-Id'],
 
     'max_age' => 0,
 
