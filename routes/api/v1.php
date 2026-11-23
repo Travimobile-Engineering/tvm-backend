@@ -113,6 +113,8 @@ Route::prefix('v1')->middleware([NpisRequestId::class])->group(function (): void
             */
             Route::get('organizer-options', [AdminOrganizerController::class, 'options'])
                 ->middleware(EnsurePermission::class.':organizers:manage');
+            Route::get('organizers', [AdminOrganizerController::class, 'index'])
+                ->middleware(EnsurePermission::class.':organizers:manage');
             Route::post('organizers', [AdminOrganizerController::class, 'store'])
                 ->middleware(EnsurePermission::class.':organizers:manage');
 

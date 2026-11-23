@@ -284,11 +284,20 @@ if (! function_exists('hasOnboarded')) {
 }
 
 if (! function_exists('mailSend')) {
-    function mailSend($type, $recipient, $subject, $mail_class, $payloadData = [])
+    /**
+     * Persist an email on the mailings table and hand it to the mailer.
+     * The email:process scheduler retries pending records, so delivery does
+     * not depend on the queue worker being up.
+     *
+     * @param  object|string  $recipient
+     * @param  class-string  $mail_class
+     * @param  array<string, mixed>  $payloadData  Mailable constructor arguments, in order.
+     */
+    function mailSend($type, $recipient, $subject, $mail_class, $payloadData = []): Mailing
     {
         $data = [
             'type' => $type,
-            'email' => $recipient->email,
+            'email' => is_string($recipient) ? $recipient : $recipient->email,
             'subject' => $subject,
             'body' => '',
             'mailable' => $mail_class,
@@ -297,7 +306,9 @@ if (! function_exists('mailSend')) {
         ];
 
         $mailing = Mailing::saveData($data);
-        dispatch(new ProcessMail($mailing->id));
+        dispatch(new ProcessMail($mailing->id))->afterCommit();
+
+        return $mailing;
     }
 }
 

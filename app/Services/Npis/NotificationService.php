@@ -2,7 +2,9 @@
 
 namespace App\Services\Npis;
 
+use App\Enum\MailingEnum;
 use App\Jobs\Npis\SendNotificationJob;
+use App\Mail\NpisNotificationMail;
 use App\Models\Npis\Notification;
 use App\Models\Npis\NotificationTemplate;
 use App\Models\Npis\Registration;
@@ -60,9 +62,39 @@ class NotificationService
             'related_id' => $relatedId,
         ]);
 
+        if ($channel === 'email') {
+            // Emails are written to the mailings table so the email:process
+            // scheduler delivers them even when no queue worker is running.
+            $this->deliverEmail($notification);
+
+            return $notification;
+        }
+
         SendNotificationJob::dispatch($notification->id)->afterCommit();
 
         return $notification;
+    }
+
+    public function deliverEmail(Notification $notification): void
+    {
+        $subject = $notification->subject ?? 'Nigeria Police Intelligence Summit';
+
+        mailSend(
+            MailingEnum::NPIS_NOTIFICATION,
+            (string) $notification->recipient,
+            $subject,
+            NpisNotificationMail::class,
+            [
+                'mailSubject' => $subject,
+                'mailBody' => (string) $notification->body,
+            ],
+        );
+
+        $notification->forceFill([
+            'provider' => 'mailings',
+            'status' => 'sent',
+            'sent_at' => now(),
+        ])->save();
     }
 
     public function sendVerificationCode(string $channel, string $recipient, string $code, string $verificationId): ?Notification
