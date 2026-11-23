@@ -3,13 +3,13 @@ FROM php:8.4.27-fpm
 WORKDIR /var/www
 ARG MAX_CHILDREN=40
 
-# FIX: Upgrade it if it is installed and a patched version is available.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# FIX: upgrade ALL OS packages (krb5 libs, linux-libc-dev, ...), not just linux-libc-dev.
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libicu-dev \
-    && if dpkg-query -W -f='${Status}' linux-libc-dev 2>/dev/null | grep -q 'install ok installed'; then apt-get install -y --only-upgrade linux-libc-dev; fi \
     && docker-php-ext-install -j"$(nproc)" intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# FIX: plain path (the pasted line had a markdown link around www.conf).
 RUN sed -i "s/^pm\.max_children\s*=.*/pm.max_children = ${MAX_CHILDREN}/" /usr/local/etc/php-fpm.d/www.conf
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -38,7 +38,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-install -j"$(nproc)" gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath opcache sockets
+# All PHP extensions are compiled in this RUN.
+# FIX: once compiling is finished, purge linux-libc-dev (kernel headers, ~40 of the typical
+# findings). Purging it also removes libc6-dev and the compilers (build-essential, gcc, make),
+# which PHP-FPM does not need at runtime. Runtime libraries are kept (no --auto-remove).
+# If a LATER step ever needs a compiler, move this purge after that step.
+RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath opcache sockets \
+    && apt-get purge -y linux-libc-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # FIX 3: Use a stable Composer major version instead of latest.
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
