@@ -345,10 +345,13 @@ jobs:
           load: true
           push: false
           # FIX: always fetch the newest base image so OS security patches are picked up.
-          pull: true   # <<< FIXED (added)
+          pull: true
+          # FIX: the cached "apt-get upgrade" layer kept stale OS packages, so Trivy
+          # reported CVEs that a fresh build would already have patched (same cause as the
+          # nginx libxml2 finding). Build without the layer cache so every push gets
+          # the packages that are available right now. Costs a few extra minutes per build.
+          no-cache: true
           tags: ${{ env.PHP_IMAGE }}:${{ steps.tag.outputs.sha7 }}
-          cache-from: type=gha,scope=php
-          cache-to: type=gha,mode=max,scope=php
 
       # <<< FIXED BLOCK START (nginx build) ---------------------------------
       # FIX (Trivy: libxml2 CVE-2026-86144, fixed in 2.13.9-r3):
@@ -380,13 +383,23 @@ jobs:
           SHA7: ${{ steps.tag.outputs.sha7 }}
         run: |
           fail=0
+          # Optional: CVEs listed in a .trivyignore file at the repo root are skipped.
+          # One CVE ID per line, with a comment saying why. No file = nothing skipped.
+          ignore_mount=()
+          ignore_flag=()
+          if [ -f .trivyignore ]; then
+            echo "Using .trivyignore:"; cat .trivyignore
+            ignore_mount=(-v "$PWD/.trivyignore:/.trivyignore:ro")
+            ignore_flag=(--ignorefile /.trivyignore)
+          fi
           for img in "$PHP_IMAGE:$SHA7" "$NGINX_IMAGE:nginx-$SHA7"; do
             echo "=== Trivy scan $img"
             docker run --rm \
               -v /var/run/docker.sock:/var/run/docker.sock \
+              "${ignore_mount[@]}" \
               "$TRIVY_IMAGE" \
               image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
-              --skip-version-check \
+              --skip-version-check "${ignore_flag[@]}" \
               "$img" || { echo "::error::Trivy failed for $img"; fail=1; }
           done
           exit "$fail"
