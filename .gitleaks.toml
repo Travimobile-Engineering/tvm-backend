@@ -42,6 +42,19 @@ paths = ['''postman/generate-manifest-checker-collection\.mjs$''']
 regexes = ['''6f5a3e6ef5c94bb7b4bcb5a2ce872271d0f7b1e8e71d4e2e9d4c7f0a8b9c1d2e''']
 
 # ---------------------------------------------------------------------------
+# False positive: sample temporary passwords in the officer provisioning
+# documentation. These are fabricated documentation examples, not usable
+# credentials. The documentation was later removed, but the values remain in
+# the historical commit, so the allowlist is scoped to that commit and file.
+# ---------------------------------------------------------------------------
+[[allowlists]]
+condition = "AND"
+description = "Fabricated temporary-password examples in provisioning docs"
+commits = ['''6d43d93b85ed9113b920cd52021ee36a1a2b36f9''']
+paths = ['''docs/manifest-checker-officer-provisioning\.md$''']
+regexes = ['''Ntem-[A-Z0-9]+-[0-9]+''']
+
+# ---------------------------------------------------------------------------
 # Historical leaks (committed 2024-12 -> 2026-04).
 #
 # Every finding tied to these commits was reviewed on 2026-10:
