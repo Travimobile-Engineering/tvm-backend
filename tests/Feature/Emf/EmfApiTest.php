@@ -7,6 +7,7 @@ use App\Models\Emf\Device;
 use App\Models\Emf\Manifest;
 use App\Models\Emf\Notification;
 use App\Models\Emf\WatchlistEntry;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Carbon;
 
 class EmfApiTest extends EmfApiTestCase
@@ -72,6 +73,143 @@ class EmfApiTest extends EmfApiTestCase
                 'fullName' => 'Denied Person',
             ])->assertForbidden()
             ->assertJsonPath('data.code', 'FORBIDDEN');
+    }
+
+    public function test_officer_account_provisioning_activation_and_password_reset(): void
+    {
+        $this->withoutMiddleware(ThrottleRequests::class);
+
+        $created = $this->postJson('/api/v1/manifest-checker/officers', [
+            'serviceNumber' => 'NPF-3001',
+            'rank' => 'Inspector',
+            'fullName' => 'New Field Officer',
+            'email' => 'new.officer@test.local',
+            'phone' => '+2348011111111',
+            'unit' => 'Manifest Enforcement',
+            'stateCode' => 'LA',
+            'lgaId' => 'lga_test',
+            'dutyPointId' => 'dp_test',
+            'role' => 'duty_officer',
+            'nin' => '12345678901',
+            'sendInvite' => true,
+        ])->assertCreated()
+            ->assertJsonPath('data.officer.status', 'pending_activation')
+            ->assertJsonPath('data.mustChangePassword', false)
+            ->json('data');
+
+        $officerId = $created['officer']['officerId'];
+        $activationToken = $created['invitation']['activationToken'];
+
+        $this->postJson('/api/v1/manifest-checker/auth/login', [
+            'serviceNumber' => 'NPF-3001',
+            'password' => 'Password@123',
+        ])->assertUnauthorized()
+            ->assertJsonPath('data.code', 'UNAUTHENTICATED');
+
+        $activated = $this->postJson('/api/v1/manifest-checker/auth/activate', [
+            'serviceNumber' => 'NPF-3001',
+            'token' => $activationToken,
+            'password' => 'Activated@123',
+            'password_confirmation' => 'Activated@123',
+        ])->assertOk()
+            ->assertJsonPath('data.officer.status', 'on_duty')
+            ->assertJsonPath('data.officer.mustChangePassword', false)
+            ->json('data');
+
+        $activatedToken = $activated['token'];
+        $this->withHeader('Authorization', 'Bearer '.$activatedToken)
+            ->getJson('/api/v1/manifest-checker/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.serviceNumber', 'NPF-3001');
+
+        $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->getJson('/api/v1/manifest-checker/officers?status=pending_activation')
+            ->assertOk()
+            ->assertJsonPath('data.pagination.totalItems', 0);
+
+        $reset = $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->postJson('/api/v1/manifest-checker/officers/'.$officerId.'/reset-password')
+            ->assertOk()
+            ->assertJsonPath('data.mustChangePassword', true)
+            ->json('data');
+
+        $temporaryPassword = $reset['temporaryPassword'];
+
+        $temporaryLogin = $this->postJson('/api/v1/manifest-checker/auth/login', [
+            'serviceNumber' => 'NPF-3001',
+            'password' => $temporaryPassword,
+        ])->assertOk()
+            ->assertJsonPath('data.officer.mustChangePassword', true)
+            ->json('data');
+
+        $this->withHeader('Authorization', 'Bearer '.$temporaryLogin['token'])
+            ->postJson('/api/v1/manifest-checker/field/profile/password', [
+                'currentPassword' => $temporaryPassword,
+                'newPassword' => 'Permanent@123',
+                'newPassword_confirmation' => 'Permanent@123',
+            ])->assertOk();
+
+        $this->postJson('/api/v1/manifest-checker/auth/login', [
+            'serviceNumber' => 'NPF-3001',
+            'password' => 'Permanent@123',
+        ])->assertOk()
+            ->assertJsonPath('data.officer.mustChangePassword', false);
+    }
+
+    public function test_activation_invite_can_be_resent_and_temporary_password_accounts_can_login(): void
+    {
+        $this->withoutMiddleware(ThrottleRequests::class);
+
+        $created = $this->postJson('/api/v1/manifest-checker/officers', [
+            'serviceNumber' => 'NPF-3002',
+            'rank' => 'Sergeant',
+            'fullName' => 'Invited Officer',
+            'email' => 'invited.officer@test.local',
+            'phone' => '+2348022222222',
+            'stateCode' => 'LA',
+            'role' => 'duty_officer',
+            'sendInvite' => true,
+        ])->assertCreated()->json('data');
+
+        $officerId = $created['officer']['officerId'];
+        $oldToken = $created['invitation']['activationToken'];
+
+        $resent = $this->postJson('/api/v1/manifest-checker/officers/'.$officerId.'/invite')
+            ->assertOk()
+            ->assertJsonPath('data.officer.status', 'pending_activation')
+            ->json('data');
+
+        $this->assertNotSame($oldToken, $resent['invitation']['activationToken']);
+
+        $this->postJson('/api/v1/manifest-checker/auth/activate', [
+            'serviceNumber' => 'NPF-3002',
+            'token' => $resent['invitation']['activationToken'],
+            'password' => 'Invited@123',
+            'password_confirmation' => 'Invited@123',
+        ])->assertOk()
+            ->assertJsonPath('data.officer.serviceNumber', 'NPF-3002');
+
+        $temporary = $this->postJson('/api/v1/manifest-checker/officers', [
+            'serviceNumber' => 'NPF-3003',
+            'rank' => 'Corporal',
+            'fullName' => 'Temporary Password Officer',
+            'email' => 'temporary.officer@test.local',
+            'phone' => '+2348033333333',
+            'stateCode' => 'LA',
+            'role' => 'duty_officer',
+            'sendInvite' => false,
+        ])->assertCreated()
+            ->assertJsonPath('data.officer.status', 'off_duty')
+            ->assertJsonPath('data.mustChangePassword', true)
+            ->json('data');
+
+        $this->assertNotNull($temporary['temporaryPassword']);
+
+        $this->postJson('/api/v1/manifest-checker/auth/login', [
+            'serviceNumber' => 'NPF-3003',
+            'password' => $temporary['temporaryPassword'],
+        ])->assertOk()
+            ->assertJsonPath('data.officer.mustChangePassword', true);
     }
 
     public function test_alert_queue_supports_acknowledge_escalate_assign_and_dismiss(): void

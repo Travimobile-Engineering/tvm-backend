@@ -63,6 +63,11 @@ return [
     'case_statuses' => ['open', 'in_review', 'awaiting_approval', 'closed'],
     'duty_point_types' => ['motor_park', 'jetty', 'airport', 'rail', 'hotel', 'other'],
 
+    'provisioning' => [
+        'invitation_ttl' => 172800,
+        'temporary_password_ttl' => 86400,
+    ],
+
     'field' => [
         'ops_room_phone' => env('EMF_OPS_ROOM_PHONE', '+234 803 000 0000'),
         'flag_reasons' => [

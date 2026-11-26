@@ -48,6 +48,8 @@ class EmfFieldAccountService
                 'lga' => $officer->lga?->name,
                 'reportsTo' => $officer->reports_to,
                 'opsRoom' => $officer->ops_room ?? 'State command operations room',
+                'mustChangePassword' => $officer->must_change_password,
+                'activatedAt' => $officer->activated_at?->toIso8601String(),
                 'shiftStart' => $officer->dutyPoint?->shift_start,
                 'shiftEnd' => $officer->dutyPoint?->shift_end,
                 'shiftEndsAt' => $shiftEnd?->toIso8601String(),
@@ -157,6 +159,8 @@ class EmfFieldAccountService
         $officer->forceFill([
             'password_hash' => Hash::make($newPassword),
             'password_changed_at' => now(),
+            'must_change_password' => false,
+            'temporary_password_expires_at' => null,
         ])->save();
 
         OfficerSession::query()

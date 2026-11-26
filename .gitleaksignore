@@ -1,0 +1,5 @@
+# Reviewed false positives: fabricated temporary-password examples in the
+# officer provisioning documentation, removed from the working tree.
+6d43d93b85ed9113b920cd52021ee36a1a2b36f9:docs/manifest-checker-officer-provisioning.md:generic-api-key:126
+6d43d93b85ed9113b920cd52021ee36a1a2b36f9:docs/manifest-checker-officer-provisioning.md:generic-api-key:197
+6d43d93b85ed9113b920cd52021ee36a1a2b36f9:docs/manifest-checker-officer-provisioning.md:generic-api-key:340

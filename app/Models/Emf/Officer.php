@@ -36,6 +36,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $theme
  * @property array<string, bool>|null $field_notification_preferences
  * @property array<int, string>|null $backup_codes
+ * @property string|null $invitation_token_hash
+ * @property Carbon|null $invitation_expires_at
+ * @property Carbon|null $invited_at
+ * @property Carbon|null $activated_at
+ * @property bool $must_change_password
+ * @property Carbon|null $temporary_password_expires_at
+ * @property string|null $created_by
  * @property Carbon|null $last_active_at
  * @property int $checks_today
  * @property Carbon|null $created_at
@@ -48,6 +55,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Collection<int, Device> $devices
  * @property-read Collection<int, FieldCheck> $fieldChecks
  * @property-read Collection<int, SupportRequest> $supportRequests
+ * @property-read Officer|null $creator
  */
 class Officer extends Model
 {
@@ -57,7 +65,7 @@ class Officer extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'service_number', 'rank', 'full_name', 'email', 'phone', 'unit', 'state_code', 'lga_id', 'duty_point_id', 'role', 'status', 'language', 'password_hash', 'watchlist_edit_code_hash', 'nin', 'division', 'reports_to', 'ops_room', 'photo_url', 'password_changed_at', 'two_factor_enabled', 'two_factor_secret', 'biometric_enabled', 'theme', 'field_notification_preferences', 'backup_codes', 'last_active_at', 'checks_today'];
+    protected $fillable = ['id', 'service_number', 'rank', 'full_name', 'email', 'phone', 'unit', 'state_code', 'lga_id', 'duty_point_id', 'role', 'status', 'language', 'password_hash', 'watchlist_edit_code_hash', 'nin', 'division', 'reports_to', 'ops_room', 'photo_url', 'password_changed_at', 'two_factor_enabled', 'two_factor_secret', 'biometric_enabled', 'theme', 'field_notification_preferences', 'backup_codes', 'invitation_token_hash', 'invitation_expires_at', 'invited_at', 'activated_at', 'must_change_password', 'temporary_password_expires_at', 'created_by', 'last_active_at', 'checks_today'];
 
     protected function casts(): array
     {
@@ -68,6 +76,11 @@ class Officer extends Model
             'biometric_enabled' => 'boolean',
             'field_notification_preferences' => 'array',
             'backup_codes' => 'array',
+            'invitation_expires_at' => 'datetime',
+            'invited_at' => 'datetime',
+            'activated_at' => 'datetime',
+            'must_change_password' => 'boolean',
+            'temporary_password_expires_at' => 'datetime',
             'checks_today' => 'integer',
         ];
     }
@@ -134,6 +147,14 @@ class Officer extends Model
     public function supportRequests(): HasMany
     {
         return $this->hasMany(SupportRequest::class, 'officer_id');
+    }
+
+    /**
+     * @return BelongsTo<Officer, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'created_by');
     }
 
     /**

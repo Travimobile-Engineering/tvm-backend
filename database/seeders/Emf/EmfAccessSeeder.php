@@ -75,6 +75,9 @@ class EmfAccessSeeder extends Seeder
                 'language' => 'en',
                 'password_hash' => Hash::make('Password@123'),
                 'watchlist_edit_code_hash' => Hash::make('123456'),
+                'invited_at' => now()->subMonths(2),
+                'activated_at' => now()->subMonths(2),
+                'must_change_password' => false,
                 'last_active_at' => now()->subMinutes($suffix * 3),
                 'checks_today' => $checks,
             ]);

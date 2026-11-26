@@ -29,10 +29,26 @@ class EmfAuthService
             throw NpisApiException::make(401, 'UNAUTHENTICATED', 'Invalid service number or password.');
         }
 
-        if ($officer->status === 'suspended') {
+        if ((string) $officer->status === 'pending_activation') {
+            throw NpisApiException::make(403, 'ACCOUNT_NOT_ACTIVATED', 'This account has not been activated. Use the activation link sent by your commander.');
+        }
+
+        if ((string) $officer->status === 'suspended') {
             throw NpisApiException::make(403, 'FORBIDDEN', 'This account is suspended. Contact the state commander.');
         }
 
+        if ($officer->must_change_password && $officer->temporary_password_expires_at?->isPast()) {
+            throw NpisApiException::make(403, 'TEMPORARY_PASSWORD_EXPIRED', 'This temporary password has expired. Ask your commander to reset it.');
+        }
+
+        return $this->issueSession($officer, $request);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function issueSession(Officer $officer, Request $request): array
+    {
         $rawToken = Str::random(64);
         $expiresAt = now()->addSeconds((int) config('emf.session_ttl', 28800));
 
@@ -113,6 +129,9 @@ class EmfAuthService
                 ->where('ends_at', '>', now())
                 ->count(),
             'permissions' => $officer->permissions(),
+            'mustChangePassword' => $officer->must_change_password,
+            'activatedAt' => $officer->activated_at?->toIso8601String(),
+            'invitedAt' => $officer->invited_at?->toIso8601String(),
             'lastActiveAt' => $officer->last_active_at?->toIso8601String(),
         ];
     }
