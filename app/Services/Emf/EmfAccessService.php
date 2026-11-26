@@ -561,6 +561,8 @@ class EmfAccessService
             'grantStatus' => $activeGrant ? $activeGrant->status : 'free',
             'lastActiveAt' => $officer->last_active_at?->toIso8601String(),
             'checksToday' => $officer->checks_today,
+            'mustChangePassword' => $officer->must_change_password,
+            'activatedAt' => $officer->activated_at?->toIso8601String(),
         ];
     }
 

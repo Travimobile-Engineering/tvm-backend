@@ -2,20 +2,25 @@
 
 namespace App\Http\Controllers\Api\V1\ManifestChecker;
 
+use App\Http\Requests\Emf\CreateOfficerRequest;
 use App\Models\Emf\Device;
 use App\Models\Emf\Officer;
 use App\Services\Emf\EmfAccessService;
+use App\Services\Emf\EmfOfficerProvisioningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class OfficerController extends EmfApiController
 {
-    public function __construct(private readonly EmfAccessService $access) {}
+    public function __construct(
+        private readonly EmfAccessService $access,
+        private readonly EmfOfficerProvisioningService $provisioning,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
-            'status' => ['sometimes', 'in:on_duty,off_duty,suspended'],
+            'status' => ['sometimes', 'in:pending_activation,on_duty,off_duty,suspended'],
             'grant' => ['sometimes', 'in:free,active'],
             'search' => ['sometimes', 'string', 'max:120'],
             'stateCode' => ['sometimes', 'string', 'max:8'],
@@ -29,6 +34,23 @@ class OfficerController extends EmfApiController
             'data' => $result['data'],
             'pagination' => $result['pagination'],
         ], 'Officers and access.');
+    }
+
+    public function store(CreateOfficerRequest $request): JsonResponse
+    {
+        $result = $this->provisioning->create($request->validated(), $this->officer($request), $request);
+
+        return $this->success($result, 'Officer account created.', 201);
+    }
+
+    public function resendInvite(Request $request, Officer $officer): JsonResponse
+    {
+        return $this->success($this->provisioning->resendInvite($officer, $this->officer($request), $request), 'Activation invite resent.');
+    }
+
+    public function resetPassword(Request $request, Officer $officer): JsonResponse
+    {
+        return $this->success($this->provisioning->resetPassword($officer, $this->officer($request), $request), 'Temporary password generated.');
     }
 
     public function performance(Officer $officer): JsonResponse
