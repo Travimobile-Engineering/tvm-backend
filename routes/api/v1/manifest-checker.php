@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/manifest-checker')->middleware([NpisRequestId::class, 'throttle:180,1'])->group(function (): void {
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('auth/activate', [AuthController::class, 'activate'])->middleware('throttle:10,1');
 
     /*
     |--------------------------------------------------------------------------
@@ -124,7 +125,10 @@ Route::prefix('v1/manifest-checker')->middleware([NpisRequestId::class, 'throttl
         |----------------------------------------------------------------------
         */
         Route::get('officers', [OfficerController::class, 'index'])->middleware('emf.can:officers:read');
+        Route::post('officers', [OfficerController::class, 'store'])->middleware('emf.can:officers:manage');
         Route::get('officers/{officer}/performance', [OfficerController::class, 'performance'])->middleware('emf.can:officers:read');
+        Route::post('officers/{officer}/invite', [OfficerController::class, 'resendInvite'])->middleware('emf.can:officers:manage');
+        Route::post('officers/{officer}/reset-password', [OfficerController::class, 'resetPassword'])->middleware('emf.can:officers:manage');
         Route::post('officers/{officer}/suspend', [OfficerController::class, 'suspend'])->middleware('emf.can:officers:manage');
         Route::post('officers/{officer}/reactivate', [OfficerController::class, 'reactivate'])->middleware('emf.can:officers:manage');
 

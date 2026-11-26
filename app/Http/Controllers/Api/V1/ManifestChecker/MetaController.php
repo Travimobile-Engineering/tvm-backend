@@ -42,6 +42,13 @@ class MetaController extends EmfApiController
             'severities' => collect($severities)->map(fn (string $value): array => ['key' => $value, 'label' => ucfirst($value)])->values()->all(),
             'caseStatuses' => collect($caseStatuses)->map(fn (string $value): array => ['key' => $value, 'label' => str($value)->replace('_', ' ')->title()])->values()->all(),
             'dutyPointTypes' => collect($dutyPointTypes)->map(fn (string $value): array => ['key' => $value, 'label' => str($value)->replace('_', ' ')->title()])->values()->all(),
+            'roles' => collect((array) config('emf.roles', []))->map(fn (array $role, string $key): array => ['key' => $key, 'label' => $role['label'] ?? $key])->values()->all(),
+            'officerStatuses' => [
+                ['key' => 'pending_activation', 'label' => 'Pending Activation'],
+                ['key' => 'on_duty', 'label' => 'On Duty'],
+                ['key' => 'off_duty', 'label' => 'Off Duty'],
+                ['key' => 'suspended', 'label' => 'Suspended'],
+            ],
             'periods' => [
                 ['key' => '24h', 'label' => 'Last 24 hours'],
                 ['key' => '7d', 'label' => 'Last 7 days'],
