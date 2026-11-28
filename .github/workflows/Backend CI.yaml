@@ -315,7 +315,7 @@ jobs:
     timeout-minutes: 30
     env:
       PHP_IMAGE_PROD: docker.io/travi3/backend
-      PHP_IMAGE_STG: docker.io/travi3/backend-staging
+      PHP_IMAGE_STG: docker.io/travi3/backend-stg
       NGINX_IMAGE: docker.io/travi3/backend-nginx-prod
     steps:
       - uses: actions/checkout@v4

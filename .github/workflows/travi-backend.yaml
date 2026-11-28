@@ -2,11 +2,11 @@ name: Build and Push Travi Backend Image to Docker Hub
 
 on:
   push:
-    branches: [ master, staging, dev ]
+    branches: [ master, staging ]   # rename master -> main if that is your prod branch
 
 env:
   IMAGE_NAME_PROD: travi3/backend
-  IMAGE_NAME_STAGING: travi3/backend-staging
+  IMAGE_NAME_STAGING: travi3/backend-stg
 
 jobs:
   build-image:
@@ -15,9 +15,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Ensure full git history for proper SHA
+        uses: actions/checkout@v4
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -25,27 +23,39 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Set up tags
-        id: set-tags
+      - name: Set image name and tag
         run: |
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          echo "short_commit_sha=$SHORT_SHA" >> $GITHUB_ENV
-          
-          if [[ "$GITHUB_REF" == "refs/heads/master" ]]; then
-            echo "TAG=${SHORT_SHA}-prod" >> $GITHUB_ENV
-          elif [[ "$GITHUB_REF" == "refs/heads/staging" ]]; then
-            echo "TAG=${SHORT_SHA}-stg" >> $GITHUB_ENV
-          elif [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
-            echo "TAG=${SHORT_SHA}-dev" >> $GITHUB_ENV
+          SHORT_SHA="${GITHUB_SHA::7}"
+
+          case "$GITHUB_REF_NAME" in
+            master)
+              IMAGE_NAME="$IMAGE_NAME_PROD"
+              TAG="${SHORT_SHA}-prod"
+              ;;
+            staging)
+              IMAGE_NAME="$IMAGE_NAME_STAGING"
+              TAG="${SHORT_SHA}-stg"
+              ;;
+            *)
+              echo "Unsupported branch: $GITHUB_REF_NAME"
+              exit 1
+              ;;
+          esac
+
+          if [ -z "$IMAGE_NAME" ] || [ -z "$TAG" ]; then
+            echo "IMAGE_NAME or TAG is empty"
+            exit 1
           fi
-          
-          echo "Using tag: $TAG"
+
+          echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_ENV"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "Using image: $IMAGE_NAME:$TAG"
 
       - name: Build Docker image
-        run: docker build -t $IMAGE_NAME:${{ env.TAG }} .
+        run: docker build -t "$IMAGE_NAME:$TAG" .
 
       - name: Push Docker image to Docker Hub
-        run: docker push $IMAGE_NAME:${{ env.TAG }}
+        run: docker push "$IMAGE_NAME:$TAG"
 
       - name: Logout from Docker Hub
         if: always()
