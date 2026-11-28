@@ -6,7 +6,7 @@ on:
 
 env:
   IMAGE_NAME_PROD: travi3/backend
-  IMAGE_NAME_STAGING: travi3/backend-stg
+  IMAGE_NAME_STAGING: travi3/backend-staging
 
 jobs:
   build-image:
