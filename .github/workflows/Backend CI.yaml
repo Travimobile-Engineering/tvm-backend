@@ -317,6 +317,7 @@ jobs:
       PHP_IMAGE_PROD: docker.io/travi3/backend
       PHP_IMAGE_STG: docker.io/travi3/backend-stg
       NGINX_IMAGE: docker.io/travi3/backend-nginx-prod
+      NGINX_IMAGE_STG: docker.io/travi3/backend-nginx-stg
     steps:
       - uses: actions/checkout@v4
 
@@ -336,7 +337,7 @@ jobs:
           case "$GITHUB_REF_NAME" in
             staging)
               PHP_REF="${PHP_IMAGE_STG}:${SHA7}-stg"
-              NGINX_REF="${NGINX_IMAGE}:nginx-${SHA7}-stg"
+              NGINX_REF="${NGINX_IMAGE_STG}:nginx-${SHA7}-stg"
               ;;
             *)
               PHP_REF="${PHP_IMAGE_PROD}:${SHA7}"
