@@ -314,10 +314,9 @@ jobs:
        github.ref == 'refs/heads/dev')
     timeout-minutes: 30
     env:
-      PHP_IMAGE: docker.io/travi3/backend
+      PHP_IMAGE_PROD: docker.io/travi3/backend
+      PHP_IMAGE_STG: docker.io/travi3/backend-staging
       NGINX_IMAGE: docker.io/travi3/backend-nginx-prod
-      # FIX: removed the job-level TRIVY_IMAGE (0.57.1). It overrode the safe
-      # pinned version defined at the top of this file (0.69.3).
     steps:
       - uses: actions/checkout@v4
 
@@ -325,12 +324,34 @@ jobs:
 
       # Both images are tagged from the SAME commit, so the PHP and nginx containers
       # of a pod can never run different versions of the code.
-      # The tags deliberately do NOT end in "-prod": Argo CD Image Updater deploys any
-      # tag matching ^[a-f0-9]{7,9}-prod$ with no approval. Production is changed only
-      # by the deploy-production job below.
-      - name: Compute image tags
+      # Production tags deliberately do NOT end in "-prod": Argo CD Image Updater deploys
+      # any tag matching ^[a-f0-9]{7,9}-prod$ with no approval. Production is changed only
+      # by the deploy-production job.
+      # Staging tags end in "-stg", which is what the staging overlay / Image Updater expects.
+      - name: Compute image names and tags
         id: tag
-        run: echo "sha7=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        run: |
+          SHA7="${GITHUB_SHA::7}"
+
+          case "$GITHUB_REF_NAME" in
+            staging)
+              PHP_REF="${PHP_IMAGE_STG}:${SHA7}-stg"
+              NGINX_REF="${NGINX_IMAGE}:nginx-${SHA7}-stg"
+              ;;
+            *)
+              PHP_REF="${PHP_IMAGE_PROD}:${SHA7}"
+              NGINX_REF="${NGINX_IMAGE}:nginx-${SHA7}"
+              ;;
+          esac
+
+          {
+            echo "sha7=$SHA7"
+            echo "php_ref=$PHP_REF"
+            echo "nginx_ref=$NGINX_REF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "PHP image:   $PHP_REF"
+          echo "nginx image: $NGINX_REF"
 
       - uses: docker/login-action@v3
         with:
@@ -344,43 +365,30 @@ jobs:
           file: ./Dockerfile
           load: true
           push: false
-          # FIX: always fetch the newest base image so OS security patches are picked up.
+          # Always fetch the newest base image so OS security patches are picked up.
           pull: true
-          # FIX: the cached "apt-get upgrade" layer kept stale OS packages, so Trivy
-          # reported CVEs that a fresh build would already have patched (same cause as the
-          # nginx libxml2 finding). Build without the layer cache so every push gets
-          # the packages that are available right now. Costs a few extra minutes per build.
+          # The cached "apt-get upgrade" layer kept stale OS packages, so Trivy reported
+          # CVEs that a fresh build would already have patched. Build without layer cache.
           no-cache: true
-          tags: ${{ env.PHP_IMAGE }}:${{ steps.tag.outputs.sha7 }}
+          tags: ${{ steps.tag.outputs.php_ref }}
 
-      # <<< FIXED BLOCK START (nginx build) ---------------------------------
-      # FIX (Trivy: libxml2 CVE-2026-86144, fixed in 2.13.9-r3):
-      # the GitHub Actions layer cache kept an old layer with libxml2 2.13.9-r2.
-      # The nginx image is now built with pull + no-cache so apk packages and the
-      # base image are always fresh. The image is small, so the extra build time is minor.
-      # NOTE: if the scan still reports libxml2 after this, the base image itself is
-      # not yet patched. Add "RUN apk upgrade --no-cache" to Dockerfile.nginx
-      # (see the notes delivered with this file).
-      - name: Build nginx image (not pushed yet)   # <<< FIXED STEP
+      # pull + no-cache so apk packages and the base image are always fresh
+      # (fixes the libxml2 finding caused by a stale cached layer).
+      - name: Build nginx image (not pushed yet)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile.nginx
           load: true
           push: false
-          pull: true       # <<< FIXED (added)
-          no-cache: true   # <<< FIXED (added) - this is the fix for the libxml2 finding
-          # <<< FIXED (removed): cache-from / cache-to lines that used to be here
-          tags: ${{ env.NGINX_IMAGE }}:nginx-${{ steps.tag.outputs.sha7 }}
+          pull: true
+          no-cache: true
+          tags: ${{ steps.tag.outputs.nginx_ref }}
 
-      # FIX: removed ::group:: / ::endgroup:: so the scan output (CVE table or
-      # Docker error) is visible instead of collapsed.
-      # <<< FIXED: the line '--skip-version-check \' below was added in this step
-      # FIX: added --skip-version-check to silence the Trivy "new version" notice
-      # (the Trivy version stays pinned on purpose).
       - name: Scan images for HIGH/CRITICAL vulnerabilities
         env:
-          SHA7: ${{ steps.tag.outputs.sha7 }}
+          PHP_REF: ${{ steps.tag.outputs.php_ref }}
+          NGINX_REF: ${{ steps.tag.outputs.nginx_ref }}
         run: |
           fail=0
           # Optional: CVEs listed in a .trivyignore file at the repo root are skipped.
@@ -392,7 +400,7 @@ jobs:
             ignore_mount=(-v "$PWD/.trivyignore:/.trivyignore:ro")
             ignore_flag=(--ignorefile /.trivyignore)
           fi
-          for img in "$PHP_IMAGE:$SHA7" "$NGINX_IMAGE:nginx-$SHA7"; do
+          for img in "$PHP_REF" "$NGINX_REF"; do
             echo "=== Trivy scan $img"
             docker run --rm \
               -v /var/run/docker.sock:/var/run/docker.sock \
@@ -403,14 +411,18 @@ jobs:
               "$img" || { echo "::error::Trivy failed for $img"; fail=1; }
           done
           exit "$fail"
+
       - name: Push images (only reached when both scans passed)
         env:
-          SHA7: ${{ steps.tag.outputs.sha7 }}
+          PHP_REF: ${{ steps.tag.outputs.php_ref }}
+          NGINX_REF: ${{ steps.tag.outputs.nginx_ref }}
         run: |
-          docker push "$PHP_IMAGE:$SHA7"
-          docker push "$NGINX_IMAGE:nginx-$SHA7"
+          docker push "$PHP_REF"
+          docker push "$NGINX_REF"
+
       - run: docker logout
         if: always()
+
 
   # ---------------------------------------------------------------
   # Production deployment (GitOps).
